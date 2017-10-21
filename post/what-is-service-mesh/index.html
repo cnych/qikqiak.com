@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>服务网格(Service Mesh)是什么?</title>
+  <meta property="og:title" content="服务网格(Service Mesh)是什么?" />
+  <meta name="twitter:title" content="服务网格(Service Mesh)是什么?" />
+  <meta name="description" content="现在最后的后端架构无疑是微服务了，微服务将之前的单体应用拆分成了许多独立的服务应用，每个微服务都是独立的，好处自然很多，但是随着应用的越来越大，微服务暴露出来的问题也就随之而来了，微服务越来越多，管理越来越麻烦，特别是要你部署一套新环境的时候，你就能体会到这种痛苦了，随之而来的服务发现、负载均衡、Trace跟踪、流量管理、安全认证等等问题，如果从头到尾完成过一套微服务框架的话，你就会知道这里面涉及到的东西真的非常多。当然随着微服务的不断发展，微服务的生态也不断完善，最近就发现新一代的微服务开发就悄然兴起了，那就是服务网格/Service Mesh
+
+">
+  <meta property="og:description" content="现在最后的后端架构无疑是微服务了，微服务将之前的单体应用拆分成了许多独立的服务应用，每个微服务都是独立的，好处自然很多，但是随着应用的越来越大，微服务暴露出来的问题也就随之而来了，微服务越来越多，管理越来越麻烦，特别是要你部署一套新环境的时候，你就能体会到这种痛苦了，随之而来的服务发现、负载均衡、Trace跟踪、流量管理、安全认证等等问题，如果从头到尾完成过一套微服务框架的话，你就会知道这里面涉及到的东西真的非常多。当然随着微服务的不断发展，微服务的生态也不断完善，最近就发现新一代的微服务开发就悄然兴起了，那就是服务网格/Service Mesh
+
+">
+  <meta name="twitter:description" content="现在最后的后端架构无疑是微服务了，微服务将之前的单体应用拆分成了许多独立的服务应用，每个微服务都是独立的，好处自然很多，但是随着应用的越来越大，微服务暴露出来的问题也就随之而来了，微服务越来越多，管理越来越麻烦，特别是要你部署一套新环境的时候，你就能体会到这种痛苦了，随之而来的服务发现、负载均衡、Trace跟踪、流量管理、安全认证等等问题，如果从头到尾完成过一套微服务框架的话，你就会知道这里面涉及 …">
+  <meta name="author" content=""/>
+  <link href='http://blog.qikqiak.com/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="http://blog.qikqiak.com/img/avatar.jpg" />
+  <meta name="twitter:image" content="http://blog.qikqiak.com/img/avatar.jpg" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="http://blog.qikqiak.com/post/what-is-service-mesh/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="River&#39;s Site" />
+
+  <meta name="generator" content="Hugo 0.24.1" />
+  <link rel="canonical" href="http://blog.qikqiak.com/post/what-is-service-mesh/" />
+  <link rel="alternate" href="http://blog.qikqiak.com/index.xml" type="application/rss+xml" title="River&#39;s Site">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.css" integrity="sha384-wITovz90syo1dJWVh32uuETPVEtGigN07tkttEqPv+uR2SE/mbQcG7ATL28aI9H0" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="stylesheet" href="http://blog.qikqiak.com/css/main.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="http://blog.qikqiak.com/css/pygment_highlights.css" />
+  <link rel="stylesheet" href="http://blog.qikqiak.com/css/highlight.min.css" />
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.1/photoswipe.min.css" integrity="sha256-sCl5PUOGMLfFYctzDW3MtRib0ctyUvI9Qsmq2wXOeBY=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.1/default-skin/default-skin.min.css" integrity="sha256-BFeI1V+Vh1Rk37wswuOYn5lsTcaU96hGaI7OUVCLjPc=" crossorigin="anonymous" />
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="http://blog.qikqiak.com/">River&#39;s Site</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Home" href="http://blog.qikqiak.com/">Home</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">Categories</a>
+              <div class="navlinks-children">
+                
+                  <a href="http://blog.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="http://blog.qikqiak.com/tags/python">python</a>
+                
+                  <a href="http://blog.qikqiak.com/tags/ops">devops</a>
+                
+                  <a href="http://blog.qikqiak.com/tags/django">django</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="Tags" href="http://blog.qikqiak.com/tags">Tags</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="About" href="http://blog.qikqiak.com/page/about/">About</a>
+            </li>
+          
+        
+
+        
+
+        
+      </ul>
+    </div>
+
+    <div class="avatar-container">
+      <div class="avatar-img-border">
+        
+          <a title="River&#39;s Site" href="http://blog.qikqiak.com/">
+            <img class="avatar-img" src="http://blog.qikqiak.com/img/avatar.jpg" alt="River&#39;s Site" />
+          </a>
+        
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="http://blog.qikqiak.com/img/posts/18723523_813563038801986_2018903369518678016_n.jpg" data-img-desc-1="断桥残雪@杭州西湖 Apr 30,2017"></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>服务网格(Service Mesh)是什么?</h1>
+                  
+                  
+                    <span class="post-meta">
+  Posted on October 21, 2017
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>服务网格(Service Mesh)是什么?</h1>
+                
+                
+                  <span class="post-meta">
+  Posted on October 21, 2017
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <article role="main" class="blog-post">
+        <p>现在最后的后端架构无疑是微服务了，微服务将之前的单体应用拆分成了许多独立的服务应用，每个微服务都是独立的，好处自然很多，但是随着应用的越来越大，微服务暴露出来的问题也就随之而来了，微服务越来越多，管理越来越麻烦，特别是要你部署一套新环境的时候，你就能体会到这种痛苦了，随之而来的<strong>服务发现、负载均衡、Trace跟踪、流量管理、安全认证</strong>等等问题，如果从头到尾完成过一套微服务框架的话，你就会知道这里面涉及到的东西真的非常多。当然随着微服务的不断发展，微服务的生态也不断完善，最近就发现新一代的微服务开发就悄然兴起了，那就是<code>服务网格/Service Mesh</code></p>
+
+<p></p>
+
+<h2 id="什么是service-mesh">什么是Service Mesh？</h2>
+
+<p><code>Service Mesh</code>是一个非常新的名词，最早是2016年由开发<code>Linkerd</code>的 Buoyant 公司提出的，搬随着<code>Linkerd</code>的传入，<code>Service Mesh</code>的概念也慢慢进入国内技术社区。之前 infoQ 的一篇介绍<code>istio</code>的文章将<code>Service Mesh</code>翻译成的<code>服务啮合层</code>，<code>啮合</code>的字面意思是：两个齿轮间的咬合，和<code>Service Mesh</code>表达的意思基本上还是吻合的，但是这个词比较拗口。到现在主流的叫法都叫：<code>服务网格</code>。</p>
+
+<p><strong>Willian Morgan（Linker 的CEO）给出的<code>Service Mesh</code>定义：</strong></p>
+
+<blockquote>
+<p>A service mesh is a dedicated infrastructure layer for handling service-to-service communication. It’s responsible for the reliable delivery of requests through the complex topology of services that comprise a modern, cloud native application. In practice, the service mesh is typically implemented as an array of lightweight network proxies that are deployed alongside application code, without the application needing to be aware.</p>
+
+<p>服务网格是一个用于处理服务间通信的基础设施层，它负责为构建复杂的云原生应用传递可靠的网络请求。在实践中，服务网格通常实现为一组和应用程序部署在一起的轻量级的网络代理，但对应用程序来说是透明的。</p>
+</blockquote>
+
+<h2 id="怎么理解网格">怎么理解网格</h2>
+
+<p>要理解网格的概念，就得从服务的部署模型说起：</p>
+
+<h4 id="单个服务调用-表现为-sidecar">单个服务调用，表现为<code>sidecar</code></h4>
+
+<p><img src="http://blog.qikqiak.com/img/posts/single-service.jpeg" alt="单个服务调用" /></p>
+
+<p><code>Service Mesh</code>的部署模型，先看单个的，对于一个简单请求，作为请求发起者的客户端应用实例，会首先用简单方式将请求发送到本地的<code>Service Mesh</code>实例。这是两个独立进程，他们之间是远程调用。</p>
+
+<p><code>Service Mesh</code>会完成完整的服务间调用流程，如服务发现负载均衡，最后将请求发送给目标服务。这表现为<code>Sidecar</code>。</p>
+
+<p>提到<code>Sidecar</code>，在<a href="http://blog.qikqiak.com/tags/kubernetes/">Kubernetes</a>中部署的<code>POD</code>中也会有一个附加的<code>Sidecar</code>容器。</p>
+
+<h4 id="部署多个服务-表现为通讯层">部署多个服务，表现为通讯层</h4>
+
+<p><img src="http://blog.qikqiak.com/img/posts/many-service.jpeg" alt="多个服务调用" /></p>
+
+<p>多个服务调用的情况，在这个图上我们可以看到<code>Service Mesh</code>在所有的服务的下面，这一层被称之为<strong>服务间通讯专用基础设施层</strong>。<code>Service Mesh</code>会接管整个网络，把所有的请求在服务之间做转发。在这种情况下，我们会看到上面的服务不再负责传递请求的具体逻辑，只负责完成业务处理。服务间通讯的环节就从应用里面剥离出来，呈现出一个抽象层。</p>
+
+<h4 id="有大量服务-表现为网络">有大量服务，表现为网络</h4>
+
+<p><img src="http://blog.qikqiak.com/img/posts/big-service.jpeg" alt="大量服务调用" /></p>
+
+<p>如果有大量的服务，就会表现出来网格。图中左边绿色方格是应用，右边蓝色的方框是<code>Service Mesh</code>，蓝色之间的线条是表示服务之间的调用关系。<code>Sidecar</code>之间的连接就会形成一个网络，这个就是服务网格名字的由来。这个时候代理体现出来的就和前面的<code>Sidecar</code>不一样了，形成网状。</p>
+
+<h4 id="服务网格">服务网格</h4>
+
+<p>首先第一个，服务网格是抽象的，实际上是抽象出了一个基础设施层，在应用之外。其次，功能是实现请求的可靠传递。部署上体现为轻量级的网络代理。最后一个关键词是，对应用程序透明。</p>
+
+<p><img src="http://blog.qikqiak.com/img/posts/service-mesh.jpeg" alt="单个服务调用" /></p>
+
+<p>大家注意看，上面的图中，网络在这种情况下，可能不是特别明显。但是如果把左边的应用程序去掉，现在只呈现出来<code>Service Mesh</code>和他们之间的调用，这个时候关系就会特别清晰，就是一个完整的网络。这是<code>Service Mesh</code>定义当中一个非常重要的关键点，和<code>Sidecar</code>不相同的地方：<strong>不再将代理视为单独的组件，而是强调由这些代理连接而形成的网络</strong>。在<code>Service Mesh</code>里面非常强调代理连接组成的网络，而不像<code>Sidecar</code>那样看待个体。</p>
+
+<p>现在我们基本上把<code>Service Mesh</code>的定义介绍清楚了，大家应该可以大概了解什么是<code>Service Mesh</code>了。</p>
+
+<blockquote>
+<p>接下来会开始研究<code>Serivce Mesh</code>的典型应用：<code>istio</code></p>
+</blockquote>
+
+<h2 id="参考资料">参考资料</h2>
+
+<p><a href="https://buoyant.io/2017/04/25/whats-a-service-mesh-and-why-do-i-need-one/">https://buoyant.io/2017/04/25/whats-a-service-mesh-and-why-do-i-need-one/</a></p>
+      </article>
+
+      <ul class="pager blog-pager">
+        
+          <li class="previous">
+            <a href="http://blog.qikqiak.com/post/kubernetes-rollout-update/" data-toggle="tooltip" data-placement="top" title="Kubernetes Deployment滚动升级">&larr; Previous Post</a>
+          </li>
+        
+        
+      </ul>
+
+      
+
+      
+      <div id="git-comments"></div>
+      <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+      <script src="https://imsun.github.io/gitment/dist/gitment.browser.js"></script>
+      <script>
+      var gitment = new Gitment({
+        owner: 'cnych',
+        repo: 'blog',
+        oauth: {
+          client_id: 'bdb76dbb2e9d0786e350',
+          client_secret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        }
+      })
+      gitment.render('git-comments')
+      </script>
+      
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+          
+          &nbsp;&bull;&nbsp;
+          2017
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="http://blog.qikqiak.com/">River&#39;s Site</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.24.1</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.js" integrity="sha384-/y1Nn9+QQAipbNQWU65krzJralCnuOasHncUFXGkdwntGeSvQicrYkiUBwsgUqc1" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/contrib/auto-render.min.js" integrity="sha384-dq1/gEHSxPZQ7DdrM82ID4YVol9BYyU7GbWlIwnwyPzotpoc57wDw/guX8EaYGPx" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="http://blog.qikqiak.com/js/main.js"></script>
+<script src="http://blog.qikqiak.com/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script> renderMathInElement(document.body); </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.1/photoswipe.min.js" integrity="sha256-UplRCs9v4KXVJvVY+p+RSo5Q4ilAUXh7kpjyIP5odyc=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.1/photoswipe-ui-default.min.js" integrity="sha256-PWHOlUzc96pMc8ThwRIXPn8yH4NOLu42RQ0b9SpnpFk=" crossorigin="anonymous"></script>
+<script src="http://blog.qikqiak.com/js/load-photoswipe.js"></script>
+
+
+
+  </body>
+</html>
+
