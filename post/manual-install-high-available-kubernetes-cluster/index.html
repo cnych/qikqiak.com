@@ -8,39 +8,23 @@
   <title>手动搭建高可用的kubernetes 集群</title>
   <meta property="og:title" content="手动搭建高可用的kubernetes 集群" />
   <meta name="twitter:title" content="手动搭建高可用的kubernetes 集群" />
-  <meta name="description" content="本系列文档介绍使用二进制部署最新 kubernetes v1.8.2 集群的所有步骤，而不是使用 kubeadm 等自动化方式来部署集群。
+  <meta name="description" content="之前按照和我一步步部署 kubernetes 集群的步骤一步一步的成功的使用二进制的方式安装了kubernetes集群，在该文档的基础上重新部署了最新的v1.8.2版本，实现了kube-apiserver的高可用、在kubernetes上安装docker的私有仓库harbor、容器化kubernetes部分组建。
 
-在部署的过程中，将详细列出各组件的启动参数，它们的含义和可能遇到的问题。
+部署完成后，你将理解系统各组件的交互原理，进而能快速解决实际问题，所以本文档主要适合于那些有一定kubernetes基础，想通过一步步部署的方式来学习和了解系统配置、运行原理的人。
 
-部署完成后，你将理解系统各组件的交互原理，进而能快速解决实际问题。
-
-所以本文档主要适合于那些有一定 kubernetes 基础，想通过一步步部署的方式来学习和了解系统配置、运行原理的人。
-
-本系列系文档适用于 CentOS 7、Ubuntu 16.04 及以上版本系统，随着各组件的更新而更新，有任何问题欢迎提 issue！
-
-由于启用了 TLS 双向认证、RBAC 授权等严格的安全机制，建议从头开始部署，否则可能会认证、授权等失败！
+本系列系文档适用于 CentOS 7、Ubuntu 16.04 及以上版本系统，由于启用了 TLS 双向认证、RBAC 授权等严格的安全机制，建议从头开始部署，否则可能会认证、授权等失败！
 
 ">
-  <meta property="og:description" content="本系列文档介绍使用二进制部署最新 kubernetes v1.8.2 集群的所有步骤，而不是使用 kubeadm 等自动化方式来部署集群。
+  <meta property="og:description" content="之前按照和我一步步部署 kubernetes 集群的步骤一步一步的成功的使用二进制的方式安装了kubernetes集群，在该文档的基础上重新部署了最新的v1.8.2版本，实现了kube-apiserver的高可用、在kubernetes上安装docker的私有仓库harbor、容器化kubernetes部分组建。
 
-在部署的过程中，将详细列出各组件的启动参数，它们的含义和可能遇到的问题。
+部署完成后，你将理解系统各组件的交互原理，进而能快速解决实际问题，所以本文档主要适合于那些有一定kubernetes基础，想通过一步步部署的方式来学习和了解系统配置、运行原理的人。
 
-部署完成后，你将理解系统各组件的交互原理，进而能快速解决实际问题。
-
-所以本文档主要适合于那些有一定 kubernetes 基础，想通过一步步部署的方式来学习和了解系统配置、运行原理的人。
-
-本系列系文档适用于 CentOS 7、Ubuntu 16.04 及以上版本系统，随着各组件的更新而更新，有任何问题欢迎提 issue！
-
-由于启用了 TLS 双向认证、RBAC 授权等严格的安全机制，建议从头开始部署，否则可能会认证、授权等失败！
+本系列系文档适用于 CentOS 7、Ubuntu 16.04 及以上版本系统，由于启用了 TLS 双向认证、RBAC 授权等严格的安全机制，建议从头开始部署，否则可能会认证、授权等失败！
 
 ">
-  <meta name="twitter:description" content="本系列文档介绍使用二进制部署最新 kubernetes v1.8.2 集群的所有步骤，而不是使用 kubeadm 等自动化方式来部署集群。
+  <meta name="twitter:description" content="之前按照和我一步步部署 kubernetes 集群的步骤一步一步的成功的使用二进制的方式安装了kubernetes集群，在该文档的基础上重新部署了最新的v1.8.2版本，实现了kube-apiserver的高可用、在kubernetes上安装docker的私有仓库harbor、容器化kubernetes部分组建。
 
-在部署的过程中，将详细列出各组件的启动参数，它们的含义和可能遇到的问题。
-
-部署完成后，你将理解系统各组件的交互原理，进而能快速解决实际问题。
-
-所以本文档主要适合于那些有一定 kubernetes 基础，想通过一步步部署的方式来学习和了解系统配置、运行原理 …">
+部署完成后，你将理解系统各组件的交互原理，进而能快速解决实际问题，所以本文档主要适 …">
   <meta name="author" content=""/>
   <link href='https://blog.qikqiak.com/img/favicon.ico' rel='icon' type='image/x-icon'/>
   <meta property="og:image" content="https://blog.qikqiak.com/img/avatar.jpg" />
@@ -254,17 +238,11 @@
   <div class="row">
     <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
       <article role="main" class="blog-post">
-        <p>本系列文档介绍使用二进制部署最新 <code>kubernetes v1.8.2</code> 集群的所有步骤，而不是使用 <code>kubeadm</code> 等自动化方式来部署集群。</p>
+        <p>之前按照<a href="https://github.com/opsnull/follow-me-install-kubernetes-cluster">和我一步步部署 kubernetes 集群</a>的步骤一步一步的成功的使用二进制的方式安装了<code>kubernetes</code>集群，在该文档的基础上重新部署了最新的<code>v1.8.2</code>版本，实现了<code>kube-apiserver</code>的高可用、在<code>kubernetes</code>上安装<code>docker</code>的私有仓库<code>harbor</code>、容器化<code>kubernetes</code>部分组建。</p>
 
-<p>在部署的过程中，将详细列出各组件的启动参数，它们的含义和可能遇到的问题。</p>
+<p>部署完成后，你将理解系统各组件的交互原理，进而能快速解决实际问题，所以本文档主要适合于那些有一定<code>kubernetes</code>基础，想通过一步步部署的方式来学习和了解系统配置、运行原理的人。</p>
 
-<p>部署完成后，你将理解系统各组件的交互原理，进而能快速解决实际问题。</p>
-
-<p>所以本文档主要适合于那些有一定 kubernetes 基础，想通过一步步部署的方式来学习和了解系统配置、运行原理的人。</p>
-
-<p>本系列系文档适用于 <code>CentOS 7</code>、<code>Ubuntu 16.04</code> 及以上版本系统，<strong>随着各组件的更新而更新</strong>，有任何问题欢迎提 issue！</p>
-
-<p>由于启用了 <code>TLS</code> 双向认证、<code>RBAC</code> 授权等严格的安全机制，建议<strong>从头开始部署</strong>，否则可能会认证、授权等失败！</p>
+<p>本系列系文档适用于 <code>CentOS 7</code>、<code>Ubuntu 16.04</code> 及以上版本系统，由于启用了 <code>TLS</code> 双向认证、<code>RBAC</code> 授权等严格的安全机制，建议<strong>从头开始部署</strong>，否则可能会认证、授权等失败！</p>
 
 <p></p>
 
@@ -284,12 +262,15 @@
 <li>harbor，使用nfs后端存储</li>
 </ul>
 
-<h3 id="etcd集群-k8s-master机器">etcd集群 &amp;&amp; k8s master机器</h3>
+<h3 id="etcd-集群-k8s-master-机器-k8s-node-机器">etcd 集群 &amp;&amp; k8s master 机器 &amp;&amp; k8s node 机器</h3>
 
 <ul>
 <li>master01：192.168.1.137</li>
 <li>master02：192.168.1.138</li>
-<li>master03：192.168.1.170</li>
+<li>master03/node03：192.168.1.170</li>
+<li>由于机器有限，所以我们将master03 也作为node 节点，后续有新的机器增加即可</li>
+<li>node01: 192.168.1.161</li>
+<li>node02: 192.168.1.162</li>
 </ul>
 
 <h3 id="集群环境变量">集群环境变量</h3>
@@ -322,9 +303,20 @@ CLUSTER_DNS_SVC_IP=&quot;10.254.0.2&quot;
 
 # 集群 DNS 域名
 CLUSTER_DNS_DOMAIN=&quot;cluster.local.&quot;
+
+# MASTER API Server 地址
+MASTER_URL=&quot;k8s-api.virtual.local&quot;
 </code></pre>
 
 <p>将上面变量保存为: <strong>env.sh</strong>，然后将脚本拷贝到所有机器的<code>/usr/k8s/bin</code>目录。</p>
+
+<p>为方便后面迁移，我们在集群内定义一个域名用于访问<code>apiserver</code>，在每个节点的<code>/etc/hosts</code>文件中添加记录：<strong>192.168.1.137 k8s-api.virtual.local k8s-api</strong></p>
+
+<p>其中<code>192.168.1.137</code>为master01 的IP，暂时使用该IP 来做apiserver 的负载地址</p>
+
+<blockquote>
+<p>如果你使用的是阿里云的ECS 服务，强烈建议你先将上述节点的安全组配置成允许所有访问，不然在安装过程中会遇到各种访问不了的问题，待集群配置成功以后再根据需要添加安全限制。</p>
+</blockquote>
 
 <h2 id="2-创建ca-证书和密钥">2. 创建CA 证书和密钥</h2>
 
@@ -441,7 +433,6 @@ $ sudo cp ca* /etc/kubernetes/ssl
 
 <pre><code class="language-shell">$ export NODE_NAME=etcd01 # 当前部署的机器名称(随便定义，只要能区分不同机器即可)
 $ export NODE_IP=192.168.1.137 # 当前部署的机器IP
-$ export NODE_GW_IP=xxx.xxx.xxx.xxx  # 当前部署机器的公网IP
 $ export NODE_IPS=&quot;192.168.1.137 192.168.1.138 192.168.1.170&quot; # etcd 集群所有机器 IP
 $ # etcd 集群间通信的IP和端口
 $ export ETCD_NODES=etcd01=https://192.168.1.137:2380,etcd02=https://192.168.1.138:2380,etcd03=https://192.168.1.170:2380
@@ -469,8 +460,7 @@ $ sudo mv etcd-v3.2.9-linux-amd64/etcd* /usr/k8s/bin/
   &quot;CN&quot;: &quot;etcd&quot;,
   &quot;hosts&quot;: [
     &quot;127.0.0.1&quot;,
-    &quot;${NODE_IP}&quot;,
-    &quot;${NODE_GW_IP}&quot;
+    &quot;${NODE_IP}&quot;
   ],
   &quot;key&quot;: {
     &quot;algo&quot;: &quot;rsa&quot;,
@@ -591,8 +581,8 @@ https://192.168.1.170:2379 is healthy: successfully committed proposal: took = 1
 
 <h3 id="环境变量">环境变量</h3>
 
-<pre><code class="language-shell">$ export MASTER_IP=192.168.1.137  # 替换为kubernetes master 集群的VIP地址(高可用，这里暂用节点地址)
-$ export KUBE_APISERVER=&quot;https://${MASTER_IP}:6443&quot;
+<pre><code class="language-shell">$ source /usr/k8s/bin/env.sh
+$ export KUBE_APISERVER=&quot;https://{{MASTER_URL}}&quot;
 </code></pre>
 
 <ul>
@@ -601,7 +591,7 @@ $ export KUBE_APISERVER=&quot;https://${MASTER_IP}:6443&quot;
 
 <h3 id="下载kubectl">下载kubectl</h3>
 
-<pre><code class="language-shell">$ wget https://dl.k8s.io/v1.6.2/kubernetes-client-linux-amd64.tar.gz # 如果服务器上下载不下来，可以想办法下载到本地，然后scp上去即可
+<pre><code class="language-shell">$ wget https://dl.k8s.io/v1.8.2/kubernetes-client-linux-amd64.tar.gz # 如果服务器上下载不下来，可以想办法下载到本地，然后scp上去即可
 $ tar -xzvf kubernetes-client-linux-amd64.tar.gz
 $ sudo cp kubernetes/client/bin/kube* /usr/k8s/bin/
 $ sudo chmod a+x /usr/k8s/bin/kube*
@@ -662,7 +652,8 @@ $ kubectl config set-cluster kubernetes \
 $ kubectl config set-credentials admin \
   --client-certificate=/etc/kubernetes/ssl/admin.pem \
   --embed-certs=true \
-  --client-key=/etc/kubernetes/ssl/admin-key.pem
+  --client-key=/etc/kubernetes/ssl/admin-key.pem \
+  --token=${BOOTSTRAP_TOKEN}
 # 设置上下文参数
 $ kubectl config set-context kubernetes \
   --cluster=kubernetes \
@@ -790,7 +781,7 @@ EOF
 
 <ul>
 <li><code>mk-docker-opts.sh</code>脚本将分配给flanneld 的Pod 子网网段信息写入到<code>/run/flannel/docker</code> 文件中，后续docker 启动时使用这个文件中的参数值为 docker0 网桥</li>
-<li>flanneld 使用系统缺省路由所在的接口和其他节点通信，对于有多个网络接口的机器(内网和公网)，可以用 <code>--iface</code> 选项值指定通信接口(上面的 systemd unit 文件没指定这个选项)，如本着 Vagrant + Virtualbox，就要指定<code>--iface=enp0s8</code>；</li>
+<li>flanneld 使用系统缺省路由所在的接口和其他节点通信，对于有多个网络接口的机器(内网和公网)，可以用 <code>--iface</code> 选项值指定通信接口(上面的 systemd unit 文件没指定这个选项)</li>
 </ul>
 
 <h3 id="启动flanneld">启动flanneld</h3>
@@ -846,12 +837,14 @@ $ etcdctl \
   --key-file=/etc/flanneld/ssl/flanneld-key.pem \
   ls ${FLANNEL_ETCD_PREFIX}/subnets
 
-/kubernetes/network/subnets/172.30.77.0-24
-/kubernetes/network/subnets/172.30.30.0-24
 /kubernetes/network/subnets/172.30.19.0-24
+/kubernetes/network/subnets/172.30.30.0-24
+/kubernetes/network/subnets/172.30.77.0-24
+/kubernetes/network/subnets/172.30.41.0-24
+/kubernetes/network/subnets/172.30.83.0-24
 </code></pre>
 
-<p>当前三个节点分配的 Pod 网段分别是：172.30.77.0-24、172.30.30.0-24、172.30.19.0-24。</p>
+<p>当前五个节点分配的 Pod 网段分别是：172.30.77.0-24、172.30.30.0-24、172.30.19.0-24、172.30.41.0-24、172.30.83.0-24。</p>
 
 <h2 id="6-部署master-节点">6. 部署master 节点</h2>
 
@@ -872,9 +865,9 @@ $ etcdctl \
 
 <p>master 节点与node 节点上的Pods 通过Pod 网络通信，所以需要在master 节点上部署Flannel 网络。</p>
 
-<h2 id="环境变量-2">环境变量</h2>
+<h3 id="环境变量-2">环境变量</h3>
 
-<pre><code class="language-shel">$ export MASTER_IP=192.168.1.137  # 当前部署的master 机器IP
+<pre><code class="language-shell">$ export NODE_IP=192.168.1.137  # 当前部署的master 机器IP
 $ source /usr/k8s/bin/env.sh
 </code></pre>
 
@@ -900,8 +893,8 @@ $ tar -xzvf kubernetes.tar.gz
   &quot;CN&quot;: &quot;kubernetes&quot;,
   &quot;hosts&quot;: [
     &quot;127.0.0.1&quot;,
-    &quot;${MASTER_IP}&quot;,
-    &quot;${NODE_GW_IP}&quot;,
+    &quot;${NODE_IP}&quot;,
+    &quot;${MASTER_URL}&quot;,
     &quot;${CLUSTER_KUBERNETES_SVC_IP}&quot;,
     &quot;kubernetes&quot;,
     &quot;kubernetes.default&quot;,
@@ -927,7 +920,7 @@ EOF
 </code></pre>
 
 <ul>
-<li>如果 hosts 字段不为空则需要指定授权使用该证书的 <strong>IP 或域名列表</strong>，所以上面分别指定了当前部署的 master 节点主机 IP</li>
+<li>如果 hosts 字段不为空则需要指定授权使用该证书的 <strong>IP 或域名列表</strong>，所以上面分别指定了当前部署的 master 节点主机 IP 以及apiserver 负载的内部域名</li>
 <li>还需要添加 kube-apiserver 注册的名为 <code>kubernetes</code> 的服务 IP (Service Cluster IP)，一般是 kube-apiserver <code>--service-cluster-ip-range</code> 选项值指定的网段的<strong>第一个IP</strong>，如 &ldquo;10.254.0.1&rdquo;</li>
 </ul>
 
@@ -967,10 +960,10 @@ After=network.target
 [Service]
 ExecStart=/usr/k8s/bin/kube-apiserver \\
   --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota \\
-  --advertise-address=${MASTER_IP} \\
-  --bind-address=${MASTER_IP} \\
-  --insecure-bind-address=${MASTER_IP} \\
-  --authorization-mode=RBAC \\
+  --advertise-address=${NODE_IP} \\
+  --bind-address=0.0.0.0 \\
+  --insecure-bind-address=${NODE_IP} \\
+  --authorization-mode=Node,RBAC \\
   --runtime-config=rbac.authorization.k8s.io/v1alpha1 \\
   --kubelet-https=true \\
   --experimental-bootstrap-token-auth \\
@@ -987,13 +980,14 @@ ExecStart=/usr/k8s/bin/kube-apiserver \\
   --etcd-servers=${ETCD_ENDPOINTS} \\
   --enable-swagger-ui=true \\
   --allow-privileged=true \\
-  --apiserver-count=3 \\
+  --apiserver-count=2 \\
   --audit-log-maxage=30 \\
   --audit-log-maxbackup=3 \\
   --audit-log-maxsize=100 \\
   --audit-log-path=/var/lib/audit.log \\
   --event-ttl=1h \\
-  --v=2
+  --logtostderr=true \\
+  --v=6
 Restart=on-failure
 RestartSec=5
 Type=notify
@@ -1005,17 +999,18 @@ EOF
 </code></pre>
 
 <ul>
-<li>kube-apiserver 1.6 版本开始使用 etcd v3 API 和存储格式；</li>
-<li><code>--authorization-mode=RBAC</code> 指定在安全端口使用RBAC 授权模式，拒绝未通过授权的请求；</li>
-<li>kube-scheduler、kube-controller-manager 一般和 kube-apiserver 部署在同一台机器上，它们使用<strong>非安全端口</strong>和 kube-apiserver通信;</li>
-<li>kubelet、kube-proxy、kubectl 部署在其它 Node 节点上，如果通过<strong>安全端口</strong>访问 kube-apiserver，则必须先通过 TLS 证书认证，再通过 RBAC 授权；</li>
-<li>kube-proxy、kubectl 通过使用证书里指定相关的 User、Group 来达到通过 RBAC 授权的目的；</li>
-<li>如果使用了 kubelet TLS Boostrap 机制，则不能再指定 <code>--kubelet-certificate-authority</code>、<code>--kubelet-client-certificate</code> 和 <code>--kubelet-client-key</code> 选项，否则后续 kube-apiserver 校验 kubelet 证书时出现 ”x509: certificate signed by unknown authority“ 错误；</li>
-<li><code>--admission-control</code> 值必须包含 <code>ServiceAccount</code>，否则部署集群插件时会失败；</li>
-<li><code>--bind-address</code> 不能为 <code>127.0.0.1</code>；</li>
-<li><code>--service-cluster-ip-range</code> 指定 Service Cluster IP 地址段，该地址段不能路由可达；</li>
-<li><code>--service-node-port-range=${NODE_PORT_RANGE}</code> 指定 NodePort 的端口范围；</li>
-<li>缺省情况下 kubernetes 对象保存在 etcd <code>/registry</code> 路径下，可以通过 <code>--etcd-prefix</code> 参数进行调整；</li>
+<li>kube-apiserver 1.6 版本开始使用 etcd v3 API 和存储格式</li>
+<li><code>--authorization-mode=RBAC</code> 指定在安全端口使用RBAC 授权模式，拒绝未通过授权的请求</li>
+<li>kube-scheduler、kube-controller-manager 一般和 kube-apiserver 部署在同一台机器上，它们使用<strong>非安全端口</strong>和 kube-apiserver通信</li>
+<li>kubelet、kube-proxy、kubectl 部署在其它 Node 节点上，如果通过<strong>安全端口</strong>访问 kube-apiserver，则必须先通过 TLS 证书认证，再通过 RBAC 授权</li>
+<li>kube-proxy、kubectl 通过使用证书里指定相关的 User、Group 来达到通过 RBAC 授权的目的</li>
+<li>如果使用了 kubelet TLS Boostrap 机制，则不能再指定 <code>--kubelet-certificate-authority</code>、<code>--kubelet-client-certificate</code> 和 <code>--kubelet-client-key</code> 选项，否则后续 kube-apiserver 校验 kubelet 证书时出现 ”x509: certificate signed by unknown authority“ 错误</li>
+<li><code>--admission-control</code> 值必须包含 <code>ServiceAccount</code>，否则部署集群插件时会失败</li>
+<li><code>--bind-address</code> 不能为 <code>127.0.0.1</code></li>
+<li><code>--service-cluster-ip-range</code> 指定 Service Cluster IP 地址段，该地址段不能路由可达</li>
+<li><code>--service-node-port-range=${NODE_PORT_RANGE}</code> 指定 NodePort 的端口范围</li>
+<li>缺省情况下 kubernetes 对象保存在<code>etcd/registry</code> 路径下，可以通过 <code>--etcd-prefix</code> 参数进行调整</li>
+<li>kube-apiserver 1.8版本后需要在<code>--authorization-mode</code>参数中添加<code>Node</code>，即：<code>--authorization-mode=Node,RBAC</code>，否则Node 节点无法注册</li>
 </ul>
 
 <h4 id="启动kube-apiserver">启动kube-apiserver</h4>
@@ -1039,7 +1034,7 @@ Documentation=https://github.com/GoogleCloudPlatform/kubernetes
 [Service]
 ExecStart=/usr/k8s/bin/kube-controller-manager \\
   --address=127.0.0.1 \\
-  --master=http://${MASTER_IP}:8080 \\
+  --master=http://${MASTER_URL} \\
   --allocate-node-cidrs=true \\
   --service-cluster-ip-range=${SERVICE_CIDR} \\
   --cluster-cidr=${CLUSTER_CIDR} \\
@@ -1061,7 +1056,7 @@ EOF
 <ul>
 <li><p><code>--address</code> 值必须为 <code>127.0.0.1</code>，因为当前 kube-apiserver 期望 scheduler 和 controller-manager 在同一台机器</p></li>
 
-<li><p><code>--master=http://{MASTER_IP}:8080</code>：使用非安全 8080 端口与 kube-apiserver 通信</p></li>
+<li><p><code>--master=http://{MASTER_URL}</code>：使用<code>http</code>(非安全端口)与 kube-apiserver 通信</p></li>
 
 <li><p><code>--cluster-cidr</code> 指定 Cluster 中 Pod 的 CIDR 范围，该网段在各 Node 间必须路由可达(flanneld保证)</p></li>
 
@@ -1095,7 +1090,7 @@ Documentation=https://github.com/GoogleCloudPlatform/kubernetes
 [Service]
 ExecStart=/usr/k8s/bin/kube-scheduler \\
   --address=127.0.0.1 \\
-  --master=http://${MASTER_IP}:8080 \\
+  --master=http://${MASTER_URL} \\
   --leader-elect=true \\
   --v=2
 Restart=on-failure
@@ -1108,7 +1103,7 @@ EOF
 
 <ul>
 <li><code>--address</code> 值必须为 <code>127.0.0.1</code>，因为当前 kube-apiserver 期望 scheduler 和 controller-manager 在同一台机器</li>
-<li><code>--master=http://{MASTER_IP}:8080</code>：使用非安全 8080 端口与 kube-apiserver 通信</li>
+<li><code>--master=http://${MASTER_URL}</code>：使用<code>http</code>(非安全端口)与 kube-apiserver 通信</li>
 <li><code>--leader-elect=true</code> 部署多台机器组成的 master 集群时选举产生一处于工作状态的 <code>kube-controller-manager</code> 进程</li>
 </ul>
 
@@ -1132,7 +1127,1049 @@ etcd-2               Healthy   {&quot;health&quot;: &quot;true&quot;}
 etcd-0               Healthy   {&quot;health&quot;: &quot;true&quot;}
 </code></pre>
 
-<h2 id="7-部署node-节点">7. 部署Node 节点</h2>
+<h2 id="7-apiserver-高可用">7. Apiserver 高可用</h2>
+
+<p>按照上面的方式在<code>master01</code>与<code>master02</code>机器上安装<code>kube-apiserver</code>、<code>kube-controller-manager</code>、<code>kube-scheduler</code>，但是现在还不能正常允许，因为我们的域名<code>k8s-api.virtual.local</code>对应的<code>master01</code>节点直接通过http 和https 还不能访问，这里我们使用<code>haproxy</code> 来代替请求</p>
+
+<h3 id="安装haproxy">安装haproxy</h3>
+
+<pre><code class="language-shell">$ yum install -y haproxy
+</code></pre>
+
+<h3 id="配置haproxy">配置haproxy</h3>
+
+<p>由于集群内部有的组建是通过非安全端口访问apiserver 的，有的是通过安全端口访问apiserver 的，所以我们要配置http 和https 两种代理方式，配置文件 <code>/etc/haproxy/haproxy.cfg</code>：</p>
+
+<pre><code class="language-shell">listen stats
+  bind    *:9000
+  mode    http
+  stats   enable
+  stats   hide-version
+  stats   uri       /stats
+  stats   refresh   30s
+  stats   realm     Haproxy\ Statistics
+  stats   auth      Admin:Password
+
+frontend k8s-api
+    bind 192.168.1.137:443
+    mode tcp
+    option tcplog
+    tcp-request inspect-delay 5s
+    tcp-request content accept if { req.ssl_hello_type 1 }
+    default_backend k8s-api
+
+backend k8s-api
+    mode tcp
+    option tcplog
+    option tcp-check
+    balance roundrobin
+    default-server inter 10s downinter 5s rise 2 fall 2 slowstart 60s maxconn 250 maxqueue 256 weight 100
+    server k8s-api-1 192.168.1.137:6443 check
+    server k8s-api-2 192.168.1.138:6443 check
+
+frontend k8s-http-api
+    bind 192.168.1.137:80
+    mode tcp
+    option tcplog
+    default_backend k8s-http-api
+
+backend k8s-http-api
+    mode tcp
+    option tcplog
+    option tcp-check
+    balance roundrobin
+    default-server inter 10s downinter 5s rise 2 fall 2 slowstart 60s maxconn 250 maxqueue 256 weight 100
+    server k8s-http-api-1 192.168.1.137:8080 check
+    server k8s-http-api-2 192.168.1.138:8080 check
+</code></pre>
+
+<p>通过上面的配置文件我们可以看出通过<code>https</code>的访问将请求转发给apiserver 的6443端口了，http的请求转发到了apiserver 的8080端口。</p>
+
+<h3 id="启动haproxy">启动haproxy</h3>
+
+<pre><code class="language-shell">$ sudo systemctl start haproxy
+$ sudo systemctl enable haproxy
+$ sudo systemcl status haproxy
+</code></pre>
+
+<p>然后我们可以通过上面<code>9000</code>端口监控我们的<code>haproxy</code>的运行状态(<code>192.168.1.137:9000/stats</code>):</p>
+
+<p><img src="https://blog.qikqiak.com/img/posts/1510279991107.jpg" alt="haproxy stats" /></p>
+
+<h3 id="问题">问题</h3>
+
+<p>上面我们的<code>haproxy</code>的确可以代理我们的两个master 上的apiserver 了，但是还不是高可用的，如果master01 这个节点down 掉了，那么我们haproxy 就不能正常提供服务了。这里我们可以使用两种方法来实现高可用</p>
+
+<h4 id="方式1-使用阿里云slb">方式1：使用阿里云SLB</h4>
+
+<p>这种方式实际上是最省心的，在阿里云上建一个内网的SLB，将master01 与master02 添加到SLB 机器组中，转发80(http)和443(https)端口即可</p>
+
+<h4 id="方式2-使用keepalived">方式2：使用keepalived</h4>
+
+<p><code>KeepAlived</code> 是一个高可用方案，通过 VIP（即虚拟 IP）和心跳检测来实现高可用。其原理是存在一组（两台）服务器，分别赋予 Master、Backup 两个角色，默认情况下Master 会绑定VIP 到自己的网卡上，对外提供服务。Master、Backup 会在一定的时间间隔向对方发送心跳数据包来检测对方的状态，这个时间间隔一般为 2 秒钟，如果Backup 发现Master 宕机，那么Backup 会发送ARP 包到网关，把VIP 绑定到自己的网卡，此时Backup 对外提供服务，实现自动化的故障转移，当Master 恢复的时候会重新接管服务。非常类似于路由器中的虚拟路由器冗余协议（VRRP）</p>
+
+<p>开启路由转发，这里我们定义虚拟IP为：<strong>192.168.1.139</strong></p>
+
+<pre><code class="language-shell">$ vi /etc/sysctl.conf
+# 添加以下内容
+net.ipv4.ip_forward = 1
+net.ipv4.ip_nonlocal_bind = 1
+
+# 验证并生效
+$ systcl -p
+# 验证是否生效
+$ cat /proc/sys/net/ipv4/ip_forward
+1
+</code></pre>
+
+<p>安装<code>keepalived</code>:</p>
+
+<pre><code class="language-shell">$ yum install -y keepalived
+</code></pre>
+
+<p>我们这里将master01 设置为Master，master02 设置为Backup，修改配置：</p>
+
+<pre><code class="language-shell">$ vi /etc/keepalived/keepalived.conf
+! Configuration File for keepalived
+
+global_defs {
+   notification_email {
+   }
+   router_id kube_api
+}
+
+vrrp_script check_k8s {
+    # 自身状态检测
+    script &quot;/etc/keepalived/chk_k8s_master.sh&quot;
+    interval 3
+    weight 5
+}
+
+vrrp_instance haproxy-vip {
+    # 使用单播通信，默认是组播通信
+    unicast_src_ip 192.168.1.137
+    unicast_peer {
+        192.168.1.138
+    }
+    # 初始化状态
+    state MASTER
+    # 虚拟ip 绑定的网卡
+    interface eth0
+    # 此ID 要与Backup 配置一致
+    virtual_router_id 51
+    # 默认启动优先级，要比Backup 大点，但要控制量，保证自身状态检测生效
+    priority 100
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass 1111
+    }
+    virtual_ipaddress {
+        # 虚拟ip 地址
+        192.168.1.139
+    }
+    track_script {
+        check_k8s
+    }
+}
+
+# 自身状态监测脚本，这里通过 api-server 是否在监听端口（6433 端口）来判断状态。
+$ vi /etc/keepalived/chk_k8s_master.sh
+#!/bin/bash
+
+count=`ss -tnl | grep 6433 | wc -l`
+
+if [ $count = 0 ]; then
+    exit 1
+else
+    exit 0
+fi
+</code></pre>
+
+<p>统一的方式在master02 节点上安装keepalived，修改配置，只需要将state 更改成BACKUP，priority更改成99，unicast_src_ip 与unicast_peer 地址修改即可。</p>
+
+<p>启动keepalived:</p>
+
+<pre><code class="language-shell">$ systemctl start keepalived
+$ systemctl enable keepalived
+# 查看日志
+$ journalctl -f -u keepalived
+</code></pre>
+
+<p>验证虚拟IP:</p>
+
+<pre><code class="language-shell"># 使用ifconfig -a 命令查看不到，要使用ip addr
+$ ip addr
+1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN qlen 1
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+2: eth0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP qlen 1000
+    link/ether 00:16:3e:00:55:c1 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.1.137/24 brd 192.168.1.255 scope global dynamic eth0
+       valid_lft 31447746sec preferred_lft 31447746sec
+    inet 192.168.1.139/24 brd 192.168.1.255 scope global secondary eth0-vip
+       valid_lft forever preferred_lft forever
+</code></pre>
+
+<p>验证apiserver：关闭master01 节点上的kube-apiserver 进程，然后查看虚拟ip是否漂移到了master02 节点。</p>
+
+<p>然后我们就可以将第一步在<code>/etc/hosts</code>里面设置的域名对应的IP 更改为我们的虚拟IP了</p>
+
+<blockquote>
+<p>master01 与master 02 节点都需要安装keepalived 和haproxy，实际上我们虚拟IP的自身检测应该是检测haproxy，脚本大家可以自行更改</p>
+</blockquote>
+
+<p><img src="https://blog.qikqiak.com/img/posts/apiserver-ha.png" alt="kube-apiserver ha" /></p>
+
+<p>这样我们就实现了接入层apiserver 的高可用了，一个部分是多活的apiserver 服务，另一个部分是一主一备的haproxy 服务。</p>
+
+<h3 id="kube-controller-manager-和kube-scheduler-的高可用">kube-controller-manager 和kube-scheduler 的高可用</h3>
+
+<p>Kubernetes 的管理层服务包括<code>kube-scheduler</code>和<code>kube-controller-manager</code>。kube-scheduler和kube-controller-manager使用一主多从的高可用方案，在<strong>同一时刻只允许一个服务</strong>处以具体的任务。Kubernetes中实现了一套简单的选主逻辑，依赖Etcd实现scheduler和controller-manager的选主功能。如果scheduler和controller-manager在启动的时候设置了<code>leader-elect</code>参数，它们在启动后会先尝试获取leader节点身份，只有在获取leader节点身份后才可以执行具体的业务逻辑。它们分别会在Etcd中创建kube-scheduler和kube-controller-manager的endpoint，endpoint的信息中记录了当前的leader节点信息，以及记录的上次更新时间。leader节点会定期更新endpoint的信息，维护自己的leader身份。每个从节点的服务都会定期检查endpoint的信息，如果endpoint的信息在时间范围内没有更新，它们会尝试更新自己为leader节点。scheduler服务以及controller-manager服务之间不会进行通信，利用Etcd的强一致性，能够保证在分布式高并发情况下leader节点的全局唯一性。整体方案如下图所示：</p>
+
+<p><img src="http://oj6ydypm2.bkt.clouddn.com/upfile_1498099870616.png" alt="img" /></p>
+
+<p>当集群中的leader节点服务异常后，其它节点的服务会尝试更新自身为leader节点，当有多个节点同时更新endpoint时，由Etcd保证只有一个服务的更新请求能够成功。通过这种机制sheduler和controller-manager可以保证在leader节点宕机后其它的节点可以顺利选主，保证服务故障后快速恢复。当集群中的网络出现故障时对服务的选主影响不是很大，因为scheduler和controller-manager是依赖Etcd进行选主的，在网络故障后，可以和Etcd通信的主机依然可以按照之前的逻辑进行选主，就算集群被切分，Etcd也可以保证同一时刻只有一个节点的服务处于leader状态。</p>
+
+<h2 id="8-部署node-节点">8. 部署Node 节点</h2>
+
+<p>kubernetes Node 节点包含如下组件：</p>
+
+<ul>
+<li>flanneld</li>
+<li>docker</li>
+<li>kubelet</li>
+<li>kube-proxy</li>
+</ul>
+
+<h3 id="环境变量-3">环境变量</h3>
+
+<pre><code class="language-shell">$ source /usr/k8s/bin/env.sh
+$ export KUBE_APISERVER=&quot;https://${MASTER_URL}&quot;
+$ export NODE_IP=192.168.1.170  # 当前部署的节点 IP
+</code></pre>
+
+<p>按照上面的步骤安装配置好flanneld</p>
+
+<h3 id="配置docker">配置docker</h3>
+
+<p>你可以用二进制或yum install 的方式来安装docker，然后修改docker 的systemd unit 文件：</p>
+
+<pre><code class="language-shell">$ cat /usr/lib/systemd/system/docker.service  # 用systemctl status docker 命令可查看unit 文件路径
+[Unit]
+Description=Docker Application Container Engine
+Documentation=https://docs.docker.com
+After=network-online.target firewalld.service
+Wants=network-online.target
+
+[Service]
+Type=notify
+# the default is not to use systemd for cgroups because the delegate issues still
+# exists and systemd currently does not support the cgroup feature set required
+# for containers run by docker
+EnvironmentFile=-/run/flannel/docker
+ExecStart=/usr/bin/dockerd --log-level=info $DOCKER_NETWORK_OPTIONS
+ExecReload=/bin/kill -s HUP $MAINPID
+# Having non-zero Limit*s causes performance problems due to accounting overhead
+# in the kernel. We recommend using cgroups to do container-local accounting.
+LimitNOFILE=infinity
+LimitNPROC=infinity
+LimitCORE=infinity
+# Uncomment TasksMax if your systemd version supports it.
+# Only systemd 226 and above support this version.
+#TasksMax=infinity
+TimeoutStartSec=0
+# set delegate yes so that systemd does not reset the cgroups of docker containers
+Delegate=yes
+# kill only the docker process, not all processes in the cgroup
+KillMode=process
+# restart the docker process if it exits prematurely
+Restart=on-failure
+StartLimitBurst=3
+StartLimitInterval=60s
+
+[Install]
+WantedBy=multi-user.target
+</code></pre>
+
+<ul>
+<li><p>dockerd 运行时会调用其它 docker 命令，如 docker-proxy，所以需要将 docker 命令所在的目录加到 PATH 环境变量中</p></li>
+
+<li><p>flanneld 启动时将网络配置写入到 <code>/run/flannel/docker</code> 文件中的变量 <code>DOCKER_NETWORK_OPTIONS</code>，dockerd 命令行上指定该变量值来设置 docker0 网桥参数</p></li>
+
+<li><p>如果指定了多个 <code>EnvironmentFile</code> 选项，则必须将 <code>/run/flannel/docker</code> 放在最后(确保 docker0 使用 flanneld 生成的 bip 参数)</p></li>
+
+<li><p>不能关闭默认开启的 <code>--iptables</code> 和 <code>--ip-masq</code> 选项</p></li>
+
+<li><p>如果内核版本比较新，建议使用 <code>overlay</code> 存储驱动</p></li>
+
+<li><p>docker 从 1.13 版本开始，可能将 <strong>iptables FORWARD chain的默认策略设置为DROP</strong>，从而导致 ping 其它 Node 上的 Pod IP 失败，遇到这种情况时，需要手动设置策略为 <code>ACCEPT</code>：</p></li>
+</ul>
+
+<pre><code class="language-shell">  $ sudo iptables -P FORWARD ACCEPT
+</code></pre>
+
+<p>并且把以下命令写入/etc/rc.local文件中，防止节点重启<strong>iptables FORWARD chain的默认策略又还原为DROP</strong></p>
+
+<pre><code>  sleep 60 &amp;&amp; /sbin/iptables -P FORWARD ACCEPT
+</code></pre>
+
+<ul>
+<li>为了加快 pull image 的速度，可以使用国内的仓库镜像服务器，同时增加下载的并发数。(如果 dockerd 已经运行，则需要重启 dockerd 生效。)</li>
+</ul>
+
+<pre><code class="language-shell">  $ cat /etc/docker/daemon.json
+  {
+    &quot;max-concurrent-downloads&quot;: 10
+  }
+</code></pre>
+
+<h3 id="启动docker">启动docker</h3>
+
+<pre><code class="language-shell">$ sudo systemctl daemon-reload
+$ sudo systemctl stop firewalld
+$ sudo systemctl disable firewalld
+$ sudo iptables -F &amp;&amp; sudo iptables -X &amp;&amp; sudo iptables -F -t nat &amp;&amp; sudo iptables -X -t nat
+$ sudo systemctl enable docker
+$ sudo systemctl start docker
+</code></pre>
+
+<ul>
+<li>需要关闭 firewalld(centos7)/ufw(ubuntu16.04)，否则可能会重复创建的 iptables 规则</li>
+<li>最好清理旧的 iptables rules 和 chains 规则</li>
+<li>执行命令：docker version，检查docker服务是否正常</li>
+</ul>
+
+<h3 id="安装和配置kubelet">安装和配置kubelet</h3>
+
+<p>kubelet 启动时向kube-apiserver 发送TLS bootstrapping 请求，需要先将bootstrap token 文件中的kubelet-bootstrap 用户赋予system:node-bootstrapper 角色，然后kubelet 才有权限创建认证请求(certificatesigningrequests)：</p>
+
+<pre><code class="language-shell">$ kubectl create clusterrolebinding kubelet-bootstrap --clusterrole=system:node-bootstrapper --user=kubelet-bootstrap
+</code></pre>
+
+<ul>
+<li><code>--user=kubelet-bootstrap</code> 是文件 <code>/etc/kubernetes/token.csv</code> 中指定的用户名，同时也写入了文件 <code>/etc/kubernetes/bootstrap.kubeconfig</code></li>
+</ul>
+
+<p>另外1.8 版本中还需要为Node 请求创建一个RBAC 授权规则：</p>
+
+<pre><code class="language-shell">$ kubectl create clusterrolebinding kubelet-nodes --clusterrole=system:node --group=system:nodes
+</code></pre>
+
+<p>然后下载最新的kubelet 和kube-proxy 二进制文件（前面下载kubernetes 目录下面其实也有）：</p>
+
+<pre><code class="language-shell">$ wget https://dl.k8s.io/v1.8.2/kubernetes-server-linux-amd64.tar.gz
+$ tar -xzvf kubernetes-server-linux-amd64.tar.gz
+$ cd kubernetes
+$ tar -xzvf  kubernetes-src.tar.gz
+$ sudo cp -r ./server/bin/{kube-proxy,kubelet} /usr/k8s/bin/
+</code></pre>
+
+<h3 id="创建kubelet-bootstapping-kubeconfig-文件">创建kubelet bootstapping kubeconfig 文件</h3>
+
+<pre><code class="language-shell">$ # 设置集群参数
+$ kubectl config set-cluster kubernetes \
+  --certificate-authority=/etc/kubernetes/ssl/ca.pem \
+  --embed-certs=true \
+  --server=${KUBE_APISERVER} \
+  --kubeconfig=bootstrap.kubeconfig
+$ # 设置客户端认证参数
+$ kubectl config set-credentials kubelet-bootstrap \
+  --token=${BOOTSTRAP_TOKEN} \
+  --kubeconfig=bootstrap.kubeconfig
+$ # 设置上下文参数
+$ kubectl config set-context default \
+  --cluster=kubernetes \
+  --user=kubelet-bootstrap \
+  --kubeconfig=bootstrap.kubeconfig
+$ # 设置默认上下文
+$ kubectl config use-context default --kubeconfig=bootstrap.kubeconfig
+$ mv bootstrap.kubeconfig /etc/kubernetes/
+</code></pre>
+
+<ul>
+<li><code>--embed-certs</code> 为 <code>true</code> 时表示将 <code>certificate-authority</code> 证书写入到生成的 <code>bootstrap.kubeconfig</code> 文件中；</li>
+<li>设置 kubelet 客户端认证参数时<strong>没有</strong>指定秘钥和证书，后续由 <code>kube-apiserver</code> 自动生成；</li>
+</ul>
+
+<h3 id="创建kubelet-的systemd-unit-文件">创建kubelet 的systemd unit 文件</h3>
+
+<pre><code class="language-shell">$ sudo mkdir /var/lib/kubelet # 必须先创建工作目录
+$ cat &gt; kubelet.service &lt;&lt;EOF
+[Unit]
+Description=Kubernetes Kubelet
+Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+After=docker.service
+Requires=docker.service
+
+[Service]
+WorkingDirectory=/var/lib/kubelet
+ExecStart=/usr/k8s/bin/kubelet \\
+  --address=${NODE_IP} \\
+  --hostname-override=${NODE_IP} \\
+  --experimental-bootstrap-kubeconfig=/etc/kubernetes/bootstrap.kubeconfig \\
+  --kubeconfig=/etc/kubernetes/kubelet.kubeconfig \\
+  --require-kubeconfig \\
+  --cert-dir=/etc/kubernetes/ssl \\
+  --cluster-dns=${CLUSTER_DNS_SVC_IP} \\
+  --cluster-domain=${CLUSTER_DNS_DOMAIN} \\
+  --hairpin-mode promiscuous-bridge \\
+  --allow-privileged=true \\
+  --serialize-image-pulls=false \\
+  --logtostderr=true \\
+  --v=2
+ExecStartPost=/sbin/iptables -A INPUT -s 10.0.0.0/8 -p tcp --dport 4194 -j ACCEPT
+ExecStartPost=/sbin/iptables -A INPUT -s 172.17.0.0/12 -p tcp --dport 4194 -j ACCEPT
+ExecStartPost=/sbin/iptables -A INPUT -s 192.168.1.0/16 -p tcp --dport 4194 -j ACCEPT
+ExecStartPost=/sbin/iptables -A INPUT -p tcp --dport 4194 -j DROP
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+</code></pre>
+
+<ul>
+<li><code>-address</code> 不能设置为 <code>127.0.0.1</code>，否则后续 Pods 访问 kubelet 的 API 接口时会失败，因为 Pods 访问的 <code>127.0.0.1</code>指向自己而不是 kubelet</li>
+<li>如果设置了 <code>--hostname-override</code> 选项，则 <code>kube-proxy</code> 也需要设置该选项，否则会出现找不到 Node 的情况</li>
+<li><code>--experimental-bootstrap-kubeconfig</code> 指向 bootstrap kubeconfig 文件，kubelet 使用该文件中的用户名和 token 向 kube-apiserver 发送 TLS Bootstrapping 请求</li>
+<li>管理员通过了 CSR 请求后，kubelet 自动在 <code>--cert-dir</code> 目录创建证书和私钥文件(<code>kubelet-client.crt</code> 和 <code>kubelet-client.key</code>)，然后写入 <code>--kubeconfig</code> 文件(自动创建 <code>--kubeconfig</code> 指定的文件)</li>
+<li>建议在 <code>--kubeconfig</code> 配置文件中指定 <code>kube-apiserver</code> 地址，如果未指定 <code>--api-servers</code> 选项，则必须指定 <code>--require-kubeconfig</code> 选项后才从配置文件中读取 kue-apiserver 的地址，否则 kubelet 启动后将找不到 kube-apiserver (日志中提示未找到 API Server），<code>kubectl get nodes</code> 不会返回对应的 Node 信息</li>
+<li><code>--cluster-dns</code> 指定 kubedns 的 Service IP(可以先分配，后续创建 kubedns 服务时指定该 IP)，<code>--cluster-domain</code> 指定域名后缀，这两个参数同时指定后才会生效</li>
+</ul>
+
+<h3 id="启动kubelet">启动kubelet</h3>
+
+<pre><code class="language-shell">$ sudo cp kubelet.service /etc/systemd/system/kubelet.service
+$ sudo systemctl daemon-reload
+$ sudo systemctl enable kubelet
+$ sudo systemctl start kubelet
+$ systemctl status kubelet
+</code></pre>
+
+<h3 id="通过kubelet-的tls-证书请求">通过kubelet 的TLS 证书请求</h3>
+
+<p>kubelet 首次启动时向kube-apiserver 发送证书签名请求，必须通过后kubernetes 系统才会将该 Node 加入到集群。查看未授权的CSR 请求：</p>
+
+<pre><code class="language-shell">$ kubectl get csr
+NAME                                                   AGE       REQUESTOR           CONDITION
+node-csr--k3G2G1EoM4h9w1FuJRjJjfbIPNxa551A8TZfW9dG-g   2m        kubelet-bootstrap   Pending
+$ kubectl get nodes
+No resources found.
+</code></pre>
+
+<p>通过CSR 请求：</p>
+
+<pre><code class="language-shell">$ kubectl certificate approve node-csr--k3G2G1EoM4h9w1FuJRjJjfbIPNxa551A8TZfW9dG-g
+certificatesigningrequest &quot;node-csr--k3G2G1EoM4h9w1FuJRjJjfbIPNxa551A8TZfW9dG-g&quot; approved
+$ kubectl get nodes
+NAME            STATUS    ROLES     AGE       VERSION
+192.168.1.170   Ready     &lt;none&gt;    48s       v1.8.1
+</code></pre>
+
+<p>自动生成了kubelet kubeconfig 文件和公私钥：</p>
+
+<pre><code class="language-shell">$ ls -l /etc/kubernetes/kubelet.kubeconfig
+-rw------- 1 root root 2280 Nov  7 10:26 /etc/kubernetes/kubelet.kubeconfig
+$ ls -l /etc/kubernetes/ssl/kubelet*
+-rw-r--r-- 1 root root 1046 Nov  7 10:26 /etc/kubernetes/ssl/kubelet-client.crt
+-rw------- 1 root root  227 Nov  7 10:22 /etc/kubernetes/ssl/kubelet-client.key
+-rw-r--r-- 1 root root 1115 Nov  7 10:16 /etc/kubernetes/ssl/kubelet.crt
+-rw------- 1 root root 1675 Nov  7 10:16 /etc/kubernetes/ssl/kubelet.key
+</code></pre>
+
+<h3 id="配置kube-proxy">配置kube-proxy</h3>
+
+<h4 id="创建kube-proxy-证书签名请求">创建kube-proxy 证书签名请求：</h4>
+
+<pre><code class="language-shell">$ cat &gt; kube-proxy-csr.json &lt;&lt;EOF
+{
+  &quot;CN&quot;: &quot;system:kube-proxy&quot;,
+  &quot;hosts&quot;: [],
+  &quot;key&quot;: {
+    &quot;algo&quot;: &quot;rsa&quot;,
+    &quot;size&quot;: 2048
+  },
+  &quot;names&quot;: [
+    {
+      &quot;C&quot;: &quot;CN&quot;,
+      &quot;ST&quot;: &quot;BeiJing&quot;,
+      &quot;L&quot;: &quot;BeiJing&quot;,
+      &quot;O&quot;: &quot;k8s&quot;,
+      &quot;OU&quot;: &quot;System&quot;
+    }
+  ]
+}
+EOF
+</code></pre>
+
+<ul>
+<li>CN 指定该证书的 User 为 <code>system:kube-proxy</code></li>
+<li><code>kube-apiserver</code> 预定义的 RoleBinding <code>system:node-proxier</code> 将User <code>system:kube-proxy</code> 与 Role <code>system:node-proxier</code>绑定，该 Role 授予了调用 <code>kube-apiserver</code> Proxy 相关 API 的权限</li>
+<li>hosts 属性值为空列表</li>
+</ul>
+
+<h4 id="生成kube-proxy-客户端证书和私钥">生成kube-proxy 客户端证书和私钥</h4>
+
+<pre><code class="language-shell">$ cfssl gencert -ca=/etc/kubernetes/ssl/ca.pem \
+  -ca-key=/etc/kubernetes/ssl/ca-key.pem \
+  -config=/etc/kubernetes/ssl/ca-config.json \
+  -profile=kubernetes kube-proxy-csr.json | cfssljson -bare kube-proxy
+$ ls kube-proxy*
+kube-proxy.csr  kube-proxy-csr.json  kube-proxy-key.pem  kube-proxy.pem
+$ sudo mv kube-proxy*.pem /etc/kubernetes/ssl/
+</code></pre>
+
+<h4 id="创建kube-proxy-kubeconfig-文件">创建kube-proxy kubeconfig 文件</h4>
+
+<pre><code class="language-shell">$ # 设置集群参数
+$ kubectl config set-cluster kubernetes \
+  --certificate-authority=/etc/kubernetes/ssl/ca.pem \
+  --embed-certs=true \
+  --server=${KUBE_APISERVER} \
+  --kubeconfig=kube-proxy.kubeconfig
+$ # 设置客户端认证参数
+$ kubectl config set-credentials kube-proxy \
+  --client-certificate=/etc/kubernetes/ssl/kube-proxy.pem \
+  --client-key=/etc/kubernetes/ssl/kube-proxy-key.pem \
+  --embed-certs=true \
+  --kubeconfig=kube-proxy.kubeconfig
+$ # 设置上下文参数
+$ kubectl config set-context default \
+  --cluster=kubernetes \
+  --user=kube-proxy \
+  --kubeconfig=kube-proxy.kubeconfig
+$ # 设置默认上下文
+$ kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
+$ mv kube-proxy.kubeconfig /etc/kubernetes/
+</code></pre>
+
+<ul>
+<li>设置集群参数和客户端认证参数时 <code>--embed-certs</code> 都为 <code>true</code>，这会将 <code>certificate-authority</code>、<code>client-certificate</code> 和 <code>client-key</code> 指向的证书文件内容写入到生成的 <code>kube-proxy.kubeconfig</code> 文件中</li>
+<li><code>kube-proxy.pem</code> 证书中 CN 为 <code>system:kube-proxy</code>，<code>kube-apiserver</code> 预定义的 RoleBinding <code>cluster-admin</code> 将User <code>system:kube-proxy</code> 与 Role <code>system:node-proxier</code> 绑定，该 Role 授予了调用 <code>kube-apiserver</code> Proxy 相关 API 的权限</li>
+</ul>
+
+<h4 id="创建kube-proxy-的systemd-unit-文件">创建kube-proxy 的systemd unit 文件</h4>
+
+<pre><code class="language-shell">$ sudo mkdir -p /var/lib/kube-proxy # 必须先创建工作目录
+$ cat &gt; kube-proxy.service &lt;&lt;EOF
+[Unit]
+Description=Kubernetes Kube-Proxy Server
+Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+After=network.target
+
+[Service]
+WorkingDirectory=/var/lib/kube-proxy
+ExecStart=/usr/k8s/bin/kube-proxy \\
+  --bind-address=${NODE_IP} \\
+  --hostname-override=${NODE_IP} \\
+  --cluster-cidr=${SERVICE_CIDR} \\
+  --kubeconfig=/etc/kubernetes/kube-proxy.kubeconfig \\
+  --logtostderr=true \\
+  --v=2
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+EOF
+</code></pre>
+
+<ul>
+<li><code>--hostname-override</code> 参数值必须与 kubelet 的值一致，否则 kube-proxy 启动后会找不到该 Node，从而不会创建任何 iptables 规则</li>
+<li><code>--cluster-cidr</code> 必须与 kube-apiserver 的 <code>--service-cluster-ip-range</code> 选项值一致</li>
+<li>kube-proxy 根据 <code>--cluster-cidr</code> 判断集群内部和外部流量，指定 <code>--cluster-cidr</code> 或 <code>--masquerade-all</code> 选项后 kube-proxy 才会对访问 Service IP 的请求做 SNAT</li>
+<li><code>--kubeconfig</code> 指定的配置文件嵌入了 kube-apiserver 的地址、用户名、证书、秘钥等请求和认证信息</li>
+<li>预定义的 RoleBinding <code>cluster-admin</code> 将User <code>system:kube-proxy</code> 与 Role <code>system:node-proxier</code> 绑定，该 Role 授予了调用 <code>kube-apiserver</code> Proxy 相关 API 的权限</li>
+</ul>
+
+<h4 id="启动kube-proxy">启动kube-proxy</h4>
+
+<pre><code class="language-shell">$ sudo cp kube-proxy.service /etc/systemd/system/
+$ sudo systemctl daemon-reload
+$ sudo systemctl enable kube-proxy
+$ sudo systemctl start kube-proxy
+$ systemctl status kube-proxy
+</code></pre>
+
+<h3 id="验证集群功能">验证集群功能</h3>
+
+<p>定义yaml 文件：（将下面内容保存为：nginx-ds.yaml）</p>
+
+<pre><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-ds
+  labels:
+    app: nginx-ds
+spec:
+  type: NodePort
+  selector:
+    app: nginx-ds
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: nginx-ds
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+spec:
+  template:
+    metadata:
+      labels:
+        app: nginx-ds
+    spec:
+      containers:
+      - name: my-nginx
+        image: nginx:1.7.9
+        ports:
+        - containerPort: 80
+</code></pre>
+
+<p>创建 Pod 和服务：</p>
+
+<pre><code class="language-shell">$ kubectl create -f nginx-ds.yml
+service &quot;nginx-ds&quot; created
+daemonset &quot;nginx-ds&quot; created
+</code></pre>
+
+<p>执行下面的命令查看Pod 和SVC：</p>
+
+<pre><code class="language-shell">$ kubectl get pods -o wide
+NAME             READY     STATUS    RESTARTS   AGE       IP           NODE
+nginx-ds-f29zt   1/1       Running   0          23m       172.17.0.2   192.168.1.170
+$ kubectl get svc
+NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
+nginx-ds     NodePort    10.254.6.249   &lt;none&gt;        80:30813/TCP   24m
+</code></pre>
+
+<p>可以看到：</p>
+
+<ul>
+<li>服务IP：10.254.6.249</li>
+<li>服务端口：80</li>
+<li>NodePort端口：30813</li>
+</ul>
+
+<p>在所有 Node 上执行：</p>
+
+<pre><code>$ curl 10.254.6.249
+$ curl 192.168.1.170:30813
+</code></pre>
+
+<p>执行上面的命令预期都会输出nginx 欢迎页面内容，表示我们的Node 节点正常运行了。</p>
+
+<h2 id="9-部署kubedns-插件">9. 部署kubedns 插件</h2>
+
+<p>官方文件目录：<a href="https://github.com/kubernetes/kubernetes/tree/v1.8.2/cluster/addons/dns">kubernetes/cluster/addons/dns</a></p>
+
+<p>使用的文件：</p>
+
+<pre><code class="language-shell">$ ls *.yaml *.base
+kubedns-cm.yaml  kubedns-sa.yaml  kubedns-controller.yaml.base  kubedns-svc.yaml.base
+</code></pre>
+
+<h3 id="系统预定义的rolebinding">系统预定义的RoleBinding</h3>
+
+<p>预定义的RoleBinding <code>system:kube-dns</code>将kube-system 命名空间的<code>kube-dns</code>ServiceAccount 与 <code>system:kube-dns</code> Role 绑定，该Role 具有访问kube-apiserver DNS 相关的API 权限：</p>
+
+<pre><code class="language-shell">$ kubectl get clusterrolebindings system:kube-dns -o yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: &quot;true&quot;
+  creationTimestamp: 2017-11-06T10:51:59Z
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+  name: system:kube-dns
+  resourceVersion: &quot;78&quot;
+  selfLink: /apis/rbac.authorization.k8s.io/v1/clusterrolebindings/system%3Akube-dns
+  uid: 83a25fd9-c2e0-11e7-9646-00163e0055c1
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:kube-dns
+subjects:
+- kind: ServiceAccount
+  name: kube-dns
+  namespace: kube-system
+</code></pre>
+
+<ul>
+<li><code>kubedns-controller.yaml</code> 中定义的 Pods 时使用了 <code>kubedns-sa.yaml</code> 文件定义的 <code>kube-dns</code> ServiceAccount，所以具有访问 kube-apiserver DNS 相关 API 的权限；</li>
+</ul>
+
+<h3 id="配置kube-dns-serviceaccount">配置kube-dns ServiceAccount</h3>
+
+<p>无需更改</p>
+
+<h3 id="配置kube-dns-服务">配置kube-dns 服务</h3>
+
+<pre><code class="language-shell">$ diff kubedns-svc.yaml.base kubedns-svc.yaml
+30c30
+&lt;   clusterIP: __PILLAR__DNS__SERVER__
+---
+&gt;   clusterIP: 10.254.0.2
+</code></pre>
+
+<ul>
+<li>需要将 spec.clusterIP 设置为集群环境变量中变量 <code>CLUSTER_DNS_SVC_IP</code> 值，这个IP 需要和 kubelet 的 <code>—cluster-dns</code> 参数值一致</li>
+</ul>
+
+<h3 id="配置kube-dns-deployment">配置kube-dns Deployment</h3>
+
+<pre><code class="language-shell">$ diff kubedns-controller.yaml.base kubedns-controller.yaml
+88c88
+&lt;         - --domain=__PILLAR__DNS__DOMAIN__.
+---
+&gt;         - --domain=cluster.local
+128c128
+&lt;         - --server=/__PILLAR__DNS__DOMAIN__/127.0.0.1#10053
+---
+&gt;         - --server=/cluster.local/127.0.0.1#10053
+160,161c160,161
+&lt;         - --probe=kubedns,127.0.0.1:10053,kubernetes.default.svc.__PILLAR__DNS__DOMAIN__,5,A
+&lt;         - --probe=dnsmasq,127.0.0.1:53,kubernetes.default.svc.__PILLAR__DNS__DOMAIN__,5,A
+---
+&gt;         - --probe=kubedns,127.0.0.1:10053,kubernetes.default.svc.cluster.local,5,A
+&gt;         - --probe=dnsmasq,127.0.0.1:53,kubernetes.default.svc.cluster.local,5,A
+</code></pre>
+
+<ul>
+<li><code>--domain</code> 为集群环境变量<code>CLUSTER_DNS_DOMAIN</code> 的值</li>
+<li>使用系统已经做了 RoleBinding 的 <code>kube-dns</code> ServiceAccount，该账户具有访问 kube-apiserver DNS 相关 API 的权限</li>
+</ul>
+
+<h3 id="执行所有定义文件">执行所有定义文件</h3>
+
+<pre><code>$ pwd
+/home/ych/k8s-repo/kube-dns
+$ ls *.yaml
+kubedns-cm.yaml  kubedns-controller.yaml  kubedns-sa.yaml  kubedns-svc.yaml
+$ kubectl create -f .
+</code></pre>
+
+<h3 id="检查kubedns-功能">检查kubedns 功能</h3>
+
+<p>新建一个Deployment</p>
+
+<pre><code class="language-shell">$ cat &gt; my-nginx.yaml&lt;&lt;EOF
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: my-nginx
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        run: my-nginx
+    spec:
+      containers:
+      - name: my-nginx
+        image: nginx:1.7.9
+        ports:
+        - containerPort: 80
+EOF
+$ kubectl create -f my-nginx.yaml
+deployment &quot;my-nginx&quot; created
+</code></pre>
+
+<p>Expose 该Deployment，生成my-nginx 服务</p>
+
+<pre><code class="language-shell">$ kubectl expose deploy my-nginx
+$ kubectl get services
+NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+kubernetes   ClusterIP   10.254.0.1      &lt;none&gt;        443/TCP   1d
+my-nginx     ClusterIP   10.254.32.162   &lt;none&gt;        80/TCP    56s
+</code></pre>
+
+<p>然后创建另外一个Pod，查看<code>/etc/resolv.conf</code>是否包含<code>kubelet</code>配置的<code>--cluster-dns</code> 和<code>--cluster-domain</code>，是否能够将服务<code>my-nginx</code> 解析到上面显示的CLUSTER-IP <code>10.254.32.162</code>上</p>
+
+<pre><code class="language-shell">$ cat &gt; pod-nginx.yaml&lt;&lt;EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.7.9
+    ports:
+    - containerPort: 80
+EOF
+$ kubectl create -f pod-nginx.yaml
+pod &quot;nginx&quot; created
+$ kubectl exec  nginx -i -t -- /bin/bash
+root@nginx:/# cat /etc/resolv.conf
+nameserver 10.254.0.2
+search default.svc.cluster.local. svc.cluster.local. cluster.local.
+options ndots:5
+root@nginx:/# ping my-nginx
+PING my-nginx.default.svc.cluster.local (10.254.32.162): 48 data bytes
+^C--- my-nginx.default.svc.cluster.local ping statistics ---
+14 packets transmitted, 0 packets received, 100% packet loss
+
+root@nginx:/# ping kubernetes
+PING kubernetes.default.svc.cluster.local (10.254.0.1): 48 data bytes
+^C--- kubernetes.default.svc.cluster.local ping statistics ---
+6 packets transmitted, 0 packets received, 100% packet loss
+
+root@nginx:/# ping kube-dns.kube-system.svc.cluster.local
+PING kube-dns.kube-system.svc.cluster.local (10.254.0.2): 48 data bytes
+^C--- kube-dns.kube-system.svc.cluster.local ping statistics ---
+2 packets transmitted, 0 packets received, 100% packet loss
+</code></pre>
+
+<h2 id="10-部署dashboard-插件">10. 部署Dashboard 插件</h2>
+
+<p>官方文件目录：<a href="https://github.com/kubernetes/kubernetes/tree/v1.8.2/cluster/addons/dashboard">kubernetes/cluster/addons/dashboard</a></p>
+
+<p>使用的文件如下：</p>
+
+<pre><code class="language-shell">$ ls *.yaml
+dashboard-controller.yaml  dashboard-rbac.yaml  dashboard-service.yaml
+</code></pre>
+
+<ul>
+<li>新加了 <code>dashboard-rbac.yaml</code> 文件，定义 dashboard 使用的 RoleBinding。</li>
+</ul>
+
+<p>由于 <code>kube-apiserver</code> 启用了 <code>RBAC</code> 授权，而官方源码目录的 <code>dashboard-controller.yaml</code> 没有定义授权的 ServiceAccount，所以后续访问 <code>kube-apiserver</code> 的 API 时会被拒绝，前端界面提示：</p>
+
+<p><img src="https://raw.githubusercontent.com/opsnull/follow-me-install-kubernetes-cluster/master/images/dashboard-403.png" alt="403" /></p>
+
+<p>解决办法是：定义一个名为dashboard 的ServiceAccount，然后将它和Cluster Role view 绑定：</p>
+
+<pre><code class="language-shell">$ cat &gt; dashboard-rbac.yaml&lt;&lt;EOF
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dashboard
+  namespace: kube-system
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1alpha1
+metadata:
+  name: dashboard
+subjects:
+  - kind: ServiceAccount
+    name: dashboard
+    namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+EOF
+</code></pre>
+
+<h3 id="配置dashboard-controller">配置dashboard-controller</h3>
+
+<pre><code>20a21
+&gt;       serviceAccountName: dashboard
+</code></pre>
+
+<ul>
+<li>使用名为 dashboard 的自定义 ServiceAccount</li>
+</ul>
+
+<h3 id="配置dashboard-service">配置dashboard-service</h3>
+
+<pre><code class="language-shell">$ diff dashboard-service.yaml.orig dashboard-service.yaml
+10a11
+&gt;   type: NodePort
+</code></pre>
+
+<ul>
+<li>指定端口类型为 NodePort，这样外界可以通过地址 nodeIP:nodePort 访问 dashboard</li>
+</ul>
+
+<h3 id="执行所有定义文件-1">执行所有定义文件</h3>
+
+<pre><code class="language-shell">$ pwd
+/home/ych/k8s-repo/dashboard
+$ ls *.yaml
+dashboard-controller.yaml  dashboard-rbac.yaml  dashboard-service.yaml
+$ kubectl create -f  .
+</code></pre>
+
+<h3 id="检查执行结果">检查执行结果</h3>
+
+<p>查看分配的 NodePort</p>
+
+<pre><code class="language-shell">$ kubectl get services kubernetes-dashboard -n kube-system
+NAME                   TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+kubernetes-dashboard   NodePort   10.254.104.90   &lt;none&gt;        80:31202/TCP   1m
+</code></pre>
+
+<ul>
+<li>NodePort 31202映射到dashboard pod 80端口；</li>
+</ul>
+
+<p>检查 controller</p>
+
+<pre><code class="language-shell">$ kubectl get deployment kubernetes-dashboard  -n kube-system
+NAME                   DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+kubernetes-dashboard   1         1         1            1           3m
+
+$ kubectl get pods  -n kube-system | grep dashboard
+kubernetes-dashboard-6667f9b4c-4xbpz   1/1       Running   0          3m
+</code></pre>
+
+<h3 id="访问dashboard">访问dashboard</h3>
+
+<ol>
+<li>kubernetes-dashboard 服务暴露了 NodePort，可以使用 <code>http://NodeIP:nodePort</code> 地址访问 dashboard</li>
+<li>通过 kube-apiserver 访问 dashboard</li>
+<li>通过 kubectl proxy 访问 dashboard</li>
+</ol>
+
+<p><img src="https://github.com/opsnull/follow-me-install-kubernetes-cluster/raw/master/images/dashboard.png" alt="dashboard ui" /></p>
+
+<p>由于缺少 Heapster 插件，当前 dashboard 不能展示 Pod、Nodes 的 CPU、内存等 metric 图形</p>
+
+<h2 id="11-部署heapster-插件">11. 部署Heapster 插件</h2>
+
+<p>到<a href="https://github.com/kubernetes/heapster/releases">heapster release</a> 页面下载最新版的heapster</p>
+
+<pre><code class="language-shell">$ wget https://github.com/kubernetes/heapster/archive/v1.4.3.tar.gz
+$ tar -xzvf v1.4.3.tar.gz
+</code></pre>
+
+<p>部署相关文件目录：<code>/home/ych/k8s-repo/heapster-1.4.3/deploy/kube-config</code></p>
+
+<pre><code class="language-shell">$ ls influxdb/ &amp;&amp; ls rbac/
+grafana.yaml  heapster.yaml  influxdb.yaml
+heapster-rbac.yaml
+</code></pre>
+
+<p>为方便测试访问，将<code>grafana.yaml</code>下面的服务类型设置为<code>type=NodePort</code></p>
+
+<h3 id="执行所有文件">执行所有文件</h3>
+
+<pre><code class="language-shell">$ kubectl create -f rbac/heapster-rbac.yaml
+clusterrolebinding &quot;heapster&quot; created
+$ kubectl create -f influxdb
+deployment &quot;monitoring-grafana&quot; created
+service &quot;monitoring-grafana&quot; created
+serviceaccount &quot;heapster&quot; created
+deployment &quot;heapster&quot; created
+service &quot;heapster&quot; created
+deployment &quot;monitoring-influxdb&quot; created
+service &quot;monitoring-influxdb&quot; created
+</code></pre>
+
+<h3 id="检查执行结果-1">检查执行结果</h3>
+
+<p>检查 Deployment</p>
+
+<pre><code class="language-shell">$ kubectl get deployments -n kube-system | grep -E 'heapster|monitoring'
+heapster               1         1         1            1           2m
+monitoring-grafana     1         1         1            0           2m
+monitoring-influxdb    1         1         1            1           2m
+</code></pre>
+
+<p>检查 Pods</p>
+
+<pre><code class="language-shell">$ kubectl get pods -n kube-system | grep -E 'heapster|monitoring'
+heapster-7cf895f48f-p98tk              1/1       Running            0          2m
+monitoring-grafana-c9d5cd98d-gb9xn     0/1       CrashLoopBackOff   4          2m
+monitoring-influxdb-67f8d587dd-zqj6p   1/1       Running            0          2m
+</code></pre>
+
+<p>我们可以看到<code>monitoring-grafana</code>的POD 是没有执行成功的，通过查看日志可以看到下面的错误信息：</p>
+
+<blockquote>
+<p>Failed to parse /etc/grafana/grafana.ini, open /etc/grafana/grafana.ini: no such file or directory</p>
+</blockquote>
+
+<p>要解决这个问题(<a href="https://github.com/kubernetes/heapster/issues/1709">heapster issues</a>)我们需要将grafana 的镜像版本更改成：<code>gcr.io/google_containers/heapster-grafana-amd64:v4.0.2</code>，然后重新执行，即可正常。</p>
+
+<h3 id="访问-grafana">访问 grafana</h3>
+
+<p>上面我们修改grafana 的Service 为NodePort 类型：</p>
+
+<pre><code class="language-shell">$ kubectl get svc -n kube-system
+NAME                   TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)         AGE
+monitoring-grafana     NodePort    10.254.34.89    &lt;none&gt;        80:30191/TCP    28m
+</code></pre>
+
+<p>则我们就可以通过任意一个节点加上上面的30191端口就可以访问grafana 了。</p>
+
+<p><a href="https://github.com/opsnull/follow-me-install-kubernetes-cluster/blob/master/images/grafana.png"><img src="https://github.com/opsnull/follow-me-install-kubernetes-cluster/raw/master/images/grafana.png" alt="grafana" /></a></p>
+
+<p>heapster 正确安装后，我们便可以回去看我们的dashboard 是否有图表出现了：</p>
+
+<p><img src="https://blog.qikqiak.com/img/posts/WX20171110-105351.png" alt="dashboard" /></p>
+
+<h2 id="12-日志收集">12. 日志收集</h2>
+
+<p>TODO</p>
+
+<h2 id="13-私有仓库harbor-搭建">13. 私有仓库harbor 搭建</h2>
+
+<p>TODO</p>
+
+<h2 id="14-问题汇总">14. 问题汇总</h2>
+
+<h4 id="12-1-dashboard无法显示监控图">12.1 dashboard无法显示监控图</h4>
+
+<p>dashboard 和heapster influxdb都部署完成后 dashboard依旧无法显示监控图 通过排查 heapster log有超时错误</p>
+
+<pre><code class="language-shell">$ kubectl logs -f pods/heapster-2882613285-58d9r -n kube-system
+
+E0630 17:23:47.339987 1 reflector.go:203] k8s.io/heapster/metrics/sources/kubelet/kubelet.go:342: Failed to list *api.Node: Get http://kubernetes.default/api/v1/nodes?resourceVersion=0: dial tcp: i/o timeout E0630 17:23:47.340274 1 reflector.go:203] k8s.io/heapster/metrics/heapster.go:319: Failed to list *api.Pod: Get http://kubernetes.default/api/v1/pods?resourceVersion=0: dial tcp: i/o timeout E0630 17:23:47.340498 1 reflector.go:203] k8s.io/heapster/metrics/processors/namespace_based_enricher.go:84: Failed to list *api.Namespace: Get http://kubernetes.default/api/v1/namespaces?resourceVersion=0: dial tcp: lookup kubernetes.default on 10.254.0.2:53: dial udp 10.254.0.2:53: i/o timeout E0630 17:23:47.340563 1 reflector.go:203] k8s.io/heapster/metrics/heapster.go:327: Failed to list *api.Node: Get http://kubernetes.default/api/v1/nodes?resourceVersion=0: dial tcp: lookup kubernetes.default on 10.254.0.2:53: dial udp 10.254.0.2:53: i/o timeout E0630 17:23:47.340623 1 reflector.go:203] k8s.io/heapster/metrics/processors/node_autoscaling_enricher.go💯 Failed to list *api.Node: Get http://kubernetes.default/api/v1/nodes?resourceVersion=0: dial tcp: lookup kubernetes.default on 10.254.0.2:53: dial udp 10.254.0.2:53: i/o timeout E0630 17:23:55.014414 1 influxdb.go:150] Failed to create infuxdb: failed to ping InfluxDB server at &quot;monitoring-influxdb:8086&quot; - Get http://monitoring-influxdb:8086/ping: dial tcp: lookup monitoring-influxdb on 10.254.0.2:53: read udp 172.30.45.4:48955-&gt;10.254.0.2:53: i/o timeout`
+</code></pre>
+
+<p>我是docker的systemd Unit文件忘记添加</p>
+
+<pre><code class="language-shell">ExecStart=/root/local/bin/dockerd --log-level=error $DOCKER_NETWORK_OPTIONS
+</code></pre>
+
+<p>后边的<code>$DOCKER_NETWORK_OPTIONS</code>，导致<code>docker0</code>的网段跟<code>flannel.1</code>不一致。</p>
+
+<h4 id="12-2-kube-proxy报错kube-proxy-2241-e0502-15-55-13-889842-2241-conntrack-go-42-conntrack-returned-error-error-looking-for-path-of-conntrack-exec-conntrack-executable-file-not-found-in-path">12.2 kube-proxy报错kube-proxy[2241]: E0502 15:55:13.889842 2241 conntrack.go:42] conntrack returned error: error looking for path of conntrack: exec: &ldquo;conntrack&rdquo;: executable file not found in $PATH</h4>
+
+<p><strong>导致现象</strong>：<code>kubedns</code>启动成功，运行正常，但是service 之间无法解析，<code>kubernetes</code>中的<code>DNS</code>解析异常</p>
+
+<p><strong>解决方法</strong>：<code>CentOS</code>中安装<code>conntrack-tools</code>包后重启kubernetes 集群即可。</p>
+
+<h4 id="12-3-unable-to-access-kubernetes-services-no-route-to-host">12.3 Unable to access kubernetes services: no route to host</h4>
+
+<p><strong>导致现象</strong>: 在POD 内访问集群的某个服务的时候出现<code>no route to host</code></p>
+
+<pre><code class="language-shell">$ curl my-nginx.nx.svc.cluster.local
+curl: (7) Failed connect to my-nginx.nx.svc.cluster.local:80; No route to host
+</code></pre>
+
+<p><strong>解决方法</strong>：清除所有的防火墙规则，然后重启docker 服务</p>
+
+<pre><code class="language-shell">$ iptables --flush &amp;&amp; iptables -tnat --flush 
+$ systemctl restart docker
+</code></pre>
+
+<h4 id="12-4-使用nodeport-类型的服务-只能在pod-所在节点进行访问">12.4 使用NodePort 类型的服务，只能在POD 所在节点进行访问</h4>
+
+<p><strong>导致现象</strong>:  使用<code>NodePort</code> 类型的服务，只能在POD 所在节点进行访问，其他节点通过NodePort 不能正常访问</p>
+
+<p><strong>解决方法</strong>:  <code>kube-proxy</code> 默认使用的是<code>proxy_model</code>就是<code>iptables</code>，正常情况下是所有节点都可以通过NodePort 进行访问的，我这里将阿里云的安全组限制全部去掉即可，然后根据需要进行添加安全限制。</p>
+
+<h2 id="参考资料">参考资料</h2>
+
+<ul>
+<li><a href="https://github.com/opsnull/follow-me-install-kubernetes-cluster">和我一步步部署 kubernetes 集群</a></li>
+<li><a href="http://www.rfyy.net/archives/1504.html">keepalived 配置</a></li>
+<li><a href="https://github.com/kubernetes/kubernetes/issues">kubernetes issue</a></li>
+<li><a href="https://github.com/kubernetes/heapster/issues">kubernetes heapster issue</a></li>
+</ul>
       </article>
 
       <ul class="pager blog-pager">
