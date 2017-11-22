@@ -5,6 +5,7 @@
 ## 目录
 
 #### kubernetes
+ * [Kubernetes 下升级Prometheus2.0](https://blog.qikqiak.com/post/update-prometheus-2-in-kubernetes)
  * [kubernetes 日志收集方案](https://blog.qikqiak.com/post/kubernetes-logs-collect/)
  * [kubernetes 下实现socket.io 的集群模式](https://blog.qikqiak.com/post/socketio-multiple-nodes-in-kubernetes/)
  * [在kubernetes 集群上搭建docker 私有仓库Harbor](https://blog.qikqiak.com/post/install-docker-registry-harbor-in-kubernetes/)
