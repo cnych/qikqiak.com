@@ -396,7 +396,7 @@ metadata:
   labels:
     k8s-app: socket-demo
 spec:
-  sessionAffinity: &quot;ClientIP&quot;
+  sessionAffinity: None
   ports:
     - name: socketio
       port: 80
@@ -413,6 +413,12 @@ spec:
 
 <blockquote>
 <p>上面的根据<code>traefik.backend.loadbalancer.stickiness.cookieName</code>来进行路由的规则在测试环境生效了，在线上没生效，可能这个地方有什么问题？</p>
+
+<p>上面没有生效是因为客户端连接<code>socket.io</code>的协议的时候没有使用<strong>polling</strong>造成的，客户端连接<code>socket.io</code>要按照标准的方式指定trasports=[&lsquo;polling&rsquo;, &lsquo;websocket&rsquo;]</p>
+
+<p><code>sessionAffinity</code> 与 <code>traefik</code>设置cookieName的方式貌似不能同时存在，如果遇到不生效的，将<code>sessionAffinity</code>设置为<strong>None</strong> ，只保留<code>traefik</code>的annotaions。</p>
+
+<p>在使用<code>socket.io-redis</code>的时候一定要注意，在<code>join</code>和<code>leave</code>房间的时候一定要使用<code>adapter</code>提供的<code>remoteJoin</code>和<code>remoteLeave</code>方法，不然多个节点间的数据同步有问题，这个被坑了好久&hellip;&hellip;</p>
 </blockquote>
 
 <h3 id="参考文档">参考文档</h3>
@@ -421,6 +427,7 @@ spec:
 <li><a href="https://docs.traefik.io/basics/#sticky-sessions">traefik sticky-sessions</a></li>
 <li><a href="https://kubernetes.io/docs/concepts/services-networking/service/">kubernetes service</a></li>
 <li><a href="https://socket.io/docs/using-multiple-nodes/">socket.io docs</a></li>
+<li><a href="https://github.com/socketio/socket.io-redis">socket.io redis</a></li>
 </ul>
       </article>
 
