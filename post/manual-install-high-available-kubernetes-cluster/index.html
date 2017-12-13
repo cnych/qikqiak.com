@@ -1230,7 +1230,11 @@ $ sudo systemcl status haproxy
 
 <h4 id="方式1-使用阿里云slb">方式1：使用阿里云SLB</h4>
 
-<p>这种方式实际上是最省心的，在阿里云上建一个内网的SLB，将master01 与master02 添加到SLB 机器组中，转发80(http)和443(https)端口即可</p>
+<p>这种方式实际上是最省心的，在阿里云上建一个内网的SLB，将master01 与master02 添加到SLB 机器组中，转发80(http)和443(https)端口即可（注意下面的提示）</p>
+
+<blockquote>
+<p>注意：阿里云的负载均衡是四层TCP负责，不支持后端ECS实例既作为Real Server又作为客户端向所在的负载均衡实例发送请求。因为返回的数据包只在云服务器内部转发，不经过负载均衡，所以在后端ECS实例上去访问负载均衡的服务地址是不通的。什么意思？就是你的如果你要使用阿里云的SLB的话，那么你的<code>haproxy</code>不能和<code>apiserver</code>在同一台机器上，所以简单的做法是另外用两个新的节点做<code>HA</code>实例，然后将这两个实例添加到<code>SLB</code> 机器组中。</p>
+</blockquote>
 
 <h4 id="方式2-使用keepalived">方式2：使用keepalived</h4>
 
@@ -2063,6 +2067,18 @@ kubernetes-dashboard-6667f9b4c-4xbpz   1/1       Running   0          3m
 <p><img src="https://blog.qikqiak.com/img/posts/dashboard.png" alt="dashboard ui" /></p>
 
 <p>由于缺少 Heapster 插件，当前 dashboard 不能展示 Pod、Nodes 的 CPU、内存等 metric 图形</p>
+
+<blockquote>
+<p>注意：如果你的后端<code>apiserver</code>是高可用的集群模式的话，那么<code>Dashboard</code>的<code>apiserver-host</code>最好手动指定，不然，当你<code>apiserver</code>某个节点挂了的时候，<code>Dashboard</code>可能不能正常访问，如下配置</p>
+</blockquote>
+
+<pre><code class="language-yaml">image: gcr.io/google_containers/kubernetes-dashboard-amd64:v1.7.1
+ports:
+- containerPort: 9090
+  protocol: TCP
+args:
+  - --apiserver-host=http://&lt;api_server_ha_addr&gt;:8080
+</code></pre>
 
 <h2 id="11-部署heapster-插件-a-id-heapster-a">11. 部署Heapster 插件<a id="heapster"></a></h2>
 
