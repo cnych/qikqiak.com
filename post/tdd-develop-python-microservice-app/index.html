@@ -271,6 +271,7 @@ ga('send', 'pageview');
 <li><a href="#test">测试</a></li>
 <li><a href="#blueprint">Flask Buleprint</a></li>
 <li><a href="#deploy">部署</a></li>
+<li><a href="#jinja">Jinja模板</a></li>
 </ol>
 
 <h2 id="架构">架构</h2>
@@ -732,8 +733,6 @@ def recreate_db():
 if __name__ == '__main__':
     manager.run()
 </code></pre>
-
-<p>This registers a new command, recreate_db, to the manager so that we can run it from the command line. Apply the model to the dev database:</p>
 
 <p>新添加了一个<code>recrete_db</code>的命令，我们可以在命令行中执行该命令来将<code>model</code>映射到数据中：</p>
 
@@ -1519,6 +1518,83 @@ ADD /flask.conf /etc/nginx/conf.d
 </code></pre>
 
 <p>构建成功后，我们就可以通过你机器的IP 来访问我们的服务了，如果你有域名的话，就可以将你的域名解析到你主机的IP 上，然后就可以愉快的用域名进行访问我们的服务了，Done!</p>
+
+<h3 id="8-jinja模板-a-id-jinja-a">8. Jinja模板<a id="jinja"></a></h3>
+
+<p>接下来我们学习下服务端模板的使用，在<code>project/api/views/py</code>文件中增加一个新的路由处理函数：</p>
+
+<pre><code class="language-python">from flask import Blueprint, jsonify, request, render_template
+@users_blueprint.route('/', methods=['GET'])
+def index():
+    return render_template('index.html')
+</code></pre>
+
+<p>然后更新下<code>Blueprint</code>，增加对模板的配置：</p>
+
+<pre><code class="language-python">users_blueprint = Blueprint('users', __name__, template_folder='./templates')
+</code></pre>
+
+<p>然后在<code>project/api</code>目录下增加一个<code>templates</code>的文件夹，在该文件夹下面添加一个<code>index.html</code>的文件：</p>
+
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+    &lt;title&gt;Flask microservice app on Docker&lt;/title&gt;
+    &lt;meta name=&quot;author&quot; content=&quot;&quot;&gt;
+    &lt;meta name=&quot;description&quot; content=&quot;&quot;&gt;
+    &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width,initial-scale=1&quot;&gt;
+    &lt;!-- styles --&gt;
+    &lt;link href=&quot;//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css&quot; rel=&quot;stylesheet&quot;&gt;
+    {% block css %}{% endblock %}
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div class=&quot;container&quot;&gt;
+  &lt;div class=&quot;row&quot;&gt;
+    &lt;div class=&quot;col-md-4&quot;&gt;
+      &lt;br&gt;
+      &lt;h1&gt;All Users&lt;/h1&gt;
+      &lt;hr&gt;&lt;br&gt;
+      &lt;form action=&quot;/&quot; method=&quot;POST&quot;&gt;
+        &lt;div class=&quot;form-group&quot;&gt;
+          &lt;input name=&quot;username&quot; class=&quot;form-control input-lg&quot; type=&quot;text&quot; placeholder=&quot;Enter a username&quot; required&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;form-group&quot;&gt;
+          &lt;input name=&quot;email&quot; class=&quot;form-control input-lg&quot; type=&quot;email&quot; placeholder=&quot;Enter an email address&quot; required&gt;
+        &lt;/div&gt;
+        &lt;input type=&quot;submit&quot; class=&quot;btn btn-primary btn-lg btn-block&quot; value=&quot;Submit&quot;&gt;
+      &lt;/form&gt;
+      &lt;br&gt;
+      &lt;hr&gt;
+      &lt;div&gt;
+        {% if users %}
+          {% for user in users %}
+            &lt;h4 class=&quot;well&quot;&gt;&lt;strong&gt;{{user.username}}&lt;/strong&gt; - &lt;em&gt;{{user.created_at.strftime('%Y-%m-%d')}}&lt;/em&gt;&lt;/h4&gt;
+          {% endfor %}
+        {% else %}
+          &lt;p&gt;No users!&lt;/p&gt;
+        {% endif %}
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;!-- scripts --&gt;
+&lt;script src=&quot;https://code.jquery.com/jquery-2.2.4.min.js&quot;&gt;&lt;/script&gt;
+{% block js %}{% endblock %}
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+<p>然后再重新构建我们开发环境的镜像：</p>
+
+<pre><code class="language-shell">(tdd3)$ docker-compose -f docker-compose.yml up -d --build
+</code></pre>
+
+<p>构建完成后，在浏览器中打开<code>http://127.0.0.1:5001</code>
+<img src="https://blog.qikqiak.com/img/posts/flask-index.png" alt="flask-index" /></p>
+
+<p>怎么来测试呢？
+&gt; TODO</p>
 
 <p>最后还是广告~~~</p>
 
