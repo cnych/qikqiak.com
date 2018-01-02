@@ -1593,8 +1593,98 @@ def index():
 <p>构建完成后，在浏览器中打开<code>http://127.0.0.1:5001</code>
 <img src="https://blog.qikqiak.com/img/posts/flask-index.png" alt="flask-index" /></p>
 
-<p>怎么来测试呢？
-&gt; TODO</p>
+<p>怎么来测试呢？如果当前数据库中没有任何数据：</p>
+
+<pre><code class="language-python">def test_main_no_users(self):
+    &quot;&quot;&quot;没有用户&quot;&quot;&quot;
+    response = self.client.get('/')
+    self.assertEqual(response.status_code, 200)
+    self.assertIn('No users!', response.data)
+</code></pre>
+
+<p>添加几条测试数据，获取所有用户列表，添加一条测试用例：</p>
+
+<pre><code class="language-python">def test_main_with_users(self):
+    &quot;&quot;&quot;有多个用户的场景&quot;&quot;&quot;
+    add_user('cnych', 'icnych@gmail.com')
+    add_user('qikqiak', 'qikqiak@gmail.com')
+    response = self.client.get('/')
+    self.assertEqual(response.status_code, 200)
+    self.assertIn(b'All Users', response.data)
+    self.assertNotIn(b'No users!', response.data)
+    self.assertIn(b'cnych', response.data)
+    self.assertIn(b'qikqiak', response.data)
+</code></pre>
+
+<p>现在我们执行测试命令，会测试不通过的，因为还没有将用户列表的数据传递到首页，现在来更改<code>project/api/views.py</code>的<code>index</code>处理函数，增加用户列表的获取：</p>
+
+<pre><code class="language-python">@users_blueprint.route('/', methods=['GET'])
+def index():
+    users = User.query.all()
+    return render_template('index.html', users=users)
+</code></pre>
+
+<p>这样我们就能够将<code>users</code>列表传递到前端页面<code>index.html</code>中去了，然后可以通过标签<code>{% for user in users %}</code>对每一个用户进行渲染了，现在继续执行测试命令，通过~~~</p>
+
+<p>在上面的前端页面中我们可以看到还有一个表单，用户点击提交按钮后可以添加一个新的用户到数据库中，当然继续我们的测试用例：</p>
+
+<pre><code class="language-python">def test_main_add_user(self):
+    &quot;&quot;&quot;前端页面添加一个新的用户&quot;&quot;&quot;
+    with self.client:
+        response = self.client.post(
+            '/',
+            data=dict(username='cnych', email='cnych@gmail.com'),
+            follow_redirects=True
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'All Users', response.data)
+        self.assertNotIn(b'No users!', response.data)
+        self.assertIn(b'cnych', response.data)
+</code></pre>
+
+<p>上面的测试代码中我们看到<code>self.client.post()</code>函数中多了一个<code>follow_redirects=True</code>参数，这样的话能确保<code>post</code>操作完成后页面能够重新刷新，这样的话首页的用户列表数据就能重新获取渲染了，现在继续执行我们的测试命令，会出现一个错误：</p>
+
+<pre><code class="language-shell">======================================================================
+FAIL: test_main_add_user (test_users.TestUserService)
+前端页面添加一个新的用户
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File &quot;/usr/src/app/project/tests/test_users.py&quot;, line 159, in test_main_add_user
+    self.assertEqual(response.status_code, 200)
+AssertionError: 405 != 200
+
+----------------------------------------------------------------------
+</code></pre>
+
+<p>这是因为在首页的路由处理函数<code>index</code>中还没有对<code>POST</code>的请求进行处理，现在我们继续来更新<code>project/api/views.py</code>的<code>index</code>处理函数：</p>
+
+<pre><code class="language-python">@users_blueprint.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        db.session.add(User(username=username, email=email))
+        db.session.commit()
+    users = User.query.order_by(User.created_at.desc()).all()
+    return render_template('index.html', users=users)
+</code></pre>
+
+<p>上面的函数针对<code>POST</code>的请求进行了数据库添加的操作，注意用户列表我们增加了一条根据<code>created_at</code>进行排序的规则还有<code>methods</code>增加了一个<code>POST</code>，现在再来执行我们的测试代码，通过~~~</p>
+
+<p>上面的测试全部通过过后，现在我们将我们的代码部署到生产环境：</p>
+
+<pre><code class="language-shell">(tdd3)$ docker-compose -f docker-compose-prod.yml up -d --build
+</code></pre>
+
+<p>然后执行测试：</p>
+
+<pre><code class="language-shell">(tdd3)$ docker-compose -run users-service python manage.py test
+</code></pre>
+
+<p>然后在浏览器中打开<code>http://127.0.0.1</code>(因为生产环境是用<code>Nginx</code>做转发的，所以不用加端口)：
+<img src="https://blog.qikqiak.com/img/posts/WX20180102-110111.png" alt="page-index" /></p>
+
+<p><strong>天下大事，合久必分，分久必合</strong>， 下节课我们就来将项目进行拆分~~~</p>
 
 <p>最后还是广告~~~</p>
 
