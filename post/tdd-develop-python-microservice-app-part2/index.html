@@ -274,7 +274,8 @@ ga('send', 'pageview');
 <li><a href="#lint">代码质量</a></li>
 <li><a href="#ci">持续集成</a></li>
 <li><a href="#react">React 应用</a></li>
-<li><a href="#test">Testing React</a></li>
+<li><a href="#test">React 测试</a></li>
+<li><a href="#form">React 表单</a></li>
 </ol>
 
 <h2 id="1-结构-a-id-structure-a">1. 结构<a id="structure"></a></h2>
@@ -932,9 +933,142 @@ export default UserList;
 
 <p>到这里请确保<code>React</code>应用能够正常的工作，在浏览器中打开<code>http://localhost:3000</code>能得到上面相同的结果，然后我们对我们的代码进行一些<code>Review</code>，然后提交到<code>github</code>上去。</p>
 
-<h2 id="7-testing-react-a-id-test-a">7. Testing React<a id="test"></a></h2>
+<h2 id="7-react-测试-a-id-test-a">7. React 测试<a id="test"></a></h2>
 
 <p>在了解上面的一些<code>React</code>基本概念过后，我们就可以来使用<code>TDD</code>的思想来进行我们开发了。</p>
+
+<p><code>Create React App</code>默认使用<a href="https://facebook.github.io/jest/">Jest</a>进行测试，所以你需要先安装<a href="https://www.npmjs.com/package/jest-cli">jest-cli</a>，进入到<code>client</code>根目录：</p>
+
+<pre><code class="language-shell">$ npm install jest-cli@20.0.4 --save-dev
+</code></pre>
+
+<blockquote>
+<p>在安装的时候最后和我这里的版本保持一致，因为其他的版本可能会有其他问题，就需要自己去踩坑了哦~~~</p>
+</blockquote>
+
+<p>另外我们还需要使用<a href="https://github.com/airbnb/enzyme">Enzyme</a> - Airbnb出品的一个专门用于测试<code>React</code>组件的非常好用的库，同样的安装<code>Enzyme</code>：</p>
+
+<pre><code class="language-shell">$ npm install --save-dev enzyme@3.1.0 enzyme-adapter-react-16@1.0.2
+</code></pre>
+
+<p>为了让<code>Enzyme</code>配置<code>React 16</code>的adapter，在<strong>src</strong>目录下面新增一个<code>setupTests.js</code>的文件：</p>
+
+<pre><code class="language-javascript">import { configure } from 'enzyme';
+import Adapter from 'enzyme-adapter-react-16';
+
+configure({adapter: new Adapter()});
+</code></pre>
+
+<blockquote>
+<p>关于<code>Enzyme</code>的更多用法，可以前往<a href="http://airbnb.io/enzyme/#installation">官方文档</a>查看。</p>
+</blockquote>
+
+<p>配置完成后，就可以运行测试命令了：</p>
+
+<pre><code class="language-shell">$ npm test
+No tests found related to files changed since last commit.
+</code></pre>
+
+<p>默认上面的测试命令运行在<code>watch</code>模式下面，所以你每次更改了代码后都会重新执行一遍。</p>
+
+<p><sup>112</sup>&frasl;<sub>5000</sub>
+与Jest一起，我们将使用Enzyme，一个专门用于测试React组件的梦幻般的实用程序库。</p>
+
+<h3 id="组件测试">组件测试</h3>
+
+<p>在<code>components</code>文件夹下面新建文件<strong>UserList.test.js</strong>：</p>
+
+<pre><code class="language-javascript">import React from 'react';
+import { shallow } from 'enzyme';
+import UserList from './UserList';
+
+const users = [
+    {
+        'active': true,
+        'email': 'icnych@gmail.com',
+        'id': 1,
+        'username': 'cnych'
+    }, {
+        'active': true,
+        'email': 'qikqiak@gmail.com',
+        'id': 2,
+        'username': 'qikqiak'
+    }
+];
+
+test('UserList renders property', () =&gt; {
+    const wrapper = shallow(&lt;UserList users={users} /&gt;);
+    const element = wrapper.find('h4');
+    expect(element.length).toBe(2);
+    expect(element.get(0).props.className).toBe('well');
+    expect(element.get(0).props.children).toBe('cnych');
+});
+</code></pre>
+
+<p>上面的测试代码中，我们使用了一个<strong>shallow</strong>的方法来创建<strong>UserList</strong>组件，然后我们就可以对它的输出进行断言测试了，使用<strong>shallow</strong>可以完全的隔离组件进行测试，这有助于子组件不会对测试结果产生影响。</p>
+
+<blockquote>
+<p>有关<code>shallow</code>的更多信息，以及组件渲染的其他方法，可以参阅<a href="https://stackoverflow.com/questions/38710309/when-should-you-use-render-and-shallow-in-enzyme-react-tests/38747914#38747914">StackOverflow 这篇文章</a>，当然你也可以到官网查看。</p>
+</blockquote>
+
+<p>然后继续运行测试，看是否正常通过：</p>
+
+<pre><code class="language-shell">$ npm run test
+ PASS  src/components/UserList.test.js
+  ✓ UserList renders property (11ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        2.38s
+Ran all test suites related to changed files.
+</code></pre>
+
+<p>如果测试没通过，请检查下测试代码，已经测试依赖包的版本是否兼容。</p>
+
+<h3 id="快照测试">快照测试</h3>
+
+<p>上面的测试通过后，我们可以增加一个快照测试来保证<code>UI</code>界面不会改变。增加下面的代码到<code>UserList.test.js</code>文件中：</p>
+
+<pre><code class="language-javascript">test('UserList renders a snapshot properly', () =&gt; {
+  const tree = renderer.create(&lt;UsersList users={users}/&gt;).toJSON();
+  expect(tree).toMatchSnapshot();
+});
+</code></pre>
+
+<p>记得在文件顶部导入<code>renderer</code>：</p>
+
+<pre><code class="language-javascript">import renderer from 'react-test-renderer';
+</code></pre>
+
+<p>然后继续运行测试命令，在第一次测试运行时，会将组件输出的快照保存到<code>__snapshots__</code>文件夹中。 然后在以后的测试中，将新输出的快照与保存的快照进行比较，如果不同，则测试失败。</p>
+
+<p>由于测试在<code>watch</code>模式下，我们将<strong>UserList</strong>组件中的<strong>{user.username}</strong>更改为<strong>{user.email}</strong>，保存后触发新的测试，我们可以看到测试失败了：</p>
+
+<pre><code class="language-shell">Snapshot Summary
+ › 1 snapshot test failed in 1 test suite. Inspect your code changes or press `u` to update them.
+
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 2 total
+Snapshots:   1 failed, 1 total
+Time:        1.609s
+Ran all test suites related to changed files.
+</code></pre>
+
+<p>根据上面的提示，如果我们的目的就是要更改上面的组件，那么就需要更新快照，我们只需要输入<code>u</code>键即可：</p>
+
+<pre><code class="language-shell">Watch Usage
+ › Press a to run all tests.
+ › Press u to update failing snapshots.
+ › Press p to filter by a filename regex pattern.
+ › Press t to filter by a test name regex pattern.
+ › Press q to quit watch mode.
+ › Press Enter to trigger a test run.
+</code></pre>
+
+<p>输入<code>u</code>键过后我们可以看到快照测试通过了，当然了我们还需要相应的更改上面组件测试中的期望值，确保测试通过后，将文件夹<code>__snapshots__</code>加入到<strong>.gitignore</strong>文件中，然后提交代码。</p>
+
+<h2 id="8-react-表单-a-id-form-a">8. React 表单<a id="form"></a></h2>
 
 <blockquote>
 <p>TODO &hellip;&hellip;</p>

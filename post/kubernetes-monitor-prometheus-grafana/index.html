@@ -271,7 +271,7 @@ ga('send', 'pageview');
 kind: ConfigMap
 metadata:
   name: prometheus-config
-  namespace: class100-ops
+  namespace: kube-ops
 data:
   prometheus.yml: |
     global:
@@ -350,8 +350,55 @@ data:
 <ul>
 <li><code>job_name=kubernetes-apiserver-cadvisor</code>需要将10250端口替换成10255，10255端口是<code>kubelet</code>实现的<code>metrics</code>，可以在节点上面curl查看内容，<code>curl http://&lt;node_ip&gt;:10255/metrics</code></li>
 <li><code>job_name=kubernetes-nodes-cadvisor</code>需要将10250端口替换成4194，4194同样是kubernetes集成的容器监控服务，在k8s 1.7版本之前的用10255端口即可，但是1.7版本后<code>cadvisor</code>监控的数据没有集成到<code>kubelet</code>的实现里面去了，<a href="https://github.com/kubernetes/kubernetes/issues/48483">这里一定要注意</a></li>
-<li><code>job_name=kubernetes-node-exporter</code>中替换10250的端口是31672，该端口是<code>node-exporter</code>暴露的<code>NodePort</code>端口，这里需要根据实际情况填写，<code>node-exporter</code>在后面会说到。</li>
+<li><code>job_name=kubernetes-node-exporter</code>中替换10250的端口是31672，该端口是<code>node-exporter</code>暴露的<code>NodePort</code>端口，这里需要根据实际情况填写。</li>
 </ul>
+
+<p>先部署<code>node-exporter</code>，为了能够收集每个节点的信息，所以我们这里使用<code>DaemonSet</code>的形式部署PODS：</p>
+
+<pre><code class="language-yaml">---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: node-exporter
+  namespace: kube-ops
+  labels:
+    k8s-app: node-exporter
+spec:
+  template:
+    metadata:
+      labels:
+        k8s-app: node-exporter
+    spec:
+      containers:
+      - image: prom/node-exporter
+        name: node-exporter
+        ports:
+        - containerPort: 9100
+          protocol: TCP
+          name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    k8s-app: node-exporter
+  name: node-exporter
+  namespace: kube-ops
+spec:
+  ports:
+  - name: http
+    port: 9100
+    nodePort: 31672
+    protocol: TCP
+  type: NodePort
+  selector:
+    k8s-app: node-exporter
+</code></pre>
+
+<p>将以上文件保存为<code>node-exporter.yaml</code>，然后执行命令：</p>
+
+<pre><code class="language-shell">$ kubectl create -f node-exporter.yaml
+</code></pre>
 
 <p>接下来通过<code>Deployment</code>部署<code>Prometheus</code>,yaml文件如下：</p>
 
@@ -361,7 +408,7 @@ metadata:
   labels:
     name: prometheus-deployment
   name: prometheus
-  namespace: class100-ops
+  namespace: kube-ops
 spec:
   replicas: 1
   template:
@@ -470,7 +517,7 @@ spec:
 kind: Deployment
 metadata:
   name: grafana
-  namespace: class100-ops
+  namespace: kube-ops
 spec:
   replicas: 1
   template:
@@ -531,7 +578,7 @@ metadata:
     kubernetes.io/cluster-service: 'true'
     kubernetes.io/name: grafana
   name: grafana
-  namespace: class100-ops
+  namespace: kube-ops
 spec:
   ports:
   - port: 3000
@@ -560,6 +607,10 @@ spec:
 <li>增加更多的监控数据源</li>
 <li><a href="https://blog.qikqiak.com/post/alertmanager-of-prometheus-in-practice/">使用AlertManager实现异常提醒</a>（DONE）</li>
 </ul>
+
+<blockquote>
+<p>上面用的<code>yaml</code>文件可以到<code>github</code>上查看<a href="https://github.com/cnych/k8s-repo/tree/master/prometheus">https://github.com/cnych/k8s-repo/tree/master/prometheus</a></p>
+</blockquote>
       </article>
 
       <ul class="pager blog-pager">
