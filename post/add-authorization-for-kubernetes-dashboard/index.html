@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>为kubernetes dashboard访问用户添加权限控制</title>
+  <meta property="og:title" content="为kubernetes dashboard访问用户添加权限控制" />
+  <meta name="twitter:title" content="为kubernetes dashboard访问用户添加权限控制" />
+  <meta name="description" content="前面我们在kubernetes dashboard 升级之路一问中成功的将Dashboard升级到最新版本了，增加了身份认证功能，我们之前为了方便增加了一个用户admin，然后授予了cluster-admin的角色绑定，而该角色绑定是系统内置的一个超级管理员权限，也就是用该用户的token登录Dashboard后很强势，什么权限都有，想干嘛干嘛，这样的操作显然是非常危险的。接下来我们来为一个新的用户添加访问权限控制。
+
+">
+  <meta property="og:description" content="前面我们在kubernetes dashboard 升级之路一问中成功的将Dashboard升级到最新版本了，增加了身份认证功能，我们之前为了方便增加了一个用户admin，然后授予了cluster-admin的角色绑定，而该角色绑定是系统内置的一个超级管理员权限，也就是用该用户的token登录Dashboard后很强势，什么权限都有，想干嘛干嘛，这样的操作显然是非常危险的。接下来我们来为一个新的用户添加访问权限控制。
+
+">
+  <meta name="twitter:description" content="前面我们在kubernetes dashboard 升级之路一问中成功的将Dashboard升级到最新版本了，增加了身份认证功能，我们之前为了方便增加了一个用户admin，然后授予了cluster-admin的角色绑定，而该角色绑定是系统内置的一个超级管理员权限，也就是用该用户的token登录Dashboard后很强势，什么权限都有，想干嘛干嘛，这样的操作显然是非常危险的。接下来我们来为一个新的用 …">
+  <meta name="author" content=""/>
+  <link href='https://blog.qikqiak.com/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://blog.qikqiak.com/img/avatar.jpg" />
+  <meta name="twitter:image" content="https://blog.qikqiak.com/img/avatar.jpg" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://blog.qikqiak.com/post/add-authorization-for-kubernetes-dashboard/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="River&#39;s Site" />
+
+  <meta name="generator" content="Hugo 0.24.1" />
+  <link rel="canonical" href="https://blog.qikqiak.com/post/add-authorization-for-kubernetes-dashboard/" />
+  <link rel="alternate" href="https://blog.qikqiak.com/index.xml" type="application/rss+xml" title="River&#39;s Site">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.css" integrity="sha384-wITovz90syo1dJWVh32uuETPVEtGigN07tkttEqPv+uR2SE/mbQcG7ATL28aI9H0" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/main.css?t=123" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/pygment_highlights.css" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/highlight.min.css" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/prism.css?t=123" />
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.1/photoswipe.min.css" integrity="sha256-sCl5PUOGMLfFYctzDW3MtRib0ctyUvI9Qsmq2wXOeBY=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.1/default-skin/default-skin.min.css" integrity="sha256-BFeI1V+Vh1Rk37wswuOYn5lsTcaU96hGaI7OUVCLjPc=" crossorigin="anonymous" />
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+<script>
+window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+ga('create', 'UA-69668147-3', 'auto');
+ga('send', 'pageview');
+</script>
+<script async src='//www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://blog.qikqiak.com/">River&#39;s Site</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Home" href="https://blog.qikqiak.com/">Home</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">Categories</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://blog.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://blog.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://blog.qikqiak.com/tags/ops">devops</a>
+                
+                  <a href="https://blog.qikqiak.com/tags/django">django</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">Projects</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.haimaxy.com?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">海马学院</a>
+                
+                  <a href="http://qikqiak.com/play.html">魔多游戏</a>
+                
+                  <a href="https://github.com/cnych/gospider">gospider</a>
+                
+                  <a href="https://github.com/cnych/starjazz">starjazz</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="Tags" href="https://blog.qikqiak.com/tags">Tags</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="About" href="https://blog.qikqiak.com/page/about/">About</a>
+            </li>
+          
+        
+
+        
+
+        
+      </ul>
+    </div>
+
+    <div class="avatar-container">
+      <div class="avatar-img-border">
+        
+          <a title="River&#39;s Site" href="https://blog.qikqiak.com/">
+            <img class="avatar-img" src="https://blog.qikqiak.com/img/avatar.jpg" alt="River&#39;s Site" />
+          </a>
+        
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://blog.qikqiak.com/img/posts/photo-1439209306665-700c9bca794c.jpeg" data-img-desc-1="two boats"></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>为kubernetes dashboard访问用户添加权限控制</h1>
+                  
+                  
+                    <span class="post-meta">
+  Posted on January 18, 2018
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>为kubernetes dashboard访问用户添加权限控制</h1>
+                
+                
+                  <span class="post-meta">
+  Posted on January 18, 2018
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <article role="main" class="blog-post">
+        <p>前面我们在<a href="https://blog.qikqiak.com/post/update-kubernetes-dashboard-more-secure">kubernetes dashboard 升级之路</a>一问中成功的将<code>Dashboard</code>升级到最新版本了，增加了身份认证功能，我们之前为了方便增加了一个用户<code>admin</code>，然后授予了<code>cluster-admin</code>的角色绑定，而该角色绑定是系统内置的一个超级管理员权限，也就是用该用户的<code>token</code>登录<code>Dashboard</code>后很<strong>强势</strong>，什么权限都有，想干嘛干嘛，这样的操作显然是非常危险的。接下来我们来为一个新的用户添加访问权限控制。</p>
+
+<p></p>
+
+<h2 id="role">Role</h2>
+
+<p><code>Role</code>表示是一组规则权限，只能累加，<code>Role</code>可以定义在一个<code>namespace</code>中，只能用于授予对单个命名空间中的资源访问的权限。比如我们新建一个对默认命名空间中<code>Pods</code>具有访问权限的角色：</p>
+
+<pre><code class="language-yaml">kind: Role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  namespace: default
+  name: pod-reader
+rules:
+- apiGroups: [&quot;&quot;] # &quot;&quot; indicates the core API group
+  resources: [&quot;pods&quot;]
+  verbs: [&quot;get&quot;, &quot;watch&quot;, &quot;list&quot;]
+</code></pre>
+
+<h2 id="clusterrole">ClusterRole</h2>
+
+<p><code>ClusterRole</code>具有与<code>Role</code>相同的权限角色控制能力，不同的是<code>ClusterRole</code>是集群级别的，可以用于:</p>
+
+<ul>
+<li>集群级别的资源控制(例如 node 访问权限)</li>
+<li>非资源型 endpoints(例如 /healthz 访问)</li>
+<li>所有命名空间资源控制(例如 pods)</li>
+</ul>
+
+<p>比如我们要创建一个授权某个特定命名空间或全部命名空间(取决于绑定方式)访问<strong>secrets</strong>的集群角色：</p>
+
+<pre><code class="language-yaml">kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  # &quot;namespace&quot; omitted since ClusterRoles are not namespaced
+  name: secret-reader
+rules:
+- apiGroups: [&quot;&quot;]
+  resources: [&quot;secrets&quot;]
+  verbs: [&quot;get&quot;, &quot;watch&quot;, &quot;list&quot;]
+</code></pre>
+
+<h2 id="rolebinding和clusterrolebinding">RoleBinding和ClusterRoleBinding</h2>
+
+<p><code>RoloBinding</code>可以将角色中定义的权限授予用户或用户组，<code>RoleBinding</code>包含一组权限列表(<code>subjects</code>)，权限列表中包含有不同形式的待授予权限资源类型(users、groups、service accounts)，<code>RoleBinding</code>适用于某个命名空间内授权，而 <code>ClusterRoleBinding</code>适用于集群范围内的授权。</p>
+
+<p>比如我们将默认命名空间的<code>pod-reader</code>角色授予用户jane，这样以后该用户在默认命名空间中将具有<code>pod-reader</code>的权限：</p>
+
+<pre><code class="language-yaml"># This role binding allows &quot;jane&quot; to read pods in the &quot;default&quot; namespace.
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: read-pods
+  namespace: default
+subjects:
+- kind: User
+  name: jane
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: pod-reader
+  apiGroup: rbac.authorization.k8s.io
+</code></pre>
+
+<p><code>RoleBinding</code>同样可以引用<code>ClusterRole</code>来对当前 namespace 内用户、用户组或 ServiceAccount 进行授权，这种操作允许集群管理员在整个集群内定义一些通用的 ClusterRole，然后在不同的 namespace 中使用 RoleBinding 来引用</p>
+
+<p>例如，以下 RoleBinding 引用了一个 ClusterRole，这个 ClusterRole 具有整个集群内对 secrets 的访问权限；但是其授权用户 dave 只能访问 development 空间中的 secrets(因为 RoleBinding 定义在 development 命名空间)</p>
+
+<pre><code class="language-yaml"># This role binding allows &quot;dave&quot; to read secrets in the &quot;development&quot; namespace.
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: read-secrets
+  namespace: development # This only grants permissions within the &quot;development&quot; namespace.
+subjects:
+- kind: User
+  name: dave
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: secret-reader
+  apiGroup: rbac.authorization.k8s.io
+</code></pre>
+
+<p>最后，使用 ClusterRoleBinding 可以对整个集群中的所有命名空间资源权限进行授权；以下 ClusterRoleBinding 样例展示了授权 manager 组内所有用户在全部命名空间中对 secrets 进行访问</p>
+
+<pre><code class="language-yaml"># This cluster role binding allows anyone in the &quot;manager&quot; group to read secrets in any namespace.
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: read-secrets-global
+subjects:
+- kind: Group
+  name: manager
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: secret-reader
+  apiGroup: rbac.authorization.k8s.io
+</code></pre>
+
+<h2 id="限制dashboard-用户权限">限制dashboard 用户权限</h2>
+
+<p>有了上面的理论基础，我们就可以来新建一个用户，为该用户指定特定的访问权限了，比如我们的需求是：</p>
+
+<ul>
+<li>新增一个新的用户<code>cnych</code></li>
+<li>该用户只能对命名空间<code>kube-system</code>下面的<code>pods</code>和<code>deployments</code>进行管理</li>
+</ul>
+
+<p>第一步新建一个<code>ServiceAccount</code>：</p>
+
+<pre><code class="language-shell">$ kubectl create sa cnych -n kube-system
+</code></pre>
+
+<p>然后我们新建一个角色<strong>role-cnych</strong>：(role.yaml)</p>
+
+<pre><code class="language-yaml">kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: kube-system
+  name: role-cnych
+rules:
+- apiGroups: [&quot;&quot;]
+  resources: [&quot;pods&quot;]
+  verbs: [&quot;get&quot;, &quot;watch&quot;, &quot;list&quot;]
+- apiGroups: [&quot;extensions&quot;, &quot;apps&quot;]
+  resources: [&quot;deployments&quot;]
+  verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;create&quot;, &quot;update&quot;, &quot;patch&quot;, &quot;delete&quot;]
+</code></pre>
+
+<p>注意上面的<code>rules</code>规则：管理<code>pods</code>和<code>deployments</code>的权限。</p>
+
+<p>然后我们创建一个角色绑定，将上面的角色<code>role-cnych</code>绑定到<strong>cnych</strong>的<code>ServiceAccount</code>上：(role-bind.yaml)</p>
+
+<pre><code class="language-yaml">kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: role-bind-cnych
+  namespace: kube-system
+subjects:
+- kind: ServiceAccount
+  name: cnych
+  namespace: kube-system
+roleRef:
+  kind: Role
+  name: role-cnych
+  apiGroup: rbac.authorization.k8s.io
+</code></pre>
+
+<p>分别执行上面两个<code>yaml</code>文件：</p>
+
+<pre><code class="language-shell">$ kubect create -f role.yaml
+$ kubect create -f role-bind.yaml
+</code></pre>
+
+<p>接下来该怎么做？和前面一样的，我们只需要拿到<code>cnych</code>这个<code>ServiceAccount</code>的<code>token</code>就可以登录<code>Dashboard</code>了：</p>
+
+<pre><code class="language-shell">$ kubectl get secret -n kube-system |grep cnych
+cnych-token-nxgqx                  kubernetes.io/service-account-token   3         47m
+$ kubectl get secret cnych-token-nxgqx -o jsonpath={.data.token} -n kube-system |base64 -d
+# 会生成一串很长的base64后的字符串
+</code></pre>
+
+<p>然后在<code>dashboard</code>登录页面上直接使用上面得到的<code>token</code>字符串即可登录，登录过后能看到下面的页面。
+<img src="https://blog.qikqiak.com/img/posts/WX20171113-112007.png" alt="unauth" /></p>
+
+<p>这是因为当前的这个<code>token</code>对应的用户没有被授予访问默认命名空间的权限，所以会出现这种提示，然后我们访问<code>kube-system</code>这个命名空间试下看看（https://<dashboard_url>/#!/pod?namespace=kube-system）：
+<img src="https://blog.qikqiak.com/img/posts/WX20180118-150156.png" alt="auth" /></p>
+
+<p>我们可以看到可以访问<code>pod</code>列表了，但是也会有一些其他额外的提示：<strong>events is forbidden: User &ldquo;system:serviceaccount:kube-system:cnych&rdquo; cannot list events in the namespace &ldquo;kube-system&rdquo;</strong>，这是因为当前登录用只被授权了访问<code>pod</code>和<code>deployment</code>的权限，同样的，访问下<code>deployment</code>看看可以了吗？</p>
+
+<p>同样的，你可以根据自己的需求来对访问用户的权限进行限制，可以自己通过<code>Role</code>定义更加细粒度的权限，也可以使用系统内置的一些权限&hellip;&hellip;</p>
+
+<h2 id="参考资料">参考资料</h2>
+
+<ul>
+<li><a href="https://kubernetes.io/docs/admin/authorization/rbac/">https://kubernetes.io/docs/admin/authorization/rbac/</a></li>
+<li><a href="https://stackoverflow.com/questions/42170380/how-to-add-users-to-kubernetes-kubectl">How to Add Users to Kubernetes (kubectl)?</a></li>
+</ul>
+      </article>
+
+      <ul class="pager blog-pager">
+        
+          <li class="previous">
+            <a href="https://blog.qikqiak.com/post/tdd-develop-python-microservice-app-part2/" data-toggle="tooltip" data-placement="top" title="TDD开发容器化的Python微服务应用(二)">&larr; Previous Post</a>
+          </li>
+        
+        
+      </ul>
+
+      
+
+      
+      <div id="git-comments"></div>
+      <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+      <script src="https://imsun.github.io/gitment/dist/gitment.browser.js"></script>
+      <script>
+      var gitment = new Gitment({
+        owner: 'cnych',
+        repo: 'blog',
+        oauth: {
+          client_id: 'bdb76dbb2e9d0786e350',
+          client_secret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        }
+      })
+      gitment.render('git-comments')
+      </script>
+      
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://blog.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2018
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://blog.qikqiak.com/">River&#39;s Site</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.24.1</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.js" integrity="sha384-/y1Nn9+QQAipbNQWU65krzJralCnuOasHncUFXGkdwntGeSvQicrYkiUBwsgUqc1" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/contrib/auto-render.min.js" integrity="sha384-dq1/gEHSxPZQ7DdrM82ID4YVol9BYyU7GbWlIwnwyPzotpoc57wDw/guX8EaYGPx" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="https://blog.qikqiak.com/js/main.min.js"></script>
+<script src="https://blog.qikqiak.com/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script> renderMathInElement(document.body); </script>
+<script src="https://blog.qikqiak.com/js/prism.js?t=123"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.1/photoswipe.min.js" integrity="sha256-UplRCs9v4KXVJvVY+p+RSo5Q4ilAUXh7kpjyIP5odyc=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.1/photoswipe-ui-default.min.js" integrity="sha256-PWHOlUzc96pMc8ThwRIXPn8yH4NOLu42RQ0b9SpnpFk=" crossorigin="anonymous"></script>
+<script src="https://blog.qikqiak.com/js/load-photoswipe.min.js"></script>
+
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+
+  </body>
+</html>
+
