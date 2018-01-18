@@ -5,6 +5,8 @@
 ## 目录
 
 #### kubernetes
+ * [为kubernetes dashboard访问用户添加权限控制](https://blog.qikqiak.com/post/add-authorization-for-kubernetes-dashboard/)
+ * [Prometheus报警AlertManager实战](https://blog.qikqiak.com/post/alertmanager-of-prometheus-in-practice/)
  * [Kubernetes 下升级Prometheus2.0](https://blog.qikqiak.com/post/update-prometheus-2-in-kubernetes)
  * [kubernetes 日志收集方案](https://blog.qikqiak.com/post/kubernetes-logs-collect/)
  * [kubernetes 下实现socket.io 的集群模式](https://blog.qikqiak.com/post/socketio-multiple-nodes-in-kubernetes/)
