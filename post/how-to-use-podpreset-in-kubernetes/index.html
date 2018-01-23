@@ -5,20 +5,27 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-  <title>Tags</title>
-  <meta property="og:title" content="Tags" />
-  <meta name="twitter:title" content="Tags" />
+  <title>kubernetes PodPreset 的使用</title>
+  <meta property="og:title" content="kubernetes PodPreset 的使用" />
+  <meta name="twitter:title" content="kubernetes PodPreset 的使用" />
+  <meta name="description" content="最近在kubernetes上安装 sentry 的时候，我将sentry需要运行的3个服务放到同一个POD中的，WEB、Celery Worker、Crontab 分别用一个独立的容器来运行的，但是这三个容器需要用到环境变量基本上都是一样的，比如数据库的配置、消息队列的配置，这样就造成一个问题是我需要把完全一模一样的环境配置复制3份，因为3个容器都需要使用，这样如果需要更改的话也要改3个地方。幸好kubernetes给我们提供了一种新的特性：PodPreset，该对象用来在 Pod 创建的时候向 Pod 中注入某些特定信息，可以包括 secret、volume、volume mount 和环境变量等。
+
+">
+  <meta property="og:description" content="最近在kubernetes上安装 sentry 的时候，我将sentry需要运行的3个服务放到同一个POD中的，WEB、Celery Worker、Crontab 分别用一个独立的容器来运行的，但是这三个容器需要用到环境变量基本上都是一样的，比如数据库的配置、消息队列的配置，这样就造成一个问题是我需要把完全一模一样的环境配置复制3份，因为3个容器都需要使用，这样如果需要更改的话也要改3个地方。幸好kubernetes给我们提供了一种新的特性：PodPreset，该对象用来在 Pod 创建的时候向 Pod 中注入某些特定信息，可以包括 secret、volume、volume mount 和环境变量等。
+
+">
+  <meta name="twitter:description" content="最近在kubernetes上安装 sentry 的时候，我将sentry需要运行的3个服务放到同一个POD中的，WEB、Celery Worker、Crontab 分别用一个独立的容器来运行的，但是这三个容器需要用到环境变量基本上都是一样的，比如数据库的配置、消息队列的配置，这样就造成一个问题是我需要把完全一模一样的环境配置复制3份，因为3个容器都需要使用，这样如果需要更改的话也要改3个地方。 …">
   <meta name="author" content=""/>
   <link href='https://blog.qikqiak.com/img/favicon.ico' rel='icon' type='image/x-icon'/>
   <meta property="og:image" content="https://blog.qikqiak.com/img/avatar.jpg" />
   <meta name="twitter:image" content="https://blog.qikqiak.com/img/avatar.jpg" />
   <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://blog.qikqiak.com/tags/" />
+  <meta property="og:url" content="https://blog.qikqiak.com/post/how-to-use-podpreset-in-kubernetes/" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="River&#39;s Site" />
 
   <meta name="generator" content="Hugo 0.24.1" />
-  <link rel="canonical" href="https://blog.qikqiak.com/tags/" />
+  <link rel="canonical" href="https://blog.qikqiak.com/post/how-to-use-podpreset-in-kubernetes/" />
   <link rel="alternate" href="https://blog.qikqiak.com/index.xml" type="application/rss+xml" title="River&#39;s Site">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.css" integrity="sha384-wITovz90syo1dJWVh32uuETPVEtGigN07tkttEqPv+uR2SE/mbQcG7ATL28aI9H0" crossorigin="anonymous">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
@@ -189,17 +196,49 @@ ga('send', 'pageview');
 
 
   
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://blog.qikqiak.com/img/posts/photo-1498637841888-108c6b723fcb.jpeg" data-img-desc-1="Transfagarasan by Drone"></div>
+  
 
-  <header class="header-section ">
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>kubernetes PodPreset 的使用</h1>
+                  
+                  
+                    <span class="post-meta">
+  Posted on January 23, 2018
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
     
     <div class="intro-header no-img">
       
       <div class="container">
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <div class="page-heading">
-              <h1>Tags</h1>
+            <div class="post-heading">
+              <h1>kubernetes PodPreset 的使用</h1>
                 
+                
+                  <span class="post-meta">
+  Posted on January 23, 2018
+  
+</span>
+
+
                 
             </div>
           </div>
@@ -210,158 +249,171 @@ ga('send', 'pageview');
 
 
     
-  
-  <div class="container" role="main">
-    <article class="post-preview">
-      <div class="list-group col-lg-4 col-lg-offset-4 col-md-6 col-md-offset-3">
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <article role="main" class="blog-post">
+        <p>最近在<code>kubernetes</code>上安装 <a href="https://github.com/cnych/k8s-repo/tree/master/sentry">sentry</a> 的时候，我将<code>sentry</code>需要运行的3个服务放到同一个<strong>POD</strong>中的，WEB、Celery Worker、Crontab 分别用一个独立的容器来运行的，但是这三个容器需要用到环境变量基本上都是一样的，比如数据库的配置、消息队列的配置，这样就造成一个问题是我需要把完全一模一样的环境配置复制3份，因为3个容器都需要使用，这样如果需要更改的话也要改3个地方。幸好<code>kubernetes</code>给我们提供了一种新的特性：<strong>PodPreset</strong>，该对象用来在 Pod 创建的时候向 Pod 中注入某些特定信息，可以包括 secret、volume、volume mount 和环境变量等。</p>
+
+<p></p>
+
+<blockquote>
+<p>注意：<code>PodPreset</code>资源对象只有<strong>kubernetes 1.8</strong>以上版本才支持。</p>
+</blockquote>
+
+<h2 id="podpreset">PodPreset</h2>
+
+<p><code>PodPreset</code>是用来在 Pod 被创建的时候向其中注入额外的信息的API 资源。您可以使用<code>label selector</code> 来匹配为哪些 Pod 应用<code>PodPreset</code>。</p>
+
+<p><code>kubernetes</code>提供了一个准入控制器（PodPreset），当启用后，<code>PodPreset</code>会将应用创建请求传入到该控制器上。当有 Pod 创建请求发生时，系统将执行以下操作：</p>
+
+<ul>
+<li>检索所有可用的<code>PodPresets</code></li>
+<li>检查有<code>PodPreset</code>的标签选择器上的标签与正在创建的Pod 上的标签是否匹配。</li>
+<li>尝试将由<code>PodPreset</code>定义的各种资源合并到正在创建的Pod 中。</li>
+<li>出现错误时，在该 Pod 上引发记录合并错误的事件，PodPreset 不会注入任何资源到创建的 Pod 中。</li>
+<li>注释刚生成的修改过的 Pod spec，以表明它已被 PodPreset 修改过。注释的格式为 <code>podpreset.admission.kubernetes.io/podpreset-&lt;pod-preset name&gt;&quot;: &quot;&lt;resource version&gt;&quot;</code>。</li>
+</ul>
+
+<p>每个 Pod 可以匹配零个或多个 PodPrestet；并且每个 PodPreset 可以应用于零个或多个 Pod。 PodPreset 应用于一个或多个 Pod 时，Kubernetes 会修改 Pod Spec。对于 Env、EnvFrom 和 VolumeMounts 的更改，Kubernetes 修改 Pod 中所有容器的容器 spec；对于 Volume 的更改，Kubernetes 修改 Pod Spec。</p>
+
+<p>可能在某些情况下，您希望 Pod 不会被任何 Pod Preset 突变所改变。在这些情况下，您可以在 Pod 的 Pod Spec 中添加注释：<code>podpreset.admission.kubernetes.io/exclude：&quot;true&quot;</code>。</p>
+
+<h2 id="启用-podpreset">启用 PodPreset</h2>
+
+<p>要启用<code>PodPreset</code>功能，需要确保你使用的是<code>kubernetes 1.8</code>版本以上，然后需要在准入控制中加入<code>PodPreset</code>，另外为了定义<code>PodPreset</code>对象，还需要其中<code>podpreset</code>的API 类型：</p>
+
+<ul>
+<li>&mdash;admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota,<code>PodPreset</code></li>
+<li>&mdash;runtime-config=rbac.authorization.k8s.io/v1alpha1=true,<code>settings.k8s.io/v1alpha1=true</code></li>
+</ul>
+
+<p>注意上面的<code>kube-apiserver</code>中的启动参数(前面是两个<strong>-</strong>)，参数修改完成后，重启<code>kube-apiserver</code>即可。</p>
+
+<h2 id="示例">示例</h2>
+
+<p>比如我们将我们上面的<code>sentry</code>的环境变量定义成一个<code>PodPreset</code>对象：(sentry-podpreset.yaml)</p>
+
+<pre><code class="language-yaml">apiVersion: settings.k8s.io/v1alpha1
+kind: PodPreset
+metadata:
+  name: sentry-env
+  namespace: kube-ops
+spec:
+  selector:
+    matchLabels:
+      app: sentry
+  env:
+  - name: C_FORCE_ROOT
+    value: &quot;true&quot;
+  - name: SENTRY_REDIS_HOST
+    value: &quot;redis&quot;
+  - name: SENTRY_REDIS_PORT
+    value: &quot;6379&quot;
+  - name: SENTRY_REDIS_DB
+    value: &quot;2&quot;
+  - name: SENTRY_RABBITMQ_HOST
+    value: &quot;rabbitmq:5672&quot;
+  - name: SENTRY_RABBITMQ_USERNAME
+    value: &quot;root&quot;
+  - name: SENTRY_RABBITMQ_PASSWORD
+    value: &quot;root&quot;
+  - name: SENTRY_SECRET_KEY
+    value: &quot;xxxxxxxxxxxxx&quot;
+  - name: SENTRY_POSTGRES_HOST
+    value: &quot;postgresql&quot;
+  - name: SENTRY_POSTGRES_PORT
+    value: &quot;5432&quot;
+  - name: SENTRY_DB_NAME
+    value: &quot;sentry&quot;
+  - name: SENTRY_DB_USER
+    value: &quot;sentry&quot;
+  - name: SENTRY_DB_PASSWORD
+    value: &quot;sentry321&quot;
+</code></pre>
+
+<p>我们可以看到定义的<code>PodPreset</code>匹配了一个标签：<code>app: sentry</code>，所有带有该标签的 POD 都会被注入上面的环境变量。</p>
+
+<p>然后我们的<code>sentry</code>的部署文件就可以简化成这样了：(sentry-deployment.yaml)</p>
+
+<pre><code class="language-yaml">apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: sentry
+  name: sentry
+  namespace: kube-ops
+spec:
+  template:
+    metadata:
+      labels:
+        app: sentry
+    spec:
+      containers:
+      - image: sentry:8.22.0
+        imagePullPolicy: Always
+        name: sentry
+        ports:
+        - containerPort: 9000
+          name: web
+      - image: sentry:8.22.0
+        imagePullPolicy: Always
+        name: sentry-worker
+        command: [&quot;sentry&quot;, &quot;run&quot;, &quot;worker&quot;]
+      - image: sentry:8.22.0
+        imagePullPolicy: Always
+        name: sentry-cron
+        command: [&quot;sentry&quot;, &quot;run&quot;, &quot;cron&quot;]
+</code></pre>
+
+<p>然后执行命令：</p>
+
+<pre><code class="language-shell">$ kubectl create -f sentry-podpreset.yaml
+$ kubectl create -f sentry-deployment.yaml
+</code></pre>
+
+<p>然后我们可以去 dashboard 中或者通过 kubectl 命令查看创建的 sentry POD已经被注入了所有的环境变量了。</p>
+
+<h2 id="参考资料">参考资料</h2>
+
+<ul>
+<li><a href="https://kubernetes.io/docs/tasks/inject-data-application/podpreset/">https://kubernetes.io/docs/tasks/inject-data-application/podpreset/</a></li>
+</ul>
+
+<p>扫描下面的二维码添加我微信好友(注明<code>kubernetes</code>)，然后可以加入到我们的<code>kubernetes</code>讨论群里面共同学习。
+<img src="https://blog.qikqiak.com/img/posts/wexin-qrcode.jpeg" alt="qrcode" /></p>
+      </article>
+
+      <ul class="pager blog-pager">
+        
+          <li class="previous">
+            <a href="https://blog.qikqiak.com/post/add-authorization-for-kubernetes-dashboard/" data-toggle="tooltip" data-placement="top" title="为kubernetes dashboard访问用户添加权限控制">&larr; Previous Post</a>
+          </li>
+        
+        
+      </ul>
+
       
-      <a href="https://blog.qikqiak.com/tags/kubernetes/" class="list-group-item">
-          kubernetes<span class="badge">13</span></a>
+
       
-      <a href="https://blog.qikqiak.com/tags/django/" class="list-group-item">
-          django<span class="badge">7</span></a>
+      <div id="git-comments"></div>
+      <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+      <script src="https://imsun.github.io/gitment/dist/gitment.browser.js"></script>
+      <script>
+      var gitment = new Gitment({
+        owner: 'cnych',
+        repo: 'blog',
+        oauth: {
+          client_id: 'bdb76dbb2e9d0786e350',
+          client_secret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        }
+      })
+      gitment.render('git-comments')
+      </script>
       
-      <a href="https://blog.qikqiak.com/tags/python/" class="list-group-item">
-          python<span class="badge">7</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/docker/" class="list-group-item">
-          docker<span class="badge">5</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/microservice/" class="list-group-item">
-          microservice<span class="badge">3</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/prometheus/" class="list-group-item">
-          prometheus<span class="badge">3</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/dashboard/" class="list-group-item">
-          dashboard<span class="badge">2</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/flask/" class="list-group-item">
-          flask<span class="badge">2</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/grafana/" class="list-group-item">
-          grafana<span class="badge">2</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/https/" class="list-group-item">
-          https<span class="badge">2</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/nginx/" class="list-group-item">
-          nginx<span class="badge">2</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/ops/" class="list-group-item">
-          ops<span class="badge">2</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/react/" class="list-group-item">
-          react<span class="badge">2</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/tdd/" class="list-group-item">
-          tdd<span class="badge">2</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/301/" class="list-group-item">
-          301<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/action/" class="list-group-item">
-          action<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/admin/" class="list-group-item">
-          admin<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/alertmanager/" class="list-group-item">
-          alertmanager<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/awk/" class="list-group-item">
-          awk<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/cluster/" class="list-group-item">
-          cluster<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/csv/" class="list-group-item">
-          csv<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/deployment/" class="list-group-item">
-          deployment<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/django2.0/" class="list-group-item">
-          django2.0<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/elasticsearch/" class="list-group-item">
-          elasticsearch<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/git/" class="list-group-item">
-          git<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/harbor/" class="list-group-item">
-          harbor<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/influxdb/" class="list-group-item">
-          influxdb<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/linux/" class="list-group-item">
-          linux<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/log/" class="list-group-item">
-          log<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/memcached/" class="list-group-item">
-          memcached<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/pdf/" class="list-group-item">
-          pdf<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/podpreset/" class="list-group-item">
-          podpreset<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/pyenv/" class="list-group-item">
-          pyenv<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/rbac/" class="list-group-item">
-          rbac<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/service-mesh/" class="list-group-item">
-          service-mesh<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/socket.io/" class="list-group-item">
-          socket.io<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/url/" class="list-group-item">
-          url<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/virtualenv/" class="list-group-item">
-          virtualenv<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/webpack/" class="list-group-item">
-          webpack<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/%E5%9B%BD%E9%99%85%E5%8C%96/" class="list-group-item">
-          国际化<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/" class="list-group-item">
-          微服务<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/%E6%9C%8D%E5%8A%A1%E7%BD%91%E6%A0%BC/" class="list-group-item">
-          服务网格<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/%E6%A0%87%E7%AD%BE/" class="list-group-item">
-          标签<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/%E8%A3%85%E9%A5%B0%E5%99%A8/" class="list-group-item">
-          装饰器<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/%E8%A7%86%E9%A2%91/" class="list-group-item">
-          视频<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/%E9%98%BF%E9%87%8C%E4%BA%91/" class="list-group-item">
-          阿里云<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/%E9%9B%86%E7%BE%A4/" class="list-group-item">
-          集群<span class="badge">1</span></a>
-      
-      <a href="https://blog.qikqiak.com/tags/%E9%AB%98%E5%8F%AF%E7%94%A8/" class="list-group-item">
-          高可用<span class="badge">1</span></a>
-      
-      </div>
-    </article>
+    </div>
   </div>
+</div>
 
     <footer>
   <div class="container">
