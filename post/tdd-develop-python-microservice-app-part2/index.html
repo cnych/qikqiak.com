@@ -1157,6 +1157,235 @@ export default AddUser;
 };
 </code></pre>
 
+<p>确保我们之前的后端服务是启动的状态：</p>
+
+<pre><code class="language-shell">$ docker-compose -f docker-compose.yml up -d --build
+</code></pre>
+
+<p>然后定位到 client 目录下面，先导入我们的环境变量：</p>
+
+<pre><code class="language-shell">$ export REACT_APP_USERS_SERVICE_URL=http://127.0.0.1:5001
+$ npm run start
+</code></pre>
+
+<p>然后在自动打开的浏览器中<code>http://localhost:3000/</code>应该能看到下面的界面：
+<img src="https://blog.qikqiak.com/img/posts/WX20180124-172026.png" alt="index" />
+然后在<code>AddUser.test.js</code>文件中新增一个测试：</p>
+
+<pre><code class="language-javascript">test('AddUser renders a snapshot properly', () =&gt; {
+    const tree = renderer.create(&lt;AddUser/&gt;).toJSON();
+    expect(tree).toMatchSnapshot();
+});
+</code></pre>
+
+<p>然后我们执行测试，确保测试能够正常通过</p>
+
+<pre><code class="language-shell">$ npm run test
+</code></pre>
+
+<p>由于这是一个单页面应用程序，接下来我们希望在提交表单的时候阻止浏览器刷新页面，这样的用户体验会好很多的。要完成该功能需要以下4步：</p>
+
+<ul>
+<li>处理表单提交事件</li>
+<li>获取用户输入</li>
+<li>发送<code>AJAX</code>请求</li>
+<li>更新页面</li>
+</ul>
+
+<h3 id="处理表单提交事件">处理表单提交事件</h3>
+
+<p>为了让我们自己能够处理<code>submit</code>提交事件，只需要在<code>AddUser.jsx</code>文件中更新下<code>form</code>表单元素即可：</p>
+
+<pre><code class="language-html">&lt;form onSubmit={(event) =&gt; event.preventDefault()}&gt;
+</code></pre>
+
+<p>大家记住<code>event.preventDefault()</code>这个方法，是用来阻止元素的默认处理事件的，以后肯定会用到的，然后我们随意输入一个用户名或邮件地址，然后尝试提交一次表单，我们可以看到页面没有任何反应，这正是我们所希望的，因为我们阻止了正常的事件行为。</p>
+
+<p>然后我们在<code>client/src/index.js</code>文件中，为<code>App</code>组件添加一个新的方法：</p>
+
+<pre><code class="language-javascript">addUser(event) {
+  event.preventDefault();
+  console.log('sanity check!');
+};
+</code></pre>
+
+<p>由于 AddUser 是一个函数组件，所以我们需要通过<code>props</code>来传递上面的添加方法，更新 render 方法下面的 AddUser 元素，如下所示：</p>
+
+<pre><code class="language-javascript">&lt;AddUser addUser={this.addUser} /&gt;
+</code></pre>
+
+<p>然后我们需要更新 App 组件的构造函数：</p>
+
+<pre><code class="language-javascript">constructor() {
+    super();
+    this.state = {
+        users: []
+    };
+    this.addUser = this.addUser.bind(this);
+}
+</code></pre>
+
+<p>注意上面的<strong>bind</strong>方法，我们通过 bind 方法来手动绑定 this 的上下文。如果没有绑定的话，方法内的上下文是不正确的。</p>
+
+<blockquote>
+<p>关事件处理的更多信息，可以查看 React 关于事件处理的<a href="https://reactjs.org/docs/handling-events.html">官方文档</a>。</p>
+</blockquote>
+
+<p>没有它，这个方法内的上下文将不会有正确的上下文。 想要测试这个？ 只需将console.log（this）添加到addUser（），然后提交表单即可。 什么是上下文？ 删除绑定并再次测试。 现在的情况是什么？</p>
+
+<p>然后在更新<code>AddUser</code>组件中的 form 元素：</p>
+
+<pre><code class="language-javascript">&lt;form onSubmit={(event) =&gt; props.addUser(event)}&gt;
+</code></pre>
+
+<p>然后切换到浏览器中，随便输入用户名和邮件，点击提交按钮，在<code>JavaScript Console</code>终端（还记得怎么查看吗？）中可以看到<code>sanity check!</code>打印出来。</p>
+
+<h3 id="获取用户输入">获取用户输入</h3>
+
+<p>我们将使用<a href="https://reactjs.org/docs/forms.html#controlled-components">受控组件</a>来获取用户提交的数据。先增加两个新的属性在 App 组件的 state 对象上：</p>
+
+<pre><code class="language-javascript">this.state = {
+  users: [],
+  username: '',
+  email: ''
+};
+</code></pre>
+
+<p>然后通过属性传递给 AddUser 组件：</p>
+
+<pre><code class="language-javascript">&lt;AddUser
+  username={this.state.username}
+  email={this.state.email}
+  addUser={this.addUser}
+/&gt;
+</code></pre>
+
+<p>现在我们在 AddUser 组件中就可以通过<code>props</code>来访问 username 和 email 了，更新 AddUser 组件：</p>
+
+<pre><code class="language-javascript">import React from 'react';
+
+const AddUser = (props) =&gt; {
+    return (
+      &lt;form onSubmit={(event) =&gt; props.addUser(event)}&gt;
+          &lt;div className=&quot;form-group&quot;&gt;
+            &lt;input
+              type=&quot;text&quot; name=&quot;username&quot;
+              className=&quot;form-control input-lg&quot;
+              placeholder=&quot;Enter a username&quot;
+              required
+              value={props.username}
+            /&gt;
+          &lt;/div&gt;
+          &lt;div className=&quot;form-group&quot;&gt;
+            &lt;input
+              name=&quot;email&quot;
+              className=&quot;form-control input-lg&quot;
+              type=&quot;email&quot;
+              placeholder=&quot;Enter an email address&quot;
+              required
+              value={props.email}
+            /&gt;
+          &lt;/div&gt;
+          &lt;input
+            type=&quot;submit&quot;
+            className=&quot;btn btn-primary btn-lg btn-block&quot;
+            value=&quot;Submit&quot;
+          /&gt;
+        &lt;/form&gt;
+    );
+};
+
+export default AddUser;
+</code></pre>
+
+<p>然后我们可以到浏览器中测试下，随意输入一些值，你会发现什么都不能输入，这是为什么呢？仔细看上面的 input 组件的 value 值，是通过<code>props</code>来获取的，而传递给该组件的值是通过父组件的 state 传递过来的，因为父组件的 state 对象中的 username 和 email 一直都是<strong>空字符串</strong>，所以我们这里的输入值没有任何效果。</p>
+
+<blockquote>
+<p>将父组件中的 state 对象中的 username 默认值更改成其他字符串，再看看效果呢?是不是和我们的分析是一致的。</p>
+</blockquote>
+
+<p>那么我们怎么来更新父组件中的状态值呢，这样当我们在输入框中输入文本的时候就可以看到变化了。</p>
+
+<p>首先，在 App 组件中新增一个<code>handleChange</code>的方法：</p>
+
+<pre><code class="language-javascript">handleChange(event){
+  const obj = {};
+  obj[event.target.name] = event.target.value;
+  this.setState(obj);
+}
+</code></pre>
+
+<p>然后同样的，在构造函数中添加一个 bind：</p>
+
+<pre><code class="language-javascript">this.handleChange = this.handleChange.bind(this);
+</code></pre>
+
+<p>然后通过<code>props</code>将该方法传递给<code>AddUser</code>组件：</p>
+
+<pre><code class="language-javascript">&lt;AddUser
+  username={this.state.username}
+  email={this.state.email}
+  handleChange={this.handleChange}
+  addUser={this.addUser}
+/&gt;
+</code></pre>
+
+<p>然后，我们就需要更新 AddUser 组件了，我们监听 input 元素的 <code>onChange</code> 方法，当 input 元素发送改变的时候，就会触发该调用：</p>
+
+<pre><code class="language-javascript">import React from 'react';
+
+const AddUser = (props) =&gt; {
+    return (
+      &lt;form onSubmit={(event) =&gt; props.addUser(event)}&gt;
+          &lt;div className=&quot;form-group&quot;&gt;
+            &lt;input
+              type=&quot;text&quot; name=&quot;username&quot;
+              className=&quot;form-control input-lg&quot;
+              placeholder=&quot;Enter a username&quot;
+              required
+              value={props.username}
+              onChange={props.handleChange}
+            /&gt;
+          &lt;/div&gt;
+          &lt;div className=&quot;form-group&quot;&gt;
+            &lt;input
+              name=&quot;email&quot;
+              className=&quot;form-control input-lg&quot;
+              type=&quot;email&quot;
+              placeholder=&quot;Enter an email address&quot;
+              required
+              value={props.email}
+              onChange={props.handleChange}
+            /&gt;
+          &lt;/div&gt;
+          &lt;input
+            type=&quot;submit&quot;
+            className=&quot;btn btn-primary btn-lg btn-block&quot;
+            value=&quot;Submit&quot;
+          /&gt;
+        &lt;/form&gt;
+    );
+};
+
+export default AddUser;
+</code></pre>
+
+<p>现在我能在去浏览器中测试下，已经正常工作了。我们可以在 addUser 方法中打印下 state 对象的值，方便我们来了解 state 对象：</p>
+
+<pre><code class="language-javascript">addUser(event) {
+  event.preventDefault();
+  console.log('sanity check!');
+  console.log(this.state);
+};
+</code></pre>
+
+<p>然后我们可以到浏览器中输入用户名和邮件，点击提交按钮，我们可以在浏览器的 Console 终端中看到如下的信息了：
+<img src="https://blog.qikqiak.com/img/posts/WX20180124-183550.png" alt="index" /></p>
+
+<p>现在我们获得了输入的值，接下来我们就可以发送一个<code>AJAX</code>请求，将我们的输入添加到数据库中，然后更新 DOM 树&hellip;</p>
+
+<h3 id="发送-ajax-请求">发送 AJAX 请求</h3>
+
 <blockquote>
 <p>TODO &hellip;&hellip;</p>
 </blockquote>
