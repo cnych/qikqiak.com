@@ -254,6 +254,30 @@ ga('send', 'pageview');
 <div class="container" role="main">
   <div class="row">
     <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+
+      <div>
+          <h5 id="wc" style="margin-top: -5px;">2435 字|阅读大约需要花 12 分钟</h5>
+          <h5 id="tags" style="margin-top: 0px;">标签:
+            
+            
+                <a href="https://blog.qikqiak.com/tags/python/">python</a> &nbsp;
+            
+                <a href="https://blog.qikqiak.com/tags/flask/">flask</a> &nbsp;
+            
+                <a href="https://blog.qikqiak.com/tags/tdd/">TDD</a> &nbsp;
+            
+                <a href="https://blog.qikqiak.com/tags/docker/">docker</a> &nbsp;
+            
+                <a href="https://blog.qikqiak.com/tags/react/">react</a> &nbsp;
+            
+                <a href="https://blog.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+            
+                <a href="https://blog.qikqiak.com/tags/microservice/">Microservice</a> &nbsp;
+            
+            
+          </h5>
+      </div>
+
       <article role="main" class="blog-post">
         <p>本节课我们将我们的项目拆分成3个工程，我们也会增加一些集成测试来确保每一个服务都能够正确的运行，引入持续集成概念，最后，我们还将添加一个<code>ReactJS</code>的客户端。</p>
 
@@ -277,6 +301,7 @@ ga('send', 'pageview');
 <li><a href="#react">React 应用</a></li>
 <li><a href="#test">React 测试</a></li>
 <li><a href="#form">React 表单</a></li>
+<li><a href="#docker">容器化 React 应用</a></li>
 </ol>
 
 <h2 id="1-结构-a-id-structure-a">1. 结构<a id="structure"></a></h2>
@@ -1386,6 +1411,326 @@ export default AddUser;
 
 <h3 id="发送-ajax-请求">发送 AJAX 请求</h3>
 
+<p>还记得我们前面的 users-service 服务中的<code>add_user</code>方法吗（<code>project/api/views.py</code>文件下）？我们添加一个新的用户需要发送 username 和 email 两项数据：</p>
+
+<pre><code class="language-python">db.session.add(User(username=username, email=email))
+</code></pre>
+
+<p>现在我们在 React 代码中用<code>Axios</code>来发送添加用户的 POST 请求，修改<code>client/src/index.js</code>中 App 组件的<code>addUser</code>方法：</p>
+
+<pre><code class="language-javascript">addUser(event) {
+  event.preventDefault();
+  console.log('sanity check!');
+  const data = {
+    username: this.state.username,
+    email: this.state.email
+  };
+  axios.post(`${process.env.REACT_APP_USERS_SERVICE_URL}/users`, data).then(res =&gt; {
+    console.log(res);
+  }).catch(err =&gt; {
+    console.log(err);
+  });
+}
+</code></pre>
+
+<p>然后我们切换到浏览器中添加一条数据，只要输入的 email 地址是唯一的，测试应该都会通过的。如果我们连续点击提交两次，我们就可以看到在 Chrome 浏览器的终端中看到有一个<strong>400</strong>的错误码打印出来，因为我们第二次提交的 email 邮箱已经存在了，而我们前面的<code>users-service</code>服务在 email 存在的情况下会返回 400 状态码。
+<img src="https://blog.qikqiak.com/img/posts/WX20180126-110951.png" alt="status400" /></p>
+
+<h3 id="更新页面">更新页面</h3>
+
+<p>最后当添加用户的表单提交成功后我们来更新用户列表，并且清空表单，同样更新<code>addUser</code>方法：</p>
+
+<pre><code class="language-javascript">addUser(event) {
+  event.preventDefault();
+  console.log('sanity check!');
+  const data = {
+    username: this.state.username,
+    email: this.state.email
+  };
+  axios.post(`${process.env.REACT_APP_USERS_SERVICE_URL}/users`, data).then(res =&gt; {
+    this.getUsers();
+    this.setState({ username: '', email: '' });
+  }).catch(err =&gt; {
+    console.log(err);
+  });
+}
+</code></pre>
+
+<p>我们前面知道获取用户列表是通过<code>getUsers()</code>方法的，所以当我们添加用户的请求发送成功后，是不是重新请求下<code>getUsrs()</code>方法，是不是就能够把数据库中的所有用户获取到了啊？要清空表单该怎么做呢？当然是操作状态了，我们知道只需要更改 state 对象下的 username 和 email，对应的元素就会发送变化，我们不需要自己手动去更新 DOM 元素，只需要操作 state 就行，是不是很方便了啊？</p>
+
+<p>然后我们切换到浏览器中测试一下，添加一个唯一的邮箱，是不是提交完成后下面的列表也更新了，表单也清空了。然后我们可以运行下我们的测试代码：</p>
+
+<pre><code class="language-shell">$ npm run test
+</code></pre>
+
+<p>我们会发现测试是没有通过的，出现下面的错误提示，这是因为我们的 UI 界面已经发生了改变，和之前我们的快照是不一样的，所以这个时候我们只需要输入<code>u</code>更新下快照即可。</p>
+
+<pre><code class="language-shell">Snapshot Summary
+ › 1 snapshot test failed in 1 test suite. Inspect your code changes or press `u` to update them.
+</code></pre>
+
+<p>快照更新后，正常情况下测试代码都会通过的。如果有其他问题，请仔细查看下错误日志，仔细排查，然后提交代码到<code>github</code>。</p>
+
+<h2 id="9-容器化-react-应用-a-id-docker-a">9. 容器化 React 应用<a id="docker"></a></h2>
+
+<p>这节课让我们来容器化上面完成的 React 应用。不过在开始前，我们先重构下我们的项目吧。</p>
+
+<h3 id="重构">重构</h3>
+
+<p>在项目根目录下面新增一个叫<code>services</code>的文件夹，然后将<code>nginx</code>文件夹移动到 services 目录下面，将<code>client</code>文件夹移动到 services 目录下面，然后在 services 目录下面新建一个 <code>users</code>文件夹，将根目录下面的<code>project</code>文件夹、Dockerfile、manage.py、requirements.txt 文件都移动到<code>services/users</code>目录下面，操作完成后，你看到的我们的代码结构应该是这样的：</p>
+
+<pre><code class="language-shell">$ flask-microservices-users [master] ⚡ ls -la
+total 88
+drwxr-xr-x  12 ych  staff    384  1 26 12:12 .
+drwxr-xr-x   4 ych  staff    128 12 28 16:08 ..
+drwxr-xr-x  14 ych  staff    448  1 26 12:27 .git
+-rw-r--r--   1 ych  staff     23  1  5 17:56 .gitignore
+-rw-r--r--   1 ych  staff      5 12 28 15:19 .python-version
+-rw-r--r--   1 ych  staff    645  1  5 18:13 .travis.yml
+-rw-r--r--   1 ych  staff  11357 12 29 10:44 LICENSE
+-rw-r--r--   1 ych  staff    206  1  5 18:23 README.md
+-rw-r--r--   1 ych  staff    922  1 26 12:11 docker-compose-prod.yml
+-rw-r--r--   1 ych  staff    755  1 26 12:15 docker-compose.yml
+drwxr-xr-x   6 ych  staff    192  1 26 12:09 services
+$ flask-microservices-users [master] ⚡ ls -la services
+total 16
+drwxr-xr-x   6 ych  staff   192  1 26 12:09 .
+drwxr-xr-x  12 ych  staff   384  1 26 12:12 ..
+drwxr-xr-x  10 ych  staff   320  1 16 17:37 client
+drwxr-xr-x   4 ych  staff   128 12 30 15:15 nginx
+drwxr-xr-x   7 ych  staff   224  1 26 12:14 users
+$ flask-microservices-users [master] ⚡ ls -la services/users
+total 40
+drwxr-xr-x  7 ych  staff   224  1 26 12:14 .
+drwxr-xr-x  6 ych  staff   192  1 26 12:09 ..
+-rw-r--r--  1 ych  staff   329 12 29 10:47 Dockerfile
+-rw-r--r--  1 ych  staff  1366  1  5 17:46 manage.py
+drwxr-xr-x  9 ych  staff   288 12 31 10:56 project
+-rw-r--r--  1 ych  staff   159  1 13 14:28 requirements.txt
+</code></pre>
+
+<p>然后我们来更新<code>docker-compose.yml</code>文件：</p>
+
+<pre><code class="language-yaml">version: '3.3'
+
+services:
+  users-db:
+    container_name: users-db
+    build:
+      context: ./services/users/project/db
+      dockerfile: Dockerfile
+    ports:
+      - 3307:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=root321
+
+  users-service:
+    container_name: users-service
+    build:
+      context: ./services/users
+      dockerfile: Dockerfile-dev
+    volumes:
+      - './services/users:/usr/src/app'
+    ports:
+      - 5001:5000 # 暴露端口 - 主机:容器
+    environment:
+      - APP_SETTINGS=project.config.DevelopmentConfig
+      - DATABASE_URL=mysql+pymysql://root:root321@users-db:3306/users_dev
+      - DATABASE_TEST_URL=mysql+pymysql://root:root321@users-db:3306/users_test
+    depends_on:
+      - users-db
+    links:
+      - users-db
+</code></pre>
+
+<p>同样的，更新<code>docker-compose-prod.yml</code>文件：</p>
+
+<pre><code class="language-yaml">version: '3.3'
+
+services:
+  users-db:
+    container_name: users-db
+    build:
+      context: ./services/users/project/db
+      dockerfile: Dockerfile
+    ports:
+      - 3307:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=root321
+
+  users-service:
+    container_name: users-service
+    build:
+      context: ./services/users
+      dockerfile: Dockerfile-prod
+    expose:
+      - '5000' # 只暴露容器端口
+    environment:
+      - APP_SETTINGS=project.config.ProductionConfig
+      - DATABASE_URL=mysql+pymysql://root:root321@users-db:3306/users_prod
+      - DATABASE_TEST_URL=mysql+pymysql://root:root321@users-db:3306/users_test
+    command: gunicorn -b 0.0.0.0:5000 manage:app
+    depends_on:
+      - users-db
+    links:
+      - users-db
+
+  nginx:
+    container_name: nginx
+    build: ./services/nginx
+    restart: always
+    ports:
+      - 80:80
+    depends_on:
+      - users-service
+    links:
+      - users-service
+</code></pre>
+
+<p>注意上面的<code>docker-compose</code>文件我们更新到<code>3.3</code>版本，注意看和之前的<code>2.1</code>版本是有部分区别的。然后重新构建下我们的容器：</p>
+
+<pre><code class="language-shell">$ docker-compose -f docker-compose.yml up -d --build
+</code></pre>
+
+<p>确保上面的构建过程是正确的，我们可以通过查看<code>users-service</code>服务的日志来确认：</p>
+
+<pre><code class="language-shell">$ docker-compose logs -f users-service
+Attaching to users-service
+users-service    |  * Running on http://0.0.0.0:5000/ (Press CTRL+C to quit)
+users-service    |  * Restarting with stat
+users-service    |  * Debugger is active!
+users-service    |  * Debugger PIN: 170-528-240
+users-service    | 172.18.0.1 - - [26/Jan/2018 04:22:08] &quot;GET /ping HTTP/1.1&quot; 200 -
+</code></pre>
+
+<p>然后我们可以跑一遍我们的测试用例，确保的业务逻辑也是符合我们的预期的：</p>
+
+<pre><code class="language-shell">$ docker-compose -f docker-compose.yml run users-service python manage.py test
+</code></pre>
+
+<p>如果一切正常，上面的测试也会正常通过的。</p>
+
+<h3 id="本地开发环境">本地开发环境</h3>
+
+<p>在<code>services/client</code>目录下面添加<code>Dockerfile-dev</code>文件：</p>
+
+<pre><code class="language-yaml">FROM node:latest
+MAINTAINER &quot;qikqiak@gmail.com&quot;
+
+# 设置工作目录
+RUN mkdir /usr/src/app
+WORKDIR /usr/src/app
+
+# 添加node_modules/.bin目录到 $PATH 环境下
+ENV PATH /usr/src/app/node_modules/.bin:$PATH
+
+# 安装并缓存依赖包(用silent选项可以减少一些不必要的错误)
+ADD package.json /usr/src/app/package.json
+RUN npm install --silent
+RUN npm install react-scripts@1.0.17 -g --silent
+
+# 启动应用
+CMD [&quot;npm start&quot;]
+</code></pre>
+
+<p>然后我们在<code>docker-compose.yml</code>中新增 React 应用的服务：</p>
+
+<pre><code class="language-yaml">client:
+  container_name: client
+  build:
+    context: ./services/client
+    dockerfile: Dockerfile-dev
+  volumes:
+    - './services/client:/usr/src/app'
+  ports:
+    - '3007:3000'
+  environment:
+    - NODE_ENV=development
+    - REACT_APP_USERS_SERVICE_URL=${REACT_APP_USERS_SERVICE_URL}
+  depends_on:
+    - users-service
+  links:
+    - users-service
+</code></pre>
+
+<p>在确保<code>users-service</code>服务正常启动后，在终端中导入环境变量：</p>
+
+<pre><code class="language-shell">$ export REACT_APP_USERS_SERVICE_URL=http://127.0.0.1:5001
+</code></pre>
+
+<p>然后重新构建镜像启动新的容器：</p>
+
+<pre><code class="language-shell">$ docker-compose -f docker-compose.yml up --build -d client
+</code></pre>
+
+<p>新容器启动完成后，运行 React 客户端测试代码：</p>
+
+<pre><code class="language-shell">$ docker-compose -f docker-compose.yml run client npm test
+</code></pre>
+
+<p>测试通过后，我们可以在本地浏览器中打开<code>http://127.0.0.1:3007</code>访问 React 应用了，当然如果测试没通过的话，我们得根据错误信息去修复我们的测试代码，直到测试通过为止。</p>
+
+<p>What happens if you navigate to the main route? Since we&rsquo;re still routing traffic to the Flask app (via Nginx), you will see the old app, served up with server-side templating. We need to update the Nginx configuration to route traffic to that main route to the React app.</p>
+
+<p>更新<code>services/nginx/flask.conf</code>配置：</p>
+
+<pre><code class="language-nginx">server {
+  listen 80;
+
+  location / {
+    proxy_pass http://client:3000;
+    proxy_redirect    default;
+    proxy_set_header  Host $host;
+    proxy_set_header  X-Real-IP $remote_addr;
+    proxy_set_header  X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header  X-Forwarded-Host $server_name;
+  }
+
+  location /users {
+    proxy_pass        http://users-service:5000;
+    proxy_redirect    default;
+    proxy_set_header  Host $host;
+    proxy_set_header  X-Real-IP $remote_addr;
+    proxy_set_header  X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header  X-Forwarded-Host $server_name;
+  }
+}
+</code></pre>
+
+<p>上面的<code>nginx</code>配置文件做了什么工作？</p>
+
+<ul>
+<li>首先在<code>location</code>块中定义了反向代理规则。</li>
+<li>当请求的 URI 与<code>location</code>区域中的 URI 匹配的时候，<code>Nginx</code>将请求转发给了后面的 React 服务（client）或者 Flask 服务（users-service）。</li>
+</ul>
+
+<p>同样的，我们将<code>Nginx</code>服务也定义到<code>docker-compose.yml</code>文件中：</p>
+
+<pre><code class="language-yaml">nginx:
+  container_name: nginx
+  build: ./services/nginx
+  restart: always
+  ports:
+    - 80:80
+  depends_on:
+    - users-service
+    - client
+  links:
+    - users-service
+</code></pre>
+
+<p>然后更新容器：</p>
+
+<pre><code class="language-shell">$ docker-compose -f docker-compose.yml up -d --build
+</code></pre>
+
+<p>容器启动完成后，打开浏览器测试下我们的服务：</p>
+
+<ul>
+<li><a href="http://127.0.0.1">http://127.0.0.1</a></li>
+<li><a href="http://127.0.0.1/users">http://127.0.0.1/users</a></li>
+</ul>
+
 <blockquote>
 <p>TODO &hellip;&hellip;</p>
 </blockquote>
@@ -1393,6 +1738,34 @@ export default AddUser;
 <p>扫描下面的二维码(或微信搜索<code>iEverything</code>)添加我微信好友(注明<code>python</code>)，然后可以加入到我们的<code>python</code>讨论群里面共同学习
 <img src="https://blog.qikqiak.com/img/posts/wexin-qrcode.jpeg" alt="qrcode" /></p>
       </article>
+
+      
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://blog.qikqiak.com/post/tdd-develop-python-microservice-app/">TDD开发容器化的Python微服务应用(一)</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/python-virtualenv-all-know/">Python 虚拟环境全知道</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/install-docker-registry-harbor-in-kubernetes/">在kubernetes 集群上搭建docker 私有仓库Harbor</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/manual-install-high-available-kubernetes-cluster/">手动搭建高可用的kubernetes 集群</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/first-use-helm-on-kubernetes/">Kubernetes Helm 初体验</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/add-authorization-for-kubernetes-dashboard/">为kubernetes dashboard访问用户添加权限控制</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/alertmanager-of-prometheus-in-practice/">Prometheus报警AlertManager实战</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/python-convert-pdf-images/">利用Python 优雅的将PDF 转换成图片</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/kubernetes-logs-collect/">kubernetes 日志收集方案</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/update-prometheus-2-in-kubernetes/">Kubernetes 下升级Prometheus2.0</a></li>
+    
+</ul>
+
 
       <ul class="pager blog-pager">
         

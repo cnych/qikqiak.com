@@ -262,6 +262,24 @@ ga('send', 'pageview');
 <div class="container" role="main">
   <div class="row">
     <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+
+      <div>
+          <h5 id="wc" style="margin-top: -5px;">4771 字|阅读大约需要花 23 分钟</h5>
+          <h5 id="tags" style="margin-top: 0px;">标签:
+            
+            
+                <a href="https://blog.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+            
+                <a href="https://blog.qikqiak.com/tags/%E9%AB%98%E5%8F%AF%E7%94%A8/">高可用</a> &nbsp;
+            
+                <a href="https://blog.qikqiak.com/tags/%E9%9B%86%E7%BE%A4/">集群</a> &nbsp;
+            
+                <a href="https://blog.qikqiak.com/tags/docker/">docker</a> &nbsp;
+            
+            
+          </h5>
+      </div>
+
       <article role="main" class="blog-post">
         <p>之前按照<a href="https://github.com/opsnull/follow-me-install-kubernetes-cluster">和我一步步部署 kubernetes 集群</a>的步骤一步一步的成功的使用二进制的方式安装了<code>kubernetes</code>集群，在该文档的基础上重新部署了最新的<code>v1.8.2</code>版本，实现了<code>kube-apiserver</code>的高可用、<code>traefik ingress</code> 的部署、在<code>kubernetes</code>上安装<code>docker</code>的私有仓库<code>harbor</code>、容器化<code>kubernetes</code>部分组建、使用阿里云日志服务收集日志。</p>
 
@@ -639,8 +657,12 @@ https://192.168.1.170:2379 is healthy: successfully committed proposal: took = 1
 <h3 id="环境变量">环境变量</h3>
 
 <pre><code class="language-shell">$ source /usr/k8s/bin/env.sh
-$ export KUBE_APISERVER=&quot;https://${MASTER_URL}&quot;
+$ export KUBE_APISERVER=&quot;https://${MASTER_URL}:6443&quot;
 </code></pre>
+
+<blockquote>
+<p>注意这里的<code>KUBE_APISERVER</code>地址，因为我们还没有安装<code>haproxy</code>，所以暂时需要手动指定使用<code>apiserver</code>的6443端口，等<code>haproxy</code>安装完成后就可以用使用443端口转发到6443端口去了。</p>
+</blockquote>
 
 <ul>
 <li>变量KUBE_APISERVER 指定kubelet 访问的kube-apiserver 的地址，后续被写入<code>~/.kube/config</code>配置文件</li>
@@ -1095,7 +1117,7 @@ Documentation=https://github.com/GoogleCloudPlatform/kubernetes
 [Service]
 ExecStart=/usr/k8s/bin/kube-controller-manager \\
   --address=127.0.0.1 \\
-  --master=http://${MASTER_URL} \\
+  --master=http://${MASTER_URL}:8080 \\
   --allocate-node-cidrs=true \\
   --service-cluster-ip-range=${SERVICE_CIDR} \\
   --cluster-cidr=${CLUSTER_CIDR} \\
@@ -1117,7 +1139,7 @@ EOF
 <ul>
 <li><p><code>--address</code> 值必须为 <code>127.0.0.1</code>，因为当前 kube-apiserver 期望 scheduler 和 controller-manager 在同一台机器</p></li>
 
-<li><p><code>--master=http://${MASTER_URL}</code>：使用<code>http</code>(非安全端口)与 kube-apiserver 通信</p></li>
+<li><p><code>--master=http://${MASTER_URL}:8080</code>：使用<code>http</code>(非安全端口)与 kube-apiserver 通信，需要下面的<code>haproxy</code>安装成功后才能去掉8080端口。</p></li>
 
 <li><p><code>--cluster-cidr</code> 指定 Cluster 中 Pod 的 CIDR 范围，该网段在各 Node 间必须路由可达(flanneld保证)</p></li>
 
@@ -1151,7 +1173,7 @@ Documentation=https://github.com/GoogleCloudPlatform/kubernetes
 [Service]
 ExecStart=/usr/k8s/bin/kube-scheduler \\
   --address=127.0.0.1 \\
-  --master=http://${MASTER_URL} \\
+  --master=http://${MASTER_URL}:8080 \\
   --leader-elect=true \\
   --v=2
 Restart=on-failure
@@ -1164,7 +1186,7 @@ EOF
 
 <ul>
 <li><code>--address</code> 值必须为 <code>127.0.0.1</code>，因为当前 kube-apiserver 期望 scheduler 和 controller-manager 在同一台机器</li>
-<li><code>--master=http://${MASTER_URL}</code>：使用<code>http</code>(非安全端口)与 kube-apiserver 通信</li>
+<li><code>--master=http://${MASTER_URL}:8080</code>：使用<code>http</code>(非安全端口)与 kube-apiserver 通信，需要下面的<code>haproxy</code>启动成功后才能去掉8080端口</li>
 <li><code>--leader-elect=true</code> 部署多台机器组成的 master 集群时选举产生一处于工作状态的 <code>kube-controller-manager</code> 进程</li>
 </ul>
 
@@ -1190,7 +1212,11 @@ etcd-0               Healthy   {&quot;health&quot;: &quot;true&quot;}
 
 <h2 id="7-kube-apiserver-高可用-a-id-ha-a">7. kube-apiserver 高可用<a id="ha"></a></h2>
 
-<p>按照上面的方式在<code>master01</code>与<code>master02</code>机器上安装<code>kube-apiserver</code>、<code>kube-controller-manager</code>、<code>kube-scheduler</code>，但是现在还不能正常允许，因为我们的域名<code>k8s-api.virtual.local</code>对应的<code>master01</code>节点直接通过http 和https 还不能访问，这里我们使用<code>haproxy</code> 来代替请求</p>
+<p>按照上面的方式在<code>master01</code>与<code>master02</code>机器上安装<code>kube-apiserver</code>、<code>kube-controller-manager</code>、<code>kube-scheduler</code>，但是现在我们还是手动指定访问的6443和8080端口的，因为我们的域名<code>k8s-api.virtual.local</code>对应的<code>master01</code>节点直接通过http 和https 还不能访问，这里我们使用<code>haproxy</code> 来代替请求。</p>
+
+<blockquote>
+<p>明白什么意思吗？就是我们需要将http默认的80端口请求转发到<code>apiserver</code>的8080端口，将https默认的443端口请求转发到<code>apiserver</code>的6443端口，所以我们这里使用<code>haproxy</code>来做请求转发。</p>
+</blockquote>
 
 <h3 id="安装haproxy">安装haproxy</h3>
 
@@ -1377,6 +1403,10 @@ $ ip addr
        valid_lft forever preferred_lft forever
 </code></pre>
 
+<blockquote>
+<p>到这里，我们就可以将上面的6443端口和8080端口去掉了，可以手动将<code>kubectl</code>生成的<code>config</code>文件(<code>~/.kube/config</code>)中的server 地址6443端口去掉，另外<code>kube-controller-manager</code>和<code>kube-scheduler</code>的<strong>&ndash;master</strong>参数中的8080端口去掉了，然后分别重启这两个组件即可。</p>
+</blockquote>
+
 <p>验证apiserver：关闭master01 节点上的kube-apiserver 进程，然后查看虚拟ip是否漂移到了master02 节点。</p>
 
 <p>然后我们就可以将第一步在<code>/etc/hosts</code>里面设置的域名对应的IP 更改为我们的虚拟IP了</p>
@@ -1411,7 +1441,7 @@ $ ip addr
 <h3 id="环境变量-3">环境变量</h3>
 
 <pre><code class="language-shell">$ source /usr/k8s/bin/env.sh
-$ export KUBE_APISERVER=&quot;https://${MASTER_URL}&quot;
+$ export KUBE_APISERVER=&quot;https://${MASTER_URL}&quot;  // 如果你没有安装`haproxy`的话，还是需要使用6443端口的哦
 $ export NODE_IP=192.168.1.170  # 当前部署的节点 IP
 </code></pre>
 
@@ -2468,6 +2498,22 @@ $ systemctl restart docker
 <p>扫描下面的二维码(或微信搜索<code>iEverything</code>)添加我微信好友(注明kubernetes)，然后可以加入到我们的<code>kubernetes</code>讨论群里面共同学习。
 <img src="https://blog.qikqiak.com/img/posts/wexin-qrcode.jpeg" alt="qrcode" /></p>
       </article>
+
+      
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://blog.qikqiak.com/post/kubernetes-rollout-update/">Kubernetes Deployment滚动升级</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/kubernetes%E4%BD%BF%E7%94%A8prometheus%E6%90%AD%E5%BB%BA%E7%9B%91%E6%8E%A7%E5%B9%B3%E5%8F%B0/">Kubernetes使用Prometheus搭建监控平台</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/first-use-helm-on-kubernetes/">Kubernetes Helm 初体验</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/add-authorization-for-kubernetes-dashboard/">为kubernetes dashboard访问用户添加权限控制</a></li>
+    
+</ul>
+
 
       <ul class="pager blog-pager">
         
