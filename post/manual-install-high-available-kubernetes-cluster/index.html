@@ -276,7 +276,7 @@ ga('send', 'pageview');
     <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
 
       <div>
-          <h5 id="wc" style="margin-top: -5px;">4780 字|阅读大约需要花 23 分钟</h5>
+          <h5 id="wc" style="margin-top: -5px;">5082 字|阅读大约需要花 24 分钟</h5>
           <h5 id="tags" style="margin-top: 0px;">标签:
             
             
@@ -1080,6 +1080,7 @@ ExecStart=/usr/k8s/bin/kube-apiserver \\
   --audit-log-maxbackup=3 \\
   --audit-log-maxsize=100 \\
   --audit-log-path=/var/lib/audit.log \\
+  --audit-policy-file=/etc/kubernetes/audit-policy.yaml \\
   --event-ttl=1h \\
   --logtostderr=true \\
   --v=6
@@ -1106,7 +1107,82 @@ EOF
 <li><code>--service-node-port-range=${NODE_PORT_RANGE}</code> 指定 NodePort 的端口范围</li>
 <li>缺省情况下 kubernetes 对象保存在<code>etcd/registry</code> 路径下，可以通过 <code>--etcd-prefix</code> 参数进行调整</li>
 <li>kube-apiserver 1.8版本后需要在<code>--authorization-mode</code>参数中添加<code>Node</code>，即：<code>--authorization-mode=Node,RBAC</code>，否则Node 节点无法注册</li>
+<li>注意要开启审查日志功能，指定<code>--audit-log-path</code>参数是不够的，这只是指定了日志的路径，还需要指定一个审查日志策略文件：<code>--audit-policy-file</code>，我们也可以使用日志收集工具收集相关的日志进行分析。</li>
 </ul>
+
+<p>审查日志策略文件内容如下：（<strong>/etc/kubernetes/audit-policy.yaml</strong>）</p>
+
+<pre><code class="language-yaml">apiVersion: audit.k8s.io/v1beta1 # This is required.
+kind: Policy
+# Don't generate audit events for all requests in RequestReceived stage.
+omitStages:
+  - &quot;RequestReceived&quot;
+rules:
+  # Log pod changes at RequestResponse level
+  - level: RequestResponse
+    resources:
+    - group: &quot;&quot;
+      # Resource &quot;pods&quot; doesn't match requests to any subresource of pods,
+      # which is consistent with the RBAC policy.
+      resources: [&quot;pods&quot;]
+  # Log &quot;pods/log&quot;, &quot;pods/status&quot; at Metadata level
+  - level: Metadata
+    resources:
+    - group: &quot;&quot;
+      resources: [&quot;pods/log&quot;, &quot;pods/status&quot;]
+
+  # Don't log requests to a configmap called &quot;controller-leader&quot;
+  - level: None
+    resources:
+    - group: &quot;&quot;
+      resources: [&quot;configmaps&quot;]
+      resourceNames: [&quot;controller-leader&quot;]
+
+  # Don't log watch requests by the &quot;system:kube-proxy&quot; on endpoints or services
+  - level: None
+    users: [&quot;system:kube-proxy&quot;]
+    verbs: [&quot;watch&quot;]
+    resources:
+    - group: &quot;&quot; # core API group
+      resources: [&quot;endpoints&quot;, &quot;services&quot;]
+
+  # Don't log authenticated requests to certain non-resource URL paths.
+  - level: None
+    userGroups: [&quot;system:authenticated&quot;]
+    nonResourceURLs:
+    - &quot;/api*&quot; # Wildcard matching.
+    - &quot;/version&quot;
+
+  # Log the request body of configmap changes in kube-system.
+  - level: Request
+    resources:
+    - group: &quot;&quot; # core API group
+      resources: [&quot;configmaps&quot;]
+    # This rule only applies to resources in the &quot;kube-system&quot; namespace.
+    # The empty string &quot;&quot; can be used to select non-namespaced resources.
+    namespaces: [&quot;kube-system&quot;]
+
+  # Log configmap and secret changes in all other namespaces at the Metadata level.
+  - level: Metadata
+    resources:
+    - group: &quot;&quot; # core API group
+      resources: [&quot;secrets&quot;, &quot;configmaps&quot;]
+
+  # Log all other resources in core and extensions at the Request level.
+  - level: Request
+    resources:
+    - group: &quot;&quot; # core API group
+    - group: &quot;extensions&quot; # Version of group should NOT be included.
+
+  # A catch-all rule to log all other requests at the Metadata level.
+  - level: Metadata
+    # Long-running requests like watches that fall under this rule will not
+    # generate an audit event in RequestReceived.
+    omitStages:
+      - &quot;RequestReceived&quot;
+</code></pre>
+
+<p>审查日志的相关配置可以查看文档了解：<a href="https://kubernetes.io/docs/tasks/debug-application-cluster/audit/">https://kubernetes.io/docs/tasks/debug-application-cluster/audit/</a></p>
 
 <h4 id="启动kube-apiserver">启动kube-apiserver</h4>
 
