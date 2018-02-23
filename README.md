@@ -46,7 +46,8 @@
 #### 前端
  * [webpack3入门到放肆视频教程](https://blog.qikqiak.com/post/webpack3-get-started/)
 
-#### DevOps
+#### 其他
+ * [Hugo 集成 Algolia 搜索](https://blog.qikqiak.com/post/hugo-integrated-algolia-search/)
  * [更优雅的git log](https://blog.qikqiak.com/post/a-better-git-log/)
  * [给博客加上HTTPS](https://blog.qikqiak.com/post/make-https-blog/)
  * [用awk做基本运算](https://blog.qikqiak.com/post/awk-base-compute/)
