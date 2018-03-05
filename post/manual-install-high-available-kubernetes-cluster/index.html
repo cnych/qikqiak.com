@@ -1593,6 +1593,20 @@ $ export NODE_IP=192.168.1.170  # 当前部署的节点 IP
 
 <p>按照上面的步骤安装配置好flanneld</p>
 
+<h3 id="开启路由转发">开启路由转发</h3>
+
+<p>修改<code>/etc/sysctl.conf</code>文件，添加下面的规则：</p>
+
+<pre><code class="language-shell">net.ipv4.ip_forward=1
+net.bridge.bridge-nf-call-iptables=1
+net.bridge.bridge-nf-call-ip6tables=1
+</code></pre>
+
+<p>执行下面的命令立即生效：</p>
+
+<pre><code class="language-shell">$ sysctl -p
+</code></pre>
+
 <h3 id="配置docker">配置docker</h3>
 
 <p>你可以用二进制或yum install 的方式来安装docker，然后修改docker 的systemd unit 文件：</p>
@@ -1651,7 +1665,7 @@ WantedBy=multi-user.target
 <pre><code class="language-shell">  $ sudo iptables -P FORWARD ACCEPT
 </code></pre>
 
-<p>并且把以下命令写入/etc/rc.local文件中，防止节点重启<strong>iptables FORWARD chain的默认策略又还原为DROP</strong></p>
+<p>如果没有开启上面的路由转发(<code>net.ipv4.ip_forward=1</code>)，则需要把以下命令写入<code>/etc/rc.local</code>文件中，防止节点重启<strong>iptables FORWARD chain的默认策略又还原为DROP</strong>（下面的开机脚本我测试了几次都没生效，不知道是不是方法有误，所以最好的方式还是开启上面的路由转发功能，一劳永逸）</p>
 
 <pre><code class="language-shell">  sleep 60 &amp;&amp; /sbin/iptables -P FORWARD ACCEPT
 </code></pre>
@@ -1677,10 +1691,22 @@ $ sudo systemctl start docker
 </code></pre>
 
 <ul>
-<li>需要关闭 firewalld(centos7)/ufw(ubuntu16.04)，否则可能会重复创建的 iptables 规则</li>
+<li>需要关闭 firewalld(centos7)/ufw(ubuntu16.04)，否则可能会重复创建 iptables 规则</li>
 <li>最好清理旧的 iptables rules 和 chains 规则</li>
 <li>执行命令：docker version，检查docker服务是否正常</li>
 </ul>
+
+<blockquote>
+<p>注意如果</p>
+</blockquote>
+
+<p>vim /etc/sysctl.conf</p>
+
+<p>net.ipv4.ip_forward=1
+net.bridge.bridge-nf-call-iptables=1
+net.bridge.bridge-nf-call-ip6tables=1</p>
+
+<p>sysctl -p</p>
 
 <h3 id="安装和配置kubelet">安装和配置kubelet</h3>
 
@@ -2660,9 +2686,9 @@ $ systemctl restart docker
     
     <li><a href="https://blog.qikqiak.com/post/first-use-helm-on-kubernetes/">Kubernetes Helm 初体验</a></li>
     
-    <li><a href="https://blog.qikqiak.com/post/add-authorization-for-kubernetes-dashboard/">为kubernetes dashboard访问用户添加权限控制</a></li>
-    
     <li><a href="https://blog.qikqiak.com/post/understand-kubernetes-configmap-and-secrets/">kubernetes ConfigMap 和 Secrets</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/add-authorization-for-kubernetes-dashboard/">为kubernetes dashboard访问用户添加权限控制</a></li>
     
 </ul>
 
