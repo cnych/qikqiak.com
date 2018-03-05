@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [Kubernetes Downward API 基本用法](https://blog.qikqiak.com/post/use-downward-api-get-pod-info/)
  * [快速了解 kubernetes 中 ConfigMap 和 Secrets 的用法](https://blog.qikqiak.com/post/understand-kubernetes-configmap-and-secrets/)
  * [手摸手教你写 Kubernetes 的 golang 服务](https://blog.qikqiak.com/post/write-kubernets-golang-service-step-by-step/)
  * [Docker 的多阶段构建](https://blog.qikqiak.com/post/multi-stage-build-for-docker/)
@@ -47,6 +48,7 @@
  * [webpack3入门到放肆视频教程](https://blog.qikqiak.com/post/webpack3-get-started/)
 
 #### 其他
+ * [Hugo 集成 Gitment 评论插件](https://blog.qikqiak.com/post/hugo-integrated-gitment-plugin/)
  * [Hugo 集成 Algolia 搜索](https://blog.qikqiak.com/post/hugo-integrated-algolia-search/)
  * [更优雅的git log](https://blog.qikqiak.com/post/a-better-git-log/)
  * [给博客加上HTTPS](https://blog.qikqiak.com/post/make-https-blog/)
