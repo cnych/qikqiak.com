@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [理解 Kubernetes 的亲和性调度](https://blog.qikqiak.com/post/understand-kubernetes-affinity)
  * [Kubernetes Downward API 基本用法](https://blog.qikqiak.com/post/use-downward-api-get-pod-info/)
  * [快速了解 kubernetes 中 ConfigMap 和 Secrets 的用法](https://blog.qikqiak.com/post/understand-kubernetes-configmap-and-secrets/)
  * [手摸手教你写 Kubernetes 的 golang 服务](https://blog.qikqiak.com/post/write-kubernets-golang-service-step-by-step/)

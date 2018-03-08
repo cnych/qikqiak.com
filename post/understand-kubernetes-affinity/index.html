@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>理解 Kubernetes 的亲和性调度-blog.qikqiak.com|阳明的博客|Kubernetes|Docker|Python|Golang|Cloud Native</title>
+  <meta property="og:title" content="理解 Kubernetes 的亲和性调度" />
+  <meta name="twitter:title" content="理解 Kubernetes 的亲和性调度" />
+
+  <meta name="description" content="一般情况下我们部署的 POD 是通过集群自动调度选择某个节点的，默认情况下调度器考虑的是资源足够，并且负载尽量平均，但是有的时候我们需要能够更加细粒度的去控制 POD 的调度，比如我们内部的一些服务 gitlab 之类的也是跑在Kubernetes集群上的，我们就不希望对外的一些服务和内部的服务跑在同一个节点上了，害怕内部服务对外部的服务产生影响；有的时候呢我们两个服务直接交流比较频繁，又希望能够将这两个服务的 POD 调度到同样的节点上。这就需要用到 Kubernetes 里面的一个概念：亲和性，亲和性主要分为两类：nodeAffinity和podAffinity。
+
+">
+  <meta property="og:description" content="一般情况下我们部署的 POD 是通过集群自动调度选择某个节点的，默认情况下调度器考虑的是资源足够，并且负载尽量平均，但是有的时候我们需要能够更加细粒度的去控制 POD 的调度，比如我们内部的一些服务 gitlab 之类的也是跑在Kubernetes集群上的，我们就不希望对外的一些服务和内部的服务跑在同一个节点上了，害怕内部服务对外部的服务产生影响；有的时候呢我们两个服务直接交流比较频繁，又希望能够将这两个服务的 POD 调度到同样的节点上。这就需要用到 Kubernetes 里面的一个概念：亲和性，亲和性主要分为两类：nodeAffinity和podAffinity。
+
+">
+  <meta name="twitter:description" content="一般情况下我们部署的 POD 是通过集群自动调度选择某个节点的，默认情况下调度器考虑的是资源足够，并且负载尽量平均，但是有的时候我们需要能够更加细粒度的去控制 POD 的调度，比如我们内部的一些服务 gitlab 之类的也是跑在Kubernetes集群上的，我们就不希望对外的一些服务和内部的服务跑在同一个节点上了，害怕内部服务对外部的服务产生影响；有的时候呢我们两个服务直接交流比较频繁，又希望能够 …">
+  <meta name="author" content=""/>
+  <link href='https://blog.qikqiak.com/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://blog.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:image" content="https://blog.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://blog.qikqiak.com/post/understand-kubernetes-affinity/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.34" />
+  <link rel="canonical" href="https://blog.qikqiak.com/post/understand-kubernetes-affinity/" />
+  <link rel="alternate" href="https://blog.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+  <link href="https://cdn.bootcss.com/KaTeX/0.7.1/katex.min.css" rel="stylesheet">
+  <link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/main.css?t=1235" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/pygment_highlights.css" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/highlight.min.css" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/prism.css?t=123" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/search.css" />
+<meta name="keywords" content="kubernetes, 亲和性, 调度, affinity, nodeSelector, 污点, 容忍">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?970de9920f6089c287a7fd366138d4e9";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<link href="https://cdn.bootcss.com/photoswipe/4.1.1/photoswipe.min.css" rel="stylesheet">
+<link href="https://cdn.bootcss.com/photoswipe/4.1.1/default-skin/default-skin.min.css" rel="stylesheet">
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+<script>
+window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+ga('create', 'UA-69668147-3', 'auto');
+ga('send', 'pageview');
+</script>
+<script async src='//www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://blog.qikqiak.com/">阳明的博客</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Home" href="https://www.qikqiak.com">Home</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="Archive" href="https://blog.qikqiak.com/page/archive/">Archive</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">Categories</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://blog.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://blog.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://blog.qikqiak.com/tags/ops">devops</a>
+                
+                  <a href="https://blog.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://blog.qikqiak.com/tags">tags</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">Projects</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://tdd.qikqiak.com?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">Python微服务实战</a>
+                
+                  <a href="https://www.haimaxy.com?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">海马学院</a>
+                
+                  <a href="https://github.com/cnych/awesome-hugo">awesome-hugo</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="About" href="https://blog.qikqiak.com/page/about/">About</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span class="hidden-sm hidden-md hidden-lg">Search</span> <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+    <div class="avatar-container">
+      <div class="avatar-img-border">
+        
+          <a title="阳明的博客" href="https://blog.qikqiak.com/">
+            <img class="avatar-img" src="https://blog.qikqiak.com/img/avatar.jpeg" alt="阳明的博客" />
+          </a>
+        
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">Search blog.qikqiak.com</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://res.cloudinary.com/jimmysong/raw/upload/rootsongjc-hugo/algoliasearch.min.js"></script>
+<script src="https://res.cloudinary.com/jimmysong/raw/upload/rootsongjc-hugo/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://blog.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://blog.qikqiak.com/img/posts/photo-1474436799594-1974f1add7ad.jpeg" data-img-desc-1="Guntersville Lake, United States"></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>理解 Kubernetes 的亲和性调度</h1>
+                  
+                  
+                    <span class="post-meta">
+  Posted on March 8, 2018
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>理解 Kubernetes 的亲和性调度</h1>
+                
+                
+                  <span class="post-meta">
+  Posted on March 8, 2018
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+
+      <div>
+          
+          
+          <h5 id="tags" style="margin-top: 0px;">标签:
+            
+                <a href="https://blog.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+            
+                <a href="https://blog.qikqiak.com/tags/affinity/">affinity</a> &nbsp;
+            
+                <a href="https://blog.qikqiak.com/tags/%E8%B0%83%E5%BA%A6/">调度</a> &nbsp;
+            
+          </h5>
+          
+      </div>
+
+      <article role="main" class="blog-post">
+        <p>一般情况下我们部署的 POD 是通过集群自动调度选择某个节点的，默认情况下调度器考虑的是资源足够，并且负载尽量平均，但是有的时候我们需要能够更加细粒度的去控制 POD 的调度，比如我们内部的一些服务 gitlab 之类的也是跑在<code>Kubernetes</code>集群上的，我们就不希望对外的一些服务和内部的服务跑在同一个节点上了，害怕内部服务对外部的服务产生影响；有的时候呢我们两个服务直接交流比较频繁，又希望能够将这两个服务的 POD 调度到同样的节点上。这就需要用到 Kubernetes 里面的一个概念：亲和性，亲和性主要分为两类：<code>nodeAffinity</code>和<code>podAffinity</code>。</p>
+
+<p></p>
+
+<h2 id="nodeselector">nodeSelector</h2>
+
+<p>我们知道<code>label</code>是<code>kubernetes</code>中一个非常重要的概念，用户可以非常灵活的利用 label 来管理集群中的资源，比如最常见的一个就是 service 通过匹配 label 去选择 POD 的。而 POD 的调度也可以根据节点的 label 进行特定的部署。</p>
+
+<p>我们可以通过下面的命令查看我们的 node 的 label：</p>
+
+<pre><code class="language-shell">$ kubectl get nodes --show-labels
+NAME            STATUS    ROLES     AGE       VERSION   LABELS
+192.168.1.140   Ready     &lt;none&gt;    42d       v1.8.1    beta.kubernetes.io/arch=amd64,beta.kubernetes.io/os=linux,kubernetes.io/hostname=192.168.1.140
+192.168.1.161   Ready     &lt;none&gt;    118d      v1.8.1    beta.kubernetes.io/arch=amd64,beta.kubernetes.io/os=linux,kubernetes.io/cluster-service=true,kubernetes.io/hostname=192.168.1.161
+192.168.1.170   Ready     &lt;none&gt;    118d      v1.8.1    beta.kubernetes.io/arch=amd64,beta.kubernetes.io/os=linux,kubernetes.io/cluster-service=true,kubernetes.io/hostname=192.168.1.170
+192.168.1.172   Ready     &lt;none&gt;    114d      v1.8.1    beta.kubernetes.io/arch=amd64,beta.kubernetes.io/os=linux,kubernetes.io/cluster-service=true,kubernetes.io/hostname=192.168.1.172
+</code></pre>
+
+<p>现在我们先给节点<strong>192.168.1.140</strong>增加一个<code>source=qikqiak</code>的标签，命令如下：</p>
+
+<pre><code class="language-shell">$ kubectl label nodes 192.168.1.140 source=qikqiak
+node &quot;192.168.1.140&quot; labeled
+</code></pre>
+
+<p>我们可以通过上面的<code>--show-labels</code>参数可以查看上述标签是否生效。当 node 被打上了相关标签后，在调度的时候就可以使用这些标签了，只需要在 POD 的 spec 字段中添加<code>nodeSelector</code>字段，里面是我们需要被调度的节点的 label。例如，下面是我们之前的一个默认的 busybox POD 的 YAML 文件：</p>
+
+<pre><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: busybox-pod
+  name: test-busybox
+spec:
+  containers:
+  - command:
+    - sleep
+    - &quot;3600&quot;
+    image: busybox
+    imagePullPolicy: Always
+    name: test-busybox
+</code></pre>
+
+<p>然后我需要让上面的 POD 被调度到140的节点上，那么最简单的方法就是去匹配140上面的 label，如下：</p>
+
+<pre><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: busybox-pod
+  name: test-busybox
+spec:
+  containers:
+  - command:
+    - sleep
+    - &quot;3600&quot;
+    image: busybox
+    imagePullPolicy: Always
+    name: test-busybox
+  nodeSelector:
+    source: qikqiak
+</code></pre>
+
+<p>然后我们可以通过 describe 命令查看调度结果：</p>
+
+<pre><code class="language-shell">$ kubectl describe pod test-busybox
+......
+Events:
+  Type    Reason                 Age   From                    Message
+  ----    ------                 ----  ----                    -------
+  Normal  Scheduled              49s   default-scheduler       Successfully assigned test-busybox to 192.168.1.140
+  Normal  SuccessfulMountVolume  49s   kubelet, 192.168.1.140  MountVolume.SetUp succeeded for volume &quot;default-token-hmpbz&quot;
+  Normal  Pulling                49s   kubelet, 192.168.1.140  pulling image &quot;busybox&quot;
+  Normal  Pulled                 41s   kubelet, 192.168.1.140  Successfully pulled image &quot;busybox&quot;
+  Normal  Created                41s   kubelet, 192.168.1.140  Created container
+  Normal  Started                41s   kubelet, 192.168.1.140  Started container
+</code></pre>
+
+<p>我们可以看到 Events 下面的信息，上面的 POD 被正确的调度到了140节点。通过上面的例子我们可以感受到<code>nodeSelector</code>的方式比较直观，但是还够灵活，控制粒度偏大，下面我们再看另外一种更加灵活的方式：<code>nodeAffinity</code>。</p>
+
+<h2 id="nodeaffinity">nodeAffinity</h2>
+
+<p><code>nodeAffinity</code>就是节点亲和性，相对应的是<code>Anti-Affinity</code>，就是反亲和性，这种方法比上面的<code>nodeSelector</code>更加灵活，它可以进行一些简单的逻辑组合了，不只是简单的相等匹配。
+调度可以分成软策略和硬策略两种方式，软策略就是如果你没有满足调度要求的节点的话，POD 就会忽略这条规则，继续完成调度过程，说白了就是<strong>满足条件最好了，没有的话也无所谓了</strong>的策略；而硬策略就比较强硬了，如果没有满足条件的节点的话，就不断重试直到满足条件为止，简单说就是<strong>你必须满足我的要求，不然我就不干</strong>的策略。
+<code>nodeAffinity</code>就有两上面两种策略：<code>preferredDuringSchedulingIgnoredDuringExecution</code>和<code>requiredDuringSchedulingIgnoredDuringExecution</code>，前面的就是软策略，后面的就是硬策略。</p>
+
+<p>如下例子：（<strong>test-node-affinity.yaml</strong>）</p>
+
+<pre><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: with-node-affinity
+  labels:
+    app: node-affinity-pod
+spec:
+  containers:
+  - name: with-node-affinity
+    image: nginx
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: NotIn
+            values:
+            - 192.168.1.140
+            - 192.168.1.161
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 1
+        preference:
+          matchExpressions:
+          - key: source
+            operator: In
+            values:
+            - qikqiak
+</code></pre>
+
+<p>上面这个 POD 首先是要求 POD 不能运行在140和161两个节点上，如果有个节点满足<code>source=qikqiak</code>的话就优先调度到这个节点上，同样的我们可以使用<code>descirbe</code>命令查看具体的调度情况是否满足我们的要求。这里的匹配逻辑是 label 的值在某个列表中，现在<code>Kubernetes</code>提供的操作符有下面的几种：</p>
+
+<ul>
+<li>In：label 的值在某个列表中</li>
+<li>NotIn：label 的值不在某个列表中</li>
+<li>Gt：label 的值大于某个值</li>
+<li>Lt：label 的值小于某个值</li>
+<li>Exists：某个 label 存在</li>
+<li>DoesNotExist：某个 label 不存在</li>
+</ul>
+
+<blockquote>
+<p>如果<code>nodeSelectorTerms</code>下面有多个选项的话，满足任何一个条件就可以了；如果<code>matchExpressions</code>有多个选项的话，则必须同时满足这些条件才能正常调度 POD。</p>
+</blockquote>
+
+<h2 id="podaffinity">podAffinity</h2>
+
+<p>上面两种方式都是让 POD 去选择节点的，有的时候我们也希望能够根据 POD 之间的关系进行调度，<code>Kubernetes</code>在1.4版本引入的<code>podAffinity</code>概念就可以实现我们这个需求。</p>
+
+<p>和<code>nodeAffinity</code>类似，<code>podAffinity</code>也有<code>requiredDuringSchedulingIgnoredDuringExecution</code>和 <code>preferredDuringSchedulingIgnoredDuringExecution</code>两种调度策略，唯一不同的是如果要使用互斥性，我们需要使用<code>podAntiAffinity</code>字段。
+如下例子，我们希望<code>with-pod-affinity</code>和<code>busybox-pod</code>能够就近部署，而不希望和<code>node-affinity-pod</code>部署在同一个拓扑域下面：（<strong>test-pod-affinity.yaml</strong>）</p>
+
+<pre><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: with-pod-affinity
+  labels:
+    app: pod-affinity-pod
+spec:
+  containers:
+  - name: with-pod-affinity
+    image: nginx
+  affinity:
+    podAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values:
+            - busybox-pod
+        topologyKey: kubernetes.io/hostname
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 1
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - node-affinity-pod
+          topologyKey: kubernetes.io/hostname
+</code></pre>
+
+<p>上面这个例子中的 POD 需要调度到某个指定的主机上，至少有一个节点上运行了这样的 POD：这个 POD 有一个<code>app=busybox-pod</code>的 label。<code>podAntiAffinity</code>则是希望最好不要调度到这样的节点：这个节点上运行了某个 POD，而这个 POD 有<code>app=node-affinity-pod</code>的 label。根据前面两个 POD 的定义，我们可以预见上面这个 POD 应该会被调度到140的节点上，因为<code>busybox-pod</code>被调度到了140节点，而<code>node-affinity-pod</code>被调度到了140以为的节点，正好满足上面的需求。通过<code>describe</code>查看：</p>
+
+<pre><code class="language-shell">$ kubectl describe pod with-pod-affinity
+......
+Events:
+  Type    Reason                 Age   From                    Message
+  ----    ------                 ----  ----                    -------
+  Normal  Scheduled              8s    default-scheduler       Successfully assigned with-pod-affinity to 192.168.1.140
+  Normal  SuccessfulMountVolume  7s    kubelet, 192.168.1.140  MountVolume.SetUp succeeded for volume &quot;default-token-lcl77&quot;
+  Normal  Pulling                7s    kubelet, 192.168.1.140  pulling image &quot;nginx&quot;
+</code></pre>
+
+<p>上面的事件信息也验证了我们的想法。</p>
+
+<blockquote>
+<p>在<code>labelSelector</code>和 <code>topologyKey</code>的同级，还可以定义 namespaces 列表，表示匹配哪些 namespace 里面的 pod，默认情况下，会匹配定义的 pod 所在的 namespace；如果定义了这个字段，但是它的值为空，则匹配所有的 namespaces。</p>
+</blockquote>
+
+<p>查看上面我们定义的3个 POD 结果：</p>
+
+<pre><code class="language-shell">$ kubectl get po -o wide
+NAME                 READY     STATUS    RESTARTS   AGE       IP             NODE
+test-busybox         1/1       Running   0          8m        172.30.95.18   192.168.1.140
+with-node-affinity   1/1       Running   0          10m       172.30.81.25   192.168.1.172
+with-pod-affinity    1/1       Running   0          8m        172.30.95.17   192.168.1.140
+</code></pre>
+
+<p>亲和性/反亲和性调度策略比较如下：</p>
+
+<table>
+<thead>
+<tr>
+<th>调度策略</th>
+<th>匹配标签</th>
+<th>操作符</th>
+<th>拓扑域支持</th>
+<th>调度目标</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>nodeAffinity</td>
+<td>主机</td>
+<td>In, NotIn, Exists, DoesNotExist, Gt, Lt</td>
+<td>否</td>
+<td>指定主机</td>
+</tr>
+
+<tr>
+<td>podAffinity</td>
+<td>POD</td>
+<td>In, NotIn, Exists, DoesNotExist</td>
+<td>是</td>
+<td>POD与指定POD同一拓扑域</td>
+</tr>
+
+<tr>
+<td>podAnitAffinity</td>
+<td>POD</td>
+<td>In, NotIn, Exists, DoesNotExist</td>
+<td>是</td>
+<td>POD与指定POD不在同一拓扑域</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="污点-taints-与容忍-tolerations">污点（Taints）与容忍（tolerations）</h2>
+
+<p>对于<code>nodeAffinity</code>无论是硬策略还是软策略方式，都是调度 POD 到预期节点上，而<code>Taints</code>恰好与之相反，如果一个节点标记为 Taints ，除非 POD 也被标识为可以容忍污点节点，否则该 Taints 节点不会被调度pod。</p>
+
+<p>比如用户希望把 Master 节点保留给 Kubernetes 系统组件使用，或者把一组具有特殊资源预留给某些 POD，则污点就很有用了，POD 不会再被调度到 taint 标记过的节点。taint 标记节点举例如下：</p>
+
+<pre><code class="language-shell">$ kubectl taint nodes 192.168.1.40 key=value:NoSchedule
+node &quot;192.168.1.40&quot; tainted
+</code></pre>
+
+<p>如果仍然希望某个 POD 调度到 taint 节点上，则必须在 Spec 中做出<code>Toleration</code>定义，才能调度到该节点，举例如下：</p>
+
+<pre><code class="language-yaml">tolerations:
+- key: &quot;key&quot;
+operator: &quot;Equal&quot;
+value: &quot;value&quot;
+effect: &quot;NoSchedule&quot;
+</code></pre>
+
+<p>effect 共有三个可选项，可按实际需求进行设置：</p>
+
+<ol>
+<li><code>NoSchedule</code>：POD 不会被调度到标记为 taints 节点。</li>
+<li><code>PreferNoSchedule</code>：NoSchedule 的软策略版本。</li>
+<li><code>NoExecute</code>：该选项意味着一旦 Taint 生效，如该节点内正在运行的 POD 没有对应 Tolerate 设置，会直接被逐出。</li>
+</ol>
+
+<h2 id="参考资料">参考资料</h2>
+
+<ul>
+<li><a href="https://kubernetes.io/docs/concepts/configuration/assign-pod-node/">https://kubernetes.io/docs/concepts/configuration/assign-pod-node/</a></li>
+<li><a href="https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/">https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/</a></li>
+<li><a href="https://coreos.com/fleet/docs/latest/affinity.html">https://coreos.com/fleet/docs/latest/affinity.html</a></li>
+</ul>
+
+<p>扫描下面的二维码(或微信搜索<code>k8s技术圈</code>)关注我们的微信公众帐号，在微信公众帐号中回复 <strong>kube100.com</strong> 即可加入到我们的 kubernetes 讨论群里面共同学习。
+<img src="https://blog.qikqiak.com/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg" alt="qrcode" /></p>
+      </article>
+
+      
+        
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://blog.qikqiak.com/post/use-downward-api-get-pod-info/">Kubernetes Downward API 基本用法</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/write-kubernets-golang-service-step-by-step/">手摸手教你写 Kubernetes 的 golang 服务</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/use-yaml-create-kubernetes-deployment/">使用YAML 文件创建 Kubernetes Deployment</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/how-to-use-podpreset-in-kubernetes/">kubernetes PodPreset 的使用</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/first-use-helm-on-kubernetes/">Kubernetes Helm 初体验</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/understand-kubernetes-configmap-and-secrets/">kubernetes ConfigMap 和 Secrets</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/add-authorization-for-kubernetes-dashboard/">为kubernetes dashboard访问用户添加权限控制</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/alertmanager-of-prometheus-in-practice/">Prometheus报警AlertManager实战</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/update-prometheus-2-in-kubernetes/">Kubernetes 下升级Prometheus2.0</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/kubernetes-logs-collect/">kubernetes 日志收集方案</a></li>
+    
+</ul>
+
+      
+
+      
+      <ul class="pager blog-pager">
+        
+          <li class="previous">
+            <a href="https://blog.qikqiak.com/post/hugo-integrated-gitment-plugin/" data-toggle="tooltip" data-placement="top" title="Hugo 集成 Gitment 评论插件">&larr; Previous Post</a>
+          </li>
+        
+        
+      </ul>
+      
+
+      
+
+      
+      <div id="git-comments"></div>
+      <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+      <script src="https://imsun.github.io/gitment/dist/gitment.browser.js"></script>
+      <script>
+      var gitment = new Gitment({
+        id: 'understand-kubernetes-affinity',
+        owner: 'cnych',
+        repo: 'blog',
+        oauth: {
+          client_id: 'bdb76dbb2e9d0786e350',
+          client_secret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        }
+      })
+      gitment.render('git-comments')
+      </script>
+      
+
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://blog.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2018
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://blog.qikqiak.com/">阳明的博客</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.34</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.bootcss.com/KaTeX/0.7.1/katex.min.js"></script>
+<script src="https://cdn.bootcss.com/KaTeX/0.7.1/contrib/auto-render.min.js"></script>
+<script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+<script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="https://blog.qikqiak.com/js/main.min.js"></script>
+<script src="https://blog.qikqiak.com/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script> renderMathInElement(document.body); </script>
+<script src="https://blog.qikqiak.com/js/prism.js?t=123"></script>
+<script src="https://cdn.bootcss.com/photoswipe/4.1.1/photoswipe.min.js"></script>
+<script src="https://cdn.bootcss.com/photoswipe/4.1.1/photoswipe-ui-default.min.js"></script>
+<script src="https://blog.qikqiak.com/js/load-photoswipe.min.js"></script>
+
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+
+  </body>
+</html>
+
