@@ -12,6 +12,8 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [kubernetes 的资源配额控制器](https://blog.qikqiak.com/post/kubernetes-resource-quota-usage/)
+ * [k8s技术圈一周精选[第1期]](https://blog.qikqiak.com/post/k8s-tech-weekly-collection-phase1/)
  * [理解 Kubernetes 的亲和性调度](https://blog.qikqiak.com/post/understand-kubernetes-affinity)
  * [Kubernetes Downward API 基本用法](https://blog.qikqiak.com/post/use-downward-api-get-pod-info/)
  * [快速了解 kubernetes 中 ConfigMap 和 Secrets 的用法](https://blog.qikqiak.com/post/understand-kubernetes-configmap-and-secrets/)
