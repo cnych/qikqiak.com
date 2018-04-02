@@ -6,24 +6,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
 
-  <title>Prometheus报警AlertManager实战-blog.qikqiak.com|阳明的博客|Kubernetes|Docker|Python|Golang|Cloud Native</title>
-  <meta property="og:title" content="Prometheus报警AlertManager实战" />
-  <meta name="twitter:title" content="Prometheus报警AlertManager实战" />
+  <title>Kubernetes使用Prometheus搭建监控平台-blog.qikqiak.com|阳明的博客|Kubernetes|Docker|Python|Golang|Cloud Native</title>
+  <meta property="og:title" content="Kubernetes使用Prometheus搭建监控平台" />
+  <meta name="twitter:title" content="Kubernetes使用Prometheus搭建监控平台" />
 
-  <meta name="description" content="在前面一文Kubernetes使用Prometheus搭建监控平台中我们知道了怎么使用Prometheus来搭建监控平台，也了解了grafana的使用。这篇文章就来说说报警系统的搭建，有人说报警用grafana就行了，实际上grafana对报警的支持真的很弱，而Prometheus提供的报警系统就强大很多，今天我们的主角就是AlertManager。">
-  <meta property="og:description" content="在前面一文Kubernetes使用Prometheus搭建监控平台中我们知道了怎么使用Prometheus来搭建监控平台，也了解了grafana的使用。这篇文章就来说说报警系统的搭建，有人说报警用grafana就行了，实际上grafana对报警的支持真的很弱，而Prometheus提供的报警系统就强大很多，今天我们的主角就是AlertManager。">
-  <meta name="twitter:description" content="在前面一文Kubernetes使用Prometheus搭建监控平台中我们知道了怎么使用Prometheus来搭建监控平台，也了解了grafana的使用。这篇文章就来说说报警系统的搭建，有人说报警用grafana就行了，实际上grafana对报警的支持真的很弱，而Prometheus提供的报警系统就强大很多，今天我们的主角就是AlertManager。">
+  <meta name="description" content="最近在测试环境搭建了Kubernetes集群环境，迁移了部分测试环境的应用，由于测试集群性能不是很好，有时会遇到集群资源不够的情况，一般情况下我们是直接通过Dashboard的资源统计图标进行观察的，但是很显然如果要上到生产环境，就需要更自动化的方式来对集群、Pod甚至容器进行监控了。Kubernetes内置了一套监控方案：influxdb&#43;grafana&#43;heapster。但由于之前我们的应用的业务监控使用的是Prometheus，所以这里准备使用Prometheus来完成k8s的集群监控。">
+  <meta property="og:description" content="最近在测试环境搭建了Kubernetes集群环境，迁移了部分测试环境的应用，由于测试集群性能不是很好，有时会遇到集群资源不够的情况，一般情况下我们是直接通过Dashboard的资源统计图标进行观察的，但是很显然如果要上到生产环境，就需要更自动化的方式来对集群、Pod甚至容器进行监控了。Kubernetes内置了一套监控方案：influxdb&#43;grafana&#43;heapster。但由于之前我们的应用的业务监控使用的是Prometheus，所以这里准备使用Prometheus来完成k8s的集群监控。">
+  <meta name="twitter:description" content="最近在测试环境搭建了Kubernetes集群环境，迁移了部分测试环境的应用，由于测试集群性能不是很好，有时会遇到集群资源不够的情况，一般情况下我们是直接通过Dashboard的资源统计图标进行观察的，但是很显然如果要上到生产环境，就需要更自动化的方式来对集群、Pod甚至容器进行监控了。Kubernetes内置了一套监控方案：influxdb&#43;grafana&#43;heapster。但由于之前我们的应用的 …">
   <meta name="author" content=""/>
   <link href='https://blog.qikqiak.com/img/favicon.ico' rel='icon' type='image/x-icon'/>
   <meta property="og:image" content="https://blog.qikqiak.com/img/avatar.jpeg" />
   <meta name="twitter:image" content="https://blog.qikqiak.com/img/avatar.jpeg" />
   <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://blog.qikqiak.com/post/alertmanager-of-prometheus-in-practice/" />
+  <meta property="og:url" content="https://blog.qikqiak.com/post/kubernetes-use-prometheus-build-monitor-system/" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="阳明的博客" />
 
   <meta name="generator" content="Hugo 0.34" />
-  <link rel="canonical" href="https://blog.qikqiak.com/post/alertmanager-of-prometheus-in-practice/" />
+  <link rel="canonical" href="https://blog.qikqiak.com/post/kubernetes-use-prometheus-build-monitor-system/" />
   <link rel="alternate" href="https://blog.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
   <link href="https://cdn.bootcss.com/KaTeX/0.7.1/katex.min.css" rel="stylesheet">
   <link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -35,7 +35,7 @@
   <link rel="stylesheet" href="https://blog.qikqiak.com/css/highlight.min.css" />
   <link rel="stylesheet" href="https://blog.qikqiak.com/css/prism.css?t=123" />
   <link rel="stylesheet" href="https://blog.qikqiak.com/css/search.css" />
-<meta name="keywords" content="kubernetes, prometheus, alertmanager, 报警, 钉钉, webhook">
+<meta name="keywords" content="kubernetes, 监控, prometheus, grafana, influxdb">
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -257,7 +257,7 @@ autocomplete('#aa-search-input',
 
 
   
-    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://blog.qikqiak.com/img/posts/photo-1512389142860-9c449e58a543.jpeg" ></div>
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://blog.qikqiak.com/img/posts/k8s-prometheus-grafana-cover.png" ></div>
   
 
   <header class="header-section has-img">
@@ -268,11 +268,11 @@ autocomplete('#aa-search-input',
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
-                <h1>Prometheus报警AlertManager实战</h1>
+                <h1>Kubernetes使用Prometheus搭建监控平台</h1>
                   
                   
                     <span class="post-meta">
-  Posted on December 27, 2017
+  Posted on October 17, 2017
   
 </span>
 
@@ -291,11 +291,11 @@ autocomplete('#aa-search-input',
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
             <div class="post-heading">
-              <h1>Prometheus报警AlertManager实战</h1>
+              <h1>Kubernetes使用Prometheus搭建监控平台</h1>
                 
                 
                   <span class="post-meta">
-  Posted on December 27, 2017
+  Posted on October 17, 2017
   
 </span>
 
@@ -323,14 +323,16 @@ autocomplete('#aa-search-input',
             
                 <a href="https://blog.qikqiak.com/tags/prometheus/">prometheus</a> &nbsp;
             
-                <a href="https://blog.qikqiak.com/tags/alertmanager/">alertmanager</a> &nbsp;
+                <a href="https://blog.qikqiak.com/tags/grafana/">grafana</a> &nbsp;
+            
+                <a href="https://blog.qikqiak.com/tags/influxdb/">influxdb</a> &nbsp;
             
           </h5>
           
       </div>
 
       <article role="main" class="blog-post">
-        <p>在前面一文<a href="https://blog.qikqiak.com/post/kubernetes-monitor-prometheus-grafana/">Kubernetes使用Prometheus搭建监控平台</a>中我们知道了怎么使用<code>Prometheus</code>来搭建监控平台，也了解了<code>grafana</code>的使用。这篇文章就来说说报警系统的搭建，有人说报警用<code>grafana</code>就行了，实际上<code>grafana</code>对报警的支持真的很弱，而<code>Prometheus</code>提供的报警系统就强大很多，今天我们的主角就是<code>AlertManager</code>。</p>
+        <p>最近在测试环境搭建了<code>Kubernetes</code>集群环境，迁移了部分测试环境的应用，由于测试集群性能不是很好，有时会遇到集群资源不够的情况，一般情况下我们是直接通过Dashboard的资源统计图标进行观察的，但是很显然如果要上到生产环境，就需要更自动化的方式来对集群、Pod甚至容器进行监控了。<code>Kubernetes</code>内置了一套监控方案：influxdb+grafana+heapster。但由于之前我们的应用的业务监控使用的是<code>Prometheus</code>，所以这里准备使用<code>Prometheus</code>来完成k8s的集群监控。</p>
 
 <p>
 欢迎大家加入我们的知识星球：<code>Kubernetes</code>。
@@ -339,128 +341,13 @@ autocomplete('#aa-search-input',
 <p>扫描下面的二维码(或微信搜索<code>k8s技术圈</code>)关注我们的微信公众帐号，在微信公众帐号中回复 <strong>加群</strong> 即可加入到我们的 kubernetes 讨论群里面共同学习。
 <img src="https://blog.qikqiak.com/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg" alt="qrcode" /></p>
 
-<h2 id="alertmanager-简介">AlertManager 简介</h2>
+<h2 id="prometheus-简介">Prometheus 简介</h2>
 
-<p><code>Prometheus</code>将数据采集和报警分成了两个模块。报警规则配置在<code>Prometheus Servers</code>上，然后发送报警信息到<code>AlertManger</code>，然后我们的<code>AlertManager</code>就来管理这些报警信息，包括<strong>silencing</strong>、<strong>inhibition</strong>，聚合报警信息过后通过email、PagerDuty、HipChat、Slack 等方式发送消息提示。</p>
+<p><code>Prometheus</code>是SoundCloud开源的一款开源软件。它的实现参考了Google内部的监控实现，与源自Google的Kubernetes结合起来非常合适。另外相比influxdb的方案，性能更加突出，而且还内置了报警功能。它针对大规模的集群环境设计了拉取式的数据采集方式，你只需要在你的应用里面实现一个<code>metrics</code>接口，然后把这个接口告诉<code>Prometheus</code>就可以完成数据采集了。</p>
 
-<p>让<code>AlertManager</code>提供服务总的来说就下面3步：
-* 安装和配置<code>AlertManger</code>
-* 配置<code>Prometheus</code>来和<code>AlertManager</code>通信
-* 在<code>Prometheus</code>中创建报警规则</p>
+<h2 id="安装prometheus">安装Prometheus</h2>
 
-<h2 id="安装和配置-alertmanager">安装和配置<code>AlertManager</code></h2>
-
-<p>从官方文档<a href="https://prometheus.io/docs/alerting/configuration/">https://prometheus.io/docs/alerting/configuration/</a>中我们可以看到下载<code>alertmanager</code>二进制文件过后，通过下面的命令就可运行</p>
-
-<pre><code class="language-shell">$ ./alertmanager -config.file=simple.yml
-</code></pre>
-
-<p>可以通过<code>-config.file</code>来指定相应的配置文件，我们这里在<code>kubernetes</code>平台上面来运行我们的<code>AlertManager</code>，所以我们直接用<code>docker</code>镜像的方式来安装，使用的镜像是：<code>quay.io/prometheus/alertmanager:v0.12.0</code>，如果你因为某些原因不能拉取该镜像，可以直接去下载<code>AlertManager</code>的<a href="https://github.com/prometheus/alertmanager">源代码</a>，然后自己构建打包一个<code>docker</code>镜像也是一样的。</p>
-
-<p>通过<code>ConfigMap</code>来指定配置文件，如下:</p>
-
-<pre><code class="language-yaml">kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: alertmanager
-  namespace: kube-ops
-data:
-  config.yml: |-
-    global:
-      resolve_timeout: 5m
-    route:
-      receiver: webhook
-      group_wait: 30s
-      group_interval: 5m
-      repeat_interval: 4h
-      group_by: [alertname]
-      routes:
-      - receiver: webhook
-        group_wait: 10s
-        match:
-          team: node
-    receivers:
-    - name: webhook
-      webhook_configs:
-      - url: 'http://apollo/hooks/dingtalk/'
-        send_resolved: true
-      - url: 'http://apollo/hooks/prome/'
-        send_resolved: true
-</code></pre>
-
-<p>我们这里定义了两个<code>webhook</code>，其中一个是钉钉，另外一个是email。关于钉钉机器人可以查看<a href="https://open-doc.dingtalk.com/docs/doc.htm?spm=a219a.7629140.0.0.6LZJ6G&amp;treeId=257&amp;articleId=105735&amp;docType=1">官方文档</a>，钉钉的报警通知很简单，在你们的钉钉群里面添加一个机器人然后就可以获取到一个带<code>token</code>的URL，然后根据上面的文档往这个URL发送数据即可。</p>
-
-<h2 id="配置-prometheus-来和-alertmanager-通信">配置<code>Prometheus</code>来和<code>AlertManager</code>通信</h2>
-
-<p>在我们之前的<code>Prometheus</code>的<code>ConfigMap</code>中增加<code>AlertManager</code>的配置：</p>
-
-<pre><code class="language-yaml">alerting:
-  alertmanagers:
-    - static_configs:
-      - targets: [&quot;localhost:9093&quot;]
-</code></pre>
-
-<p>由于我们这个地方将<code>Prometheus</code>和<code>AlertManager</code>部署在同一个<code>POD</code>中，而<code>AlertManager</code>的默认端口是9093，所以直接使用<code>localhost:9093</code>就可以互相通信了。
-<img src="https://blog.qikqiak.com/img/posts/prometheus-alertmanger-pod.jpg" alt="prometheus-pod" /></p>
-
-<h2 id="在-prometheus-中创建报警规则">在<code>Prometheus</code>中创建报警规则</h2>
-
-<p>同样的我们还需要添加报警规则：</p>
-
-<pre><code class="language-yaml">rule_files:
-    - /etc/prometheus/rules.yml
-</code></pre>
-
-<p>其中<code>rule_files</code>就是用来指定报警规则的，这里我们将<code>rules.yml</code>用<code>ConfigMap</code>的形式挂载到<code>/etc/prometheus</code>目录下面即可:</p>
-
-<pre><code class="language-yaml">rules.yml: |
-    groups:
-    - name: test-rule
-      rules:
-      - alert: NodeFilesystemUsage
-        expr: (node_filesystem_size{device=&quot;rootfs&quot;} - node_filesystem_free{device=&quot;rootfs&quot;}) / node_filesystem_size{device=&quot;rootfs&quot;} * 100 &gt; 80
-        for: 2m
-        labels:
-          team: node
-        annotations:
-          summary: &quot;{{$labels.instance}}: High Filesystem usage detected&quot;
-          description: &quot;{{$labels.instance}}: Filesystem usage is above 80% (current value is: {{ $value }}&quot;
-      - alert: NodeMemoryUsage
-        expr: (node_memory_MemTotal - (node_memory_MemFree+node_memory_Buffers+node_memory_Cached )) / node_memory_MemTotal * 100 &gt; 80
-        for: 2m
-        labels:
-          team: node
-        annotations:
-          summary: &quot;{{$labels.instance}}: High Memory usage detected&quot;
-          description: &quot;{{$labels.instance}}: Memory usage is above 80% (current value is: {{ $value }}&quot;
-      - alert: NodeCPUUsage
-        expr: (100 - (avg by (instance) (irate(node_cpu{job=&quot;kubernetes-node-exporter&quot;,mode=&quot;idle&quot;}[5m])) * 100)) &gt; 80
-        for: 2m
-        labels:
-          team: node
-        annotations:
-          summary: &quot;{{$labels.instance}}: High CPU usage detected&quot;
-          description: &quot;{{$labels.instance}}: CPU usage is above 80% (current value is: {{ $value }}&quot;
-</code></pre>
-
-<p>我们这里添加了3条测试的报警规则，分别是节点的文件系统、节点内存和CPU的使用量，如果大于了80%的话就触发label为<code>team=node</code>的<code>receiver</code>(上面alertmanager 配置文件中)，我们可以看到上面的配置就会匹配<code>webhook</code>这个<code>receiver</code>，然后会将报警信息<strong>POST</strong>到我们提供的两个HOOK 接口中(一个是通知钉钉的，另外一个是发邮件的)。</p>
-
-<p>一个报警信息在生命周期内有下面3中状态：</p>
-
-<ul>
-<li>inactive: 表示当前报警信息既不是<code>firing</code>状态也不是<code>pending</code>状态</li>
-<li>pending: 表示在设置的阈值时间范围内被激活了</li>
-<li>firing: 表示超过设置的阈值时间被激活了</li>
-</ul>
-
-<p><img src="https://blog.qikqiak.com/img/posts/promethus-alert-module.png" alt="prometheus-alert-module" /></p>
-
-<p>我们直接点击上面的<code>expr</code>会直接跳转到<code>graph</code>页面查询，我们在制定报警规则的时候同样可以先在<code>Prometheus</code>里面先测试我们的表达式:
-<img src="https://blog.qikqiak.com/img/posts/alert-info.png" alt="alert-info" /></p>
-
-<h2 id="全部配置">全部配置</h2>
-
-<p>整体的<code>ConfigMap</code>配置文件如下<code>cm.yaml</code>:</p>
+<p>首先我们使用<code>ConfigMap</code>的形式来设置<code>Prometheus</code>的配置文件，如下</p>
 
 <pre><code class="language-yaml">apiVersion: v1
 kind: ConfigMap
@@ -472,73 +359,57 @@ data:
     global:
       scrape_interval: 30s
       scrape_timeout: 30s
-
-    rule_files:
-    - /etc/prometheus/rules.yml
-
-    alerting:
-      alertmanagers:
-        - static_configs:
-          - targets: [&quot;localhost:9093&quot;]
-
     scrape_configs:
     - job_name: 'prometheus'
       static_configs:
         - targets: ['localhost:9090']
-
-    - job_name: 'kubernetes-apiservers'
-      kubernetes_sd_configs:
-      - role: endpoints
-      scheme: https
-      tls_config:
-        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-      relabel_configs:
-      - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
-        action: keep
-        regex: default;kubernetes;https
-
-    - job_name: 'kubernetes-nodes'
-      scheme: https
+    - job_name: 'kubernetes-nodes-cadvisor'
       tls_config:
         ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
       bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
       kubernetes_sd_configs:
-      - role: node
+      - api_servers:
+        - 'https://10.43.0.1'
+        in_cluster: true
+        role: node
       relabel_configs:
       - action: labelmap
         regex: __meta_kubernetes_node_label_(.+)
-      - target_label: __address__
-        replacement: kubernetes.default.svc:443
-      - source_labels: [__meta_kubernetes_node_name]
-        regex: (.+)
-        target_label: __metrics_path__
-        replacement: /api/v1/nodes/${1}/proxy/metrics
-
-    - job_name: 'kubernetes-cadvisor'
-      scheme: https
+      - source_labels: [__meta_kubernetes_role]
+        action: replace
+        target_label: kubernetes_role
+      - source_labels: [__address__]
+        regex: '(.*):10250'
+        replacement: '${1}:4194'
+        target_label: __address__
+    - job_name: 'kubernetes-apiserver-cadvisor'
       tls_config:
         ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
       bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
       kubernetes_sd_configs:
-      - role: node
+      - api_servers:
+        - 'https://10.43.0.1'
+        in_cluster: true
+        role: apiserver
       relabel_configs:
       - action: labelmap
         regex: __meta_kubernetes_node_label_(.+)
-      - target_label: __address__
-        replacement: kubernetes.default.svc:443
-      - source_labels: [__meta_kubernetes_node_name]
-        regex: (.+)
-        target_label: __metrics_path__
-        replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
-
+      - source_labels: [__meta_kubernetes_role]
+        action: replace
+        target_label: kubernetes_role
+      - source_labels: [__address__]
+        regex: '(.*):10250'
+        replacement: '${1}:10255'
+        target_label: __address__
     - job_name: 'kubernetes-node-exporter'
-      scheme: http
       tls_config:
         ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
       bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
       kubernetes_sd_configs:
-      - role: node
+      - api_servers:
+        - 'https://10.43.0.1'
+        in_cluster: true
+        role: node
       relabel_configs:
       - action: labelmap
         regex: __meta_kubernetes_node_label_(.+)
@@ -549,131 +420,75 @@ data:
         regex: '(.*):10250'
         replacement: '${1}:31672'
         target_label: __address__
+</code></pre>
 
-    - job_name: 'kubernetes-service-endpoints'
-      kubernetes_sd_configs:
-      - role: endpoints
-      relabel_configs:
-      - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
-        action: keep
-        regex: true
-      - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scheme]
-        action: replace
-        target_label: __scheme__
-        regex: (https?)
-      - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
-        action: replace
-        target_label: __metrics_path__
-        regex: (.+)
-      - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
-        action: replace
-        target_label: __address__
-        regex: ([^:]+)(?::\d+)?;(\d+)
-        replacement: $1:$2
-      - action: labelmap
-        regex: __meta_kubernetes_service_label_(.+)
-      - source_labels: [__meta_kubernetes_namespace]
-        action: replace
-        target_label: kubernetes_namespace
-      - source_labels: [__meta_kubernetes_service_name]
-        action: replace
-        target_label: kubernetes_name
+<p>将以上配置文件保存为<code>prometheus-config.yaml</code>，然后执行命令：</p>
 
-    - job_name: 'kubernetes-services'
-      metrics_path: /probe
-      params:
-        module: [http_2xx]
+<pre><code class="language-shell">$ kubectl create -f prometheus-config.yaml
+</code></pre>
 
-      kubernetes_sd_configs:
-      - role: service
+<p>注意：</p>
 
-      relabel_configs:
-      - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_probe]
-        action: keep
-        regex: true
-      - source_labels: [__address__]
-        target_label: __param_target
-      - target_label: __address__
-        replacement: blackbox-exporter.example.com:9115
-      - source_labels: [__param_target]
-        target_label: instance
-      - action: labelmap
-        regex: __meta_kubernetes_service_label_(.+)
-      - source_labels: [__meta_kubernetes_namespace]
-        target_label: kubernetes_namespace
-      - source_labels: [__meta_kubernetes_service_name]
-        target_label: kubernetes_name
+<ul>
+<li><code>job_name=kubernetes-apiserver-cadvisor</code>需要将10250端口替换成10255，10255端口是<code>kubelet</code>实现的<code>metrics</code>，可以在节点上面curl查看内容，<code>curl http://&lt;node_ip&gt;:10255/metrics</code></li>
+<li><code>job_name=kubernetes-nodes-cadvisor</code>需要将10250端口替换成4194，4194同样是kubernetes集成的容器监控服务，在k8s 1.7版本之前的用10255端口即可，但是1.7版本后<code>cadvisor</code>监控的数据没有集成到<code>kubelet</code>的实现里面去了，<a href="https://github.com/kubernetes/kubernetes/issues/48483">这里一定要注意</a></li>
+<li><code>job_name=kubernetes-node-exporter</code>中替换10250的端口是31672，该端口是<code>node-exporter</code>暴露的<code>NodePort</code>端口，这里需要根据实际情况填写。</li>
+</ul>
 
-  rules.yml: |
-    groups:
-    - name: test-rule
-      rules:
-      - alert: NodeFilesystemUsage
-        expr: (node_filesystem_size{device=&quot;rootfs&quot;} - node_filesystem_free{device=&quot;rootfs&quot;}) / node_filesystem_size{device=&quot;rootfs&quot;} * 100 &gt; 80
-        for: 2m
-        labels:
-          team: node
-        annotations:
-          summary: &quot;{{$labels.instance}}: High Filesystem usage detected&quot;
-          description: &quot;{{$labels.instance}}: Filesystem usage is above 80% (current value is: {{ $value }}&quot;
-      - alert: NodeMemoryUsage
-        expr: (node_memory_MemTotal - (node_memory_MemFree+node_memory_Buffers+node_memory_Cached )) / node_memory_MemTotal * 100 &gt; 80
-        for: 2m
-        labels:
-          team: node
-        annotations:
-          summary: &quot;{{$labels.instance}}: High Memory usage detected&quot;
-          description: &quot;{{$labels.instance}}: Memory usage is above 80% (current value is: {{ $value }}&quot;
-      - alert: NodeCPUUsage
-        expr: (100 - (avg by (instance) (irate(node_cpu{job=&quot;kubernetes-node-exporter&quot;,mode=&quot;idle&quot;}[5m])) * 100)) &gt; 80
-        for: 2m
-        labels:
-          team: node
-        annotations:
-          summary: &quot;{{$labels.instance}}: High CPU usage detected&quot;
-          description: &quot;{{$labels.instance}}: CPU usage is above 80% (current value is: {{ $value }}&quot;
+<p>先部署<code>node-exporter</code>，为了能够收集每个节点的信息，所以我们这里使用<code>DaemonSet</code>的形式部署PODS：</p>
 
----
-kind: ConfigMap
-apiVersion: v1
+<pre><code class="language-yaml">---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
 metadata:
-  name: alertmanager
+  name: node-exporter
   namespace: kube-ops
-data:
-  config.yml: |-
-    global:
-      resolve_timeout: 5m
-    route:
-      receiver: webhook
-      group_wait: 30s
-      group_interval: 5m
-      repeat_interval: 4h
-      group_by: [alertname]
-      routes:
-      - receiver: webhook
-        group_wait: 10s
-        match:
-          team: node
-    receivers:
-    - name: webhook
-      webhook_configs:
-      - url: 'http://apollo/hooks/dingtalk/'
-        send_resolved: true
-      - url: 'http://apollo/hooks/prome/'
-        send_resolved: true
-</code></pre>
-
-<p>执行下面的命令即可：</p>
-
-<pre><code class="language-shell">$ kubectl apply -f cm.yaml
-</code></pre>
-
-<p>然后部署的文件<code>deploy.yaml</code>如下：</p>
-
-<pre><code class="language-yaml">kind: Deployment
+  labels:
+    k8s-app: node-exporter
+spec:
+  template:
+    metadata:
+      labels:
+        k8s-app: node-exporter
+    spec:
+      containers:
+      - image: prom/node-exporter
+        name: node-exporter
+        ports:
+        - containerPort: 9100
+          protocol: TCP
+          name: http
+---
+apiVersion: v1
+kind: Service
 metadata:
   labels:
-    k8s-app: prometheus
+    k8s-app: node-exporter
+  name: node-exporter
+  namespace: kube-ops
+spec:
+  ports:
+  - name: http
+    port: 9100
+    nodePort: 31672
+    protocol: TCP
+  type: NodePort
+  selector:
+    k8s-app: node-exporter
+</code></pre>
+
+<p>将以上文件保存为<code>node-exporter.yaml</code>，然后执行命令：</p>
+
+<pre><code class="language-shell">$ kubectl create -f node-exporter.yaml
+</code></pre>
+
+<p>接下来通过<code>Deployment</code>部署<code>Prometheus</code>,yaml文件如下：</p>
+
+<pre><code class="language-yaml">apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    name: prometheus-deployment
   name: prometheus
   namespace: kube-ops
 spec:
@@ -681,26 +496,24 @@ spec:
   template:
     metadata:
       labels:
-        k8s-app: prometheus
+        app: prometheus
     spec:
-      serviceAccountName: prometheus
       containers:
-      - image: prom/prometheus:v2.0.0-rc.3
+      - image: prom/prometheus:v1.0.1
         name: prometheus
         command:
         - &quot;/bin/prometheus&quot;
         args:
-        - &quot;--config.file=/etc/prometheus/prometheus.yml&quot;
-        - &quot;--storage.tsdb.path=/prometheus&quot;
-        - &quot;--storage.tsdb.retention=24h&quot;
+        - &quot;-config.file=/etc/prometheus/prometheus.yml&quot;
+        - &quot;-storage.local.path=/prometheus&quot;
+        - &quot;-storage.local.retention=24h&quot;
         ports:
         - containerPort: 9090
           protocol: TCP
-          name: http
         volumeMounts:
         - mountPath: &quot;/prometheus&quot;
           name: data
-          subPath: prometheus/data
+          subPath: prometheus
         - mountPath: &quot;/etc/prometheus&quot;
           name: config-volume
         resources:
@@ -710,57 +523,176 @@ spec:
           limits:
             cpu: 200m
             memory: 1Gi
-      - image: quay.io/prometheus/alertmanager:v0.12.0
-        name: alertmanager
-        args:
-        - &quot;-config.file=/etc/alertmanager/config.yml&quot;
-        - &quot;-storage.path=/alertmanager&quot;
-        ports:
-        - containerPort: 9093
-          protocol: TCP
-          name: http
-        volumeMounts:
-        - name: alertmanager-config-volume
-          mountPath: /etc/alertmanager
-        resources:
-          requests:
-            cpu: 50m
-            memory: 50Mi
-          limits:
-            cpu: 200m
-            memory: 200Mi
       volumes:
       - name: data
         emptyDir: {}
       - configMap:
           name: prometheus-config
         name: config-volume
-      - name: alertmanager-config-volume
-        configMap:
-          name: alertmanager
 </code></pre>
 
-<p>执行下面的命令即可：
-执行下面的命令即可：</p>
+<p>将以上文件保存为<code>prometheus-deploy.yaml</code>，然后执行命令：</p>
 
-<pre><code class="language-shell">$ kubectl apply -f deploy.yaml
+<pre><code class="language-shell">$ kubectl create -f prometheus-deploy.yaml
 </code></pre>
 
-<p>最后来看一张我们钉钉收到的报警信息吧:
-<img src="https://blog.qikqiak.com/img/posts/prometheus-alertmanager-dingtalk.png" alt="dingtalk" /></p>
+<p>接下来暴露服务以便可以访问<code>Prometheus</code>的UI界面，你可以通过<code>kubectl port-forward</code>将它暴露在本地：</p>
 
-<blockquote>
-<p>注意：本文章的实现都是针对<code>Prometheus2.x</code>版本，1.x 版本配置会有所不同</p>
-</blockquote>
+<pre><code class="language-shell">$ POD=`kubectl get pod -l app=prometheus -n kube-ops -o go-template --template '{{range .items}}{{.metadata.name}}{{end}}'`
+$ kubectl port-forward $POD 9090:9090
+</code></pre>
 
-<p>本文中用到的<code>kubernetes</code>相关的<code>yaml</code>文件我已经归档到<code>github</code>上，可以在这里<a href="https://github.com/cnych/k8s-repo/tree/master/prometheus">https://github.com/cnych/k8s-repo/tree/master/prometheus</a>查看</p>
+<p>然后用浏览器访问<code>http://localhost:9090</code>就可以访问到Prometheus的界面了。</p>
 
-<h2 id="参考文档">参考文档</h2>
+<p>我这里通过<code>ingress</code>暴露到外网，yaml文件如下：</p>
+
+<pre><code class="language-yaml">apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: traefik-default-ingress
+  annotations:
+    kubernetes.io/ingress.class: &quot;traefik&quot;
+spec:
+  tls:
+    - secretName: traefik-ssl
+  rules:
+  - host: prometheus.local  # 替换成你的域名
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: prometheus
+          servicePort: 9090
+</code></pre>
+
+<p>将以上文件保存为<code>prometheus-ingress.yaml</code>，然后执行命令：</p>
+
+<pre><code class="language-shell">$ kubectl create -f prometheus-ingress.yaml
+</code></pre>
+
+<p>然后就可以通过上面<code>traefik</code>中配置的域名进行访问了，可以切换到<code>Status</code>下面的<code>targets</code>查看我们采集的数据是否正常：
+<img src="https://blog.qikqiak.com/img/posts/1508237027871.jpg" alt="Prometheus Targets" />
+可以根据<code>targets</code>下面的提示信息对采集失败的数据进行修正。</p>
+
+<h2 id="查询监控数据">查询监控数据</h2>
+
+<p><code>Prometheus</code>提供了API的方式进行数据查询，同样可以使用query语言进行复杂的查询任务，在上面的WEB界面上提供了基本的查询和图形化的展示功能。</p>
+
+<p>比如查询每个<code>POD</code>的CPU使用情况，查询条件如下：</p>
+
+<pre><code class="language-shell">sum by (pod_name)( rate(container_cpu_usage_seconds_total{image!=&quot;&quot;, pod_name!=&quot;&quot;}[1m] ) )
+</code></pre>
+
+<p>注意其中的<code>pod_name</code>和<code>image</code>要根据自己采集的数据进行区分。</p>
+
+<p><img src="https://blog.qikqiak.com/img/posts/1508237868056.jpg" alt="CPU使用" /></p>
+
+<p>更多的查询条件可以参考<a href="https://prometheus.io/docs/introduction/overview/">Prometheus的文档</a>，将来也会逐步介绍，这里就不详细展开了。</p>
+
+<p>这样通过在<code>Kubernetes</code>上部署<code>Prometheus</code>，在不修改集群的任何配置情况下实现了集群的基本监控功能。</p>
+
+<h2 id="安装grafana">安装Grafana</h2>
+
+<p><code>Prometheus</code>以及获取到了我们采集的数据，现在我们需要一个更加强大的图标展示工具，毫无疑问选择<code>grafana</code>，同样的，在<code>Kubernetes</code>环境下面进行安装，yaml文件如下:</p>
+
+<pre><code class="language-yaml">apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: kube-ops
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        k8s-app: grafana
+        task: monitoring
+    spec:
+      containers:
+      - name: grafana
+        image: gcr.io/google_containers/heapster-grafana-amd64:v4.4.3
+        ports:
+        - containerPort: 3000
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        volumeMounts:
+        - name: ca-certificates
+          mountPath: /etc/ssl/certs
+          readOnly: true
+        - name: grafana-data
+          mountPath: /var
+          subPath: grafana
+        env:
+        - name: INFLUXDB_HOST
+          value: influxdb
+        - name: INFLUXDB_SERVICE_URL
+          value: http://influxdb.kube-ops.svc.cluster.local:8086
+        - name: GF_SERVER_HTTP_PORT
+          value: &quot;3000&quot;
+        - name: GF_AUTH_BASIC_ENABLED
+          value: &quot;false&quot;
+        - name: GF_AUTH_ANONYMOUS_ENABLED
+          value: &quot;true&quot;
+        - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+          value: Admin
+        - name: GF_SERVER_ROOT_URL
+          # If you're only using the API Server proxy, set this value instead:
+          # value: /api/v1/proxy/namespaces/kube-system/services/monitoring-grafana/
+          value: /
+      volumes:
+      - name: ca-certificates
+        hostPath:
+          path: /etc/ssl/certs
+      - name: grafana-data
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    kubernetes.io/cluster-service: 'true'
+    kubernetes.io/name: grafana
+  name: grafana
+  namespace: kube-ops
+spec:
+  ports:
+  - port: 3000
+    targetPort: 3000
+  selector:
+    k8s-app: grafana
+</code></pre>
+
+<p>将以上文件保存为<code>grafana.yaml</code>，然后执行命令：</p>
+
+<pre><code class="language-shell">$ kubectl create -f grafana.yaml
+</code></pre>
+
+<p>同样的你可以选择使用<code>kubectl port-forward</code>把端口暴露在本地，或者用<code>ingress</code>将服务暴露在外网进行访问。
+访问<code>grafana</code>WEB界面，将我们上面的<code>Prometheus</code>添加到<code>grafana</code>数据源中去
+<img src="https://blog.qikqiak.com/img/posts/1508238528462.jpg" alt="grafana数据源" /></p>
+
+<p>然后添加我们的<code>Dashboard</code>，推荐使用<a href="https://grafana.com/dashboards/162">https://grafana.com/dashboards/162</a>，可以下载该页面的dashboard的json文件，然后直接导入到<code>grafana</code>中去，但是需要注意其中的一些参数，需要根据<code>prometheus</code>中采集到实际数据进行填写，比如我们这里采集到容器名是<code>name</code>，而不是<code>io_kubernetes_container_name</code>,最终展示界面如下：
+<img src="https://blog.qikqiak.com/img/posts/1508238899864.jpg" alt="kubernetes monitor dashboard" /></p>
+
+<h2 id="总结">总结</h2>
+
+<p>未来将进一步完善<code>Prometheus</code>的使用：</p>
 
 <ul>
-<li><a href="https://prometheus.io/docs/alerting/configuration/">https://prometheus.io/docs/alerting/configuration/</a></li>
-<li><a href="https://pracucci.com/prometheus-understanding-the-delays-on-alerting.html">Prometheus: understanding the delays on alerting</a></li>
+<li>增加更多的监控数据源</li>
+<li><a href="https://blog.qikqiak.com/post/alertmanager-of-prometheus-in-practice/">使用AlertManager实现异常提醒</a>（DONE）</li>
 </ul>
+
+<blockquote>
+<p>上面用的<code>yaml</code>文件可以到<code>github</code>上查看<a href="https://github.com/cnych/k8s-repo/tree/master/prometheus">https://github.com/cnych/k8s-repo/tree/master/prometheus</a></p>
+</blockquote>
 
 <p>欢迎大家加入我们的知识星球：<code>Kubernetes</code>。
 <img src="https://blog.qikqiak.com/img/xq.png" alt="知识星球" /></p>
@@ -775,25 +707,11 @@ spec:
 <h3>相关文章</h3>
 <ul style="margin-bottom: 25px;">
     
-    <li><a href="https://blog.qikqiak.com/post/kubernetes-monitor-prometheus-grafana/">Kubernetes使用Prometheus搭建监控平台</a></li>
-    
-    <li><a href="https://blog.qikqiak.com/post/update-prometheus-2-in-kubernetes/">Kubernetes 下升级Prometheus2.0</a></li>
-    
-    <li><a href="https://blog.qikqiak.com/post/kubernetes-logs-collect/">kubernetes 日志收集方案</a></li>
-    
-    <li><a href="https://blog.qikqiak.com/post/socketio-multiple-nodes-in-kubernetes/">kubernetes 下实现socket.io 的集群模式</a></li>
-    
-    <li><a href="https://blog.qikqiak.com/post/install-docker-registry-harbor-in-kubernetes/">在kubernetes 集群上搭建docker 私有仓库Harbor</a></li>
-    
-    <li><a href="https://blog.qikqiak.com/post/update-kubernetes-dashboard-more-secure/">kubernetes dashboard 升级之路</a></li>
-    
-    <li><a href="https://blog.qikqiak.com/post/manual-install-high-available-kubernetes-cluster/">手动搭建高可用的kubernetes 集群</a></li>
-    
-    <li><a href="https://blog.qikqiak.com/post/kubernetes-rollout-update/">Kubernetes Deployment滚动升级</a></li>
-    
     <li><a href="https://blog.qikqiak.com/post/first-use-helm-on-kubernetes/">Kubernetes Helm 初体验</a></li>
     
     <li><a href="https://blog.qikqiak.com/post/understand-kubernetes-configmap-and-secrets/">kubernetes ConfigMap 和 Secrets</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/add-authorization-for-kubernetes-dashboard/">为kubernetes dashboard访问用户添加权限控制</a></li>
     
 </ul>
 
@@ -803,12 +721,12 @@ spec:
       <ul class="pager blog-pager">
         
           <li class="previous">
-            <a href="https://blog.qikqiak.com/post/webpack3-get-started/" data-toggle="tooltip" data-placement="top" title="webpack3入门到放肆视频教程">&larr; Previous Post</a>
+            <a href="https://blog.qikqiak.com/post/django-decorator-usage/" data-toggle="tooltip" data-placement="top" title="Python装饰器简介">&larr; Previous Post</a>
           </li>
         
         
           <li class="next">
-            <a href="https://blog.qikqiak.com/post/tdd-develop-python-microservice-app/" data-toggle="tooltip" data-placement="top" title="TDD开发容器化的Python微服务应用(一)">Next Post &rarr;</a>
+            <a href="https://blog.qikqiak.com/post/kubernetes-rollout-update/" data-toggle="tooltip" data-placement="top" title="Kubernetes Deployment滚动升级">Next Post &rarr;</a>
           </li>
         
       </ul>
@@ -822,7 +740,7 @@ spec:
       <script src="https://imsun.github.io/gitment/dist/gitment.browser.js"></script>
       <script>
       var gitment = new Gitment({
-        id: 'alertmanager-of-prometheus-in-practice',
+        id: 'kubernetes-use-prometheus-build-monitor-system',
         owner: 'cnych',
         repo: 'blog',
         oauth: {
