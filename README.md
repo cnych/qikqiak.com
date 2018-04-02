@@ -12,6 +12,8 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [k8s技术圈一周精选[第3期]](https://blog.qikqiak.com/post/k8s-tech-weekly-collection-phase3/)
+ * [Skaffold-简化本地开发kubernetes应用的神器](https://blog.qikqiak.com/post/skaffold-simple-local-develop-k8s-app-tools/)
  * [k8s技术圈一周精选[第2期]](https://blog.qikqiak.com/post/k8s-tech-weekly-collection-phase2/)
  * [kubernetes 的资源配额控制器](https://blog.qikqiak.com/post/kubernetes-resource-quota-usage/)
  * [k8s技术圈一周精选[第1期]](https://blog.qikqiak.com/post/k8s-tech-weekly-collection-phase1/)
@@ -52,6 +54,7 @@
  * [webpack3入门到放肆视频教程](https://blog.qikqiak.com/post/webpack3-get-started/)
 
 #### 其他
+ * [好吧，海马学院正式上线了](https://blog.qikqiak.com/post/haimaxy-online/)
  * [Hugo 集成 Gitment 评论插件](https://blog.qikqiak.com/post/hugo-integrated-gitment-plugin/)
  * [Hugo 集成 Algolia 搜索](https://blog.qikqiak.com/post/hugo-integrated-algolia-search/)
  * [更优雅的git log](https://blog.qikqiak.com/post/a-better-git-log/)
