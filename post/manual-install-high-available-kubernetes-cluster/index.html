@@ -1474,9 +1474,9 @@ global_defs {
    router_id kube_api
 }
 
-vrrp_script check_k8s {
+vrrp_script check_haproxy {
     # 自身状态检测
-    script &quot;/etc/keepalived/chk_k8s_master.sh&quot;
+    script &quot;killall -0 haproxy&quot;
     interval 3
     weight 5
 }
@@ -1509,17 +1509,38 @@ vrrp_instance haproxy-vip {
     }
 }
 
-# 自身状态监测脚本，这里通过 api-server 是否在监听端口（6433 端口）来判断状态。
-$ vi /etc/keepalived/chk_k8s_master.sh
-#!/bin/bash
+virtual_server 192.168.1.139 80 {
+  delay_loop 5
+  lvs_sched wlc
+  lvs_method NAT
+  persistence_timeout 1800
+  protocol TCP
 
-count=`ss -tnl | grep 6433 | wc -l`
+  real_server 192.168.1.137 80 {
+    weight 1
+    TCP_CHECK {
+      connect_port 80
+      connect_timeout 3
+    }
+  }
+}
 
-if [ $count = 0 ]; then
-    exit 1
-else
-    exit 0
-fi
+virtual_server 192.168.1.139 443 {
+  delay_loop 5
+  lvs_sched wlc
+  lvs_method NAT
+  persistence_timeout 1800
+  protocol TCP
+
+  real_server 192.168.1.137 443 {
+    weight 1
+    TCP_CHECK {
+      connect_port 443
+      connect_timeout 3
+    }
+  }
+}
+
 </code></pre>
 
 <p>统一的方式在master02 节点上安装keepalived，修改配置，只需要将state 更改成BACKUP，priority更改成99，unicast_src_ip 与unicast_peer 地址修改即可。</p>
