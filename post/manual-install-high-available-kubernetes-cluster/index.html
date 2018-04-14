@@ -345,8 +345,162 @@ autocomplete('#aa-search-input',
           
       </div>
 
-      <article role="main" class="blog-post">
-        <p>之前按照<a href="https://github.com/opsnull/follow-me-install-kubernetes-cluster">和我一步步部署 kubernetes 集群</a>的步骤一步一步的成功的使用二进制的方式安装了<code>kubernetes</code>集群，在该文档的基础上重新部署了最新的<code>v1.8.2</code>版本，实现了<code>kube-apiserver</code>的高可用、<code>traefik ingress</code> 的部署、在<code>kubernetes</code>上安装<code>docker</code>的私有仓库<code>harbor</code>、容器化<code>kubernetes</code>部分组建、使用阿里云日志服务收集日志。</p>
+      <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#1-组件版本-集群环境-a-id-init-env-a">1. 组件版本 &amp;&amp; 集群环境<a id="init-env"></a></a>
+<ul>
+<li><a href="#组件版本">组件版本</a></li>
+<li><a href="#etcd-集群-k8s-master-机器-k8s-node-机器">etcd 集群 &amp;&amp; k8s master 机器 &amp;&amp; k8s node 机器</a></li>
+<li><a href="#集群环境变量">集群环境变量</a></li>
+</ul></li>
+<li><a href="#2-创建ca-证书和密钥-a-id-create-ca-a">2. 创建CA 证书和密钥<a id="create-ca"></a></a>
+<ul>
+<li><a href="#安装-cfssl">安装 CFSSL</a></li>
+<li><a href="#创建ca">创建CA</a></li>
+<li><a href="#分发证书">分发证书</a></li>
+</ul></li>
+<li><a href="#3-部署高可用etcd-集群-a-id-etcd-a">3. 部署高可用etcd 集群<a id="etcd"></a></a>
+<ul>
+<li><a href="#定义环境变量">定义环境变量</a></li>
+<li><a href="#下载etcd-二进制文件">下载etcd 二进制文件</a></li>
+<li><a href="#创建tls-密钥和证书">创建TLS 密钥和证书</a></li>
+<li><a href="#创建etcd-的systemd-unit-文件">创建etcd 的systemd unit 文件</a></li>
+<li><a href="#启动etcd-服务">启动etcd 服务</a></li>
+<li><a href="#验证服务">验证服务</a></li>
+</ul></li>
+<li><a href="#4-配置kubectl-命令行工具-a-id-kubectl-a">4. 配置kubectl 命令行工具<a id="kubectl"></a></a>
+<ul>
+<li><a href="#环境变量">环境变量</a></li>
+<li><a href="#下载kubectl">下载kubectl</a></li>
+<li><a href="#创建admin-证书">创建admin 证书</a></li>
+<li><a href="#创建kubectl-kubeconfig-文件">创建kubectl kubeconfig 文件</a></li>
+<li><a href="#分发kubeconfig-文件">分发kubeconfig 文件</a></li>
+</ul></li>
+<li><a href="#5-部署flannel-网络-a-id-flanneld-a">5. 部署Flannel 网络<a id="flanneld"></a></a>
+<ul>
+<li><a href="#环境变量-1">环境变量</a></li>
+<li><a href="#创建tls-密钥和证书-1">创建TLS 密钥和证书</a></li>
+<li><a href="#向etcd-写入集群pod-网段信息">向etcd 写入集群Pod 网段信息</a></li>
+<li><a href="#安装和配置flanneld">安装和配置flanneld</a></li>
+<li><a href="#启动flanneld">启动flanneld</a></li>
+<li><a href="#检查flanneld-服务">检查flanneld 服务</a></li>
+<li><a href="#检查分配给各flanneld-的pod-网段信息">检查分配给各flanneld 的Pod 网段信息</a></li>
+<li><a href="#确保各节点间pod-网段能互联互通">确保各节点间Pod 网段能互联互通</a></li>
+</ul></li>
+<li><a href="#6-部署master-节点-a-id-master-a">6. 部署master 节点<a id="master"></a></a>
+<ul>
+<li><a href="#环境变量-2">环境变量</a></li>
+<li><a href="#下载最新版本的二进制文件">下载最新版本的二进制文件</a></li>
+<li><a href="#创建kubernetes-证书">创建kubernetes 证书</a></li>
+<li><a href="#6-1-配置和启动kube-apiserver">6.1 配置和启动kube-apiserver</a>
+<ul>
+<li><a href="#创建kube-apiserver-使用的客户端token-文件">创建kube-apiserver 使用的客户端token 文件</a></li>
+<li><a href="#创建kube-apiserver-的systemd-unit文件">创建kube-apiserver 的systemd unit文件</a></li>
+<li><a href="#启动kube-apiserver">启动kube-apiserver</a></li>
+</ul></li>
+<li><a href="#6-2-配置和启动kube-controller-manager">6.2 配置和启动kube-controller-manager</a>
+<ul>
+<li><a href="#创建kube-controller-manager-的systemd-unit-文件">创建kube-controller-manager 的systemd unit 文件</a></li>
+<li><a href="#启动kube-controller-manager">启动kube-controller-manager</a></li>
+</ul></li>
+<li><a href="#6-3-配置和启动kube-scheduler">6.3 配置和启动kube-scheduler</a>
+<ul>
+<li><a href="#创建kube-scheduler-的systemd-unit文件">创建kube-scheduler 的systemd unit文件</a></li>
+<li><a href="#启动kube-scheduler">启动kube-scheduler</a></li>
+</ul></li>
+<li><a href="#6-4-验证master-节点">6.4 验证master 节点</a></li>
+</ul></li>
+<li><a href="#7-kube-apiserver-高可用-a-id-ha-a">7. kube-apiserver 高可用<a id="ha"></a></a>
+<ul>
+<li><a href="#安装haproxy">安装haproxy</a></li>
+<li><a href="#配置haproxy">配置haproxy</a></li>
+<li><a href="#启动haproxy">启动haproxy</a></li>
+<li><a href="#问题">问题</a>
+<ul>
+<li><a href="#方式1-使用阿里云slb">方式1：使用阿里云SLB</a></li>
+<li><a href="#方式2-使用keepalived">方式2：使用keepalived</a></li>
+</ul></li>
+<li><a href="#kube-controller-manager-和kube-scheduler-的高可用">kube-controller-manager 和kube-scheduler 的高可用</a></li>
+</ul></li>
+<li><a href="#8-部署node-节点-a-id-node-a">8. 部署Node 节点<a id="node"></a></a>
+<ul>
+<li><a href="#环境变量-3">环境变量</a></li>
+<li><a href="#开启路由转发">开启路由转发</a></li>
+<li><a href="#配置docker">配置docker</a></li>
+<li><a href="#启动docker">启动docker</a></li>
+<li><a href="#安装和配置kubelet">安装和配置kubelet</a></li>
+<li><a href="#创建kubelet-bootstapping-kubeconfig-文件">创建kubelet bootstapping kubeconfig 文件</a></li>
+<li><a href="#创建kubelet-的systemd-unit-文件">创建kubelet 的systemd unit 文件</a></li>
+<li><a href="#启动kubelet">启动kubelet</a></li>
+<li><a href="#通过kubelet-的tls-证书请求">通过kubelet 的TLS 证书请求</a></li>
+<li><a href="#配置kube-proxy">配置kube-proxy</a>
+<ul>
+<li><a href="#创建kube-proxy-证书签名请求">创建kube-proxy 证书签名请求：</a></li>
+<li><a href="#生成kube-proxy-客户端证书和私钥">生成kube-proxy 客户端证书和私钥</a></li>
+<li><a href="#创建kube-proxy-kubeconfig-文件">创建kube-proxy kubeconfig 文件</a></li>
+<li><a href="#创建kube-proxy-的systemd-unit-文件">创建kube-proxy 的systemd unit 文件</a></li>
+<li><a href="#启动kube-proxy">启动kube-proxy</a></li>
+</ul></li>
+<li><a href="#验证集群功能">验证集群功能</a></li>
+</ul></li>
+<li><a href="#9-部署kubedns-插件-a-id-kubedns-a">9. 部署kubedns 插件<a id="kubedns"></a></a>
+<ul>
+<li><a href="#系统预定义的rolebinding">系统预定义的RoleBinding</a></li>
+<li><a href="#配置kube-dns-serviceaccount">配置kube-dns ServiceAccount</a></li>
+<li><a href="#配置kube-dns-服务">配置kube-dns 服务</a></li>
+<li><a href="#配置kube-dns-deployment">配置kube-dns Deployment</a></li>
+<li><a href="#执行所有定义文件">执行所有定义文件</a></li>
+<li><a href="#检查kubedns-功能">检查kubedns 功能</a></li>
+</ul></li>
+<li><a href="#10-部署dashboard-插件-a-id-dashboard-a">10. 部署Dashboard 插件<a id="dashboard"></a></a>
+<ul>
+<li><a href="#配置dashboard-controller">配置dashboard-controller</a></li>
+<li><a href="#配置dashboard-service">配置dashboard-service</a></li>
+<li><a href="#执行所有定义文件-1">执行所有定义文件</a></li>
+<li><a href="#检查执行结果">检查执行结果</a></li>
+<li><a href="#访问dashboard">访问dashboard</a></li>
+</ul></li>
+<li><a href="#11-部署heapster-插件-a-id-heapster-a">11. 部署Heapster 插件<a id="heapster"></a></a>
+<ul>
+<li><a href="#执行所有文件">执行所有文件</a></li>
+<li><a href="#检查执行结果-1">检查执行结果</a></li>
+<li><a href="#访问-grafana">访问 grafana</a></li>
+</ul></li>
+<li><a href="#12-安装ingress-a-id-ingress-a">12. 安装Ingress<a id="ingress"></a></a>
+<ul>
+<li><a href="#部署traefik">部署traefik</a>
+<ul>
+<li><a href="#创建rbac">创建rbac</a></li>
+<li><a href="#daemonset-形式部署traefik">DaemonSet 形式部署traefik</a></li>
+<li><a href="#创建ingress">创建ingress</a></li>
+<li><a href="#traefik-ui">Traefik UI</a></li>
+</ul></li>
+<li><a href="#测试">测试</a></li>
+</ul></li>
+<li><a href="#13-日志收集-a-id-log-collect-a">13. 日志收集<a id="log-collect"></a></a></li>
+<li><a href="#14-私有仓库harbor-搭建-a-id-harbor-a">14. 私有仓库harbor 搭建<a id="harbor"></a></a></li>
+<li><a href="#15-问题汇总-a-id-question-a">15. 问题汇总<a id="question"></a></a>
+<ul>
+<li>
+<ul>
+<li><a href="#15-1-dashboard无法显示监控图">15.1 dashboard无法显示监控图</a></li>
+<li><a href="#15-2-kube-proxy报错kube-proxy-2241-e0502-15-55-13-889842-2241-conntrack-go-42-conntrack-returned-error-error-looking-for-path-of-conntrack-exec-conntrack-executable-file-not-found-in-path">15.2 kube-proxy报错kube-proxy[2241]: E0502 15:55:13.889842 2241 conntrack.go:42] conntrack returned error: error looking for path of conntrack: exec: &ldquo;conntrack&rdquo;: executable file not found in $PATH</a></li>
+<li><a href="#15-3-unable-to-access-kubernetes-services-no-route-to-host">15.3 Unable to access kubernetes services: no route to host</a></li>
+<li><a href="#15-4-使用nodeport-类型的服务-只能在pod-所在节点进行访问">15.4 使用NodePort 类型的服务，只能在POD 所在节点进行访问</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#参考资料-a-id-link-a">参考资料<a id="link"></a></a></li>
+</ul></li>
+</ul>
+</nav>
+</aside>
+
+          <p>之前按照<a href="https://github.com/opsnull/follow-me-install-kubernetes-cluster">和我一步步部署 kubernetes 集群</a>的步骤一步一步的成功的使用二进制的方式安装了<code>kubernetes</code>集群，在该文档的基础上重新部署了最新的<code>v1.8.2</code>版本，实现了<code>kube-apiserver</code>的高可用、<code>traefik ingress</code> 的部署、在<code>kubernetes</code>上安装<code>docker</code>的私有仓库<code>harbor</code>、容器化<code>kubernetes</code>部分组建、使用阿里云日志服务收集日志。</p>
 
 <p>部署完成后，你将理解系统各组件的交互原理，进而能快速解决实际问题，所以本文档主要适合于那些有一定<code>kubernetes</code>基础，想通过一步步部署的方式来学习和了解系统配置、运行原理的人。</p>
 
@@ -358,32 +512,11 @@ autocomplete('#aa-search-input',
 <p>有人问我为什么这么长的文章不分拆成几篇文章啊？这样阅读起来也方便啊，然而在我自己学习的过程中，这种整个一篇文章把一件事情从头到尾讲清楚的形式是最好的，能给读者提供一种<code>沉浸式</code>的学习体验，阅读完整个文章后有种<code>酣畅淋漓</code>的感觉，所以我选择这种一篇文章的形式。</p>
 </blockquote>
 
-<p>欢迎大家加入我们的知识星球：<code>Kubernetes</code>。
-<img src="https://blog.qikqiak.com/img/xq.png" alt="知识星球" /></p>
+<p>另外我录制了<a href="https://www.haimaxy.com/course/pjrqxm/?utm_source=blog">基于1.9版本手动搭建高可用Kubernetes集群的视频教程</a>，对视频感兴趣的同学可以观看视频：​
+<a href="https://www.haimaxy.com/course/pjrqxm/?utm_source=blog"><img src="https://blog.qikqiak.com/img/posts/k8s-install-pay-course.jpeg" alt="视频教程" /></a></p>
 
 <p>扫描下面的二维码(或微信搜索<code>k8s技术圈</code>)关注我们的微信公众帐号，在微信公众帐号中回复 <strong>加群</strong> 即可加入到我们的 kubernetes 讨论群里面共同学习。
 <img src="https://blog.qikqiak.com/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg" alt="qrcode" /></p>
-
-<h2 id="目录">目录</h2>
-
-<ol>
-<li><a href="#init-env">组件版本 &amp;&amp; 集群环境</a></li>
-<li><a href="#create-ca">创建CA 证书和密钥</a></li>
-<li><a href="#etcd">部署高可用etcd 集群</a></li>
-<li><a href="#kubectl">配置kubectl 命令行工具</a></li>
-<li><a href="#flanneld">部署Flannel 网络</a></li>
-<li><a href="#master">部署master 节点</a></li>
-<li><a href="#ha">kube-apiserver 高可用</a></li>
-<li><a href="#node">部署node 节点</a></li>
-<li><a href="#kubedns">部署kubedns 插件</a></li>
-<li><a href="#dashboard">部署Dashboard 插件</a></li>
-<li><a href="#heapster">部署Heapster 插件</a></li>
-<li><a href="#ingress">部署Ingress</a></li>
-<li><a href="#log-collect">日志收集</a></li>
-<li><a href="#harbor">私有仓库harbor 搭建</a></li>
-<li><a href="#question">问题汇总</a></li>
-<li><a href="#link">参考资料</a></li>
-</ol>
 
 <h2 id="1-组件版本-集群环境-a-id-init-env-a">1. 组件版本 &amp;&amp; 集群环境<a id="init-env"></a></h2>
 
@@ -566,7 +699,7 @@ $ sudo cp ca* /etc/kubernetes/ssl
 <li>etcd03：192.168.1.170</li>
 </ul>
 
-<h2 id="定义环境变量">定义环境变量</h2>
+<h3 id="定义环境变量">定义环境变量</h3>
 
 <p>使用到的变量如下：</p>
 
@@ -2681,8 +2814,8 @@ $ systemctl restart docker
 <li><a href="https://github.com/kubernetes/heapster/issues">kubernetes heapster issue</a></li>
 </ul>
 
-<p>欢迎大家加入我们的知识星球：<code>Kubernetes</code>。
-<img src="https://blog.qikqiak.com/img/xq.png" alt="知识星球" /></p>
+<p><a href="https://www.haimaxy.com/course/pjrqxm/?utm_source=blog">基于1.9版本手动搭建高可用Kubernetes集群的视频教程</a>，对视频感兴趣的同学可以观看视频：
+<a href="https://www.haimaxy.com/course/pjrqxm/?utm_source=blog"><img src="https://blog.qikqiak.com/img/posts/k8s-install-pay-course.jpeg" alt="视频教程" /></a></p>
 
 <p>扫描下面的二维码(或微信搜索<code>k8s技术圈</code>)关注我们的微信公众帐号，在微信公众帐号中回复 <strong>加群</strong> 即可加入到我们的 kubernetes 讨论群里面共同学习。
 <img src="https://blog.qikqiak.com/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg" alt="qrcode" /></p>
@@ -2700,9 +2833,9 @@ $ systemctl restart docker
     
     <li><a href="https://blog.qikqiak.com/post/first-use-helm-on-kubernetes/">Kubernetes Helm 初体验</a></li>
     
-    <li><a href="https://blog.qikqiak.com/post/understand-kubernetes-configmap-and-secrets/">kubernetes ConfigMap 和 Secrets</a></li>
-    
     <li><a href="https://blog.qikqiak.com/post/add-authorization-for-kubernetes-dashboard/">为kubernetes dashboard访问用户添加权限控制</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/understand-kubernetes-configmap-and-secrets/">kubernetes ConfigMap 和 Secrets</a></li>
     
 </ul>
 
