@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [Kubernetes Pod 工作流](https://blog.qikqiak.com/post/pod-workflow)
  * [使用kubeadm搭建kubernetes1.10集群](https://blog.qikqiak.com/post/use-kubeadm-install-kubernetes-1.10)
  * [k8s技术圈一周精选[第3期]](https://blog.qikqiak.com/post/k8s-tech-weekly-collection-phase3/)
  * [Skaffold-简化本地开发kubernetes应用的神器](https://blog.qikqiak.com/post/skaffold-simple-local-develop-k8s-app-tools/)
