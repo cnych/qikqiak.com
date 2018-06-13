@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [Service 的使用方法](https://blog.qikqiak.com/post/use-service-in-k8s)
  * [Job 和 CronJob 的使用方法](https://blog.qikqiak.com/post/use-job-cronjob)
  * [RC、RS 使用方法](https://blog.qikqiak.com/post/use-rc-rs-manage-pod)
  * [初始化容器](https://blog.qikqiak.com/post/pod-init-container/)
