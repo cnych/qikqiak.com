@@ -6,24 +6,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
 
-  <title>Service 的使用-blog.qikqiak.com|阳明的博客|Kubernetes|Docker|Python|Golang|Cloud Native</title>
-  <meta property="og:title" content="Service 的使用" />
-  <meta name="twitter:title" content="Service 的使用" />
+  <title>Secret 的使用-blog.qikqiak.com|阳明的博客|Kubernetes|Docker|Python|Golang|Cloud Native</title>
+  <meta property="og:title" content="Secret 的使用" />
+  <meta name="twitter:title" content="Secret 的使用" />
 
-  <meta name="description" content="学习使用 Kubernetes 中的 Service 对象">
-  <meta property="og:description" content="学习使用 Kubernetes 中的 Service 对象">
-  <meta name="twitter:description" content="学习使用 Kubernetes 中的 Service 对象">
+  <meta name="description" content="Kubernetes Secret 资源对象使用方法">
+  <meta property="og:description" content="Kubernetes Secret 资源对象使用方法">
+  <meta name="twitter:description" content="Kubernetes Secret 资源对象使用方法">
   <meta name="author" content=""/>
   <link href='https://blog.qikqiak.com/img/favicon.ico' rel='icon' type='image/x-icon'/>
   <meta property="og:image" content="https://blog.qikqiak.com/img/avatar.jpeg" />
   <meta name="twitter:image" content="https://blog.qikqiak.com/img/avatar.jpeg" />
   <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://blog.qikqiak.com/post/use-service-in-k8s/" />
+  <meta property="og:url" content="https://blog.qikqiak.com/post/use-secret-in-k8s/" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="阳明的博客" />
 
   <meta name="generator" content="Hugo 0.41" />
-  <link rel="canonical" href="https://blog.qikqiak.com/post/use-service-in-k8s/" />
+  <link rel="canonical" href="https://blog.qikqiak.com/post/use-secret-in-k8s/" />
   <link rel="alternate" href="https://blog.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
   <link href="https://cdn.bootcss.com/KaTeX/0.7.1/katex.min.css" rel="stylesheet">
   <link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -35,7 +35,7 @@
   <link rel="stylesheet" href="https://blog.qikqiak.com/css/highlight.min.css" />
   <link rel="stylesheet" href="https://blog.qikqiak.com/css/prism.css?t=123" />
   <link rel="stylesheet" href="https://blog.qikqiak.com/css/search.css" />
-<meta name="keywords" content="kubernetes, service, pod">
+<meta name="keywords" content="kubernetes, secret">
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -263,7 +263,7 @@ autocomplete('#aa-search-input',
 
 
   
-    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://blog.qikqiak.com/img/posts/photo-1518301885719-b60b8379b2a9.jpeg" data-img-desc-1="Sunset"></div>
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://blog.qikqiak.com/img/posts/photo-1517960413843-0aee8e2b3285.jpeg" data-img-desc-1="happy moment"></div>
   
 
   <header class="header-section has-img">
@@ -274,15 +274,15 @@ autocomplete('#aa-search-input',
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
-                <h1>Service 的使用</h1>
+                <h1>Secret 的使用</h1>
                   
                     
-                      <h2 class="post-subheading">学习使用 Kubernetes 中的 Service 对象</h2>
+                      <h2 class="post-subheading">Kubernetes Secret 资源对象使用方法</h2>
                     
                   
                   
                     <span class="post-meta">
-  Posted on June 13, 2018
+  Posted on June 20, 2018
   
 </span>
 
@@ -301,15 +301,15 @@ autocomplete('#aa-search-input',
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
             <div class="post-heading">
-              <h1>Service 的使用</h1>
+              <h1>Secret 的使用</h1>
                 
                   
-                    <h2 class="post-subheading">学习使用 Kubernetes 中的 Service 对象</h2>
+                    <h2 class="post-subheading">Kubernetes Secret 资源对象使用方法</h2>
                   
                 
                 
                   <span class="post-meta">
-  Posted on June 13, 2018
+  Posted on June 20, 2018
   
 </span>
 
@@ -335,7 +335,7 @@ autocomplete('#aa-search-input',
             
                 <a href="https://blog.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
             
-                <a href="https://blog.qikqiak.com/tags/pod/">Pod</a> &nbsp;
+                <a href="https://blog.qikqiak.com/tags/secret/">secret</a> &nbsp;
             
           </h5>
           
@@ -343,156 +343,314 @@ autocomplete('#aa-search-input',
 
       <article role="main" class="blog-post" itemprop="articleBody" id="content">
           
-          <p>我们前面的课程中学习了<code>Pod</code>的基本用法，我们也了解到<code>Pod</code>的生命是有限的，死亡过后不会复活了。我们后面学习到的<code>RC</code>和<code>Deployment</code>可以用来动态的创建和销毁<code>Pod</code>。尽管每个<code>Pod</code>都有自己的<code>IP</code>地址，但是如果<code>Pod</code>重新启动了的话那么他的<code>IP</code>很有可能也就变化了。这就会带来一个问题：比如我们有一些后端的<code>Pod</code>的集合为集群中的其他前端的<code>Pod</code>集合提供<code>API</code>服务，如果我们在前端的<code>Pod</code>中把所有的这些后端的<code>Pod</code>的地址都写死，然后去某种方式去访问其中一个<code>Pod</code>的服务，这样看上去是可以工作的，对吧？但是如果这个<code>Pod</code>挂掉了，然后重新启动起来了，是不是<code>IP</code>地址非常有可能就变了，这个时候前端就极大可能访问不到后端的服务了。</p>
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#opaque-secret">Opaque Secret</a>
+<ul>
+<li><a href="#环境变量">环境变量</a></li>
+<li><a href="#volume-挂载">Volume 挂载</a></li>
+</ul></li>
+<li><a href="#kubernetes-io-dockerconfigjson">kubernetes.io/dockerconfigjson</a></li>
+<li><a href="#kubernetes-io-service-account-token">kubernetes.io/service-account-token</a></li>
+<li><a href="#secret-与-configmap-对比">Secret 与 ConfigMap 对比</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</nav>
+</aside>
+
+          <p>上节课我们学习了<code>ConfigMap</code>的使用，我们说<code>ConfigMap</code>这个资源对象是<code>Kubernetes</code>当中非常重要的一个对象，一般情况下<code>ConfigMap</code>是用来存储一些非安全的配置信息，如果涉及到一些安全相关的数据的话用<code>ConfigMap</code>就非常不妥了，因为<code>ConfigMap</code>是明文存储的，我们说这个时候我们就需要用到另外一个资源对象了：<code>Secret</code>，<code>Secret</code>用来保存敏感信息，例如密码、OAuth 令牌和 ssh key等等，将这些信息放在<code>Secret</code>中比放在<code>Pod</code>的定义中或者<code>docker</code>镜像中来说更加安全和灵活。</p>
 
 <p></p>
 
-<p>遇到这样的问题该怎么解决呢？在没有使用<code>Kubernetes</code>之前，我相信可能很多同学都遇到过这样的问题，不一定是<code>IP</code>变化的问题，比如我们在部署一个<code>WEB</code>服务的时候，前端一般部署一个<code>Nginx</code>作为服务的入口，然后<code>Nginx</code>后面肯定就是挂载的这个服务的大量后端，很早以前我们可能是去手动更改<code>Nginx</code>配置中的<code>upstream</code>选项，来动态改变提供服务的数量，到后面出现了一些<code>服务发现</code>的工具，比如<code>Consul</code>、<code>ZooKeeper</code>还有我们熟悉的<code>etcd</code>等工具，有了这些工具过后我们就可以只需要把我们的服务注册到这些服务发现中心去就可以，然后让这些工具动态的去更新<code>Nginx</code>的配置就可以了，我们完全不用去手工的操作了，是不是非常方便。
-<img src="https://blog.qikqiak.com/img/posts/nginx-consul.png" alt="nginx" /></p>
-
-<p>同样的，要解决我们上面遇到的问题是不是实现一个服务发现的工具也可以解决啊？没错的，当我们<code>Pod</code>被销毁或者新建过后，我们可以把这个<code>Pod</code>的地址注册到这个服务发现中心去就可以，但是这样的话我们的前端的<code>Pod</code>结合就不能直接去连接后台的<code>Pod</code>集合了是吧，应该连接到一个能够做服务发现的中间件上面，对吧？</p>
-
-<p>没错，<code>Kubernetes</code>集群就为我们提供了这样的一个对象 - <code>Service</code>，<code>Service</code>是一种抽象的对象，它定义了一组<code>Pod</code>的逻辑集合和一个用于访问它们的策略，其实这个概念和微服务非常类似。一个<code>Serivce</code>下面包含的<code>Pod</code>集合一般是由<code>Label Selector</code>来决定的。</p>
-
-<p>比如我们上面的例子，假如我们后端运行了3个副本，这些副本都是可以替代的，因为前端并不关心它们使用的是哪一个后端服务。尽管由于各种原因后端的<code>Pod</code>集合会发送变化，但是前端却不需要知道这些变化，也不需要自己用一个列表来记录这些后端的服务，<code>Service</code>的这种抽象就可以帮我们达到这种解耦的目的。</p>
-
-<h3 id="三种ip">三种IP</h3>
-
-<p>在继续往下学习<code>Service</code>之前，我们需要先弄明白<code>Kubernetes</code>系统中的三种IP这个问题，因为经常有同学混乱。</p>
+<p><code>Secret</code>有三种类型：</p>
 
 <ul>
-<li>Node IP：<code>Node</code>节点的<code>IP</code>地址</li>
-<li>Pod IP: <code>Pod</code>的IP地址</li>
-<li>Cluster IP: <code>Service</code>的<code>IP</code>地址</li>
+<li>Opaque：<code>base64</code>编码格式的 Secret，用来存储密码、密钥等；但数据也可以通过 base64 –decode解码得到原始数据，所有加密性很弱。</li>
+<li>kubernetes.io/dockerconfigjson：用来存储私有<code>docker registry</code>的认证信息。</li>
+<li>kubernetes.io/service-account-token：用于被<code>serviceaccount</code>引用，serviceaccout 创建时<code>Kubernetes</code>会默认创建对应的<code>secret</code>。<code>Pod</code>如果使用了<code>serviceaccount</code>，对应的<code>secret</code>会自动挂载到<code>Pod</code>目录<code>/run/secrets/kubernetes.io/serviceaccount</code>中。</li>
 </ul>
 
-<p>首先，<code>Node IP</code>是<code>Kubernetes</code>集群中节点的物理网卡<code>IP</code>地址(一般为内网)，所有属于这个网络的服务器之间都可以直接通信，所以<code>Kubernetes</code>集群外要想访问<code>Kubernetes</code>集群内部的某个节点或者服务，肯定得通过<code>Node IP</code>进行通信（这个时候一般是通过外网<code>IP</code>了）</p>
+<h3 id="opaque-secret">Opaque Secret</h3>
 
-<p>然后<code>Pod IP</code>是每个<code>Pod</code>的<code>IP</code>地址，它是<code>Docker Engine</code>根据<code>docker0</code>网桥的<code>IP</code>地址段进行分配的（我们这里使用的是<code>flannel</code>这种网络插件保证所有节点的<code>Pod IP</code>不会冲突）</p>
+<p>Opaque 类型的数据是一个 map 类型，要求value是<code>base64</code>编码格式，比如我们来创建一个用户名为 admin，密码为 admin321 的 Secret 对象，首先我们先把这用户名和密码做 base64 编码，</p>
 
-<p>最后<code>Cluster IP</code>是一个虚拟的<code>IP</code>，仅仅作用于<code>Kubernetes Service</code>这个对象，由<code>Kubernetes</code>自己来进行管理和分配地址，当然我们也无法<code>ping</code>这个地址，他没有一个真正的实体对象来响应，他只能结合<code>Service Port</code>来组成一个可以通信的服务。</p>
+<pre><code class="language-shell">$ echo -n &quot;admin&quot; | base64
+YWRtaW4=
+$ echo -n &quot;admin321&quot; | base64
+YWRtaW4zMjE=
+</code></pre>
 
-<h3 id="定义-service">定义Service</h3>
-
-<p>定义<code>Service</code>的方式和我们前面定义的各种资源对象的方式类型，例如，假定我们有一组<code>Pod</code>服务，它们对外暴露了 8080 端口，同时都被打上了<code>app=myapp</code>这样的标签，那么我们就可以像下面这样来定义一个<code>Service</code>对象：</p>
+<p>然后我们就可以利用上面编码过后的数据来编写一个<code>YAML</code>文件：(secret-demo.yaml)</p>
 
 <pre><code class="language-yaml">apiVersion: v1
-kind: Service
+kind: Secret
 metadata:
-  name: myservice
-spec:
-  selector:
-    app: myapp
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 8080
-    name: myapp-http
+  name: mysecret
+type: Opaque
+data:
+  username: YWRtaW4=
+  password: YWRtaW4zMjE=
 </code></pre>
 
-<p>然后通过的使用<code>kubectl create -f myservice.yaml</code>就可以创建一个名为<code>myservice</code>的<code>Service</code>对象，它会将请求代理到使用 TCP 端口为 8080，具有标签<code>app=myapp</code>的<code>Pod</code>上，这个<code>Service</code>会被系统分配一个我们上面说的<code>Cluster IP</code>，该<code>Service</code>还会持续的监听<code>selector</code>下面的<code>Pod</code>，会把这些<code>Pod</code>信息更新到一个名为<code>myservice</code>的<code>Endpoints</code>对象上去，这个对象就类似于我们上面说的<code>Pod</code>集合了。</p>
+<p>然后同样的我们就可以使用<code>kubectl</code>命令来创建了：</p>
 
-<p>需要注意的是，<code>Service</code>能够将一个接收端口映射到任意的<code>targetPort</code>。 默认情况下，<code>targetPort</code>将被设置为与<code>port</code>字段相同的值。 可能更有趣的是，targetPort 可以是一个字符串，引用了 backend Pod 的一个端口的名称。 因实际指派给该端口名称的端口号，在每个 backend Pod 中可能并不相同，所以对于部署和设计 Service ，这种方式会提供更大的灵活性。</p>
-
-<p>另外<code>Service</code>能够支持 TCP 和 UDP 协议，默认是 TCP 协议。</p>
-
-<h3 id="kube-proxy">kube-proxy</h3>
-
-<p>前面我们讲到过，在<code>Kubernetes</code>集群中，每个<code>Node</code>会运行一个<code>kube-proxy</code>进程, 负责为<code>Service</code>实现一种 VIP（虚拟 IP，就是我们上面说的<code>clusterIP</code>）的代理形式，现在的<code>Kubernetes</code>中默认是使用的<code>iptables</code>这种模式来代理。这种模式，<code>kube-proxy</code>会监视<code>Kubernetes master</code>对 Service 对象和 Endpoints 对象的添加和移除。 对每个 Service，它会添加上 iptables 规则，从而捕获到达该 Service 的 clusterIP（虚拟 IP）和端口的请求，进而将请求重定向到 Service 的一组 backend 中的某一个个上面。 对于每个 Endpoints 对象，它也会安装 iptables 规则，这个规则会选择一个 backend Pod。</p>
-
-<p>默认的策略是，随机选择一个 backend。 我们也可以实现基于客户端 IP 的会话亲和性，可以将 <code>service.spec.sessionAffinity</code> 的值设置为 &ldquo;ClientIP&rdquo; （默认值为 &ldquo;None&rdquo;）。</p>
-
-<p>另外需要了解的是如果最开始选择的 Pod 没有响应，iptables 代理能够自动地重试另一个 Pod，所以它需要依赖 readiness probes。</p>
-
-<p><img src="https://blog.qikqiak.com/img/posts/services-iptables-overview.svg" alt="service iptables overview" /></p>
-
-<h3 id="service-类型">Service 类型</h3>
-
-<p>我们在定义<code>Service</code>的时候可以指定一个自己需要的类型的<code>Service</code>，如果不指定的话默认是<code>ClusterIP</code>类型。</p>
-
-<p>我们可以使用的服务类型如下：</p>
-
-<ul>
-<li>ClusterIP：通过集群的内部 IP 暴露服务，选择该值，服务只能够在集群内部可以访问，这也是默认的ServiceType。</li>
-<li>NodePort：通过每个 Node 节点上的 IP 和静态端口（NodePort）暴露服务。NodePort 服务会路由到 ClusterIP 服务，这个 ClusterIP 服务会自动创建。通过请求 <NodeIP>:<NodePort>，可以从集群的外部访问一个 NodePort 服务。</li>
-<li>LoadBalancer：使用云提供商的负载局衡器，可以向外部暴露服务。外部的负载均衡器可以路由到 NodePort 服务和 ClusterIP 服务，这个需要结合具体的云厂商进行操作。</li>
-<li>ExternalName：通过返回 CNAME 和它的值，可以将服务映射到 externalName 字段的内容（例如， foo.bar.example.com）。没有任何类型代理被创建，这只有 Kubernetes 1.7 或更高版本的 kube-dns 才支持。</li>
-</ul>
-
-<h4 id="nodeport-类型">NodePort 类型</h4>
-
-<p>如果设置 type 的值为 <code>NodePort</code>，Kubernetes master 将从给定的配置范围内（默认：30000-32767）分配端口，每个 Node 将从该端口（每个 Node 上的同一端口）代理到<code>Service</code>。该端口将通过 Service 的 <code>spec.ports[*].nodePort</code>  字段被指定，如果不指定的话会自动生成一个端口。</p>
-
-<p>需要注意的是，Service 将能够通过 <NodeIP>:spec.ports[<em>].nodePort 和 spec.clusterIp:spec.ports[</em>].port 而对外可见。</p>
-
-<p>接下来我们来给大家创建一个<code>NodePort</code>的服务来访问我们前面的<code>Nginx</code>服务：(保存为 service-demo.yaml)</p>
-
-<pre><code class="language-yaml">apiVersion: v1
-kind: Service
-metadata:
-  name: myservice
-spec:
-  selector:
-    app: myapp
-  type: NodePort
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 80
-    name: myapp-http
+<pre><code class="language-shell">$ kubectl create -f secret-demo.yaml
+secret &quot;mysecret&quot; created
 </code></pre>
 
-<p>创建该<code>Service</code>:</p>
+<p>利用<code>get secret</code>命令查看：</p>
 
-<pre><code>$ kubectl create -f service-demo.yaml
+<pre><code class="language-shell">$ kubectl get secret
+NAME                  TYPE                                  DATA      AGE
+default-token-n9w2d   kubernetes.io/service-account-token   3         33d
+mysecret              Opaque                                2         40s
 </code></pre>
 
-<p>然后我们可以查看<code>Service</code>对象信息：</p>
+<blockquote>
+<p>其中<code>default-token-cty7pdefault-token-n9w2d</code>为创建集群时默认创建的 secret，被serviceacount/default 引用。</p>
+</blockquote>
 
-<pre><code>$ kubectl get svc
-NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
-kubernetes   ClusterIP   10.96.0.1       &lt;none&gt;        443/TCP        27d
-myservice    NodePort    10.104.57.198   &lt;none&gt;        80:32560/TCP   14h
+<p>使用<code>describe</code>命令，查看详情：</p>
+
+<pre><code class="language-shell">$ kubectl describe secret mysecret
+Name:         mysecret
+Namespace:    default
+Labels:       &lt;none&gt;
+Annotations:  &lt;none&gt;
+
+Type:  Opaque
+
+Data
+====
+password:  8 bytes
+username:  5 bytes
 </code></pre>
 
-<p>我们可以看到<code>myservice</code>的 TYPE 类型已经变成了<code>NodePort</code>，后面的<code>PORT(S)</code>部分也多了一个 32560 的映射端口。</p>
+<p>我们可以看到利用<code>describe</code>命令查看到的<code>Data</code>没有直接显示出来，如果想看到<code>Data</code>里面的详细信息，同样我们可以输出成<code>YAML</code>文件进行查看：</p>
 
-<p>同样的我们可以使用<code>describe</code>命令查看 Service 的详细信息：</p>
-
-<pre><code>$ kubectl describe svc myservice
-Name:                     myservice
-Namespace:                default
-Labels:                   &lt;none&gt;
-Annotations:              &lt;none&gt;
-Selector:                 app=nginx
-Type:                     NodePort
-IP:                       10.104.57.198
-Port:                     mynginx-http  80/TCP
-TargetPort:               80/TCP
-NodePort:                 mynginx-http  32560/TCP
-Endpoints:                10.244.1.55:80,10.244.2.189:80,10.244.2.190:80 + 1 more...
-Session Affinity:         None
-External Traffic Policy:  Cluster
-Events:                   &lt;none&gt;
-</code></pre>
-
-<h4 id="externalname">ExternalName</h4>
-
-<p><code>ExternalName</code> 是 Service 的特例，它没有<code>selector</code>，也没有定义任何的端口和 Endpoint。 对于运行在集群外部的服务，它通过返回该外部服务的别名这种方式来提供服务。</p>
-
-<pre><code class="language-yaml">kind: Service
+<pre><code class="language-shell">$ kubectl get secret mysecret -o yaml
 apiVersion: v1
+data:
+  password: YWRtaW4zMjE=
+  username: YWRtaW4=
+kind: Secret
 metadata:
-  name: my-service
-  namespace: prod
-spec:
-  type: ExternalName
-  externalName: my.database.example.com
+  creationTimestamp: 2018-06-19T15:27:06Z
+  name: mysecret
+  namespace: default
+  resourceVersion: &quot;3694084&quot;
+  selfLink: /api/v1/namespaces/default/secrets/mysecret
+  uid: 39c139f5-73d5-11e8-a101-525400db4df7
+type: Opaque
 </code></pre>
 
-<p>当查询主机 my-service.prod.svc.cluster.local （后面服务发现的时候我们会再深入讲解）时，集群的 <code>DNS</code> 服务将返回一个值为 my.database.example.com 的 <code>CNAME</code> 记录。 访问这个服务的工作方式与其它的相同，唯一不同的是重定向发生在 <code>DNS</code> 层，而且不会进行代理或转发。</p>
+<p>创建好<code>Secret</code>对象后，有两种方式来使用它：</p>
 
-<p>如果后续决定要将数据库迁移到 <code>Kubernetes</code> 集群中，可以启动对应的 <code>Pod</code>，增加合适的 Selector 或 Endpoint，修改 <code>Service</code> 的 type，完全不需要修改调用的代码，这样就完全解耦了。</p>
+<ul>
+<li>以环境变量的形式</li>
+<li>以Volume的形式挂载</li>
+</ul>
+
+<h4 id="环境变量">环境变量</h4>
+
+<p>首先我们来测试下环境变量的方式，同样的，我们来使用一个简单的<code>busybox</code>镜像来测试下:(secret1-pod.yaml)</p>
+
+<pre><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: secret1-pod
+spec:
+  containers:
+  - name: secret1
+    image: busybox
+    command: [ &quot;/bin/sh&quot;, &quot;-c&quot;, &quot;env&quot; ]
+    env:
+    - name: USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: mysecret
+          key: username
+    - name: PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: mysecret
+          key: password
+</code></pre>
+
+<p>主要上面环境变量中定义的<code>secretKeyRef</code>关键字，和我们上节课的<code>configMapKeyRef</code>是不是比较类似，一个是从<code>Secret</code>对象中获取，一个是从<code>ConfigMap</code>对象中获取，创建上面的<code>Pod</code>：</p>
+
+<pre><code class="language-shell">$ kubectl create -f secret1-pod.yaml
+pod &quot;secret1-pod&quot; created
+</code></pre>
+
+<p>然后我们查看<code>Pod</code>的日志输出：</p>
+
+<pre><code class="language-shell">$ kubectl logs secret1-pod
+...
+USERNAME=admin
+PASSWORD=admin321
+...
+</code></pre>
+
+<p>可以看到有 USERNAME 和 PASSWORD 两个环境变量输出出来。</p>
+
+<h4 id="volume-挂载">Volume 挂载</h4>
+
+<p>同样的我们用一个<code>Pod</code>来验证下<code>Volume</code>挂载，创建一个<code>Pod</code>文件：(secret2-pod.yaml)</p>
+
+<pre><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: secret2-pod
+spec:
+  containers:
+  - name: secret2
+    image: busybox
+    command: [&quot;/bin/sh&quot;, &quot;-c&quot;, &quot;ls /etc/secrets&quot;]
+    volumeMounts:
+    - name: secrets
+      mountPath: /etc/secrets
+  volumes:
+  - name: secrets
+    secret:
+     secretName: mysecret
+</code></pre>
+
+<p>创建<code>Pod</code>:</p>
+
+<pre><code class="language-shell">$ kubectl create -f secret-pod2.yaml
+pod &quot;secret2-pod&quot; created
+</code></pre>
+
+<p>然后我们查看输出日志：</p>
+
+<pre><code class="language-shell">$ kubectl logs secret2-pod
+password
+username
+</code></pre>
+
+<p>可以看到<code>secret</code>把两个key挂载成了两个对应的文件。当然如果想要挂载到指定的文件上面，是不是也可以使用上一节课的方法：在<code>secretName</code>下面添加<code>items</code>指定 key 和 path，这个大家可以参考上节课<code>ConfigMap</code>中的方法去测试下。</p>
+
+<h3 id="kubernetes-io-dockerconfigjson">kubernetes.io/dockerconfigjson</h3>
+
+<p>除了上面的<code>Opaque</code>这种类型外，我们还可以来创建用户<code>docker registry</code>认证的<code>Secret</code>，直接使用<code>kubectl create</code>命令创建即可，如下：</p>
+
+<pre><code class="language-shell">$ kubectl create secret docker-registry myregistry --docker-server=DOCKER_SERVER --docker-username=DOCKER_USER --docker-password=DOCKER_PASSWORD --docker-email=DOCKER_EMAIL
+secret &quot;myregistry&quot; created
+</code></pre>
+
+<p>然后查看<code>Secret</code>列表：</p>
+
+<pre><code class="language-shell">$ kubectl get secret
+NAME                  TYPE                                  DATA      AGE
+default-token-n9w2d   kubernetes.io/service-account-token   3         33d
+myregistry            kubernetes.io/dockerconfigjson        1         15s
+mysecret              Opaque                                2         34m
+</code></pre>
+
+<p>注意看上面的<code>TYPE</code>类型，<code>myregistry</code>是不是对应的<code>kubernetes.io/dockerconfigjson</code>，同样的可以使用<code>describe</code>命令来查看详细信息：</p>
+
+<pre><code class="language-shell">$ kubectl describe secret myregistry
+Name:         myregistry
+Namespace:    default
+Labels:       &lt;none&gt;
+Annotations:  &lt;none&gt;
+
+Type:  kubernetes.io/dockerconfigjson
+
+Data
+====
+.dockerconfigjson:  152 bytes
+</code></pre>
+
+<p>同样的可以看到<code>Data</code>区域没有直接展示出来，如果想查看的话可以使用<code>-o yaml</code>来输出展示出来：</p>
+
+<pre><code class="language-shell">$ kubectl get secret myregistry -o yaml
+apiVersion: v1
+data:
+  .dockerconfigjson: eyJhdXRocyI6eyJET0NLRVJfU0VSVkVSIjp7InVzZXJuYW1lIjoiRE9DS0VSX1VTRVIiLCJwYXNzd29yZCI6IkRPQ0tFUl9QQVNTV09SRCIsImVtYWlsIjoiRE9DS0VSX0VNQUlMIiwiYXV0aCI6IlJFOURTMFZTWDFWVFJWSTZSRTlEUzBWU1gxQkJVMU5YVDFKRSJ9fX0=
+kind: Secret
+metadata:
+  creationTimestamp: 2018-06-19T16:01:05Z
+  name: myregistry
+  namespace: default
+  resourceVersion: &quot;3696966&quot;
+  selfLink: /api/v1/namespaces/default/secrets/myregistry
+  uid: f91db707-73d9-11e8-a101-525400db4df7
+type: kubernetes.io/dockerconfigjson
+</code></pre>
+
+<p>可以把上面的<code>data.dockerconfigjson</code>下面的数据做一个<code>base64</code>解码，看看里面的数据是怎样的呢？</p>
+
+<pre><code class="language-shell">$ echo eyJhdXRocyI6eyJET0NLRVJfU0VSVkVSIjp7InVzZXJuYW1lIjoiRE9DS0VSX1VTRVIiLCJwYXNzd29yZCI6IkRPQ0tFUl9QQVNTV09SRCIsImVtYWlsIjoiRE9DS0VSX0VNQUlMIiwiYXV0aCI6IlJFOURTMFZTWDFWVFJWSTZSRTlEUzBWU1gxQkJVMU5YVDFKRSJ9fX0= | base64 -d
+{&quot;auths&quot;:{&quot;DOCKER_SERVER&quot;:{&quot;username&quot;:&quot;DOCKER_USER&quot;,&quot;password&quot;:&quot;DOCKER_PASSWORD&quot;,&quot;email&quot;:&quot;DOCKER_EMAIL&quot;,&quot;auth&quot;:&quot;RE9DS0VSX1VTRVI6RE9DS0VSX1BBU1NXT1JE&quot;}}}
+</code></pre>
+
+<p>如果我们需要拉取私有仓库中的<code>docker</code>镜像的话就需要使用到上面的<code>myregistry</code>这个<code>Secret</code>：</p>
+
+<pre><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: foo
+spec:
+  containers:
+  - name: foo
+    image: 192.168.1.100:5000/test:v1
+  imagePullSecrets:
+  - name: myregistry
+</code></pre>
+
+<p>我们需要拉取私有仓库镜像<code>192.168.1.100:5000/test:v1</code>，我们就需要针对该私有仓库来创建一个如上的<code>Secret</code>，然后在<code>Pod</code>的 YAML 文件中指定<code>imagePullSecrets</code>，我们会在后面的私有仓库搭建的课程中跟大家详细说明的。</p>
+
+<h3 id="kubernetes-io-service-account-token">kubernetes.io/service-account-token</h3>
+
+<p>另外一种<code>Secret</code>类型就是<code>kubernetes.io/service-account-token</code>，用于被<code>serviceaccount</code>引用。serviceaccout 创建时 Kubernetes 会默认创建对应的 secret。Pod 如果使用了 serviceaccount，对应的secret会自动挂载到Pod的<code>/run/secrets/kubernetes.io/serviceaccount</code>目录中。</p>
+
+<p>这里我们使用一个<code>nginx</code>镜像来验证一下，大家想一想为什么不是呀<code>busybox</code>镜像来验证？当然也是可以的，但是我们就不能在<code>command</code>里面来验证了，因为token是需要<code>Pod</code>运行起来过后才会被挂载上去的，直接在<code>command</code>命令中去查看肯定是还没有 token 文件的。</p>
+
+<pre><code class="language-shell">$ kubectl run secret-pod3 --image nginx:1.7.9
+deployment.apps &quot;secret-pod3&quot; created
+$ kubectl get pods
+NAME                           READY     STATUS    RESTARTS   AGE
+...
+secret-pod3-78c8c76db8-7zmqm   1/1       Running   0          13s
+...
+$ kubectl exec secret-pod3-78c8c76db8-7zmqm ls /run/secrets/kubernetes.io/serviceaccount
+ca.crt
+namespace
+token
+$ kubectl exec secret-pod3-78c8c76db8-7zmqm cat /run/secrets/kubernetes.io/serviceaccount/token
+eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6ImRlZmF1bHQtdG9rZW4tbjl3MmQiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoiZGVmYXVsdCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjMzY2FkOWQxLTU5MmYtMTFlOC1hMTAxLTUyNTQwMGRiNGRmNyIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDpkZWZhdWx0OmRlZmF1bHQifQ.0FpzPD8WO_fwnMjwpGIOphdVu4K9wUINwpXpBOJAQ-Tawd0RTbAUHcgYy3sEHSk9uvgnl1FJRQpbQN3yVR_DWSIlAtbmd4dIPxK4O7ZVdd4UnmC467cNXEBqL1sDWLfS5f03d7D1dw1ljFJ_pJw2P65Fjd13reKJvvTQnpu5U0SDcfxj675-Z3z-iOO3XSalZmkFIw2MfYMzf_WpxW0yMFCVkUZ8tBSTegA9-NJZededceA_VCOdKcUjDPrDo-CNti3wZqax5WPw95Ou8RJDMAIS5EcVym7M2_zjGiqHEL3VTvcwXbdFKxsNX-1VW6nr_KKuMGKOyx-5vgxebl71QQ
+</code></pre>
+
+<h3 id="secret-与-configmap-对比">Secret 与 ConfigMap 对比</h3>
+
+<p>最后我们来对比下<code>Secret</code>和<code>ConfigMap</code>这两种资源对象的异同点：</p>
+
+<p>相同点：</p>
+
+<ul>
+<li>key/value 的形式</li>
+<li>属于某个特定的<code>namespace</code></li>
+<li>可以导出到环境变量</li>
+<li>可以通过目录/文件形式挂载</li>
+<li>通过<code>volume</code>挂载的配置信息均可热更新</li>
+</ul>
+
+<p>不同点：</p>
+
+<ul>
+<li>Secret 可以被<code>ServerAccount</code>关联</li>
+<li>Secret 可以存储<code>docker register</code>的鉴权信息，用在<code>ImagePullSecret</code> 参数中，用于拉取私有仓库的镜像</li>
+<li>Secret 支持<code>Base64</code>加密</li>
+<li>Secret 分为 kubernetes.io/service-account-token、kubernetes.io/dockerconfigjson、Opaque 三种类型，而<code>Configmap</code>不区分类型</li>
+</ul>
 
 <p>本文节选自视频教程<a href="https://www.haimaxy.com/course/6n8xd6/">从 Docker 到 Kubernetes 进阶</a>
 <a href="https://www.haimaxy.com/course/6n8xd6/"><img src="https://blog.qikqiak.com/img/posts/docker-k8s.png" alt="docker-k8s" /></a></p>
@@ -507,17 +665,17 @@ spec:
 <h3>相关文章</h3>
 <ul style="margin-bottom: 25px;">
     
+    <li><a href="https://blog.qikqiak.com/post/use-service-in-k8s/">Service 的使用</a></li>
+    
     <li><a href="https://blog.qikqiak.com/post/use-job-cronjob/">Job和CronJob 的使用方法</a></li>
     
     <li><a href="https://blog.qikqiak.com/post/use-rc-rs-manage-pod/">RC、RS 使用方法</a></li>
     
-    <li><a href="https://blog.qikqiak.com/post/use-downward-api-get-pod-info/">Kubernetes Downward API 基本用法</a></li>
-    
     <li><a href="https://blog.qikqiak.com/post/what-is-oci-runc-containerd-cri-docker/">名称解释OCI、runc、containerd、Docker、CRI、CRI-O</a></li>
     
-    <li><a href="https://blog.qikqiak.com/post/pod-workflow/">Kubernetes Pod 工作流</a></li>
-    
     <li><a href="https://blog.qikqiak.com/post/pod-init-container/">初始化容器</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/pod-workflow/">Kubernetes Pod 工作流</a></li>
     
     <li><a href="https://blog.qikqiak.com/post/use-kubeadm-install-kubernetes-1.10/">使用kubeadm搭建kubernetes1.10集群</a></li>
     
@@ -535,13 +693,9 @@ spec:
       <ul class="pager blog-pager">
         
           <li class="previous">
-            <a href="https://blog.qikqiak.com/post/use-job-cronjob/" data-toggle="tooltip" data-placement="top" title="Job和CronJob 的使用方法">&larr; Previous Post</a>
+            <a href="https://blog.qikqiak.com/post/use-service-in-k8s/" data-toggle="tooltip" data-placement="top" title="Service 的使用">&larr; Previous Post</a>
           </li>
         
-        
-          <li class="next">
-            <a href="https://blog.qikqiak.com/post/use-secret-in-k8s/" data-toggle="tooltip" data-placement="top" title="Secret 的使用">Next Post &rarr;</a>
-          </li>
         
       </ul>
       
@@ -554,8 +708,8 @@ spec:
       <script src="https://imsun.github.io/gitment/dist/gitment.browser.js"></script>
       <script>
       var gitment = new Gitment({
-        id: 'use-service-in-k8s',
-        title: 'Service 的使用',
+        id: 'use-secret-in-k8s',
+        title: 'Secret 的使用',
         owner: 'cnych',
         repo: 'blog',
         oauth: {
