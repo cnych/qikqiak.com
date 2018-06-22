@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [Kubernetes RBAC 详解](https://blog.qikqiak.com/post/use-rbac-in-k8s)
  * [Secret 的使用方法](https://blog.qikqiak.com/post/use-secret-in-k8s)
  * [Service 的使用方法](https://blog.qikqiak.com/post/use-service-in-k8s)
  * [Job 和 CronJob 的使用方法](https://blog.qikqiak.com/post/use-job-cronjob)
