@@ -45,6 +45,7 @@
  * [Kubernetes使用Prometheus搭建监控平台](https://blog.qikqiak.com/post/kubernetes-monitor-prometheus-grafana/)
 
 #### Python
+ * [Mac 下安装 cryptography 失败](https://blog.qikqiak.com/post/install-cryptography-failed-in-mac/)
  * [TDD开发容器化的Python微服务应用(二)](https://blog.qikqiak.com/post/tdd-develop-python-microservice-app-part2/)
  * [TDD开发容器化的Python微服务应用(一)](https://blog.qikqiak.com/post/tdd-develop-python-microservice-app/)
  * [Python 虚拟环境全知道](https://blog.qikqiak.com/post/python-virtualenv-all-know/)
