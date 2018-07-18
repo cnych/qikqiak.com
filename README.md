@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [kubernetes 持久化存储(一)](https://blog.qikqiak.com/post/kubernetes-persistent-volume1)
  * [Kubernetes RBAC 详解](https://blog.qikqiak.com/post/use-rbac-in-k8s)
  * [Secret 的使用方法](https://blog.qikqiak.com/post/use-secret-in-k8s)
  * [Service 的使用方法](https://blog.qikqiak.com/post/use-service-in-k8s)
