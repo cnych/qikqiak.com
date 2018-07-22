@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [基于 Jenkins 的 CI/CD(一)](https://blog.qikqiak.com/post/kubernetes-jenkins1)
  * [kubernetes 持久化存储(二)](https://blog.qikqiak.com/post/kubernetes-persistent-volume2)
  * [kubernetes 持久化存储(一)](https://blog.qikqiak.com/post/kubernetes-persistent-volume1)
  * [Kubernetes RBAC 详解](https://blog.qikqiak.com/post/use-rbac-in-k8s)
