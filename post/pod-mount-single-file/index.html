@@ -6,39 +6,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
 
-  <title>Memcached的一些坑!!!-blog.qikqiak.com|阳明的博客|Kubernetes|Docker|Python|Golang|Cloud Native</title>
-  <meta property="og:title" content="Memcached的一些坑!!!" />
-  <meta name="twitter:title" content="Memcached的一些坑!!!" />
+  <title>Pod 中挂载单个文件的方法-blog.qikqiak.com|阳明的博客|Kubernetes|Docker|Python|Golang|Cloud Native</title>
+  <meta property="og:title" content="Pod 中挂载单个文件的方法" />
+  <meta name="twitter:title" content="Pod 中挂载单个文件的方法" />
 
-  <meta name="description" content="我们的网站用django跑了很久了，一直没出现什么大的问题，突然一天晚上网站访问超级慢，出现大量的502错误码，难不成用户量猛增么，要是这样就好了。请教了很多运维高手帮忙排查问题、代码也回滚到上一个正常运行的版本了，但依然负载一会高一会低。
-
-
-捣腾了一天，最后定位到我们的代码有问题，有几个经常访问的API缓存了15分钟，经过分析发现其中一个API始终缓存不上，但在本地和测试环境都是没有问题的，这真是搞死人啊。后面发现这个API的请求的数据非常之大，接近2M了。而Memcache有很多限制，其中就有value值大小的限制，终于找到问题了，泪牛满面啊&hellip;&hellip;
-
+  <meta name="description" content="有很多同学发现在Pod中通过volume挂载数据的时候，如果挂载目录下原来有文件，挂载后将被覆盖掉。有的时候，我们希望将文件挂载到某个目录，但希望只是挂载该文件，不要影响挂载目录下的其他文件。有办法吗？
 
 ">
-  <meta property="og:description" content="我们的网站用django跑了很久了，一直没出现什么大的问题，突然一天晚上网站访问超级慢，出现大量的502错误码，难不成用户量猛增么，要是这样就好了。请教了很多运维高手帮忙排查问题、代码也回滚到上一个正常运行的版本了，但依然负载一会高一会低。
-
-
-捣腾了一天，最后定位到我们的代码有问题，有几个经常访问的API缓存了15分钟，经过分析发现其中一个API始终缓存不上，但在本地和测试环境都是没有问题的，这真是搞死人啊。后面发现这个API的请求的数据非常之大，接近2M了。而Memcache有很多限制，其中就有value值大小的限制，终于找到问题了，泪牛满面啊&hellip;&hellip;
-
+  <meta property="og:description" content="有很多同学发现在Pod中通过volume挂载数据的时候，如果挂载目录下原来有文件，挂载后将被覆盖掉。有的时候，我们希望将文件挂载到某个目录，但希望只是挂载该文件，不要影响挂载目录下的其他文件。有办法吗？
 
 ">
-  <meta name="twitter:description" content="我们的网站用django跑了很久了，一直没出现什么大的问题，突然一天晚上网站访问超级慢，出现大量的502错误码，难不成用户量猛增么，要是这样就好了。请教了很多运维高手帮忙排查问题、代码也回滚到上一个正常运行的版本了，但依然负载一会高一会低。
+  <meta name="twitter:description" content="有很多同学发现在Pod中通过volume挂载数据的时候，如果挂载目录下原来有文件，挂载后将被覆盖掉。有的时候，我们希望将文件挂载到某个目录，但希望只是挂载该文件，不要影响挂载目录下的其他文件。有办法吗？
 
-
-捣腾了一天，最后定位到我们的代码有问题，有几个经常访问的API缓存了15分钟，经过分析发现其中一个API始终缓存不上，但在本地和测试环境都是没有问题的，这 …">
+">
   <meta name="author" content=""/>
   <link href='https://blog.qikqiak.com/img/favicon.ico' rel='icon' type='image/x-icon'/>
   <meta property="og:image" content="https://blog.qikqiak.com/img/avatar.jpeg" />
   <meta name="twitter:image" content="https://blog.qikqiak.com/img/avatar.jpeg" />
   <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://blog.qikqiak.com/post/some-pits-of-memcached/" />
+  <meta property="og:url" content="https://blog.qikqiak.com/post/pod-mount-single-file/" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="阳明的博客" />
 
   <meta name="generator" content="Hugo 0.41" />
-  <link rel="canonical" href="https://blog.qikqiak.com/post/some-pits-of-memcached/" />
+  <link rel="canonical" href="https://blog.qikqiak.com/post/pod-mount-single-file/" />
   <link rel="alternate" href="https://blog.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
   <link href="https://cdn.bootcss.com/KaTeX/0.7.1/katex.min.css" rel="stylesheet">
   <link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -50,7 +41,7 @@
   <link rel="stylesheet" href="https://blog.qikqiak.com/css/highlight.min.css" />
   <link rel="stylesheet" href="https://blog.qikqiak.com/css/prism.css?t=123" />
   <link rel="stylesheet" href="https://blog.qikqiak.com/css/search.css" />
-<meta name="keywords" content="">
+<meta name="keywords" content="kubernetes, Pod, nginx, configmap, subPath, volume">
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -280,8 +271,33 @@ autocomplete('#aa-search-input',
 
 
   
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://blog.qikqiak.com/img/posts/photo-1532339142463-fd0a8979791a.jpeg" data-img-desc-1="Chilling in Georgia"></div>
+  
 
-  <header class="header-section ">
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>Pod 中挂载单个文件的方法</h1>
+                  
+                  
+                    <span class="post-meta">
+  Posted on July 24, 2018
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
     
     <div class="intro-header no-img">
       
@@ -289,11 +305,11 @@ autocomplete('#aa-search-input',
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
             <div class="post-heading">
-              <h1>Memcached的一些坑!!!</h1>
+              <h1>Pod 中挂载单个文件的方法</h1>
                 
                 
                   <span class="post-meta">
-  Posted on May 28, 2014
+  Posted on July 24, 2018
   
 </span>
 
@@ -317,9 +333,13 @@ autocomplete('#aa-search-input',
           
           <h5 id="tags" style="margin-top: 0px;">标签:
             
-                <a href="https://blog.qikqiak.com/tags/django/">django</a> &nbsp;
+                <a href="https://blog.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
             
-                <a href="https://blog.qikqiak.com/tags/memcached/">Memcached</a> &nbsp;
+                <a href="https://blog.qikqiak.com/tags/pod/">Pod</a> &nbsp;
+            
+                <a href="https://blog.qikqiak.com/tags/nginx/">nginx</a> &nbsp;
+            
+                <a href="https://blog.qikqiak.com/tags/configmap/">configmap</a> &nbsp;
             
           </h5>
           
@@ -327,46 +347,168 @@ autocomplete('#aa-search-input',
 
       <article role="main" class="blog-post" itemprop="articleBody" id="content">
           
-          <p>我们的网站用<code>django</code>跑了很久了，一直没出现什么大的问题，突然一天晚上网站访问超级慢，出现大量的<code>502</code>错误码，难不成用户量猛增么，要是这样就好了。请教了很多运维高手帮忙排查问题、代码也回滚到上一个正常运行的版本了，但依然负载一会高一会低。</p>
-
-<blockquote>
-<p>捣腾了一天，最后定位到我们的代码有问题，有几个经常访问的API缓存了15分钟，经过分析发现其中一个API始终缓存不上，但在本地和测试环境都是没有问题的，这真是搞死人啊。后面发现这个API的请求的数据非常之大，接近2M了。而<strong>Memcache有很多限制，其中就有value值大小的限制</strong>，终于找到问题了，泪牛满面啊&hellip;&hellip;</p>
-</blockquote>
+          <p>有很多同学发现在<code>Pod</code>中通过<code>volume</code>挂载数据的时候，如果挂载目录下原来有文件，挂载后将被覆盖掉。有的时候，我们希望将文件挂载到某个目录，但希望只是挂载该文件，不要影响挂载目录下的其他文件。有办法吗？</p>
 
 <p></p>
 
-<h3 id="原因">原因</h3>
+<p>可以用<code>subPath</code>，<code>subPath</code>的目的是为了在单一<code>Pod</code>中多次使用同一个<code>volume</code>而设计的。示例：</p>
 
-<p>下面是<code>Memcached</code>一些特性和限制:</p>
+<p>比如我们要通过<code>ConfigMap</code>的形式挂载 Nginx 的配置文件：</p>
 
-<ul>
-<li>在Memcached中可以保存的item数据量是没有限制的，只有内存足够</li>
-<li>Memcached单进程最大使用内存为2G，要使用更多内存，可以分多个端口开启多个Memcached进程</li>
-<li>最大30天的数据过期时间,设置为永久的也会在这个时间过期，常量REALTIME_MAXDELTA,60*60*24*30控制</li>
-<li><strong>最大键长为250字节，大于该长度无法存储</strong>，常量KEY_MAX_LENGTH 250控制,不过可以更改源码进行设置</li>
-<li><strong>单个item最大数据是1MB，超过1MB数据不予存储</strong>，常量POWER_BLOCK 1048576进行控制，它是默认的slab大小，不过可以在启动的时候启添加-I 10m参数就可以，最大能支持到128M</li>
-<li>最大同时连接数是200，通过conn_init()中的freetotal进行控制，最大软连接数是1024，通过settings.maxconns=1024 进行控制</li>
-<li>跟空间占用相关的参数：settings.factor=1.25, settings.chunk_size=48, 影响slab的数据占用和步进方式</li>
-<li>memcached是一种无阻塞的socket通信方式服务，基于libevent库，由于无阻塞通信，对内存读写速度非常之快。</li>
-<li>memcached分服务器端和客户端，可以配置多个服务器端和客户端，应用于分布式的服务非常广泛。</li>
-<li>memcached作为小规模的数据分布式平台是十分有效果的。</li>
-</ul>
+<p>1.保存下面文件为：nginx.conf</p>
 
-<h3 id="解决方法">解决方法</h3>
+<pre><code class="language-shell">user  nginx;
+worker_processes  1;
 
-<p>找到了问题所在，当然就得解决了，这里当然可以像上面说的调整单个item的最大数据，比如调整到10m，这种解决办法固然能够解决问题，但显然不是最优的办法，最优的办法就是优化数据查询方法，限定查询数据结果大小。最后我们是将数据结果集进行了优化，使结果大小小于1m，后面有时间应该要优化下数据库查询这块。</p>
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
 
-<h3 id="其它">其它</h3>
+events {
+    worker_connections  1024;
+}
 
-<p><code>memcached</code>本身的服务是用C语言编写的，启动非常简单：</p>
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
 
-<ul>
-<li>memcached -d -m 2048 -l 10.0.0.40 -p 11211</li>
-<li>-d表示memcached启动作为一个守护进程；</li>
-<li>-m表示启用多大的内存支持，这里的单位是兆(M)，2048表示2个G的内存</li>
-<li>-l表示服务的IP地址，最好不要写成localhost</li>
-<li>-p表示服务的端口，默认为11211</li>
-</ul>
+    log_format  main  '$remote_addr - $remote_user [$time_local] &quot;$request&quot; '
+                        '$status $body_bytes_sent &quot;$http_referer&quot; '
+                        '&quot;$http_user_agent&quot; &quot;$http_x_forwarded_for&quot;';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    keepalive_timeout  65;
+
+    #gzip  on;
+
+    include /etc/nginx/conf.d/*.conf;
+}
+</code></pre>
+
+<p>2.通过文件创建<code>ConfigMap</code>对象：</p>
+
+<pre><code class="language-shell">$ kubectl create configmap confnginx --from-file=nginx.conf
+</code></pre>
+
+<p>3.创建一个 nginx 的 Pod，通过上面的 configmap 挂载 nginx.conf 配置文件，保存为 nginx.yaml：</p>
+
+<pre><code class="language-yaml">apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: ngtest
+spec:
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.7.9
+          ports:
+          - containerPort: 80
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: confnginx
+</code></pre>
+
+<p>4.创建上面的Deployment：</p>
+
+<pre><code class="language-shell">$ kubectl apply -f nginx.yaml
+</code></pre>
+
+<p>5.验证：
+下面是我们生成的 Pod，看状态可以看出已经正常运行了</p>
+
+<pre><code class="language-shell">$ kubectl get pods
+NAME                                             READY     STATUS             RESTARTS   AGE
+...
+ngtest-7df9b74f98-btlgp                          1/1       Running            0          19m
+...
+</code></pre>
+
+<p>现在我们进入容器中查看下 nginx.conf 文件：</p>
+
+<pre><code class="language-shell">$ kubectl exec -it ngtest-7df9b74f98-btlgp /bin/bash
+root@ngtest-7df9b74f98-btlgp:/# ls /etc/nginx/
+conf.d      koi-utf  mime.types  scgi_params   win-utf
+fastcgi_params  koi-win  nginx.conf  uwsgi_params
+root@ngtest-7df9b74f98-btlgp:/# cat /etc/nginx/nginx.conf
+user  nginx;
+worker_processes  1;
+
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    log_format  main  '$remote_addr - $remote_user [$time_local] &quot;$request&quot; '
+                        '$status $body_bytes_sent &quot;$http_referer&quot; '
+                        '&quot;$http_user_agent&quot; &quot;$http_x_forwarded_for&quot;';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    keepalive_timeout  65;
+
+    gzip  on;
+
+    include /etc/nginx/conf.d/*.conf;
+}
+</code></pre>
+
+<p>可以看到 nginx.conf 文件正是我们上面的 ConfigMap 对象中的内容，验证成功。</p>
+
+<p>6.原理：
+下面是绑定 subPath 的源码部分，我们可以看到下面的 <strong>t.Model()&amp;os.ModeDir</strong> 部分，如果 subPath 是一个文件夹的话就会去创建这个文件夹，如果是文件的话就可以进行单独挂载了。</p>
+
+<pre><code class="language-golang">func doBindSubPath(mounter Interface, subpath Subpath, kubeletPid int) (hostPath string, err error) {
+    ...
+    // Create target of the bind mount. A directory for directories, empty file
+    // for everything else.
+    t, err := os.Lstat(subpath.Path)
+    if err != nil {
+        return &quot;&quot;, fmt.Errorf(&quot;lstat %s failed: %s&quot;, subpath.Path, err)
+    }
+    if t.Mode() &amp; os.ModeDir &gt; 0 {
+        if err = os.Mkdir(bindPathTarget, 0750); err != nil &amp;&amp; !os.IsExist(err) {
+            return &quot;&quot;, fmt.Errorf(&quot;error creating directory %s: %s&quot;, bindPathTarget, err)
+        }
+    } else {
+        // &quot;/bin/touch &lt;bindDir&gt;&quot;.
+        // A file is enough for all possible targets (symlink, device, pipe,
+        // socket, ...), bind-mounting them into a file correctly changes type
+        // of the target file.
+        if err = ioutil.WriteFile(bindPathTarget, []byte{}, 0640); err != nil {
+            return &quot;&quot;, fmt.Errorf(&quot;error creating file %s: %s&quot;, bindPathTarget, err)
+        }
+    }
+    ...
+}
+</code></pre>
+
+<p>欢迎大家加入我们的知识星球：<code>Kubernetes</code>👻👻👻。
+<img src="https://blog.qikqiak.com/img/xq.png" alt="知识星球" /></p>
+
+<p>扫描下面的二维码(或微信搜索<code>k8s技术圈</code>)关注我们的微信公众帐号，在微信公众帐号中回复 <strong>加群</strong> 即可加入到我们的 kubernetes 讨论群里面共同学习。
+<img src="https://blog.qikqiak.com/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg" alt="qrcode" /></p>
       </article>
 
       
@@ -375,15 +517,25 @@ autocomplete('#aa-search-input',
 <h3>相关文章</h3>
 <ul style="margin-bottom: 25px;">
     
-    <li><a href="https://blog.qikqiak.com/post/django-custom-tag-inclusion_tag/">django自定义标签之inclusion_tag的用法</a></li>
+    <li><a href="https://blog.qikqiak.com/post/what-is-oci-runc-containerd-cri-docker/">名称解释OCI、runc、containerd、Docker、CRI、CRI-O</a></li>
     
-    <li><a href="https://blog.qikqiak.com/post/django-i18n/">django国际化问题</a></li>
+    <li><a href="https://blog.qikqiak.com/post/pod-workflow/">Kubernetes Pod 工作流</a></li>
     
-    <li><a href="https://blog.qikqiak.com/page/archive/">Archive</a></li>
+    <li><a href="https://blog.qikqiak.com/post/use-service-in-k8s/">Service 的使用</a></li>
     
-    <li><a href="https://blog.qikqiak.com/page/about/">About me</a></li>
+    <li><a href="https://blog.qikqiak.com/post/use-job-cronjob/">Job和CronJob 的使用方法</a></li>
     
-    <li><a href="https://blog.qikqiak.com/page/friend/">友情链接</a></li>
+    <li><a href="https://blog.qikqiak.com/post/use-rc-rs-manage-pod/">RC、RS 使用方法</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/kubernetes-jenkins1/">基于 Jenkins 的 CI/CD(一)</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/kubernetes-persistent-volume2/">kubernetes 持久化存储(二)</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/kubernetes-persistent-volume1/">kubernetes 持久化存储(一)</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/use-rbac-in-k8s/">Kubernetes RBAC 详解</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/use-secret-in-k8s/">Secret 的使用</a></li>
     
 </ul>
 
@@ -393,13 +545,9 @@ autocomplete('#aa-search-input',
       <ul class="pager blog-pager">
         
           <li class="previous">
-            <a href="https://blog.qikqiak.com/post/django-i18n/" data-toggle="tooltip" data-placement="top" title="django国际化问题">&larr; Previous Post</a>
+            <a href="https://blog.qikqiak.com/post/kubernetes-jenkins1/" data-toggle="tooltip" data-placement="top" title="基于 Jenkins 的 CI/CD(一)">&larr; Previous Post</a>
           </li>
         
-        
-          <li class="next">
-            <a href="https://blog.qikqiak.com/post/django-url-function-usage/" data-toggle="tooltip" data-placement="top" title="django下url函数的用法">Next Post &rarr;</a>
-          </li>
         
       </ul>
       
@@ -412,8 +560,8 @@ autocomplete('#aa-search-input',
       <script src="https://imsun.github.io/gitment/dist/gitment.browser.js"></script>
       <script>
       var gitment = new Gitment({
-        id: 'some-pits-of-memcached',
-        title: 'Memcached的一些坑!!!',
+        id: 'pod-mount-single-file',
+        title: 'Pod 中挂载单个文件的方法',
         owner: 'cnych',
         repo: 'blog',
         oauth: {
