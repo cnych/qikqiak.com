@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [基于 Jenkins 的 CI/CD(三)](https://blog.qikqiak.com/post/kubernetes-jenkins3)
  * [基于 Jenkins 的 CI/CD(二)](https://blog.qikqiak.com/post/kubernetes-jenkins2)
  * [基于 Jenkins 的 CI/CD(一)](https://blog.qikqiak.com/post/kubernetes-jenkins1)
  * [Pod 中挂载单个文件的方法](https://blog.qikqiak.com/post/pod-mount-single-file)
