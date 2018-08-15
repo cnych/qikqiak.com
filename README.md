@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [外部服务发现之 ingress(一)](https://blog.qikqiak.com/post/ingress-traefik1)
  * [集群内部服务发现之 DNS](https://blog.qikqiak.com/post/service-found-dns)
  * [基于 Jenkins 的 CI/CD(三)](https://blog.qikqiak.com/post/kubernetes-jenkins3)
  * [基于 Jenkins 的 CI/CD(二)](https://blog.qikqiak.com/post/kubernetes-jenkins2)
