@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [ipvs 基本介绍](https://blog.qikqiak.com/post/how-to-use-ipvs-in-kubernetes)
  * [kubernetes 如何发音？](https://blog.qikqiak.com/post/kubernetes-how-to-pronunciation)
  * [外部服务发现之 ingress(一)](https://blog.qikqiak.com/post/ingress-traefik1)
  * [集群内部服务发现之 DNS](https://blog.qikqiak.com/post/service-found-dns)
