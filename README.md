@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [Dockerfile 最佳实践](https://blog.qikqiak.com/post/dockerfile-best-practice)
  * [Kubernetes 服务质量 Qos](https://blog.qikqiak.com/post/kubernetes-qos-usage)
  * [Helm 的基本使用](https://blog.qikqiak.com/post/kubernetes-helm-usage)
  * [华为 CloudNativeLives K8S 系列课程](https://blog.qikqiak.com/post/huawei-cloudnativelives-k8s-course)
