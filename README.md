@@ -80,6 +80,7 @@
  * [webpack3入门到放肆视频教程](https://blog.qikqiak.com/post/webpack3-get-started/)
 
 #### 其他
+ * [并发模型](https://blog.qikqiak.com/post/concurrency-model-compare/)
  * [好吧，海马学院正式上线了](https://blog.qikqiak.com/post/haimaxy-online/)
  * [Hugo 集成 Gitment 评论插件](https://blog.qikqiak.com/post/hugo-integrated-gitment-plugin/)
  * [Hugo 集成 Algolia 搜索](https://blog.qikqiak.com/post/hugo-integrated-algolia-search/)
