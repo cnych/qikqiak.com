@@ -77,6 +77,7 @@
  * [用python处理csv文件](https://blog.qikqiak.com/post/python-process-csv-file/)
 
 #### 课程
+ * [国庆 K8S 课程特别活动](https://blog.qikqiak.com/k8s-course-promotion)
  * [Django2.0 实战项目](https://blog.qikqiak.com/post/django20-practice-project-course/)
  * [webpack3入门到放肆视频教程](https://blog.qikqiak.com/post/webpack3-get-started/)
 
