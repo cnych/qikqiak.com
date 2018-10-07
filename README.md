@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [Helm Hooks 的使用](https://blog.qikqiak.com/post/helm-hooks-usage)
  * [Helm 命名模板的使用](https://blog.qikqiak.com/post/helm-name-template-usage)
  * [Dockerfile 最佳实践](https://blog.qikqiak.com/post/dockerfile-best-practice)
  * [Kubernetes 服务质量 Qos](https://blog.qikqiak.com/post/kubernetes-qos-usage)
