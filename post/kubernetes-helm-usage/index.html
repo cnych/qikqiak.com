@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>Helm 的基本使用-blog.qikqiak.com|阳明的博客|Kubernetes|Docker|Python|Golang|Cloud Native</title>
+  <meta property="og:title" content="Helm 的基本使用" />
+  <meta name="twitter:title" content="Helm 的基本使用" />
+
+  <meta name="description" content="上节课我们成功安装了Helm的客户端以及服务端Tiller Server，我们也自己尝试创建了我们的第一个 Helm Chart 包，这节课就来和大家一起学习下 Helm 中的一些常用的操作方法。
+
+">
+  <meta property="og:description" content="上节课我们成功安装了Helm的客户端以及服务端Tiller Server，我们也自己尝试创建了我们的第一个 Helm Chart 包，这节课就来和大家一起学习下 Helm 中的一些常用的操作方法。
+
+">
+  <meta name="twitter:description" content="上节课我们成功安装了Helm的客户端以及服务端Tiller Server，我们也自己尝试创建了我们的第一个 Helm Chart 包，这节课就来和大家一起学习下 Helm 中的一些常用的操作方法。
+
+">
+  <meta name="author" content=""/>
+  <link href='https://blog.qikqiak.com/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://blog.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:image" content="https://blog.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://blog.qikqiak.com/post/kubernetes-helm-usage/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.41" />
+  <link rel="canonical" href="https://blog.qikqiak.com/post/kubernetes-helm-usage/" />
+  <link rel="alternate" href="https://blog.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+  <link href="https://cdn.bootcss.com/KaTeX/0.7.1/katex.min.css" rel="stylesheet">
+  <link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/main.css?t=12345" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/pygment_highlights.css" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/highlight.min.css" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/prism.css?t=123" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/search.css" />
+  
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/reward.css" />
+  
+<meta name="keywords" content="kubernetes, helm, 用法">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?970de9920f6089c287a7fd366138d4e9";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<link href="https://cdn.bootcss.com/photoswipe/4.1.1/photoswipe.min.css" rel="stylesheet">
+<link href="https://cdn.bootcss.com/photoswipe/4.1.1/default-skin/default-skin.min.css" rel="stylesheet">
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='//www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://blog.qikqiak.com/">阳明的博客</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Home" href="https://blog.qikqiak.com/">Home</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">Categories</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://blog.qikqiak.com/page/archive/">Archive</a>
+                
+                  <a href="https://blog.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://blog.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://blog.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://blog.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://blog.qikqiak.com/tags/ops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">projects</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://youdianzhishi.com/course/6n8xd6/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">Kubernetes进阶</a>
+                
+                  <a href="http://md.qikqiak.com/">Markdown转微信</a>
+                
+                  <a href="https://youdianzhishi.com/course/6y02wp/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">Python微服务实战</a>
+                
+                  <a href="https://k8s.qikqiak.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">kubernetes进阶在线文档</a>
+                
+                  <a href="https://youdianzhishi.com/course/pjrqxm/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">Kubernetes 集群搭建</a>
+                
+                  <a href="https://istio.qikqiak.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">我们一起学istio</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="About" href="https://blog.qikqiak.com/page/about/">About</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span class="hidden-sm hidden-md hidden-lg">Search</span> <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+    <div class="avatar-container">
+      <div class="avatar-img-border">
+        
+          <a title="阳明的博客" href="https://blog.qikqiak.com/">
+            <img class="avatar-img" src="https://blog.qikqiak.com/img/avatar.jpeg" alt="阳明的博客" />
+          </a>
+        
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">Search blog.qikqiak.com</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://res.cloudinary.com/jimmysong/raw/upload/rootsongjc-hugo/algoliasearch.min.js"></script>
+<script src="https://res.cloudinary.com/jimmysong/raw/upload/rootsongjc-hugo/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://blog.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://blog.qikqiak.com/img/posts/photo-1535807485722-6810baaaf271.jpeg" data-img-desc-1="nostalgia"></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>Helm 的基本使用</h1>
+                  
+                  
+                    <span class="post-meta">
+  Posted on September 4, 2018
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>Helm 的基本使用</h1>
+                
+                
+                  <span class="post-meta">
+  Posted on September 4, 2018
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+
+      <div>
+          
+          
+          <h5 id="tags" style="margin-top: 0px;">标签:
+            
+                <a href="https://blog.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+            
+                <a href="https://blog.qikqiak.com/tags/helm/">helm</a> &nbsp;
+            
+          </h5>
+          
+      </div>
+
+      <article role="main" class="blog-post" itemprop="articleBody" id="content">
+        
+          
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#仓库">仓库</a></li>
+<li><a href="#查找-chart">查找 chart</a></li>
+<li><a href="#安装-chart">安装 chart</a></li>
+<li><a href="#自定义-chart">自定义 chart</a></li>
+<li><a href="#升级">升级</a></li>
+<li><a href="#删除">删除</a></li>
+</ul></li>
+</ul>
+</nav>
+</aside>
+
+        
+        <p>上节课我们成功安装了<code>Helm</code>的客户端以及服务端<code>Tiller Server</code>，我们也自己尝试创建了我们的第一个 Helm Chart 包，这节课就来和大家一起学习下 Helm 中的一些常用的操作方法。</p>
+
+<p></p>
+
+<h2 id="仓库">仓库</h2>
+
+<p>Helm 的 Repo 仓库和 Docker Registry 比较类似，Chart 库可以用来存储和共享打包 Chart 的位置，我们在安装了 Helm 后，默认的仓库地址是 google 的一个地址，这对于我们不能科学上网的同学就比较苦恼了，没办法访问到官方提供的 Chart 仓库，可以用<code>helm repo list</code>来查看当前的仓库配置：</p>
+
+<pre><code class="language-shell">$ helm repo list
+NAME    URL
+stable  https://kubernetes-charts.storage.googleapis.com/
+local   http://127.0.0.1:8879/charts
+</code></pre>
+
+<p>我们可以看到除了一个默认的 stable 的仓库配置外，还有一个 local 的本地仓库，这是我们本地测试的一个仓库地址。其实要创建一个 Chart 仓库也是非常简单的，Chart 仓库其实就是一个带有<code>index.yaml</code>索引文件和任意个打包的 Chart 的 HTTP 服务器而已，比如我们想要分享一个 Chart 包的时候，将我们本地的 Chart 包上传到该服务器上面，别人就可以使用了，所以其实我们自己托管一个 Chart 仓库也是非常简单的，比如阿里云的 OSS、Github Pages，甚至自己创建的一个简单服务器都可以。</p>
+
+<p>为了解决科学上网的问题，我这里建了一个 Github Pages 仓库，每天会自动和官方的仓库进行同步，地址是：<a href="https://github.com/cnych/kube-charts-mirror">https://github.com/cnych/kube-charts-mirror</a>，这样我们就可以将我们的 Helm 默认仓库地址更改成我们自己的仓库地址了：</p>
+
+<pre><code class="language-shell">$ helm repo remove stable
+&quot;stable&quot; has been removed from your repositories
+$ helm repo add stable https://cnych.github.io/kube-charts-mirror/
+&quot;stable&quot; has been added to your repositories
+$ helm repo list
+NAME    URL
+stable  https://cnych.github.io/kube-charts-mirror/
+local   http://127.0.0.1:8879/charts
+$ helm repo update
+Hang tight while we grab the latest from your chart repositories...
+...Skip local chart repository
+...Successfully got an update from the &quot;stable&quot; chart repository
+Update Complete. ⎈ Happy Helming!⎈
+</code></pre>
+
+<p>仓库添加完成后，可以使用 update 命令进行仓库更新。当然如果要我们自己来创建一个 web 服务器来服务 Helm Chart 的话，只需要实现下面几个功能点就可以提供服务了：</p>
+
+<ul>
+<li>将索引和<code>Chart</code>置于服务器目录中</li>
+<li>确保索引文件<code>index.yaml</code>可以在没有认证要求的情况下访问</li>
+<li>确保 yaml 文件的正确内容类型（text/yaml 或 text/x-yaml）</li>
+</ul>
+
+<p>如果你的 web 服务提供了上面几个功能，那么也就可以当做 Helm Chart 仓库来使用了。</p>
+
+<h2 id="查找-chart">查找 chart</h2>
+
+<p>Helm 将 Charts 包安装到 Kubernetes 集群中，一个安装实例就是一个新的 Release，要找到新的 Chart，我们可以通过搜索命令完成。</p>
+
+<blockquote>
+<p>记住，如果不能科学上网，将默认的 stable 的仓库地址更换成上面我们创建的地址</p>
+</blockquote>
+
+<p>直接运行<code>helm search</code>命令可以查看有哪些 Charts 是可用的：</p>
+
+<pre><code class="language-shell">$ helm search
+NAME                                    CHART VERSION   APP VERSION                     DESCRIPTION
+...
+stable/minio                            1.6.3           RELEASE.2018-08-25T01-56-38Z    Minio is a high performance distributed object storage se...
+stable/mission-control                  0.4.2           3.1.2                           A Helm chart for JFrog Mission Control
+stable/mongodb                          4.2.2           4.0.2                           NoSQL document-oriented database that stores JSON-like do...
+stable/mongodb-replicaset               3.5.6           3.6                             NoSQL document-oriented database that stores JSON-like do...
+...
+stable/zetcd                            0.1.9           0.0.3                           CoreOS zetcd Helm chart for Kubernetes
+...
+</code></pre>
+
+<p>如果没有使用过滤条件，helm search 显示所有可用的 charts。可以通过使用过滤条件进行搜索来缩小搜索的结果范围：</p>
+
+<pre><code class="language-shell">$ helm search mysql
+NAME                                CHART VERSION   APP VERSION DESCRIPTION
+...
+stable/mysql                        0.10.1          5.7.14      Fast, reliable, scalable, and easy to use open-source rel...
+stable/mysqldump                    0.1.0           5.7.21      A Helm chart to help backup MySQL databases using mysqldump
+stable/prometheus-mysql-exporter    0.1.0           v0.10.0     A Helm chart for prometheus
+stable/mariadb                      4.4.0           10.1.35     Fast, reliable, scalable, and easy to use open-source rel...
+...
+</code></pre>
+
+<p>可以看到明显少了很多 charts 了，同样的，我们可以使用 inspect 命令来查看一个 chart 的详细信息：</p>
+
+<pre><code class="language-shell">$ helm inspect stable/mysql
+appVersion: 5.7.14
+description: Fast, reliable, scalable, and easy to use open-source relational database
+  system.
+engine: gotpl
+home: https://www.mysql.com/
+icon: https://www.mysql.com/common/logos/logo-mysql-170x115.png
+keywords:
+- mysql
+- database
+- sql
+maintainers:
+- email: o.with@sportradar.com
+  name: olemarkus
+- email: viglesias@google.com
+  name: viglesiasce
+name: mysql
+sources:
+- https://github.com/kubernetes/charts
+- https://github.com/docker-library/mysql
+version: 0.10.1
+
+---
+## mysql image version
+## ref: https://hub.docker.com/r/library/mysql/tags/
+##
+image: &quot;mysql&quot;
+imageTag: &quot;5.7.14&quot;
+...
+</code></pre>
+
+<p>使用 inspect 命令可以查看到该 chart 里面所有描述信息，包括运行方式、配置信息等等。</p>
+
+<p>通过 helm search 命令可以找到我们想要的 chart 包，找到后就可以通过 helm install 命令来进行安装了。</p>
+
+<h2 id="安装-chart">安装 chart</h2>
+
+<p>要安装新的软件包，直接使用 helm install 命令即可。最简单的情况下，它只需要一个 chart 的名称参数：</p>
+
+<pre><code class="language-shell">$ helm install stable/mysql
+NAME:   mewing-squid
+LAST DEPLOYED: Tue Sep  4 23:31:23 2018
+NAMESPACE: default
+STATUS: DEPLOYED
+
+RESOURCES:
+==&gt; v1/PersistentVolumeClaim
+NAME                STATUS   VOLUME  CAPACITY  ACCESS MODES  STORAGECLASS  AGE
+mewing-squid-mysql  Pending  1s
+
+==&gt; v1/Service
+NAME                TYPE       CLUSTER-IP     EXTERNAL-IP  PORT(S)   AGE
+mewing-squid-mysql  ClusterIP  10.108.197.48  &lt;none&gt;       3306/TCP  1s
+
+==&gt; v1beta1/Deployment
+NAME                DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
+mewing-squid-mysql  1        0        0           0          1s
+
+==&gt; v1/Pod(related)
+NAME                                 READY  STATUS   RESTARTS  AGE
+mewing-squid-mysql-69f587bdf9-z7glv  0/1    Pending  0         0s
+
+==&gt; v1/Secret
+NAME                TYPE    DATA  AGE
+mewing-squid-mysql  Opaque  2     1s
+
+==&gt; v1/ConfigMap
+NAME                     DATA  AGE
+mewing-squid-mysql-test  1     1s
+
+
+NOTES:
+MySQL can be accessed via port 3306 on the following DNS name from within your cluster:
+mewing-squid-mysql.default.svc.cluster.local
+
+To get your root password run:
+
+    MYSQL_ROOT_PASSWORD=$(kubectl get secret --namespace default mewing-squid-mysql -o jsonpath=&quot;{.data.mysql-root-password}&quot; | base64 --decode; echo)
+
+To connect to your database:
+
+1. Run an Ubuntu pod that you can use as a client:
+
+    kubectl run -i --tty ubuntu --image=ubuntu:16.04 --restart=Never -- bash -il
+
+2. Install the mysql client:
+
+    $ apt-get update &amp;&amp; apt-get install mysql-client -y
+
+3. Connect using the mysql cli, then provide your password:
+    $ mysql -h mewing-squid-mysql -p
+
+To connect to your database directly from outside the K8s cluster:
+    MYSQL_HOST=127.0.0.1
+    MYSQL_PORT=3306
+
+    # Execute the following command to route the connection:
+    kubectl port-forward svc/mewing-squid-mysql 3306
+
+    mysql -h ${MYSQL_HOST} -P${MYSQL_PORT} -u root -p${MYSQL_ROOT_PASSWORD}
+</code></pre>
+
+<p>现在 mysql chart 已经安装上了，安装 chart 会创建一个新 release 对象。上面的 release 被命名为 hmewing-squid。如果你想使用你自己的 release 名称，只需使用<code>--name</code>参数指定即可，比如：</p>
+
+<pre><code class="language-shell">$ helm install stable/mysql --name mydb
+</code></pre>
+
+<p>在安装过程中，helm 客户端将打印有关创建哪些资源的有用信息，release 的状态以及其他有用的配置信息，比如这里的有访问 mysql 服务的方法、获取 root 用户的密码以及连接 mysql 的方法等信息。</p>
+
+<blockquote>
+<p>值得注意的是 Helm 并不会一直等到所有资源都运行才退出。因为很多 charts 需要的镜像资源非常大，所以可能需要很长时间才能安装到集群中去。</p>
+</blockquote>
+
+<p>要跟踪 release 状态或重新读取配置信息，可以使用 helm status 查看：</p>
+
+<pre><code class="language-shell">$  helm status mewing-squid
+LAST DEPLOYED: Tue Sep  4 23:31:23 2018
+NAMESPACE: default
+STATUS: DEPLOYED
+
+RESOURCES:
+...
+</code></pre>
+
+<p>可以看到当前 release 的状态是<code>DEPLOYED</code>，下面还有一些安装的时候出现的信息。</p>
+
+<h2 id="自定义-chart">自定义 chart</h2>
+
+<p>上面的安装方式是使用 chart 的默认配置选项。但是在很多时候，我们都需要自定义 chart 以满足自身的需求，要自定义 chart，我们就需要知道我们使用的 chart 支持的可配置选项才行。</p>
+
+<p>要查看 chart 上可配置的选项，使用<code>helm inspect values</code>命令即可，比如我们这里查看上面的 mysql 的配置选项：</p>
+
+<pre><code class="language-shell">$ helm inspect values stable/mysql
+## mysql image version
+## ref: https://hub.docker.com/r/library/mysql/tags/
+##
+image: &quot;mysql&quot;
+imageTag: &quot;5.7.14&quot;
+
+## Specify password for root user
+##
+## Default: random 10 character string
+# mysqlRootPassword: testing
+
+## Create a database user
+##
+# mysqlUser:
+## Default: random 10 character string
+# mysqlPassword:
+
+## Allow unauthenticated access, uncomment to enable
+##
+# mysqlAllowEmptyPassword: true
+
+## Create a database
+##
+# mysqlDatabase:
+
+## Specify an imagePullPolicy (Required)
+## It's recommended to change this to 'Always' if the image tag is 'latest'
+## ref: http://kubernetes.io/docs/user-guide/images/#updating-images
+##
+imagePullPolicy: IfNotPresent
+
+extraVolumes: |
+  # - name: extras
+  #   emptyDir: {}
+
+extraVolumeMounts: |
+  # - name: extras
+  #   mountPath: /usr/share/extras
+  #   readOnly: true
+
+extraInitContainers: |
+  # - name: do-something
+  #   image: busybox
+  #   command: ['do', 'something']
+
+# Optionally specify an array of imagePullSecrets.
+# Secrets must be manually created in the namespace.
+# ref: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+# imagePullSecrets:
+  # - name: myRegistryKeySecretName
+
+## Node selector
+## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#nodeselector
+nodeSelector: {}
+
+livenessProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+
+readinessProbe:
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 1
+  successThreshold: 1
+  failureThreshold: 3
+
+## Persist data to a persistent volume
+persistence:
+  enabled: true
+  ## database data Persistent Volume Storage Class
+  ## If defined, storageClassName: &lt;storageClass&gt;
+  ## If set to &quot;-&quot;, storageClassName: &quot;&quot;, which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS &amp; OpenStack)
+  ##
+  # storageClass: &quot;-&quot;
+  accessMode: ReadWriteOnce
+  size: 8Gi
+  annotations: {}
+
+## Configure resource requests and limits
+## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+##
+resources:
+  requests:
+    memory: 256Mi
+    cpu: 100m
+
+# Custom mysql configuration files used to override default mysql settings
+configurationFiles: {}
+#  mysql.cnf: |-
+#    [mysqld]
+#    skip-name-resolve
+#    ssl-ca=/ssl/ca.pem
+#    ssl-cert=/ssl/server-cert.pem
+#    ssl-key=/ssl/server-key.pem
+
+# Custom mysql init SQL files used to initialize the database
+initializationFiles: {}
+#  first-db.sql: |-
+#    CREATE DATABASE IF NOT EXISTS first DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+#  second-db.sql: |-
+#    CREATE DATABASE IF NOT EXISTS second DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+
+metrics:
+  enabled: false
+  image: prom/mysqld-exporter
+  imageTag: v0.10.0
+  imagePullPolicy: IfNotPresent
+  resources: {}
+  annotations: {}
+    # prometheus.io/scrape: &quot;true&quot;
+    # prometheus.io/port: &quot;9104&quot;
+  livenessProbe:
+    initialDelaySeconds: 15
+    timeoutSeconds: 5
+  readinessProbe:
+    initialDelaySeconds: 5
+    timeoutSeconds: 1
+
+## Configure the service
+## ref: http://kubernetes.io/docs/user-guide/services/
+service:
+  ## Specify a service type
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services---service-types
+  type: ClusterIP
+  port: 3306
+  # nodePort: 32000
+
+ssl:
+  enabled: false
+  secret: mysql-ssl-certs
+  certificates:
+#  - name: mysql-ssl-certs
+#    ca: |-
+#      -----BEGIN CERTIFICATE-----
+#      ...
+#      -----END CERTIFICATE-----
+#    cert: |-
+#      -----BEGIN CERTIFICATE-----
+#      ...
+#      -----END CERTIFICATE-----
+#    key: |-
+#      -----BEGIN RSA PRIVATE KEY-----
+#      ...
+#      -----END RSA PRIVATE KEY-----
+
+## Populates the 'TZ' system timezone environment variable
+## ref: https://dev.mysql.com/doc/refman/5.7/en/time-zone-support.html
+##
+## Default: nil (mysql will use image's default timezone, normally UTC)
+## Example: 'Australia/Sydney'
+# timezone:
+
+# To be added to the database server pod(s)
+podAnnotations: {}
+</code></pre>
+
+<p>然后，我们可以直接在 YAML 格式的文件中来覆盖上面的任何配置，在安装的时候直接使用该配置文件即可：(config.yaml)</p>
+
+<pre><code class="language-yaml">mysqlUser: haimaxyUser
+mysqlDatabase: haimaxyDB
+service:
+  type: NodePort
+</code></pre>
+
+<p>我们这里通过 config.yaml 文件定义了 mysqlUser 和 mysqlDatabase，并且把 service 的类型更改为了 NodePort，然后现在我们来安装的时候直接指定该 yaml 文件：</p>
+
+<pre><code class="language-shell">$ helm install -f config.yaml stable/mysql --name mydb
+NAME:   mydb
+LAST DEPLOYED: Wed Sep  5 00:09:44 2018
+NAMESPACE: default
+STATUS: DEPLOYED
+
+RESOURCES:
+==&gt; v1/Secret
+NAME        TYPE    DATA  AGE
+mydb-mysql  Opaque  2     1s
+
+==&gt; v1/ConfigMap
+NAME             DATA  AGE
+mydb-mysql-test  1     1s
+
+==&gt; v1/PersistentVolumeClaim
+NAME        STATUS   VOLUME  CAPACITY  ACCESS MODES  STORAGECLASS  AGE
+mydb-mysql  Pending  1s
+
+==&gt; v1/Service
+NAME        TYPE      CLUSTER-IP     EXTERNAL-IP  PORT(S)         AGE
+mydb-mysql  NodePort  10.96.150.198  &lt;none&gt;       3306:32604/TCP  0s
+
+==&gt; v1beta1/Deployment
+NAME        DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
+mydb-mysql  1        1        1           0          0s
+
+==&gt; v1/Pod(related)
+NAME                        READY  STATUS   RESTARTS  AGE
+mydb-mysql-dfc999888-hbw5d  0/1    Pending  0         0s
+...
+</code></pre>
+
+<p>我们可以看到当前 release 的名字已经变成 mydb 了。然后可以查看下 mydb 关联的 Service 是否变成 NodePort 类型的了：</p>
+
+<pre><code class="language-shell">$ kubectl get svc
+NAME                 TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+kubernetes           ClusterIP   10.96.0.1        &lt;none&gt;        443/TCP          110d
+mewing-squid-mysql   ClusterIP   10.108.197.48    &lt;none&gt;        3306/TCP         46m
+mydb-mysql           NodePort    10.96.150.198    &lt;none&gt;        3306:32604/TCP   8m
+</code></pre>
+
+<p>看到服务 mydb-mysql 变成了 NodePort 类型的，二之前默认创建的 mewing-squid-mysql 是 ClusterIP 类型的，证明上面我们通过 YAML 文件来覆盖 values 是成功的。</p>
+
+<p>接下来我们查看下 Pod 的状况：</p>
+
+<pre><code class="language-shell">$ kubectl get pods
+NAME                                      READY     STATUS    RESTARTS   AGE
+mewing-squid-mysql-69f587bdf9-z7glv       0/1       Pending   0          49m
+mydb-mysql-dfc999888-hbw5d                0/1       Pending   0          11m
+</code></pre>
+
+<p>比较奇怪的是之前默认创建的和现在的 mydb 的 release 创建的 Pod 都是 Pending 状态，直接使用 describe 命令查看下：</p>
+
+<pre><code class="language-shell">$ kubectl describe pod mydb-mysql-dfc999888-hbw5d
+Name:           mydb-mysql-dfc999888-hbw5d
+Namespace:      default
+Node:           &lt;none&gt;
+Labels:         app=mydb-mysql
+                pod-template-hash=897555444
+...
+Events:
+  Type     Reason            Age                From               Message
+  ----     ------            ----               ----               -------
+  Warning  FailedScheduling  2m (x37 over 12m)  default-scheduler  pod has unbound PersistentVolumeClaims (repeated 2 times)
+</code></pre>
+
+<p>我们可以发现两个 Pod 处于 Pending 状态的原因都是 PVC 没有被绑定上，所以这里我们可以通过 storageclass 或者手动创建一个合适的 PV 对象来解决这个问题。</p>
+
+<p>另外为了说明 helm 更新的用法，我们这里来直接禁用掉数据持久化，可以在上面的 config.yaml 文件中设置：</p>
+
+<pre><code class="language-yaml">persistence:
+  enabled: false
+</code></pre>
+
+<p>另外一种方法就是在安装过程中使用<code>--set</code>来覆盖对应的 value 值，比如禁用数据持久化，我们这里可以这样来覆盖：</p>
+
+<pre><code class="language-shell">$ helm install stable/mysql --set persistence.enabled=false --name mydb
+</code></pre>
+
+<h2 id="升级">升级</h2>
+
+<p>我们这里将数据持久化禁用掉来对上面的 mydb 进行升级：</p>
+
+<pre><code class="language-shell">$ echo config.yaml
+mysqlUser: haimaxyUser
+mysqlDatabase: haimaxyDB
+service:
+  type: NodePort
+persistence:
+  enabled: false
+$ helm upgrade -f config.yaml mydb stable/mysql
+helm upgrade -f config.yaml mydb stable/mysql
+Release &quot;mydb&quot; has been upgraded. Happy Helming!
+LAST DEPLOYED: Wed Sep  5 00:38:33 2018
+NAMESPACE: default
+STATUS: DEPLOYED
+
+RESOURCES:
+...
+</code></pre>
+
+<p>可以看到已经变成 DEPLOYED 状态了，现在我们再去看看 Pod 的状态呢：</p>
+
+<pre><code class="language-shell">$ kubectl get pods
+NAME                                      READY     STATUS            RESTARTS   AGE
+mewing-squid-mysql-69f587bdf9-z7glv       0/1       Pending           0          1h
+mydb-mysql-6ffc84bbf6-lcn4d               0/1       PodInitializing   0          49s
+...
+</code></pre>
+
+<p>我们看到 mydb 关联的 Pod 已经变成了 PodInitializing 的状态，已经不是 Pending 状态了，同样的，使用 describe 命令查看：</p>
+
+<pre><code class="language-shell">$ kubectl describe pod mydb-mysql-6ffc84bbf6-lcn4d
+Name:           mydb-mysql-6ffc84bbf6-lcn4d
+Namespace:      default
+Node:           node02/10.151.30.63
+Start Time:     Wed, 05 Sep 2018 00:38:33 +0800
+Labels:         app=mydb-mysql
+                pod-template-hash=2997406692
+Annotations:    &lt;none&gt;
+Status:         Pending
+...
+Events:
+  Type    Reason                 Age   From               Message
+  ----    ------                 ----  ----               -------
+  Normal  SuccessfulMountVolume  58s   kubelet, node02    MountVolume.SetUp succeeded for volume &quot;data&quot;
+  Normal  SuccessfulMountVolume  58s   kubelet, node02    MountVolume.SetUp succeeded for volume &quot;default-token-n9w2d&quot;
+  Normal  Scheduled              57s   default-scheduler  Successfully assigned mydb-mysql-6ffc84bbf6-lcn4d to node02
+  Normal  Pulling                57s   kubelet, node02    pulling image &quot;busybox:1.25.0&quot;
+  Normal  Pulled                 45s   kubelet, node02    Successfully pulled image &quot;busybox:1.25.0&quot;
+  Normal  Created                44s   kubelet, node02    Created container
+  Normal  Started                44s   kubelet, node02    Started container
+  Normal  Pulling                41s   kubelet, node02    pulling image &quot;mysql:5.7.14&quot;
+</code></pre>
+
+<p>我们可以看到现在没有任何关于 PVC 的错误信息了，这是因为我们刚刚更新的版本中就是禁用掉了的数据持久化的，证明 helm upgrade 和 &ndash;values 是生效了的。现在我们使用 helm ls 命令查看先当前的 release：</p>
+
+<pre><code class="language-shell">$ helm ls
+NAME            REVISION    UPDATED                     STATUS      CHART           APP VERSION NAMESPACE
+mewing-squid    1           Tue Sep  4 23:31:23 2018    DEPLOYED    mysql-0.10.1    5.7.14      default
+mydb            2           Wed Sep  5 00:38:33 2018    DEPLOYED    mysql-0.10.1    5.7.14      default
+</code></pre>
+
+<p>可以看到 mydb 这个 release 的<code>REVISION</code>已经变成<strong>2</strong>了，这是因为 release 的版本是递增的，每次安装、升级或者回滚，版本号都会加<strong>1</strong>，第一个版本号始终为<strong>1</strong>，同样我们可以使用 helm history 命令查看 release 的历史版本：</p>
+
+<pre><code class="language-shell">$ helm history mydb
+REVISION    UPDATED                     STATUS      CHART           DESCRIPTION
+1           Wed Sep  5 00:09:44 2018    SUPERSEDED  mysql-0.10.1    Install complete
+2           Wed Sep  5 00:38:33 2018    DEPLOYED    mysql-0.10.1    Upgrade complete
+</code></pre>
+
+<p>当然如果我们要回滚到某一个版本的话，使用 helm rollback 命令即可，比如我们将 mydb 回滚到上一个版本：</p>
+
+<pre><code class="language-shell">$ $ helm rollback mydb 1
+</code></pre>
+
+<h2 id="删除">删除</h2>
+
+<p>上节课我们就学习了要删除一个 release 直接使用 helm delete 命令就 OK：</p>
+
+<pre><code class="language-shell">$ helm delete mewing-squid
+release &quot;mewing-squid&quot; deleted
+</code></pre>
+
+<p>这将从集群中删除该 release，但是这并不代表就完全删除了，我们还可以通过<code>--deleted</code>参数来显示被删除掉 release:</p>
+
+<pre><code class="language-shell">$ helm list --deleted
+NAME            REVISION    UPDATED                     STATUS  CHART           APP VERSION NAMESPACE
+mewing-squid    1           Tue Sep  4 23:31:23 2018    DELETED mysql-0.10.1    5.7.14      default
+$  helm list --all
+NAME            REVISION    UPDATED                     STATUS      CHART           APP VERSION NAMESPACE
+mewing-squid    1           Tue Sep  4 23:31:23 2018    DELETED     mysql-0.10.1    5.7.14      default
+mydb            2           Wed Sep  5 00:38:33 2018    DEPLOYED    mysql-0.10.1    5.7.14      default
+</code></pre>
+
+<p><code>helm list --all</code>则会显示所有的 release，包括已经被删除的</p>
+
+<blockquote>
+<p>由于 Helm 保留已删除 release 的记录，因此不能重新使用 release 名称。（如果 确实 需要重新使用此 release 名称，则可以使用此 &ndash;replace 参数，但它只会重用现有 release 并替换其资源。）这点是不是和 docker container 的管理比较类似</p>
+</blockquote>
+
+<p>请注意，因为 release 以这种方式保存，所以可以回滚已删除的资源并重新激活它。</p>
+
+<p>如果要彻底删除 release，则需要加上<code>--purge</code>参数：</p>
+
+<pre><code class="language-shell">$ helm delete mewing-squid --purge
+release &quot;mewing-squid&quot; deleted
+</code></pre>
+
+<p>我们这里只是讲到了 Helm 的一些常用的方法，更多用法我们将在后面的课程中和大家接触到。</p>
+
+<p>最后打个广告，给大家推荐一个本人精心打造的一个精品课程，现在限时优惠中：<a href="https://www.haimaxy.com/course/6n8xd6/">从 Docker 到 Kubernetes 进阶</a>
+<a href="https://www.haimaxy.com/course/6n8xd6/"><img src="http://sdn.haimaxy.com/covers/2018/4/21/c4082e0f09c746aa848279a2567cffed.png" alt="从 Docker 到 Kubernetes 进阶" /></a></p>
+
+<p>扫描下面的二维码(或微信搜索<code>k8s技术圈</code>)关注我们的微信公众帐号，在微信公众帐号中回复 <strong>加群</strong> 即可加入到我们的 kubernetes 讨论群里面共同学习。
+<img src="https://blog.qikqiak.com/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg" alt="qrcode" /></p>
+        
+          <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://blog.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://blog.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://blog.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+        
+      </article>
+
+      
+        
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://blog.qikqiak.com/post/first-use-helm-on-kubernetes/">Kubernetes Helm 初体验</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/use-downward-api-get-pod-info/">Kubernetes Downward API 基本用法</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/how-to-use-podpreset-in-kubernetes/">kubernetes PodPreset 的使用</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/huawei-cloudnativelives-k8s-course/">华为 CloudNativeLives K8S 系列课程</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/ingress-traefik2/">外部服务发现之 ingress(二)</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/how-to-learn-kubernetes/">如何学习Kubernetes？</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/how-to-use-ipvs-in-kubernetes/">ipvs 基本介绍</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/kubernetes-how-to-pronunciation/">kubernetes 如何发音？</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/ingress-traefik1/">外部服务发现之 ingress(一)</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/service-found-dns/">集群内部服务发现之 DNS</a></li>
+    
+</ul>
+
+      
+
+      
+      <ul class="pager blog-pager">
+        
+          <li class="previous">
+            <a href="https://blog.qikqiak.com/post/huawei-cloudnativelives-k8s-course/" data-toggle="tooltip" data-placement="top" title="华为 CloudNativeLives K8S 系列课程">&larr; Previous Post</a>
+          </li>
+        
+        
+          <li class="next">
+            <a href="https://blog.qikqiak.com/post/kubernetes-qos-usage/" data-toggle="tooltip" data-placement="top" title="Kubernetes 服务质量 Qos 解析">Next Post &rarr;</a>
+          </li>
+        
+      </ul>
+      
+
+      
+
+      
+      <div id="git-comments"></div>
+      <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+      <script src="https://blog.qikqiak.com/js/gitment.browser.js"></script>
+      <script>
+      var gitment = new Gitment({
+        id: 'kubernetes-helm-usage',
+        title: 'Helm 的基本使用',
+        owner: 'cnych',
+        repo: 'blog',
+        oauth: {
+          client_id: 'bdb76dbb2e9d0786e350',
+          client_secret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        }
+      })
+      gitment.render('git-comments')
+      </script>
+      
+
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://blog.qikqiak.com/img/wechatmp.png">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://blog.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2018
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://blog.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://blog.qikqiak.com/page/friend">友链</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.41</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+        <p class="credits theme-by text-muted">
+          <span id="busuanzi_container_site_pv">本站总访问量<span id="busuanzi_value_site_pv"></span>次</span>
+          <span id="busuanzi_container_site_uv">访客数<span id="busuanzi_value_site_uv"></span>人</span>
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.bootcss.com/KaTeX/0.7.1/katex.min.js"></script>
+<script src="https://cdn.bootcss.com/KaTeX/0.7.1/contrib/auto-render.min.js"></script>
+<script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+<script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="https://blog.qikqiak.com/js/main.min.js"></script>
+<script src="https://blog.qikqiak.com/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script> renderMathInElement(document.body); </script>
+<script src="https://blog.qikqiak.com/js/prism.js?t=123"></script>
+
+<script src="https://blog.qikqiak.com/js/reward.js"></script>
+
+<script src="https://cdn.bootcss.com/photoswipe/4.1.1/photoswipe.min.js"></script>
+<script src="https://cdn.bootcss.com/photoswipe/4.1.1/photoswipe-ui-default.min.js"></script>
+<script src="https://blog.qikqiak.com/js/load-photoswipe.min.js"></script>
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+  </body>
+</html>
+

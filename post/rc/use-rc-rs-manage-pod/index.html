@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>RC、RS 使用方法-blog.qikqiak.com|阳明的博客|Kubernetes|Docker|Python|Golang|Cloud Native</title>
+  <meta property="og:title" content="RC、RS 使用方法" />
+  <meta name="twitter:title" content="RC、RS 使用方法" />
+
+  <meta name="description" content="使用Replication Controller、Replica Set 管理Pod">
+  <meta property="og:description" content="使用Replication Controller、Replica Set 管理Pod">
+  <meta name="twitter:description" content="使用Replication Controller、Replica Set 管理Pod">
+  <meta name="author" content=""/>
+  <link href='https://blog.qikqiak.com/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://blog.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:image" content="https://blog.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://blog.qikqiak.com/post/rc/use-rc-rs-manage-pod/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.41" />
+  <link rel="canonical" href="https://blog.qikqiak.com/post/rc/use-rc-rs-manage-pod/" />
+  <link rel="alternate" href="https://blog.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+  <link href="https://cdn.bootcss.com/KaTeX/0.7.1/katex.min.css" rel="stylesheet">
+  <link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/main.css?t=1235" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/pygment_highlights.css" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/highlight.min.css" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/prism.css?t=123" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/search.css" />
+<meta name="keywords" content="kubernetes, rc, rs, pod">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?970de9920f6089c287a7fd366138d4e9";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<link href="https://cdn.bootcss.com/photoswipe/4.1.1/photoswipe.min.css" rel="stylesheet">
+<link href="https://cdn.bootcss.com/photoswipe/4.1.1/default-skin/default-skin.min.css" rel="stylesheet">
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='//www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://blog.qikqiak.com/">阳明的博客</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Home" href="https://ydzs.io">Home</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">Categories</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://blog.qikqiak.com/page/archive/">Archive</a>
+                
+                  <a href="https://blog.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://blog.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://blog.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://blog.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://blog.qikqiak.com/tags/ops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">海马学院</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.haimaxy.com/course/6n8xd6/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">Kubernetes进阶</a>
+                
+                  <a href="https://www.haimaxy.com/course/6y02wp/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">Python微服务实战</a>
+                
+                  <a href="https://www.haimaxy.com/course/pww13p/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">Webpack3.x 入门</a>
+                
+                  <a href="https://www.haimaxy.com/course/pjrqxm/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">Kubernetes 集群搭建</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="About" href="https://blog.qikqiak.com/page/about/">About</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span class="hidden-sm hidden-md hidden-lg">Search</span> <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+    <div class="avatar-container">
+      <div class="avatar-img-border">
+        
+          <a title="阳明的博客" href="https://blog.qikqiak.com/">
+            <img class="avatar-img" src="https://blog.qikqiak.com/img/avatar.jpeg" alt="阳明的博客" />
+          </a>
+        
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">Search blog.qikqiak.com</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://res.cloudinary.com/jimmysong/raw/upload/rootsongjc-hugo/algoliasearch.min.js"></script>
+<script src="https://res.cloudinary.com/jimmysong/raw/upload/rootsongjc-hugo/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://blog.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://blog.qikqiak.com/img/posts/photo-1493546109643-cd9fda7b38fe.jpeg" data-img-desc-1="Light in Pinks"></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>RC、RS 使用方法</h1>
+                  
+                    
+                      <h2 class="post-subheading">使用Replication Controller、Replica Set 管理Pod</h2>
+                    
+                  
+                  
+                    <span class="post-meta">
+  Posted on June 2, 2018
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>RC、RS 使用方法</h1>
+                
+                  
+                    <h2 class="post-subheading">使用Replication Controller、Replica Set 管理Pod</h2>
+                  
+                
+                
+                  <span class="post-meta">
+  Posted on June 2, 2018
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+
+      <div>
+          
+          
+          <h5 id="tags" style="margin-top: 0px;">标签:
+            
+                <a href="https://blog.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+            
+                <a href="https://blog.qikqiak.com/tags/pod/">Pod</a> &nbsp;
+            
+          </h5>
+          
+      </div>
+
+      <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+          <p>前面<a href="https://www.haimaxy.com/course/6n8xd6/">我们的课程</a>中学习了<code>Pod</code>的一些基本使用方法，而且前面我们都是直接来操作的<code>Pod</code>，假如我们现在有一个<code>Pod</code>正在提供线上的服务，我们来想想一下我们可能会遇到的一些场景：</p>
+
+<ul>
+<li>某次运营活动非常成功，网站访问量突然暴增</li>
+<li>运行当前<code>Pod</code>的节点发生故障了，<code>Pod</code>不能正常提供服务了</li>
+</ul>
+
+<p>第一种情况，可能比较好应对，一般活动之前我们会大概计算下会有多大的访问量，提前多启动几个<code>Pod</code>，活动结束后再把多余的<code>Pod</code>杀掉，虽然有点麻烦，但是应该还是能够应对这种情况的。</p>
+
+<p>第二种情况，可能某天夜里收到大量报警说服务挂了，然后起来打开电脑在另外的节点上重新启动一个新的<code>Pod</code>，问题也很好的解决了。</p>
+
+<p></p>
+
+<p>如果我们都人工的去解决遇到的这些问题，似乎又回到了以前刀耕火种的时代了是吧，如果有一种工具能够来帮助我们管理<code>Pod</code>就好了，<code>Pod</code>不够了自动帮我新增一个，<code>Pod</code>挂了自动帮我在合适的节点上重新启动一个<code>Pod</code>，这样是不是遇到上面的问题我们都不需要手动去解决了。</p>
+
+<p>幸运的是，<code>Kubernetes</code>就为我们提供了这样的资源对象：</p>
+
+<ul>
+<li>Replication Controller：用来部署、升级<code>Pod</code></li>
+<li>Replica Set：下一代的<code>Replication Controller</code></li>
+<li>Deployment：可以更加方便的管理<code>Pod</code>和<code>Replica Set</code></li>
+</ul>
+
+<h3 id="replication-controller-rc">Replication Controller（RC）</h3>
+
+<p><code>Replication Controller</code>简称<code>RC</code>，<code>RC</code>是<code>Kubernetes</code>系统中的核心概念之一，简单来说，<code>RC</code>可以保证在任意时间运行<code>Pod</code>的副本数量，能够保证<code>Pod</code>总是可用的。如果实际<code>Pod</code>数量比指定的多那就结束掉多余的，如果实际数量比指定的少就新启动一些<code>Pod</code>，当<code>Pod</code>失败、被删除或者挂掉后，<code>RC</code>都会去自动创建新的<code>Pod</code>来保证副本数量，所以即使只有一个<code>Pod</code>，我们也应该使用<code>RC</code>来管理我们的<code>Pod</code>。</p>
+
+<p>我们想想如果现在我们遇到上面的问题的话，可能除了第一个不能做到完全自动化，其余的我们是不是都不用担心了，运行<code>Pod</code>的节点挂了，<code>RC</code>检测到<code>Pod</code>失败了，就会去合适的节点重新启动一个<code>Pod</code>就行，不需要我们手动去新建一个<code>Pod</code>了。如果是第一种情况的话在活动开始之前我们给<code>Pod</code>指定10个副本，结束后将副本数量改成2，这样是不是也远比我们手动去启动、手动去关闭要好得多，而且我们后面还会给大家介绍另外一种资源对象<code>HPA</code>可以根据资源的使用情况来进行自动扩缩容，这样以后遇到这种情况，我们就真的可以安心的去睡觉了。</p>
+
+<p>现在我们来使用<code>RC</code>来管理我们前面使用的<code>Nginx</code>的<code>Pod</code>，<code>YAML</code>文件如下：</p>
+
+<pre><code class="language-yaml">apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: rc-demo
+  labels:
+    name: rc
+spec:
+  replicas: 3
+  selector:
+    name: rc
+  template:
+    metadata:
+     labels:
+       name: rc
+    spec:
+     containers:
+     - name: nginx-demo
+       image: nginx
+       ports:
+       - containerPort: 80
+</code></pre>
+
+<p>上面的<code>YAML</code>文件相对于我们之前的<code>Pod</code>的格式：</p>
+
+<ul>
+<li>kind：<code>ReplicationController</code></li>
+<li>spec.replicas: 指定<code>Pod</code>副本数量，默认为1</li>
+<li>spec.selector: <code>RC</code>通过该属性来筛选要控制的<code>Pod</code></li>
+<li>spec.template: 这里就是我们之前的<code>Pod</code>的定义的模块，但是不需要<code>apiVersion</code>和<code>kind</code>了</li>
+<li>spec.template.metadata.labels: 注意这里的<code>Pod</code>的<code>labels</code>要和<code>spec.selector</code>相同，这样<code>RC</code>就可以来控制当前这个<code>Pod</code>了。</li>
+</ul>
+
+<p>这个<code>YAML</code>文件中的意思就是定义了一个<code>RC</code>资源对象，它的名字叫<code>rc-demo</code>，保证一直会有3个<code>Pod</code>运行，<code>Pod</code>的镜像是<code>nginx</code>镜像。</p>
+
+<blockquote>
+<p>注意<code>spec.selector</code>和<code>spec.template.metadata.labels</code>这两个字段必须相同，否则会创建失败的，当然我们也可以不写<code>spec.selector</code>，这样就默认与<code>Pod</code>模板中的<code>metadata.labels</code>相同了。所以为了避免不必要的错误的话，不写为好。</p>
+</blockquote>
+
+<p>然后我们来创建上面的<code>RC</code>对象(保存为 rc-demo.yaml):</p>
+
+<pre><code class="language-shell">$ kubectl create -f rc-demo.yaml
+</code></pre>
+
+<p>查看<code>RC</code>：</p>
+
+<pre><code class="language-shell">$ kubectl get rc
+</code></pre>
+
+<p>查看具体信息：</p>
+
+<pre><code class="language-shell">$ kubectl describe rc rc-demo
+</code></pre>
+
+<p>然后我们通过<code>RC</code>来修改下<code>Pod</code>的副本数量为2：</p>
+
+<pre><code class="language-shell">$ kubectl apply -f rc-demo.yaml
+</code></pre>
+
+<p>或者</p>
+
+<pre><code class="language-shell">$ kubectl edit rc rc-demo
+</code></pre>
+
+<p>而且我们还可以用<code>RC</code>来进行滚动升级，比如我们将镜像地址更改为<code>nginx:1.7.9</code>:</p>
+
+<pre><code class="language-shell">$ kubectl rolling-update rc-demo --image=nginx:1.7.9
+</code></pre>
+
+<p>但是如果我们的<code>Pod</code>中多个容器的话，就需要通过修改<code>YAML</code>文件来进行修改了:</p>
+
+<pre><code class="language-shell">$ kubectl rolling-update rc-demo -f rc-demo.yaml
+</code></pre>
+
+<p>如果升级完成后出现了新的问题，想要一键回滚到上一个版本的话，使用<code>RC</code>只能用同样的方法把镜像地址替换成之前的，然后重新滚动升级。</p>
+
+<h3 id="replication-set-rs">Replication Set（RS）</h3>
+
+<p><code>Replication Set</code>简称<code>RS</code>，随着<code>Kubernetes</code>的高速发展，官方已经推荐我们使用<code>RS</code>和<code>Deployment</code>来代替<code>RC</code>了，实际上<code>RS</code>和<code>RC</code>的功能基本一致，目前唯一的一个区别就是<code>RC</code>只支持基于等式的<code>selector</code>（env=dev或app=nginx），但<code>RS</code>还支持基于集合的<code>selector</code>（version in (v1, v2)），这对复杂的运维管理就非常方便了。</p>
+
+<p><code>kubectl</code>命令行工具中关于<code>RC</code>的大部分命令同样适用于我们的<code>RS</code>资源对象。不过我们也很少会去单独使用<code>RS</code>，它主要被<code>Deployment</code>这个更加高层的资源对象使用，除非用户需要自定义升级功能或根本不需要升级<code>Pod</code>，在一般情况下，我们推荐使用<code>Deployment</code>而不直接使用<code>Replica Set</code>。</p>
+
+<p>最后我们总结下关于<code>RC</code>/<code>RS</code>的一些特性和作用吧：</p>
+
+<ul>
+<li>大部分情况下，我们可以通过定义一个<code>RC</code>实现的<code>Pod</code>的创建和副本数量的控制</li>
+<li><code>RC</code>中包含一个完整的<code>Pod</code>定义模块（不包含<code>apiversion</code>和<code>kind</code>）</li>
+<li><code>RC</code>是通过<code>label selector</code>机制来实现对<code>Pod</code>副本的控制的</li>
+<li>通过改变<code>RC</code>里面的<code>Pod</code>副本数量，可以实现<code>Pod</code>的扩缩容功能</li>
+<li>通过改变<code>RC</code>里面的<code>Pod</code>模板中镜像版本，可以实现<code>Pod</code>的滚动升级功能（但是不支持一键回滚，需要用相同的方法去修改镜像地址）</li>
+</ul>
+
+<p>好，这节课我们就给大家介绍了使用<code>RC</code>或者<code>RS</code>来管理我们的<code>Pod</code>，我们下节课来给大家介绍另外一种更加高级也是现在推荐使用的一个资源对象<code>Deployment</code>。</p>
+
+<p>本文节选自视频教程<a href="https://www.haimaxy.com/course/6n8xd6/">从 Docker 到 Kubernetes 进阶</a>
+<a href="https://www.haimaxy.com/course/6n8xd6/"><img src="https://blog.qikqiak.com/img/posts/docker-k8s.png" alt="docker-k8s" /></a></p>
+
+<p>扫描下面的二维码(或微信搜索<code>k8s技术圈</code>)关注我们的微信公众帐号，在微信公众帐号中回复 <strong>加群</strong> 即可加入到我们的 kubernetes 讨论群里面共同学习。
+<img src="https://blog.qikqiak.com/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg" alt="qrcode" /></p>
+      </article>
+
+      
+        
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://blog.qikqiak.com/post/use-downward-api-get-pod-info/">Kubernetes Downward API 基本用法</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/what-is-oci-runc-containerd-cri-docker/">名称解释OCI、runc、containerd、Docker、CRI、CRI-O</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/pod-workflow/">Kubernetes Pod 工作流</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/pod-init-container/">初始化容器</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/use-kubeadm-install-kubernetes-1.10/">使用kubeadm搭建kubernetes1.10集群</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/k8s-tech-weekly-collection-phase3/">k8s技术圈一周精选[第3期]</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/skaffold-simple-local-develop-k8s-app-tools/">Skaffold-简化本地开发kubernetes应用的神器</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/k8s-tech-weekly-collection-phase2/">k8s技术圈一周精选[第2期]</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/kubernetes-resource-quota-usage/">kubernetes 的资源配额控制器</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/k8s-tech-weekly-collection-phase1/">k8s技术圈一周精选[第1期]</a></li>
+    
+</ul>
+
+      
+
+      
+      <ul class="pager blog-pager">
+        
+          <li class="previous">
+            <a href="https://blog.qikqiak.com/post/what-is-oci-runc-containerd-cri-docker/" data-toggle="tooltip" data-placement="top" title="名称解释OCI、runc、containerd、Docker、CRI、CRI-O">&larr; Previous Post</a>
+          </li>
+        
+        
+      </ul>
+      
+
+      
+
+      
+      <div id="git-comments"></div>
+      <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+      <script src="https://imsun.github.io/gitment/dist/gitment.browser.js"></script>
+      <script>
+      var gitment = new Gitment({
+        id: 'use-rc-rs-manage-pod',
+        title: 'RC、RS 使用方法',
+        owner: 'cnych',
+        repo: 'blog',
+        oauth: {
+          client_id: 'bdb76dbb2e9d0786e350',
+          client_secret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        }
+      })
+      gitment.render('git-comments')
+      </script>
+      
+
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://blog.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2018
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://blog.qikqiak.com/">阳明的博客</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.41</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.bootcss.com/KaTeX/0.7.1/katex.min.js"></script>
+<script src="https://cdn.bootcss.com/KaTeX/0.7.1/contrib/auto-render.min.js"></script>
+<script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+<script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="https://blog.qikqiak.com/js/main.min.js"></script>
+<script src="https://blog.qikqiak.com/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script> renderMathInElement(document.body); </script>
+<script src="https://blog.qikqiak.com/js/prism.js?t=123"></script>
+<script src="https://cdn.bootcss.com/photoswipe/4.1.1/photoswipe.min.js"></script>
+<script src="https://cdn.bootcss.com/photoswipe/4.1.1/photoswipe-ui-default.min.js"></script>
+<script src="https://blog.qikqiak.com/js/load-photoswipe.min.js"></script>
+
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+
+  </body>
+</html>
+
