@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>kubernetes 持久化存储(二)-blog.qikqiak.com|阳明的博客|Kubernetes|Docker|Python|Golang|Cloud Native</title>
+  <meta property="og:title" content="kubernetes 持久化存储(二)" />
+  <meta name="twitter:title" content="kubernetes 持久化存储(二)" />
+
+  <meta name="description" content="StorageClass 的使用">
+  <meta property="og:description" content="StorageClass 的使用">
+  <meta name="twitter:description" content="StorageClass 的使用">
+  <meta name="author" content=""/>
+  <link href='https://blog.qikqiak.com/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://blog.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:image" content="https://blog.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://blog.qikqiak.com/post/kubernetes-persistent-volume2/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.41" />
+  <link rel="canonical" href="https://blog.qikqiak.com/post/kubernetes-persistent-volume2/" />
+  <link rel="alternate" href="https://blog.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+  <link href="https://cdn.bootcss.com/KaTeX/0.7.1/katex.min.css" rel="stylesheet">
+  <link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/main.css?t=12345" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/pygment_highlights.css" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/highlight.min.css" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/prism.css?t=123" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/search.css" />
+  
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/reward.css" />
+  
+<meta name="keywords" content="kubernetes, pv, pvc, nfs, StorageClass, 持久化, 存储, StatefulSet">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?970de9920f6089c287a7fd366138d4e9";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<link href="https://cdn.bootcss.com/photoswipe/4.1.1/photoswipe.min.css" rel="stylesheet">
+<link href="https://cdn.bootcss.com/photoswipe/4.1.1/default-skin/default-skin.min.css" rel="stylesheet">
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='//www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://blog.qikqiak.com/">阳明的博客</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Home" href="https://blog.qikqiak.com/">Home</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">Categories</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://blog.qikqiak.com/page/archive/">Archive</a>
+                
+                  <a href="https://blog.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://blog.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://blog.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://blog.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://blog.qikqiak.com/tags/ops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">projects</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://youdianzhishi.com/course/6n8xd6/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">Kubernetes进阶</a>
+                
+                  <a href="http://md.qikqiak.com/">Markdown转微信</a>
+                
+                  <a href="https://youdianzhishi.com/course/6y02wp/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">Python微服务实战</a>
+                
+                  <a href="https://k8s.qikqiak.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">kubernetes进阶在线文档</a>
+                
+                  <a href="https://youdianzhishi.com/course/pjrqxm/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">Kubernetes 集群搭建</a>
+                
+                  <a href="https://istio.qikqiak.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">我们一起学istio</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="About" href="https://blog.qikqiak.com/page/about/">About</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span class="hidden-sm hidden-md hidden-lg">Search</span> <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+    <div class="avatar-container">
+      <div class="avatar-img-border">
+        
+          <a title="阳明的博客" href="https://blog.qikqiak.com/">
+            <img class="avatar-img" src="https://blog.qikqiak.com/img/avatar.jpeg" alt="阳明的博客" />
+          </a>
+        
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">Search blog.qikqiak.com</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://res.cloudinary.com/jimmysong/raw/upload/rootsongjc-hugo/algoliasearch.min.js"></script>
+<script src="https://res.cloudinary.com/jimmysong/raw/upload/rootsongjc-hugo/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://blog.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://blog.qikqiak.com/img/posts/photo-1531902118092-4d55c50cc5fa.jpeg" data-img-desc-1="StorageClass"></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>kubernetes 持久化存储(二)</h1>
+                  
+                    
+                      <h2 class="post-subheading">StorageClass 的使用</h2>
+                    
+                  
+                  
+                    <span class="post-meta">
+  Posted on July 19, 2018
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>kubernetes 持久化存储(二)</h1>
+                
+                  
+                    <h2 class="post-subheading">StorageClass 的使用</h2>
+                  
+                
+                
+                  <span class="post-meta">
+  Posted on July 19, 2018
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+
+      <div>
+          
+          
+          <h5 id="tags" style="margin-top: 0px;">标签:
+            
+                <a href="https://blog.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+            
+                <a href="https://blog.qikqiak.com/tags/pv/">pv</a> &nbsp;
+            
+                <a href="https://blog.qikqiak.com/tags/pvc/">pvc</a> &nbsp;
+            
+                <a href="https://blog.qikqiak.com/tags/nfs/">nfs</a> &nbsp;
+            
+                <a href="https://blog.qikqiak.com/tags/storageclass/">StorageClass</a> &nbsp;
+            
+          </h5>
+          
+      </div>
+
+      <article role="main" class="blog-post" itemprop="articleBody" id="content">
+        
+          
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#创建-provisioner">创建 Provisioner</a></li>
+<li><a href="#新建-storageclass">新建 StorageClass</a></li>
+<li><a href="#测试">测试</a></li>
+</ul></li>
+</ul>
+</nav>
+</aside>
+
+        
+        <p>前面的课程中我们学习了 <code>PV</code> 和 <code>PVC</code> 的使用方法，但是前面的 PV 都是静态的，什么意思？就是我要使用的一个 PVC 的话就必须手动去创建一个 PV，我们也说过这种方式在很大程度上并不能满足我们的需求，比如我们有一个应用需要对存储的并发度要求比较高，而另外一个应用对读写速度又要求比较高，特别是对于 <code>StatefulSet</code> 类型的应用简单的来使用静态的 PV 就很不合适了，这种情况下我们就需要用到动态 PV，也就是我们今天要讲解的 <code>StorageClass</code>。</p>
+
+<p></p>
+
+<h2 id="创建-provisioner">创建 Provisioner</h2>
+
+<p>要使用 StorageClass，我们就得安装对应的自动配置程序，比如我们这里存储后端使用的是 nfs，那么我们就需要使用到一个 nfs-client 的自动配置程序，我们也叫它 Provisioner，这个程序使用我们已经配置好的 nfs 服务器，来自动创建持久卷，也就是自动帮我们创建 PV。</p>
+
+<ul>
+<li>自动创建的 PV 以<code>${namespace}-${pvcName}-${pvName}</code>这样的命名格式创建在 NFS 服务器上的共享数据目录中</li>
+<li>而当这个 PV 被回收后会以<code>archieved-${namespace}-${pvcName}-${pvName}</code>这样的命名格式存在 NFS 服务器上。</li>
+</ul>
+
+<p>当然在部署<code>nfs-client</code>之前，我们需要先成功安装上 nfs 服务器，前面的课程中我们已经过了，服务地址是<strong>10.151.30.57</strong>，共享数据目录是<strong>/data/k8s/</strong>，然后接下来我们部署 nfs-client 即可，我们也可以直接参考<a href="https://github.com/kubernetes-incubator/external-storage/tree/master/nfs-client">nfs-client 的文档</a>，进行安装即可。</p>
+
+<p><strong>第一步</strong>：配置 Deployment，将里面的对应的参数替换成我们自己的 nfs 配置（nfs-client.yaml）</p>
+
+<pre><code class="language-yaml">kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: nfs-client-provisioner
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nfs-client-provisioner
+    spec:
+      serviceAccountName: nfs-client-provisioner
+      containers:
+        - name: nfs-client-provisioner
+          image: quay.io/external_storage/nfs-client-provisioner:latest
+          volumeMounts:
+            - name: nfs-client-root
+              mountPath: /persistentvolumes
+          env:
+            - name: PROVISIONER_NAME
+              value: fuseim.pri/ifs
+            - name: NFS_SERVER
+              value: 10.151.30.57
+            - name: NFS_PATH
+              value: /data/k8s
+      volumes:
+        - name: nfs-client-root
+          nfs:
+            server: 10.151.30.57
+            path: /data/k8s
+</code></pre>
+
+<p><strong>第二步</strong>：将环境变量 NFS_SERVER 和 NFS_PATH 替换，当然也包括下面的 nfs 配置，我们可以看到我们这里使用了一个名为 nfs-client-provisioner 的<code>serviceAccount</code>，所以我们也需要创建一个 sa，然后绑定上对应的权限：（nfs-client-sa.yaml）</p>
+
+<pre><code class="language-yaml">apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nfs-client-provisioner
+
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: nfs-client-provisioner-runner
+rules:
+  - apiGroups: [&quot;&quot;]
+    resources: [&quot;persistentvolumes&quot;]
+    verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;create&quot;, &quot;delete&quot;]
+  - apiGroups: [&quot;&quot;]
+    resources: [&quot;persistentvolumeclaims&quot;]
+    verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;]
+  - apiGroups: [&quot;storage.k8s.io&quot;]
+    resources: [&quot;storageclasses&quot;]
+    verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]
+  - apiGroups: [&quot;&quot;]
+    resources: [&quot;events&quot;]
+    verbs: [&quot;list&quot;, &quot;watch&quot;, &quot;create&quot;, &quot;update&quot;, &quot;patch&quot;]
+
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: run-nfs-client-provisioner
+subjects:
+  - kind: ServiceAccount
+    name: nfs-client-provisioner
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: nfs-client-provisioner-runner
+  apiGroup: rbac.authorization.k8s.io
+</code></pre>
+
+<p>我们这里新建的一个名为 nfs-client-provisioner 的<code>ServiceAccount</code>，然后绑定了一个名为 nfs-client-provisioner-runner 的<code>ClusterRole</code>，而该<code>ClusterRole</code>声明了一些权限，其中就包括对<code>persistentvolumes</code>的增、删、改、查等权限，所以我们可以利用该<code>ServiceAccount</code>来自动创建 PV。</p>
+
+<p><strong>第三步</strong>：nfs-client 的 Deployment 声明完成后，我们就可以来创建一个<code>StorageClass</code>对象了：（nfs-client-class.yaml）</p>
+
+<pre><code class="language-yaml">apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: course-nfs-storage
+provisioner: fuseim.pri/ifs # or choose another name, must match deployment's env PROVISIONER_NAME'
+</code></pre>
+
+<p>我们声明了一个名为 course-nfs-storage 的<code>StorageClass</code>对象，注意下面的<code>provisioner</code>对应的值一定要和上面的<code>Deployment</code>下面的 PROVISIONER_NAME 这个环境变量的值一样。</p>
+
+<p>现在我们来创建这些资源对象吧：</p>
+
+<pre><code class="language-shell">$ kubectl create -f nfs-client.yaml
+$ kubectl create -f nfs-client-sa.yaml
+$ kubectl create -f nfs-client-class.yaml
+</code></pre>
+
+<p>创建完成后查看下资源状态：</p>
+
+<pre><code>$ kubectl get pods
+NAME                                             READY     STATUS             RESTARTS   AGE
+...
+nfs-client-provisioner-7648b664bc-7f9pk          1/1       Running            0          7h
+...
+$ kubectl get storageclass
+NAME                 PROVISIONER      AGE
+course-nfs-storage   fuseim.pri/ifs   11s
+</code></pre>
+
+<h2 id="新建-storageclass">新建 StorageClass</h2>
+
+<p>上面把<code>StorageClass</code>资源对象创建成功了，接下来我们来通过一个示例测试下动态 PV，首先创建一个 PVC 对象：(test-pvc.yaml)</p>
+
+<pre><code class="language-yaml">kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: test-pvc
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+</code></pre>
+
+<p>我们这里声明了一个<code>PVC</code>对象，采用 <code>ReadWriteMany</code> 的访问模式，请求 1Mi 的空间，但是我们可以看到上面的 PVC 文件我们没有标识出任何和 StorageClass 相关联的信息，那么如果我们现在直接创建这个 PVC 对象能够自动绑定上合适的 PV 对象吗？显然是不能的(前提是没有合适的 PV)，我们这里有两种方法可以来利用上面我们创建的 StorageClass 对象来自动帮我们创建一个合适的 PV:</p>
+
+<ul>
+<li>第一种方法：在这个<code>PVC</code>对象中添加一个声明<code>StorageClass</code>对象的标识，这里我们可以利用一个<code>annotations</code>属性来标识，如下</li>
+</ul>
+
+<pre><code class="language-yaml">kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: test-pvc
+  annotations:
+    volume.beta.kubernetes.io/storage-class: &quot;course-nfs-storage&quot;
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+</code></pre>
+
+<ul>
+<li>第二种方法：我们可以设置这个 course-nfs-storage 的 StorageClass 为 Kubernetes 的默认存储后端，我们可以用<code>kubectl patch</code>命令来更新：
+<code>yaml
+$ kubectl patch storageclass course-nfs-storage -p '{&quot;metadata&quot;: {&quot;annotations&quot;:{&quot;storageclass.kubernetes.io/is-default-class&quot;:&quot;true&quot;}}}'
+</code></li>
+</ul>
+
+<p>上面这两种方法都是可以的，当然为了不影响系统的默认行为，我们这里还是采用第一种方法，直接创建即可：</p>
+
+<pre><code class="language-yaml">$ kubectl create -f test-pvc.yaml
+persistentvolumeclaim &quot;test-pvc&quot; created
+$ kubectl get pvc
+NAME         STATUS    VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS          AGE
+...
+test-pvc     Bound     pvc-73b5ffd2-8b4b-11e8-b585-525400db4df7   1Mi        RWX            course-nfs-storage    2m
+...
+</code></pre>
+
+<p>我们可以看到一个名为 test-pvc 的 PVC 对象创建成功了，状态已经是<code>Bound</code>了，是不是也产生了一个对应的<code>VOLUME</code> 对象，最重要的一栏是<code>STORAGECLASS</code>，现在是不是也有值了，就是我们刚刚创建的<code>StorageClass</code>对象 course-nfs-storage。</p>
+
+<p>然后查看下 PV 对象呢：</p>
+
+<pre><code class="language-shell">$ kubectl get pv
+NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM                STORAGECLASS          REASON    AGE
+...
+pvc-73b5ffd2-8b4b-11e8-b585-525400db4df7   1Mi        RWX            Delete           Bound       default/test-pvc     course-nfs-storage              8m
+...
+</code></pre>
+
+<p>可以看到是不是自动生成了一个关联的 PV 对象，访问模式是<code>RWX</code>，回收策略是 <code>Delete</code>，这个 PV 对象并不是我们手动创建的吧，这是通过我们上面的 <code>StorageClass</code> 对象自动创建的。这就是 StorageClass 的创建方法。</p>
+
+<h2 id="测试">测试</h2>
+
+<p>接下来我们还是用一个简单的示例来测试下我们上面用 StorageClass 方式声明的 PVC 对象吧：(test-pod.yaml)</p>
+
+<pre><code class="language-yaml">kind: Pod
+apiVersion: v1
+metadata:
+  name: test-pod
+spec:
+  containers:
+  - name: test-pod
+    image: busybox
+    imagePullPolicy: IfNotPresent
+    command:
+    - &quot;/bin/sh&quot;
+    args:
+    - &quot;-c&quot;
+    - &quot;touch /mnt/SUCCESS &amp;&amp; exit 0 || exit 1&quot;
+    volumeMounts:
+    - name: nfs-pvc
+      mountPath: &quot;/mnt&quot;
+  restartPolicy: &quot;Never&quot;
+  volumes:
+  - name: nfs-pvc
+    persistentVolumeClaim:
+      claimName: test-pvc
+</code></pre>
+
+<p>上面这个 Pod 非常简单，就是用一个 <strong>busybox</strong> 容器，在 /mnt 目录下面新建一个 SUCCESS 的文件，然后把 /mnt 目录挂载到上面我们新建的 test-pvc 这个资源对象上面了，要验证很简单，只需要去查看下我们 nfs 服务器上面的共享数据目录下面是否有 SUCCESS 这个文件即可：</p>
+
+<pre><code class="language-shell">$ kubectl create -f test-pod.yaml
+pod &quot;test-pod&quot; created
+</code></pre>
+
+<p>然后我们可以在 nfs 服务器的共享数据目录下面查看下数据：</p>
+
+<pre><code class="language-shell">$ ls /data/k8s/
+default-test-pvc-pvc-73b5ffd2-8b4b-11e8-b585-525400db4df7
+</code></pre>
+
+<p>我们可以看到下面有名字很长的文件夹，这个文件夹的命名方式是不是和我们上面的规则：<strong>${namespace}-${pvcName}-${pvName}</strong>是一样的，再看下这个文件夹下面是否有其他文件：</p>
+
+<pre><code class="language-shell">$ ls /data/k8s/default-test-pvc-pvc-73b5ffd2-8b4b-11e8-b585-525400db4df7
+SUCCESS
+</code></pre>
+
+<p>我们看到下面有一个 SUCCESS 的文件，是不是就证明我们上面的验证是成功的啊。</p>
+
+<p>另外我们可以看到我们这里是手动创建的一个 PVC 对象，在实际工作中，使用 StorageClass 更多的是 StatefulSet 类型的服务，<code>StatefulSet</code>类型的服务我们也可以通过一个<code>volumeClaimTemplates</code>属性来直接使用 StorageClass，如下：(test-statefulset-nfs.yaml)</p>
+
+<pre><code class="language-yaml">apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: nfs-web
+spec:
+  serviceName: &quot;nginx&quot;
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: nfs-web
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: nginx
+        image: nginx:1.7.9
+        ports:
+        - containerPort: 80
+          name: web
+        volumeMounts:
+        - name: www
+          mountPath: /usr/share/nginx/html
+  volumeClaimTemplates:
+  - metadata:
+      name: www
+      annotations:
+        volume.beta.kubernetes.io/storage-class: course-nfs-storage
+    spec:
+      accessModes: [ &quot;ReadWriteOnce&quot; ]
+      resources:
+        requests:
+          storage: 1Gi
+</code></pre>
+
+<p>实际上 volumeClaimTemplates 下面就是一个 PVC 对象的模板，就类似于我们这里 StatefulSet 下面的 template，实际上就是一个 Pod 的模板，我们不单独创建成 PVC 对象，而用这种模板就可以动态的去创建了对象了，这种方式在 StatefulSet 类型的服务下面使用得非常多。</p>
+
+<p>直接创建上面的对象：</p>
+
+<pre><code class="language-shell">$ kubectl create -f test-statefulset-nfs.yaml
+statefulset.apps &quot;nfs-web&quot; created
+$ kubectl get pods
+NAME                                             READY     STATUS              RESTARTS   AGE
+...
+nfs-web-0                                        1/1       Running             0          1m
+nfs-web-1                                        1/1       Running             0          1m
+nfs-web-2                                        1/1       Running             0          33s
+...
+</code></pre>
+
+<p>创建完成后可以看到上面的3个 Pod 已经运行成功，然后查看下 PVC 对象：</p>
+
+<pre><code class="language-shell">$ kubectl get pvc
+NAME            STATUS    VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS          AGE
+...
+www-nfs-web-0   Bound     pvc-cc36b3ce-8b50-11e8-b585-525400db4df7   1Gi        RWO            course-nfs-storage    2m
+www-nfs-web-1   Bound     pvc-d38285f9-8b50-11e8-b585-525400db4df7   1Gi        RWO            course-nfs-storage    2m
+www-nfs-web-2   Bound     pvc-e348250b-8b50-11e8-b585-525400db4df7   1Gi        RWO            course-nfs-storage    1m
+...
+</code></pre>
+
+<p>我们可以看到是不是也生成了3个 PVC 对象，名称由模板名称 name 加上 Pod 的名称组合而成，这3个 PVC 对象也都是 绑定状态了，很显然我们查看 PV 也可以看到对应的3个 PV 对象：</p>
+
+<pre><code class="language-shell">$ kubectl get pv
+NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM                   STORAGECLASS          REASON    AGE
+...                                                        1d
+pvc-cc36b3ce-8b50-11e8-b585-525400db4df7   1Gi        RWO            Delete           Bound       default/www-nfs-web-0   course-nfs-storage              4m
+pvc-d38285f9-8b50-11e8-b585-525400db4df7   1Gi        RWO            Delete           Bound       default/www-nfs-web-1   course-nfs-storage              4m
+pvc-e348250b-8b50-11e8-b585-525400db4df7   1Gi        RWO            Delete           Bound       default/www-nfs-web-2   course-nfs-storage              4m
+...
+</code></pre>
+
+<p>查看 nfs 服务器上面的共享数据目录：</p>
+
+<pre><code class="language-shell">$ ls /data/k8s/
+...
+default-www-nfs-web-0-pvc-cc36b3ce-8b50-11e8-b585-525400db4df7
+default-www-nfs-web-1-pvc-d38285f9-8b50-11e8-b585-525400db4df7
+default-www-nfs-web-2-pvc-e348250b-8b50-11e8-b585-525400db4df7
+...
+</code></pre>
+
+<p>是不是也有对应的3个数据目录，这就是我们的 StorageClass 的使用方法，对于 StorageClass 多用于 StatefulSet 类型的服务，在后面的课程中我们还学不断的接触到。</p>
+
+<p>本文节选自视频教程<a href="https://www.haimaxy.com/course/6n8xd6/">从 Docker 到 Kubernetes 进阶</a>
+<a href="https://www.haimaxy.com/course/6n8xd6/"><img src="https://blog.qikqiak.com/img/posts/docker-k8s.png" alt="docker-k8s" /></a></p>
+
+<p>扫描下面的二维码(或微信搜索<code>k8s技术圈</code>)关注我们的微信公众帐号，在微信公众帐号中回复 <strong>加群</strong> 即可加入到我们的 kubernetes 讨论群里面共同学习。
+<img src="https://blog.qikqiak.com/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg" alt="qrcode" /></p>
+        
+          <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://blog.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://blog.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://blog.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+        
+      </article>
+
+      
+        
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://blog.qikqiak.com/post/kubernetes-persistent-volume1/">kubernetes 持久化存储(一)</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/use-rbac-in-k8s/">Kubernetes RBAC 详解</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/use-secret-in-k8s/">Secret 的使用</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/use-service-in-k8s/">Service 的使用</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/use-job-cronjob/">Job和CronJob 的使用方法</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/use-rc-rs-manage-pod/">RC、RS 使用方法</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/what-is-oci-runc-containerd-cri-docker/">名称解释OCI、runc、containerd、Docker、CRI、CRI-O</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/pod-init-container/">初始化容器</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/pod-workflow/">Kubernetes Pod 工作流</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/use-kubeadm-install-kubernetes-1.10/">使用kubeadm搭建kubernetes1.10集群</a></li>
+    
+</ul>
+
+      
+
+      
+      <ul class="pager blog-pager">
+        
+          <li class="previous">
+            <a href="https://blog.qikqiak.com/post/kubernetes-persistent-volume1/" data-toggle="tooltip" data-placement="top" title="kubernetes 持久化存储(一)">&larr; Previous Post</a>
+          </li>
+        
+        
+          <li class="next">
+            <a href="https://blog.qikqiak.com/post/pod-mount-single-file/" data-toggle="tooltip" data-placement="top" title="Pod 中挂载单个文件的方法">Next Post &rarr;</a>
+          </li>
+        
+      </ul>
+      
+
+      
+
+      
+      <div id="git-comments"></div>
+      <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+      <script src="https://blog.qikqiak.com/js/gitment.browser.js"></script>
+      <script>
+      var gitment = new Gitment({
+        id: 'kubernetes-persistent-volume2',
+        title: 'kubernetes 持久化存储(二)',
+        owner: 'cnych',
+        repo: 'blog',
+        oauth: {
+          client_id: 'bdb76dbb2e9d0786e350',
+          client_secret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        }
+      })
+      gitment.render('git-comments')
+      </script>
+      
+
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://blog.qikqiak.com/img/wechatmp.png">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://blog.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2018
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://blog.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://blog.qikqiak.com/page/friend">友链</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.41</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+        <p class="credits theme-by text-muted">
+          <span id="busuanzi_container_site_pv">本站总访问量<span id="busuanzi_value_site_pv"></span>次</span>
+          <span id="busuanzi_container_site_uv">访客数<span id="busuanzi_value_site_uv"></span>人</span>
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.bootcss.com/KaTeX/0.7.1/katex.min.js"></script>
+<script src="https://cdn.bootcss.com/KaTeX/0.7.1/contrib/auto-render.min.js"></script>
+<script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+<script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="https://blog.qikqiak.com/js/main.min.js"></script>
+<script src="https://blog.qikqiak.com/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script> renderMathInElement(document.body); </script>
+<script src="https://blog.qikqiak.com/js/prism.js?t=123"></script>
+
+<script src="https://blog.qikqiak.com/js/reward.js"></script>
+
+<script src="https://cdn.bootcss.com/photoswipe/4.1.1/photoswipe.min.js"></script>
+<script src="https://cdn.bootcss.com/photoswipe/4.1.1/photoswipe-ui-default.min.js"></script>
+<script src="https://blog.qikqiak.com/js/load-photoswipe.min.js"></script>
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+  </body>
+</html>
+

@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>kubernetes dashboard 升级之路-blog.qikqiak.com|阳明的博客|Kubernetes|Docker|Python|Golang|Cloud Native</title>
+  <meta property="og:title" content="kubernetes dashboard 升级之路" />
+  <meta name="twitter:title" content="kubernetes dashboard 升级之路" />
+
+  <meta name="description" content="在前面手动搭建高可用的kubernetes 集群一文中我们安装的kubernetes集群是v1.8.2版本，该版本的dashboard插件还是1.6.x，如果你把dashboard暴露在公网环境下面访问的话，是非常不安全的，因为该版本没有任何的安全登录之类的处理，在最新版本的1.7.x中则新增了更多安全相关的特性，我们可以升级到该版本或以上来暴露我们的dashboard到公网环境下面，当然安全都是相对的，能不暴露在公网环境下面当然是最好的。
+
+">
+  <meta property="og:description" content="在前面手动搭建高可用的kubernetes 集群一文中我们安装的kubernetes集群是v1.8.2版本，该版本的dashboard插件还是1.6.x，如果你把dashboard暴露在公网环境下面访问的话，是非常不安全的，因为该版本没有任何的安全登录之类的处理，在最新版本的1.7.x中则新增了更多安全相关的特性，我们可以升级到该版本或以上来暴露我们的dashboard到公网环境下面，当然安全都是相对的，能不暴露在公网环境下面当然是最好的。
+
+">
+  <meta name="twitter:description" content="在前面手动搭建高可用的kubernetes 集群一文中我们安装的kubernetes集群是v1.8.2版本，该版本的dashboard插件还是1.6.x，如果你把dashboard暴露在公网环境下面访问的话，是非常不安全的，因为该版本没有任何的安全登录之类的处理，在最新版本的1.7.x中则新增了更多安全相关的特性，我们可以升级到该版本或以上来暴露我们的dashboard到公网环境下面，当然安全都是 …">
+  <meta name="author" content=""/>
+  <link href='https://blog.qikqiak.com/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://blog.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:image" content="https://blog.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://blog.qikqiak.com/post/update-kubernetes-dashboard-more-secure/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.41" />
+  <link rel="canonical" href="https://blog.qikqiak.com/post/update-kubernetes-dashboard-more-secure/" />
+  <link rel="alternate" href="https://blog.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+  <link href="https://cdn.bootcss.com/KaTeX/0.7.1/katex.min.css" rel="stylesheet">
+  <link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/main.css?t=12345" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/pygment_highlights.css" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/highlight.min.css" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/prism.css?t=123" />
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/search.css" />
+  
+  <link rel="stylesheet" href="https://blog.qikqiak.com/css/reward.css" />
+  
+<meta name="keywords" content="kubernetes, dashboard, https, 登录, 认证, 升级">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?970de9920f6089c287a7fd366138d4e9";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<link href="https://cdn.bootcss.com/photoswipe/4.1.1/photoswipe.min.css" rel="stylesheet">
+<link href="https://cdn.bootcss.com/photoswipe/4.1.1/default-skin/default-skin.min.css" rel="stylesheet">
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='//www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://blog.qikqiak.com/">阳明的博客</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Home" href="https://blog.qikqiak.com/">Home</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">Categories</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://blog.qikqiak.com/page/archive/">Archive</a>
+                
+                  <a href="https://blog.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://blog.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://blog.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://blog.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://blog.qikqiak.com/tags/ops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">projects</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://youdianzhishi.com/course/6n8xd6/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">Kubernetes进阶</a>
+                
+                  <a href="http://md.qikqiak.com/">Markdown转微信</a>
+                
+                  <a href="https://youdianzhishi.com/course/6y02wp/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">Python微服务实战</a>
+                
+                  <a href="https://k8s.qikqiak.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">kubernetes进阶在线文档</a>
+                
+                  <a href="https://youdianzhishi.com/course/pjrqxm/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">Kubernetes 集群搭建</a>
+                
+                  <a href="https://istio.qikqiak.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">我们一起学istio</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="About" href="https://blog.qikqiak.com/page/about/">About</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span class="hidden-sm hidden-md hidden-lg">Search</span> <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+    <div class="avatar-container">
+      <div class="avatar-img-border">
+        
+          <a title="阳明的博客" href="https://blog.qikqiak.com/">
+            <img class="avatar-img" src="https://blog.qikqiak.com/img/avatar.jpeg" alt="阳明的博客" />
+          </a>
+        
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">Search blog.qikqiak.com</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://res.cloudinary.com/jimmysong/raw/upload/rootsongjc-hugo/algoliasearch.min.js"></script>
+<script src="https://res.cloudinary.com/jimmysong/raw/upload/rootsongjc-hugo/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://blog.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://blog.qikqiak.com/img/posts/21689420_1963460803943335_1928791974941294592_n.jpg" data-img-desc-1="It was an exciting feeling to be there alone at this huge lake, witnessing the spectacle of nature"></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>kubernetes dashboard 升级之路</h1>
+                  
+                  
+                    <span class="post-meta">
+  Posted on November 13, 2017
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>kubernetes dashboard 升级之路</h1>
+                
+                
+                  <span class="post-meta">
+  Posted on November 13, 2017
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+
+      <div>
+          
+          
+          <h5 id="tags" style="margin-top: 0px;">标签:
+            
+                <a href="https://blog.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+            
+                <a href="https://blog.qikqiak.com/tags/dashboard/">dashboard</a> &nbsp;
+            
+                <a href="https://blog.qikqiak.com/tags/https/">https</a> &nbsp;
+            
+          </h5>
+          
+      </div>
+
+      <article role="main" class="blog-post" itemprop="articleBody" id="content">
+        
+          
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#增加basic-auth-认证">增加basic auth 认证</a>
+<ul>
+<li>
+<ul>
+<li><a href="#haproxy-nginx">haproxy/nginx</a></li>
+<li><a href="#traefik-ingress">traefik ingress</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#升级dashboard">升级Dashboard</a>
+<ul>
+<li>
+<ul>
+<li><a href="#删除原来的资源">删除原来的资源</a></li>
+<li><a href="#部署新的版本">部署新的版本</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#身份认证">身份认证</a>
+<ul>
+<li>
+<ul>
+<li><a href="#生成token">生成token</a></li>
+<li><a href="#使用kubeconfig">使用Kubeconfig</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#https-访问">https 访问</a></li>
+<li><a href="#参考资料">参考资料</a></li>
+</ul></li>
+</ul>
+</nav>
+</aside>
+
+        
+        <p>在前面<a href="https://blog.qikqiak.com/post/manual-install-high-available-kubernetes-cluster">手动搭建高可用的kubernetes 集群</a>一文中我们安装的<a href="https://blog.qikqiak.com/tags/kubernetes/">kubernetes</a>集群是<code>v1.8.2</code>版本，该版本的<code>dashboard</code>插件还是<strong>1.6.x</strong>，如果你把<code>dashboard</code>暴露在公网环境下面访问的话，是非常不安全的，因为该版本没有任何的安全登录之类的处理，在最新版本的<strong>1.7.x</strong>中则新增了更多安全相关的特性，我们可以升级到该版本或以上来暴露我们的<code>dashboard</code>到公网环境下面，当然安全都是相对的，能不暴露在公网环境下面当然是最好的。</p>
+
+<p></p>
+
+<h2 id="增加basic-auth-认证">增加basic auth 认证</h2>
+
+<p>如果是<strong>1.6.x</strong>版本的<code>dashboard</code>我们可以增加<code>basic auth</code>认证，我们可以使用两种方式来实现：<code>haproxy/nginx</code>或者<code>traefik ingress</code></p>
+
+<h4 id="haproxy-nginx">haproxy/nginx</h4>
+
+<p>我们知道<code>haproxy</code>或者<code>nginx</code>都提供了<code>basic auth</code>的配置方法，由于我们这里配置的域名是强制跳转<code>https</code>的，公网服务都是直接通过<code>traefik ingress</code>来进行代理的，<code>https</code>的证书直接配置到<code>traefik</code>上面的，如果用<code>nginx</code>的话则还需要在<code>nginx</code>层配置<code>https</code>证书，所以这里我们使用<code>haproxy</code>，我们可以创建一个<code>ConfigMap</code>：</p>
+
+<pre><code class="language-yaml">kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: haproxy-conf
+  namespace: kube-system
+data:
+  haproxy-config: |-
+    userlist users
+      user admin insecure-password admin
+
+    global
+        log 127.0.0.1 local0 debug
+        stats timeout 30s
+
+    defaults
+      log global
+      mode  http
+      option  httplog
+      option  dontlognull
+      timeout connect 5000
+      timeout client  50000
+      timeout server  50000
+      timeout http-request 15s
+      timeout http-keep-alive 15s
+
+    frontend k8s-ui
+      bind *:8440
+      mode http
+      acl auth_ok http_auth(users)
+      http-request auth unless auth_ok
+      default_backend k8s-ui
+
+    backend k8s-ui
+        mode http
+        balance roundrobin
+        server k8s-ui-1 kubernetes-dashboard.kube-system.svc.cluster.local:80 check
+</code></pre>
+
+<p>然后创建一个<code>haproxy</code>的<strong>Deployment</strong>和<strong>Service</strong>：</p>
+
+<pre><code class="language-yaml">apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: haproxy
+  namespace: kube-system
+  labels:
+    k8s-app: haproxy
+spec:
+  template:
+    metadata:
+      labels:
+        k8s-app: haproxy
+    spec:
+      containers:
+      - name: haproxy
+        image: haproxy:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8440
+          name: k8s-ui
+          protocol: TCP
+        volumeMounts:
+        - name: haproxy-config-volume
+          mountPath: /usr/local/etc/haproxy
+      volumes:
+      - name: haproxy-config-volume
+        configMap:
+          name: haproxy-conf
+          items:
+          - key: haproxy-config
+            path: haproxy.cfg
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: haproxy
+  namespace: kube-system
+  labels:
+      k8s-app: haproxy
+spec:
+  ports:
+  - port: 8440
+    targetPort: k8s-ui
+    name: k8s-ui
+  selector:
+    k8s-app: haproxy
+</code></pre>
+
+<p>然后配置上我们的<code>ingress</code>就可以了：</p>
+
+<pre><code class="language-yaml">apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: traefik-system
+  namespace: kube-system
+spec:
+  rules:
+  - host: k8s.local
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: haproxy
+          servicePort: k8s-ui
+</code></pre>
+
+<p>然后我们访问<code>https://k8s.local</code>就会弹出<code>basic auth</code>的认证弹窗</p>
+
+<p><img src="https://blog.qikqiak.com/img/posts/WX20171113-111916.png" alt="dashboard basic auth" /></p>
+
+<h4 id="traefik-ingress">traefik ingress</h4>
+
+<p>上面的方式需要引入<code>haprox</code>或者<code>nginx</code>，多引入了一个代理转发层，其实<code>ingress</code>本身就提供了<code>basic auth</code>的支持，在<code>ingress</code>规则中添加额外的认证<code>annotations</code>即可。</p>
+
+<ul>
+<li>首先，我们需要创建用于存储用户名和密码的<code>htpasswd</code>文件</li>
+</ul>
+
+<pre><code class="language-shell">  $ htpasswd -bc auth admin admin
+</code></pre>
+
+<ul>
+<li>然后，然后创建一个基于<code>auth</code>文件的<code>secret</code></li>
+</ul>
+
+<pre><code class="language-shell">  $ kubectl create secret generic system-basic-auth --from-file=auth -n kube-system
+</code></pre>
+
+<ul>
+<li>现在我们需要将<code>auth-type：basic</code>和<code>auth-secret：system-basic-auth</code>注释添加到<code>ingress</code>定义中。这告诉<code>traefik ingress controller</code>为hosts 配置<code>basic auth</code>，以及从哪里读取<code>htpasswd</code>文件。</li>
+</ul>
+
+<pre><code class="language-yaml">  apiVersion: extensions/v1beta1
+  kind: Ingress
+  metadata:
+    name: traefik-system
+    namespace: kube-system
+    annotations:
+      ingress.kubernetes.io/auth-type: basic
+      ingress.kubernetes.io/auth-secret: system-basic-auth
+  spec:
+    rules:
+    - host: k8s.local
+      http:
+        paths:
+        - path: /
+          backend:
+            serviceName: haproxy
+            servicePort: k8s-ui
+</code></pre>
+
+<p>​</p>
+
+<h2 id="升级dashboard">升级Dashboard</h2>
+
+<p>上面的做法可以为<code>dashboard</code>增加<code>basic auth</code>认证，现在我们来升级到<code>1.7.1</code>版本，该版本新增了用户登录认证的功能。</p>
+
+<h4 id="删除原来的资源">删除原来的资源</h4>
+
+<p>将之前的<code>dashboard</code>相关的yaml 文件资源都删除掉：</p>
+
+<pre><code class="language-shell">$ kubectl delete -f dashboard/
+</code></pre>
+
+<h4 id="部署新的版本">部署新的版本</h4>
+
+<p>直接使用官方的配置文件安装即可：</p>
+
+<pre><code class="language-shell">$ wget https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/recommended/kubernetes-dashboard.yaml
+</code></pre>
+
+<p>为了测试方便，我们将<code>Service</code>改成<code>NodePort</code>类型，然后直接部署新版本的<code>dashboard</code>即可。</p>
+
+<pre><code class="language-shell">$ kubectl create -f kubernetes-dashboard.yaml
+</code></pre>
+
+<p>然后我们可以查看<code>dashboard</code>的外网访问端口：</p>
+
+<pre><code class="language-shell">$ kubectl get svc kubernetes-dashboard -n kube-system
+NAME                   TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)             AGE
+haproxy                ClusterIP   10.254.125.90    &lt;none&gt;        8440/TCP,8442/TCP   2d
+kubernetes-dashboard   NodePort    10.254.122.185   &lt;none&gt;        443:31694/TCP       10s
+</code></pre>
+
+<p>然后直接访问集群中的任何一个节点IP 加上上面的<code>31694</code>端口即可打开<code>dashboard</code>页面了</p>
+
+<p><img src="https://blog.qikqiak.com/img/posts/WX20171113-110052.png" alt="dashboard https" /></p>
+
+<blockquote>
+<p>由于<code>dashboard</code>默认是自建的<code>https</code>证书，该证书是不受浏览器信任的，所以我们需要强制跳转就可以了。</p>
+</blockquote>
+
+<p>默认<code>dashboard</code>会跳转到登录页面：</p>
+
+<p><img src="https://blog.qikqiak.com/img/posts/WX20171113-110230.png" alt="dashboard login" /></p>
+
+<p>我们可以看到<code>dashboard</code>提供了<code>Kubeconfig</code>和<code>token</code>两种登录方式，我们可以直接跳过或者使用本地的<code>Kubeconfig</code>文件进行登录，可以看到会跳转到如下页面：</p>
+
+<p><img src="https://blog.qikqiak.com/img/posts/WX20171113-112007.png" alt="dashboard auth" /></p>
+
+<p>这是由于该用户没有对<code>default</code>命名空间的访问权限。</p>
+
+<h2 id="身份认证">身份认证</h2>
+
+<p>登录<code>dashboard</code> 的时候支持<code>Kubeconfig</code> 和<code>token</code> 两种认证方式，Kubeconfig 中也依赖token 字段，所以生成token 这一步是必不可少的。</p>
+
+<h4 id="生成token">生成token</h4>
+
+<p>我们创建一个<code>admin</code>用户并授予admin 角色绑定，使用下面的yaml文件创建admin用户并赋予他管理员权限，然后就可以通过token 登陆<code>dashbaord</code>，这种认证方式本质实际上是通过<code>Service Account</code> 的身份认证加上<code>Bearer token</code>请求 API server 的方式实现，参考 <a href="https://kubernetes.io/docs/admin/authentication/">Kubernetes 中的认证</a>。</p>
+
+<pre><code class="language-yaml">kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: admin
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: &quot;true&quot;
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: admin
+  namespace: kube-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin
+  namespace: kube-system
+  labels:
+    kubernetes.io/cluster-service: &quot;true&quot;
+    addonmanager.kubernetes.io/mode: Reconcile
+</code></pre>
+
+<p>上面的<code>admin</code>用户创建完成后我们就可以获取到该用户对应的<code>token</code>了，如下命令：</p>
+
+<pre><code class="language-shell">$ kubectl get secret -n kube-system|grep admin-token
+admin-token-d5jsg                  kubernetes.io/service-account-token   3         1d
+$ kubectl get secret admin-token-d5jsg -o jsonpath={.data.token} -n kube-system |base64 -d
+# 会生成一串很长的base64后的字符串
+</code></pre>
+
+<p>然后在<code>dashboard</code>登录页面上直接使用上面得到的<code>token</code>字符串即可登录，这样就可以拥有管理员权限操作整个<code>kubernetes</code>集群的对象，当然你也可以为你的登录用户新建一个指定操作权限的用户。</p>
+
+<p><img src="https://blog.qikqiak.com/img/posts/WX20171113-110359.png" alt="dashboard authed" /></p>
+
+<h4 id="使用kubeconfig">使用Kubeconfig</h4>
+
+<p>其实在前面的<a href="https://blog.qikqiak.com/post/manual-install-high-available-kubernetes-cluster/#kubectl">集群安装一文</a>中我们已经知道了<code>Kubeconfig</code>的生成方式了，这里就不再累诉了。</p>
+
+<h2 id="https-访问">https 访问</h2>
+
+<p>前面我们提到<code>bashboard</code>默认是自建的不受信任的证书，所以这里如果你需要绑定你自己的域名，然后通过<code>https</code>访问的话有两种方式：</p>
+
+<ul>
+<li><code>dashboard</code>采用上面的https 的方式部署，将你的域名证书替换掉自建的证书</li>
+</ul>
+
+<pre><code class="language-shell">  $ ls certs/
+  dashboard.crt dashboard.key
+  $ kubectl create secret generic kubernetes-dashboard-certs --from-file=certs -n kube-system
+</code></pre>
+
+<p>然后将域名绑定到任意一个节点IP 和对应的NodePort 上面即可</p>
+
+<ul>
+<li>上面的这种方式不能通过我们的<code>traefik</code>了，如果需要通过<code>traefik</code>来转发我们的<code>dashboard</code>的话，目前需要使用http 的方式部署<code>dashboard</code>，也直接使用官方提供的yaml 文件即可</li>
+</ul>
+
+<pre><code class="language-shell">  $ wget https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/alternative/kubernetes-dashboard.yaml
+  $ kubectl create -f kubernetes-dashboard.yaml
+</code></pre>
+
+<p>然后直接配置我们的<code>traefik ingress</code>转发规则即可，这样就形成了访问我们的<code>dashboard</code>使用<code>basic auth</code>和<code>dashboard login</code>两层认证了。</p>
+
+<blockquote>
+<p>上面的traefik 转发的方式访问dashboard 默认不会自动跳转到登录页面，这是因为不是使用的https 的方式部署的，但是如果使用https 的方式部署dashboard，然后再通过traefik 进行转发的话则会一直报错：<code>tls: bad certificate</code>，不能正常使用dashboard，不知道有没有朋友也有这个问题呢？</p>
+</blockquote>
+
+<h2 id="参考资料">参考资料</h2>
+
+<ul>
+<li><a href="https://github.com/kubernetes/dashboard/wiki/Access-control">Access Control</a></li>
+<li><a href="https://docs.traefik.io/configuration/backends/kubernetes/">Traefik Authentication</a></li>
+<li><a href="https://www.ohbyteme.com/posts/using-haproxy-http-basic-authentication-to-secure-access-to-kibana">haproxy basic auth</a></li>
+<li><a href="https://blog.qikqiak.com/post/manual-install-high-available-kubernetes-cluster">手动搭建高可用的kubernetes 集群</a></li>
+</ul>
+
+<p>欢迎大家加入我们的知识星球：<code>Kubernetes</code>。
+<img src="https://blog.qikqiak.com/img/xq.png" alt="知识星球" /></p>
+
+<p>扫描下面的二维码(或微信搜索<code>k8s技术圈</code>)关注我们的微信公众帐号，在微信公众帐号中回复 <strong>加群</strong> 即可加入到我们的 kubernetes 讨论群里面共同学习。
+<img src="https://blog.qikqiak.com/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg" alt="qrcode" /></p>
+        
+          <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://blog.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://blog.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://blog.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+        
+      </article>
+
+      
+        
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://blog.qikqiak.com/post/add-authorization-for-kubernetes-dashboard/">为kubernetes dashboard访问用户添加权限控制</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/kubernetes-rollout-update/">Kubernetes Deployment滚动升级</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/manual-install-high-available-kubernetes-cluster/">手动搭建高可用的kubernetes 集群</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/kubernetes-monitor-prometheus-grafana/">Kubernetes使用Prometheus搭建监控平台</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/first-use-helm-on-kubernetes/">Kubernetes Helm 初体验</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/understand-kubernetes-configmap-and-secrets/">kubernetes ConfigMap 和 Secrets</a></li>
+    
+    <li><a href="https://blog.qikqiak.com/post/make-https-blog/">给博客加上HTTPS</a></li>
+    
+</ul>
+
+      
+
+      
+      <ul class="pager blog-pager">
+        
+          <li class="previous">
+            <a href="https://blog.qikqiak.com/post/manual-install-high-available-kubernetes-cluster/" data-toggle="tooltip" data-placement="top" title="手动搭建高可用的kubernetes 集群">&larr; Previous Post</a>
+          </li>
+        
+        
+          <li class="next">
+            <a href="https://blog.qikqiak.com/post/install-docker-registry-harbor-in-kubernetes/" data-toggle="tooltip" data-placement="top" title="在kubernetes 集群上搭建docker 私有仓库Harbor">Next Post &rarr;</a>
+          </li>
+        
+      </ul>
+      
+
+      
+
+      
+      <div id="git-comments"></div>
+      <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+      <script src="https://blog.qikqiak.com/js/gitment.browser.js"></script>
+      <script>
+      var gitment = new Gitment({
+        id: 'update-kubernetes-dashboard-more-secure',
+        title: 'kubernetes dashboard 升级之路',
+        owner: 'cnych',
+        repo: 'blog',
+        oauth: {
+          client_id: 'bdb76dbb2e9d0786e350',
+          client_secret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        }
+      })
+      gitment.render('git-comments')
+      </script>
+      
+
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://blog.qikqiak.com/img/wechatmp.png">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://blog.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2018
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://blog.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://blog.qikqiak.com/page/friend">友链</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.41</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+        <p class="credits theme-by text-muted">
+          <span id="busuanzi_container_site_pv">本站总访问量<span id="busuanzi_value_site_pv"></span>次</span>
+          <span id="busuanzi_container_site_uv">访客数<span id="busuanzi_value_site_uv"></span>人</span>
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.bootcss.com/KaTeX/0.7.1/katex.min.js"></script>
+<script src="https://cdn.bootcss.com/KaTeX/0.7.1/contrib/auto-render.min.js"></script>
+<script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+<script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="https://blog.qikqiak.com/js/main.min.js"></script>
+<script src="https://blog.qikqiak.com/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script> renderMathInElement(document.body); </script>
+<script src="https://blog.qikqiak.com/js/prism.js?t=123"></script>
+
+<script src="https://blog.qikqiak.com/js/reward.js"></script>
+
+<script src="https://cdn.bootcss.com/photoswipe/4.1.1/photoswipe.min.js"></script>
+<script src="https://cdn.bootcss.com/photoswipe/4.1.1/photoswipe-ui-default.min.js"></script>
+<script src="https://blog.qikqiak.com/js/load-photoswipe.min.js"></script>
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+  </body>
+</html>
+
