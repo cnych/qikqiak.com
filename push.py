@@ -16,7 +16,7 @@ def get_urls():
 
 def push2baidu(urls):
     print urls
-    uri = 'http://data.zz.baidu.com/urls?site=https://qikqiak.com&token=dTaKxnO61q8s2qEk'
+    uri = 'http://data.zz.baidu.com/urls?site=https://www.qikqiak.com&token=dTaKxnO61q8s2qEk'
     headers = {
         'content-type': 'text/plain'
     }
