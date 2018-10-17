@@ -1148,7 +1148,7 @@ vrrp_instance haproxy-vip {
         192.168.1.139
     }
     track_script {
-        check_k8s
+        check_haproxy
     }
 }
 
@@ -1355,16 +1355,6 @@ $ sudo systemctl start docker
 - 需要关闭 firewalld(centos7)/ufw(ubuntu16.04)，否则可能会重复创建 iptables 规则
 - 最好清理旧的 iptables rules 和 chains 规则
 - 执行命令：docker version，检查docker服务是否正常
-
-> 注意如果
-
-vim /etc/sysctl.conf
-
-net.ipv4.ip_forward=1
-net.bridge.bridge-nf-call-iptables=1
-net.bridge.bridge-nf-call-ip6tables=1
-
-sysctl -p
 
 ### 安装和配置kubelet
 
