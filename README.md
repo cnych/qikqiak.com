@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [重新理解 kubernetes 亲和性调度](https://www.qikqiak.com/post/kubernetes-affinity-scheduler)
  * [Kubernetes 调度器介绍](https://www.qikqiak.com/post/kube-scheduler-introduction)
  * [Helm Hooks 的使用](https://www.qikqiak.com/post/helm-hooks-usage)
  * [Helm 命名模板的使用](https://www.qikqiak.com/post/helm-name-template-usage)
