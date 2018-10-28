@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [Kubernetes 应用监控](https://www.qikqiak.com/post/promethues-monitor-k8s-app)
  * [重新理解 kubernetes 亲和性调度](https://www.qikqiak.com/post/kubernetes-affinity-scheduler)
  * [Kubernetes 调度器介绍](https://www.qikqiak.com/post/kube-scheduler-introduction)
  * [Helm Hooks 的使用](https://www.qikqiak.com/post/helm-hooks-usage)
