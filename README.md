@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [Kubernetes 节点监控](https://www.qikqiak.com/post/promethues-monitor-k8s-nodes)
  * [Kubernetes 应用监控](https://www.qikqiak.com/post/promethues-monitor-k8s-app)
  * [重新理解 kubernetes 亲和性调度](https://www.qikqiak.com/post/kubernetes-affinity-scheduler)
  * [Kubernetes 调度器介绍](https://www.qikqiak.com/post/kube-scheduler-introduction)
