@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>Grafana 在 Kubernetes 中的使用-www.qikqiak.com|阳明的博客|Kubernetes|Docker|istio|Python|Golang|Cloud Native</title>
+  <meta property="og:title" content="Grafana 在 Kubernetes 中的使用" />
+  <meta name="twitter:title" content="Grafana 在 Kubernetes 中的使用" />
+
+  <meta name="description" content="
+前面的课程中我们使用 Prometheus 采集了 Kubernetes 集群中的一些监控数据指标，我们也尝试使用promQL语句查询出了一些数据，并且在 Prometheus 的 Dashboard 中进行了展示，但是明显可以感觉到 Prometheus 的图表功能相对较弱，所以一般情况下我们会一个第三方的工具来展示这些数据，今天我们要和大家使用到的就是grafana。
+
+">
+  <meta property="og:description" content="
+前面的课程中我们使用 Prometheus 采集了 Kubernetes 集群中的一些监控数据指标，我们也尝试使用promQL语句查询出了一些数据，并且在 Prometheus 的 Dashboard 中进行了展示，但是明显可以感觉到 Prometheus 的图表功能相对较弱，所以一般情况下我们会一个第三方的工具来展示这些数据，今天我们要和大家使用到的就是grafana。
+
+">
+  <meta name="twitter:description" content="
+前面的课程中我们使用 Prometheus 采集了 Kubernetes 集群中的一些监控数据指标，我们也尝试使用promQL语句查询出了一些数据，并且在 Prometheus 的 Dashboard 中进行了展示，但是明显可以感觉到 Prometheus 的图表功能相对较弱，所以一般情况下我们会一个第三方的工具来展示这些数据，今天我们要和大家使用到的就是grafana。
+
+">
+  <meta name="author" content=""/>
+  <link href='https://www.qikqiak.com/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/grafana-usage-in-k8s/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.41" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/grafana-usage-in-k8s/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/pygment_highlights.css" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/highlight.min.css" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/prism.css?t=123" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/search.css" />
+  
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/reward.css" />
+  
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, prometheus, grafana, AlertManger">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='//www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/">阳明的博客</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Home" href="https://www.qikqiak.com/">Home</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">Categories</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/page/archive/">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/ops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">projects</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">优点知识</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">我们一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务实战</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown转微信</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="About" href="https://www.qikqiak.com/page/about/">About</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>Grafana 在 Kubernetes 中的使用</h1>
+                
+                
+                  <span class="post-meta">
+  Posted on November 17, 2018
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+
+      <div>
+          
+          
+          <h5 id="tags" style="margin-top: 0px;">标签:
+            
+                <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+            
+                <a href="https://www.qikqiak.com/tags/prometheus/">prometheus</a> &nbsp;
+            
+                <a href="https://www.qikqiak.com/tags/grafana/">grafana</a> &nbsp;
+            
+                <a href="https://www.qikqiak.com/tags/alertmanger/">AlertManger</a> &nbsp;
+            
+          </h5>
+          
+      </div>
+
+      <article role="main" class="blog-post" itemprop="articleBody" id="content">
+        
+        <p><a href="https://mp.weixin.qq.com/s/ir3shARUPqjyBtDWcuzutQ"><img src="https://www.qikqiak.com/img/posts/grafana-cover.png" alt="grafana in k8s " /></a>
+<a href="https://www.qikqiak.com/k8s-book/docs/55.%E7%9B%91%E6%8E%A7Kubernetes%E5%B8%B8%E7%94%A8%E8%B5%84%E6%BA%90%E5%AF%B9%E8%B1%A1.html">前面的课程中我们使用 Prometheus 采集了 Kubernetes 集群中的一些监控数据指标</a>，我们也尝试使用<code>promQL</code>语句查询出了一些数据，并且在 Prometheus 的 Dashboard 中进行了展示，但是明显可以感觉到 Prometheus 的图表功能相对较弱，所以一般情况下我们会一个第三方的工具来展示这些数据，今天我们要和大家使用到的就是<code>grafana</code>。</p>
+
+<p></p>
+
+<h2 id="安装">安装</h2>
+
+<p>grafana 是一个可视化面板，有着非常漂亮的图表和布局展示，功能齐全的度量仪表盘和图形编辑器，支持 Graphite、zabbix、InfluxDB、Prometheus、OpenTSDB、Elasticsearch 等作为数据源，比 Prometheus 自带的图表展示功能强大太多，更加灵活，有丰富的插件，功能更加强大。</p>
+
+<p>接下来我们就来直接安装，同样的，我们将 grafana 安装到 Kubernetes 集群中，第一步同样是去查看 grafana 的 docker 镜像的介绍，我们可以在 dockerhub 上去搜索，也可以在官网去查看相关资料，镜像地址如下：<a href="https://hub.docker.com/r/grafana/grafana/">https://hub.docker.com/r/grafana/grafana/</a>，我们可以看到介绍中运行 grafana 容器的命令非常简单：</p>
+
+<pre><code class="language-shell">$ docker run -d --name=grafana -p 3000:3000 grafana/grafana
+</code></pre>
+
+<p>但是还有一个需要注意的是 Changelog 中<code>v5.1.0</code>版本的更新介绍：</p>
+
+<ul>
+<li>Major restructuring of the container</li>
+<li>Usage of chown removed</li>
+<li>File permissions incompatibility with previous versions
+
+<ul>
+<li>user id changed from 104 to 472</li>
+<li>group id changed from 107 to 472</li>
+</ul></li>
+<li>Runs as the grafana user by default (instead of root)</li>
+<li>All default volumes removed</li>
+</ul>
+
+<p>特别需要注意第3条，userid 和 groupid 都有所变化，所以我们在运行的容器的时候需要注意这个变化。现在我们将这个容器转化成 Kubernetes 中的 Pod：(grafana.yaml)</p>
+
+<pre><code class="language-yaml">apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: kube-ops
+  labels:
+    app: grafana
+spec:
+  revisionHistoryLimit: 10
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana:5.3.4
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+          name: grafana
+        env:
+        - name: GF_SECURITY_ADMIN_USER
+          value: admin
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: admin321
+        readinessProbe:
+          failureThreshold: 10
+          httpGet:
+            path: /api/health
+            port: 3000
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 30
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /api/health
+            port: 3000
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: 100m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        volumeMounts:
+        - mountPath: /var/lib/grafana
+          subPath: grafana
+          name: storage
+      securityContext:
+        fsGroup: 472
+        runAsUser: 472
+      volumes:
+      - name: storage
+        persistentVolumeClaim:
+          claimName: grafana
+</code></pre>
+
+<p>我们使用了最新的镜像<code>grafana/grafana:5.3.4</code>，然后添加了监控检查、资源声明，另外两个比较重要的环境变量<code>GF_SECURITY_ADMIN_USER</code>和<code>GF_SECURITY_ADMIN_PASSWORD</code>，用来配置 grafana 的管理员用户和密码的，由于 grafana 将 dashboard、插件这些数据保存在<code>/var/lib/grafana</code>这个目录下面的，所以我们这里如果需要做数据持久化的话，就需要针对这个目录进行 volume 挂载声明，其他的和我们之前的 Deployment 没什么区别，由于上面我们刚刚提到的 Changelog 中 grafana 的 userid 和 groupid 有所变化，所以我们这里需要增加一个<code>securityContext</code>的声明来进行声明。</p>
+
+<p>当然如果要使用一个 pvc 对象来持久化数据，我们就需要添加一个可用的 pv 供 pvc 绑定使用：（grafana-volume.yaml）</p>
+
+<pre><code class="language-yaml">apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: grafana
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Recycle
+  nfs:
+    server: 10.151.30.57
+    path: /data/k8s
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana
+  namespace: kube-ops
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+</code></pre>
+
+<p>最后，我们需要对外暴露 grafana 这个服务，所以我们需要一个对应的 Service 对象，当然用 NodePort 或者再建立一个 ingress 对象都是可行的：(grafana-svc.yaml)</p>
+
+<pre><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: kube-ops
+  labels:
+    app: grafana
+spec:
+  type: NodePort
+  ports:
+    - port: 3000
+  selector:
+    app: grafana
+</code></pre>
+
+<p>现在我们直接创建上面的这些资源对象：</p>
+
+<pre><code class="language-shell">$ kubectl create -f grafana-volume.yaml
+persistentvolume &quot;grafana&quot; created
+persistentvolumeclaim &quot;grafana&quot; created
+$ kubectl create -f grafana-deploy.yaml
+deployment.extensions &quot;grafana&quot; created
+$ kubectl create -f grafana-svc.yaml
+service &quot;grafana&quot; created
+</code></pre>
+
+<p>创建完成后，我们可以查看 grafana 对应的 Pod 是否正常：</p>
+
+<pre><code class="language-shell">$ kubectl get pods -n kube-ops
+NAME                          READY     STATUS             RESTARTS   AGE
+grafana-5f7b965b55-wxvvk      0/1       CrashLoopBackOff   1          22s
+</code></pre>
+
+<p>我们可以看到这里的状态是<code>CrashLoopBackOff</code>，并没有正常启动，我们查看下这个 Pod 的日志：</p>
+
+<pre><code class="language-shell">$ kubectl logs -f grafana-5f7b965b55-wxvvk -n kube-ops
+GF_PATHS_DATA='/var/lib/grafana' is not writable.
+You may have issues with file permissions, more information here: http://docs.grafana.org/installation/docker/#migration-from-a-previous-version-of-the-docker-container-to-5-1-or-later
+mkdir: cannot create directory '/var/lib/grafana/plugins': Permission denied
+</code></pre>
+
+<blockquote>
+<p>上面的错误是在<code>5.1</code>版本之后才会出现的，当然你也可以使用之前的版本来规避这个问题。</p>
+</blockquote>
+
+<p>可以看到是日志中错误很明显就是<code>/var/lib/grafana</code>目录的权限问题，这还是因为5.1版本后 groupid 更改了引起的问题，我们这里增加了<code>securityContext</code>，但是我们将目录<code>/var/lib/grafana</code>挂载到 pvc 这边后目录的拥有者并不是上面的 grafana(472)这个用户了，所以我们需要更改下这个目录的所属用户，这个时候我们可以利用一个 Job 任务去更改下该目录的所属用户：（grafana-chown-job.yaml）</p>
+
+<pre><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+metadata:
+  name: grafana-chown
+  namespace: kube-ops
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: grafana-chown
+        command: [&quot;chown&quot;, &quot;-R&quot;, &quot;472:472&quot;, &quot;/var/lib/grafana&quot;]
+        image: busybox
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: storage
+          subPath: grafana
+          mountPath: /var/lib/grafana
+      volumes:
+      - name: storage
+        persistentVolumeClaim:
+          claimName: grafana
+</code></pre>
+
+<p>上面我们利用一个 busybox 镜像将<code>/var/lib/grafana</code>目录更改成了<code>472</code>这个 user 和 group，不过还需要注意的是下面的 volumeMounts 和 volumes 需要和上面的 Deployment 对应上。</p>
+
+<p>现在我们删除之前创建的 Deployment 对象，重新创建：</p>
+
+<pre><code class="language-shell">$ kubectl delete -f grafana-deploy.yaml
+deployment.extensions &quot;grafana&quot; deleted
+$ kubectl create -f grafana-deploy.yaml
+deployment.extensions &quot;grafana&quot; created
+$ kubectl create -f grafana-chown-job.yaml
+job.batch &quot;grafana-chown&quot; created
+</code></pre>
+
+<p>重新执行完成后，可以查看下上面的创建的资源对象是否正确了：</p>
+
+<pre><code class="language-shell">$ kubectl get pod -n kube-ops
+NAME                          READY     STATUS      RESTARTS   AGE
+grafana-79477fbb7c-2mb84      1/1       Running     0          2m
+grafana-chown-k8zt7           0/1       Completed   0          2m
+</code></pre>
+
+<p>我们可以看到有一个状态为<code>Completed</code>的 Pod，这就是上面我们用来更改 grafana 目录权限的 Pod，是一个 Job 任务，所以执行成功后就退出了，状态变成了<code>Completed</code>，而上面的 grafana 的 Pod 也已经是<code>Running</code>状态了，可以查看下该 Pod 的日志确认下：</p>
+
+<pre><code class="language-shell">$ kubectl logs -f grafana-79477fbb7c-2mb84 -n kube-ops
+t=2018-11-14T19:57:31+0000 lvl=info msg=&quot;Starting Grafana&quot; logger=server version=5.3.4 commit=69630b9 compiled=2018-11-13T12:19:12+0000
+......
+logger=settings var=&quot;GF_SECURITY_ADMIN_USER=admin&quot;
+t=2018-11-14T19:57:31+0000 lvl=info msg=&quot;Config overridden from Environment variable&quot;
+......
+t=2018-11-14T19:57:32+0000 lvl=info msg=&quot;Initializing Stream Manager&quot;
+t=2018-11-14T19:57:32+0000 lvl=info msg=&quot;HTTP Server Listen&quot; logger=http.server address=0.0.0.0:3000 protocol=http subUrl= socket=
+</code></pre>
+
+<p>看到上面的日志信息就证明我们的 grafana 的 Pod 已经正常启动起来了。这个时候我们可以查看 Service 对象：</p>
+
+<pre><code class="language-shell">$ kubectl get svc -n kube-ops
+NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                          AGE
+grafana      NodePort    10.97.46.27     &lt;none&gt;        3000:30105/TCP                   1h
+</code></pre>
+
+<p>现在我们就可以在浏览器中使用<code>http://&lt;任意节点IP:30105&gt;</code>来访问 grafana 这个服务了：
+<img src="https://www.qikqiak.com/img/posts/grafana-login.png" alt="grafana login" /></p>
+
+<p>由于上面我们配置了管理员的，所以第一次打开的时候会跳转到登录界面，然后就可以用上面我们配置的两个环境变量的值来进行登录了，登录完成后就可以进入到下面 Grafana 的首页：
+<img src="https://www.qikqiak.com/img/posts/grafana-index.png" alt="grafana index" /></p>
+
+<h2 id="配置">配置</h2>
+
+<p>在上面的首页中我们可以看到已经安装了 Grafana，接下来点击<code>Add data source</code>进入添加数据源界面。</p>
+
+<h3 id="数据源">数据源</h3>
+
+<p>我们这个地方配置的数据源是 Prometheus，所以选择这个 Type 即可，给改数据源添加一个 name：prometheus-ds，最主要的是下面<code>HTTP</code>区域是配置数据源的访问模式。</p>
+
+<p>访问模式是用来控制如何处理对数据源的请求的：</p>
+
+<ul>
+<li>服务器(Server)访问模式（默认）：所有请求都将从浏览器发送到 Grafana 后端的服务器，后者又将请求转发到数据源，通过这种方式可以避免一些跨域问题，其实就是在 Grafana 后端做了一次转发，需要从Grafana 后端服务器访问该 URL。</li>
+<li>浏览器(Browser)访问模式：所有请求都将从浏览器直接发送到数据源，但是有可能会有一些跨域的限制，使用此访问模式，需要从浏览器直接访问该 URL。</li>
+</ul>
+
+<p>由于我们这个地方 Prometheus 通过 NodePort 的方式的对外暴露的服务，所以我们这个地方是不是可以使用浏览器访问模式直接访问 Prometheus 的外网地址，但是这种方式显然不是最好的，相当于走的是外网，而我们这里 Prometheus 和 Grafana 都处于 kube-ops 这同一个 namespace 下面，是不是在集群内部直接通过 DNS 的形式就可以访问了，而且还都是走的内网流量，所以我们这里用服务器访问模式显然更好，数据源地址：<code>http://prometheus:9090</code>（因为在同一个 namespace 下面所以直接用 Service 名也可以），然后其他的配置信息就根据实际情况了，比如 Auth 认证，我们这里没有，所以跳过即可，点击最下方的<code>Save &amp; Test</code>提示成功证明我们的数据源配置正确：</p>
+
+<p><img src="https://www.qikqiak.com/img/posts/grafana-prometheus-ds.png" alt="grafana datasource" /></p>
+
+<p>数据源添加完成后，就可以来添加 Dashboard 了。</p>
+
+<h3 id="dashboard">Dashboard</h3>
+
+<p>同样，切换到主页，我们可以根据自己的需求手动新建一个 Dashboard，除此之外，grafana 的官方网站上还有很多公共的 Dashboard 可以供我们使用，我们这里可以使用<a href="https://grafana.com/dashboards/162/revisions">Kubernetes cluster monitoring (via Prometheus)(dashboard id 为162)</a>这个 Dashboard 来展示 Kubernetes 集群的监控信息，在左侧侧边栏 Create 中点击<code>import</code>导入：
+<img src="https://www.qikqiak.com/img/posts/grafana-dashboard-import.png" alt="grafana import" /></p>
+
+<p>我们可以将上面编号<code>162</code>的 dashboard 下载到本地，然后这里重新上传即可，也可以在上面的文本框中直接输入<code>162</code>编号回车即可，导入这个 dashboard：
+<img src="https://www.qikqiak.com/img/posts/grafana-dashboard-import2.png" alt="grafana import2" /></p>
+
+<p>需要注意的是在执行上面的 import 之前要记得选择我们的<code>prometheus-ds</code>这个名字的数据源，执行<code>import</code>操作，就可以进入到 dashboard 页面：
+<img src="https://www.qikqiak.com/img/posts/grafana-k8s-monitor.png" alt="grafana k8s cluster monitor" /></p>
+
+<p>我们可以看到 dashboard 页面上出现了很多漂亮的图表，但是看上去数据不正常，这是因为这个 dashboard 里面需要的数据指标名称和我们 Prometheus 里面采集到的数据指标不一致造成的，比如，第一个<code>Cluster memory usage(集群内存使用情况)</code>，我们可以点击标题 -&gt; Edit，进入编辑这个图表的编辑页面：
+<img src="https://www.qikqiak.com/img/posts/grafana-dashboard-edit.png" alt="grafana dashboard edit" /></p>
+
+<p>进入编辑页面我们就可以看到这个图表的查询语句：</p>
+
+<pre><code>(sum(node_memory_MemTotal) - sum(node_memory_MemFree+node_memory_Buffers+node_memory_Cached) ) / sum(node_memory_MemTotal) * 100
+</code></pre>
+
+<p><img src="https://www.qikqiak.com/img/posts/grafana-dashboard-edit2.png" alt="grafana dashboard edit2" /></p>
+
+<p>这就是我们之前在 Prometheus 里面查询的<code>promQL</code>语句，我们可以将上面的查询语句复制到 Prometheus 的 Graph 页面进行查询，其实可以预想到是没有对应的数据的，因为我们用<code>node_exporter</code>采集到的数据指标不是<code>node_memory_MemTotal</code>关键字，而是<code>node_memory_MemTotal_bytes</code>，将上面的<code>promQL</code>语句做相应的更改：</p>
+
+<pre><code>(sum(node_memory_MemTotal_bytes) - sum(node_memory_MemFree_bytes + node_memory_Buffers_bytes+node_memory_Cached_bytes)) / sum(node_memory_MemTotal_bytes) * 100
+</code></pre>
+
+<p>这个语句的意思就是<code>(整个集群的内存-(整个集群剩余的内存以及Buffer和Cached))/整个集群的内存</code>，简单来说就是总的集群内存使用百分比。将上面 grafana 的<code>promQL</code>语句替换掉，就可以看到图表正常了：
+<img src="https://www.qikqiak.com/img/posts/grafana-table.png" alt="grafana table" /></p>
+
+<p>同样的，我们可以更改后面的 CPU 和 FileSystem 的使用率：
+<img src="https://www.qikqiak.com/img/posts/grafana-cluster-table.png" alt="grafana cluster table" /></p>
+
+<p>同样下面的<code>Pod CPU Usage</code>用来展示 Pod CPU 的使用情况，对应的<code>promQL</code>语句如下，根据 pod_name 来进行统计：</p>
+
+<pre><code>sum by (pod_name)(rate(container_cpu_usage_seconds_total{image!=&quot;&quot;, pod_name!=&quot;&quot;}[1m]))
+</code></pre>
+
+<p>按照上面的方法替换 grafana 中的 dashboard 图表中的查询语句：
+<img src="https://www.qikqiak.com/img/posts/grafana-cpu-usage.png" alt="grafana cpu usage" /></p>
+
+<p>其他的也按照我们的实际需求重新编辑下就可以，下图是最终整个 dashboard 的效果图：
+<img src="https://www.qikqiak.com/img/posts/grafana-k8s-cluster-dashboard.png" alt="grafana k8s cluster dashboard" /></p>
+
+<p>最后要记得保存这个 dashboard，下面的链接是我修改后的 dashboard json 文件地址，你可以直接下载下来导入到 grafana 当中，当然你也可以根据实际情况进行相应的更改：<a href="./files/grafana-k8s-cluster-dashboard.json">k8s-cluster-grafana-dashboard.json</a>。</p>
+
+<p>除此之外，我们也可以前往 grafana dashboard 的页面去搜索其他的关于 Kubernetes 的监控页面，地址：<a href="https://grafana.com/dashboards">https://grafana.com/dashboards</a>，比如id 为747和741的这两个 dashboard。</p>
+
+<h2 id="插件">插件</h2>
+
+<p>上面是我们最常用的 grafana 当中的 dashboard 的功能的使用，然后我们也可以来进行一些其他的系统管理，比如添加用户，为用户添加权限等等，我们也可以安装一些其他插件，比如 grafana 就有一个专门针对 Kubernetes 集群监控的插件：<a href="https://grafana.com/plugins/grafana-kubernetes-app/installation">grafana-kubernetes-app</a></p>
+
+<p>要安装这个插件，需要到 grafana 的 Pod 里面去执行安装命令：</p>
+
+<pre><code class="language-shell">$ kubectl get pods -n kube-ops
+NAME                          READY     STATUS      RESTARTS   AGE
+grafana-79477fbb7c-v4prs      1/1       Running     0          23m
+$ kubectl exec -it grafana-79477fbb7c-v4prs /bin/bash -n kube-ops
+grafana@grafana-79477fbb7c-v4prs:/usr/share/grafana$ grafana-cli plugins install grafana-kubernetes-app
+installing grafana-kubernetes-app @ 1.0.1
+from url: https://grafana.com/api/plugins/grafana-kubernetes-app/versions/1.0.1/download
+into: /var/lib/grafana/plugins
+
+✔ Installed grafana-kubernetes-app successfully
+
+Restart grafana after installing plugins . &lt;service grafana-server restart&gt;
+
+grafana@grafana-79477fbb7c-v4prs:/usr/share/grafana$
+</code></pre>
+
+<p>安装完成后需要重启 grafana 才会生效，我们这里直接删除 Pod，重建即可，然后回到 grafana 页面中，切换到 plugins 页面可以发现下面多了一个 Kubernetes 的插件，点击进来启用即可，然后点击<code>Next up</code>旁边的链接配置集群
+<img src="https://www.qikqiak.com/img/posts/grafana-k8s-plugin.png" alt="grafana k8s plugins" /></p>
+
+<p>这里我们可以添加一个新的 Kubernetes 集群，这里需要填写集群的访问地址：<code>https://kubernetes.default</code>，然后比较重要的是集群访问的证书，勾选上<code>TLS Client Auth</code>和<code>With CA Cert</code>这两项。
+<img src="https://www.qikqiak.com/img/posts/grafana-k8s-plugin-config.png" alt="grafana k8s plugin config" /></p>
+
+<p>集群访问的证书文件，用我们访问集群的 kubectl 的配置文件中的证书信息(~/.kube/config)即可，其中属性<code>certificate-authority-data</code>、<code>client-certificate-data</code>、<code>client-key-data</code>就对应这 CA 证书、Client 证书、Client 私钥，不过 config 文件里面的内容是<code>base64</code>编码过后的，所以我们这里填写的时候要做<code>base64</code>解码。</p>
+
+<blockquote>
+<p>另外需要将解码过后的<code>\n</code>换成换行符，不然认证会失败。</p>
+</blockquote>
+
+<p>配置完成后，可以直接点击<code>Deploy</code>(实际上前面的课程中我们都已经部署过相关的资源了)，然后点击<code>Save</code>，就可以获取到集群的监控资源信息了。</p>
+
+<p><img src="https://www.qikqiak.com/img/posts/grafana-k8s-plugin2.png" alt="grafana k8s plugins" /></p>
+
+<p>可以看到上面展示了整个集群的状态，可以查看上面的一些 Dashboard:
+<img src="https://www.qikqiak.com/img/posts/grafana-k8s-plugin-cluster.png" alt="grafana k8s cluster dashboard" /></p>
+
+<h2 id="报警">报警</h2>
+
+<p>grafana 4 版本以上就支持了报警功能，这使得我们利用 grafana 作为监控面板更为完整，因为报警是监控系统中必不可少的环节，grafana 支持很多种形式的报警功能，比如 email、钉钉、slack、webhook 等等，我们这里来测试下 email 和 钉钉。</p>
+
+<h3 id="email-报警">email 报警</h3>
+
+<p>要启用 email 报警需要在启动配置文件中<code>/etc/grafana/grafan.ini</code>开启 SMTP 服务，我们这里同样利用一个 ConfigMap 资源对象挂载到 grafana Pod 中：（grafana-cm.yaml）</p>
+
+<pre><code class="language-yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-config
+  namespace: kube-ops
+data:
+  grafana.ini: |
+    [server]
+    root_url = http://&lt;你grafana的url地址&gt;
+    [smtp]
+    enabled = true
+    host = smtp.163.com:25
+    user = ych_1024@163.com
+    password = &lt;邮箱密码&gt;
+    skip_verify = true
+    from_address = ych_1024@163.com
+    [alerting]
+    enabled = true
+    execute_alerts = true
+</code></pre>
+
+<p>上面配置了我的 163 邮箱，开启报警功能，当然我们还得将这个 ConfigMap 文件挂载到 Pod 中去：</p>
+
+<pre><code class="language-yaml">  volumeMounts:
+  - mountPath: &quot;/etc/grafana&quot;
+    name: config
+volumes:
+- name: config
+  configMap:
+    name: grafana-config
+</code></pre>
+
+<p>创建 ConfigMap 对象，更新 Deployment：</p>
+
+<pre><code class="language-shell">$ kubectl create -f grafana-cm.yaml
+$ kubectl apply -f grafana-deploy.yaml
+</code></pre>
+
+<p>更新完成后，在 grafana 的 webui 中<code>Alert</code>页面测试邮件报警：</p>
+
+<p><img src="https://www.qikqiak.com/img/posts/grafana-alert-email.png" alt="grafana email alert" /></p>
+
+<p>发送测试后，正常情况下就可以收到测试报警邮件：</p>
+
+<p><img src="https://www.qikqiak.com/img/posts/grafana-email-alert.png" alt="grafana alert email" /></p>
+
+<h3 id="钉钉报警">钉钉报警</h3>
+
+<p>上面我们也说了 grafana 也是支持钉钉报警的，在钉钉群里面添加群机器人，选择最后的自定义机器人：</p>
+
+<p><img src="https://www.qikqiak.com/img/posts/grafana-add-dingtalk-robot.png" alt="grafana add dingtalk robot" /></p>
+
+<p>添加完成后可以得到一个 webhook 的地址，然后将这个 webhook 地址添加到上面 grafana webui 的报警测试页面进行测试，就可以在钉钉群里面收到报警测试信息了：</p>
+
+<p><img src="https://www.qikqiak.com/img/posts/grafana-alert-dingtalk-robot.png" alt="grafana dingtalk alert" /></p>
+
+<h3 id="配置-1">配置</h3>
+
+<p>目前只有 Graph 支持报警功能，所以我们选择 Graph 相关图表，点击编辑，进入 Graph 编辑页面可以看到有一个 Alert 模块，切换过来创建报警：</p>
+
+<p><img src="https://www.qikqiak.com/img/posts/grafana-graph-alert.png" alt="grafana graph alert" /></p>
+
+<p>然后配置相关参数：</p>
+
+<ul>
+<li>1、Alert 名称，可以自定义。</li>
+<li>2、执行的频率，这里我选择每60s检测一次。</li>
+<li>3、判断标准，默认是 avg，这里是下拉框，自己按需求选择。</li>
+<li>4、query（A,5m,now），字母A代表选择的metrics 中设置的 sql，也可以选择其它在 metrics中设置的，但这里是单选。<code>5m</code>代表从现在起往之前的五分钟，即<code>5m</code>之前的那个点为时间的起始点，<code>now</code>为时间的结束点，此外这里可以自己手动输入时间。</li>
+<li>5、设置的预警临界点，这里手动输入，和6是同样功能，6可以手动移动，两种操作是等同的。</li>
+</ul>
+
+<p>然后需要设置报警发送信息，点击侧边的<code>Notifications</code>:</p>
+
+<p><img src="https://www.qikqiak.com/img/posts/grafana-graph-notify.png" alt="grafana graph notify" /></p>
+
+<p>其中<code>Send to</code>就是前面我们配置过的发送邮件和钉钉的报警频道的名称。</p>
+
+<p>配置完成后需要保存下这个 graph，否则发送报警可能会失败，然后点击 Alert 区域的<code>Test Rule</code>可以来测试报警规则，然后邮件和钉钉正常来说就可以收到报警信息了。</p>
+
+<p>邮件报警信息：</p>
+
+<p><img src="https://www.qikqiak.com/img/posts/grafana-email-alert2.png" alt="grafana test rule email" /></p>
+
+<p>钉钉报警信息：</p>
+
+<p><img src="https://www.qikqiak.com/img/posts/grafana-dingtalk-alert2.png" alt="grafana test rule dingtalk" /></p>
+
+<p>到这里就完成了使用 grafana 来展示 Kubernetes 集群的监控图表信息以及报警配置，但是我们明显可以感觉到 grafana 的优势在于图表的展示，报警功能有点弱，所以一般来说，在生产环境我们不会直接使用 grafana 的报警功能，更多的是使用功能更加强大的 <code>AlertManager</code>，下节课我们再来和大家介绍了。</p>
+
+<p>本文节选自<a href="https://www.qikqiak.com/k8s-book/docs/56.Grafana%E7%9A%84%E5%AE%89%E8%A3%85%E4%BD%BF%E7%94%A8.html">从Docker到Kubernetes进阶</a></p>
+
+<h2 id="推广">推广</h2>
+
+<p>最后打个广告，给大家推荐一个本人精心打造的一个精品课程，现在限时优惠中：<a href="https://youdianzhishi.com/course/6n8xd6/">从 Docker 到 Kubernetes 进阶</a>
+<a href="https://youdianzhishi.com/course/6n8xd6/"><img src="http://sdn.haimaxy.com/covers/2018/4/21/c4082e0f09c746aa848279a2567cffed.png" alt="从 Docker 到 Kubernetes 进阶" /></a></p>
+
+<p>扫描下面的二维码(或微信搜索<code>k8s技术圈</code>)关注我们的微信公众帐号，在微信公众帐号中回复 <strong>加群</strong> 即可加入到我们的 kubernetes 讨论群里面共同学习。
+<img src="https://www.qikqiak.com/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg" alt="qrcode" /></p>
+        
+          <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+        
+      </article>
+
+      
+        
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-monitor-prometheus-grafana/">Kubernetes使用Prometheus搭建监控平台</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/update-prometheus-2-in-kubernetes/">Kubernetes 下升级Prometheus2.0</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/alertmanager-of-prometheus-in-practice/">Prometheus报警AlertManager实战</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/course-11-promotion/">双11优点知识课程优惠活动</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/promethues-monitor-k8s-nodes/">监控 Kubernetes 集群节点</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/promethues-monitor-k8s-app/">Kubernetes 应用监控</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-affinity-scheduler/">重新理解 kubernetes 亲和性调度</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kube-scheduler-introduction/">Kubernetes 调度器介绍</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/helm-hooks-usage/">Helm Hooks 的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-course-promotion/">国庆 K8S 课程特别活动</a></li>
+    
+</ul>
+
+      
+
+      
+      <ul class="pager blog-pager">
+        
+          <li class="previous">
+            <a href="https://www.qikqiak.com/post/course-11-promotion/" data-toggle="tooltip" data-placement="top" title="双11优点知识课程优惠活动">&larr; Previous Post</a>
+          </li>
+        
+        
+      </ul>
+      
+
+      
+
+      
+      <div id="git-comments"></div>
+      <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+      <script src="https://www.qikqiak.com/js/gitment.browser.js"></script>
+      <script>
+      var gitment = new Gitment({
+        id: 'grafana-usage-in-k8s',
+        title: 'Grafana 在 Kubernetes 中的使用',
+        owner: 'cnych',
+        repo: 'blog',
+        oauth: {
+          client_id: 'bdb76dbb2e9d0786e350',
+          client_secret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        }
+      })
+      gitment.render('git-comments')
+      </script>
+      
+
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2018
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.41</a> powered &nbsp;&bull;&nbsp; Theme by <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a> adapted to <a href="https://github.com/cnych/qikqiak-blog">qikqiak-blog</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+<script src="https://www.qikqiak.com/js/jquery-1.11.2.min.js"></script>
+<script src="https://www.qikqiak.com/js/bootstrap.min.js"></script>
+<script src="https://www.qikqiak.com/js/main.min.js"></script>
+<script src="https://www.qikqiak.com/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script src="https://www.qikqiak.com/js/prism.js?t=123"></script>
+
+<script src="https://www.qikqiak.com/js/reward.js"></script>
+
+
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+  </body>
+</html>
+
