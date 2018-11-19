@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [360 开源 K8S Dashboard Wayne 的安装使用](https://www.qikqiak.com/post/kubernetes-dashboard-wayne-usage)
  * [Grafana 在 Kubernetes 中的使用](https://www.qikqiak.com/post/grafana-usage-in-k8s)
  * [Kubernetes 节点监控](https://www.qikqiak.com/post/promethues-monitor-k8s-nodes)
  * [Kubernetes 应用监控](https://www.qikqiak.com/post/promethues-monitor-k8s-app)
