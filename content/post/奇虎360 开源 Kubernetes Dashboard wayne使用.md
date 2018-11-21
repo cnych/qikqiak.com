@@ -9,7 +9,7 @@ bigimg: [{src: "/img/posts/photo-1542481889-27404a7ec14a.jpeg", desc: "church of
 category: "kubernetes"
 ---
 
-Kubernetes 官方本身就提供了一个管理集群的 Dashboard 插件，但是官方的 Dashboard 插件还是有一些局限性，近日360开源了内部使用的 Kubernetes Dashboard 插件：[Wayne](https://github.com/Qihoo360/wayne/)。 `Wayne` 是一个通用的、基于 Web 的 Kubernetes 多集群管理平台。通过可视化 Kubernetes 对象模板编辑的方式，降低业务接入成本， 拥有完整的权限管理系统，适应多租户场景，是一款适合企业级集群使用的发布平台。
+`Kubernetes` 官方本身就提供了一个管理集群的 Dashboard 插件，但是官方的 Dashboard 插件还是有一些局限性，近日360开源了内部使用的 Kubernetes Dashboard 插件：[Wayne](https://github.com/Qihoo360/wayne/)。 `Wayne` 是一个通用的、基于 Web 的 Kubernetes 多集群管理平台。通过可视化 Kubernetes 对象模板编辑的方式，降低业务接入成本， 拥有完整的权限管理系统，适应多租户场景，是一款适合企业级集群使用的发布平台。
 
 <!--more-->
 
@@ -91,7 +91,7 @@ spec:
     targetPort: dbport
 ```
 
-通过环境变量添加了数据库 wayne 和用户 wayne，不过需要注意的是我们这里并没有对数据进行持久化，如果需要的话一定要记得做数据的持久化，避免数据丢失。创建上面的资源对象：
+通过环境变量添加了数据库 root 用户密码（不需要提前创建`wayne`数据库），不过需要注意的是我们这里并没有对数据进行持久化，如果需要的话一定要记得做数据的持久化，避免数据丢失。创建上面的资源对象：
 
 ```shell
 $ kubec create -f db.yaml
@@ -125,7 +125,7 @@ drwxr-xr-x  5 ych  staff  160 Nov 19 11:33 ..
 -rw-r--r--  1 ych  staff  229 Nov 19 11:33 service.yaml
 ```
 
-> 我们这里将所有服务都部署到`kube-system`命名空间下面，所以将这里的资源清单中的`namespace`都统一改成`kube-system` 
+> 我们这里将所有服务都部署到`kube-system`命名空间下面，所以将这里的资源清单中的`namespace`都统一改成`kube-system`
 
 由于我们这里是使用上面集群中部署的 MySQL 服务，所以这里需要对 configmap.yaml 文件进行简单的配置，而 360 文档上面的 ConfigMap 是不完整的，需要使用源码里面的`app.conf`文件来进行创建，所以我们这里可以使用`--from-file`关键字来创建 ConfigMap 对象，首先配置下`app.conf`文件：
 ```

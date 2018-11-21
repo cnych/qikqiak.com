@@ -7,6 +7,7 @@ nopager: true
 ---
 
 
+* [K8S技术圈](https://www.kube100.com?utm_source=qikqiak)
 * [Ryan Yang](https://www.yangcs.net?utm_source=qikqiak)
 * [JACK LEE](http://lijinxiu.com?utm_source=qikqiak)
 * [(王丽兵)开发笔记](https://www.wanglibing.com?utm_source=qikqiak)
