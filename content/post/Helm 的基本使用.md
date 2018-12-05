@@ -573,7 +573,7 @@ $ helm delete mewing-squid --purge
 release "mewing-squid" deleted
 ```
 
-我们这里只是讲到了 Helm 的一些常用的方法，更多用法我们将在后面的课程中和大家接触到。
+我们这里只是讲到了 Helm 的一些常用的方法，更多用法我们将在后面的课程中和大家接触到。
 
 最后打个广告，给大家推荐一个本人精心打造的一个精品课程，现在限时优惠中：[从 Docker 到 Kubernetes 进阶](https://www.haimaxy.com/course/6n8xd6/)
 [![从 Docker 到 Kubernetes 进阶](http://sdn.haimaxy.com/covers/2018/4/21/c4082e0f09c746aa848279a2567cffed.png)](https://www.haimaxy.com/course/6n8xd6/)
