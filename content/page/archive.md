@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [Kubernetes API 资源使用](https://www.qikqiak.com/post/k8s-api-resources-group-and-version)
  * [Kubernetes Ingress 自动化 HTTPS](https://www.qikqiak.com/post/automatic-kubernetes-ingress-https-with-lets-encrypt)
  * [360 开源 K8S Dashboard Wayne 的安装使用](https://www.qikqiak.com/post/kubernetes-dashboard-wayne-usage)
  * [Grafana 在 Kubernetes 中的使用](https://www.qikqiak.com/post/grafana-usage-in-k8s)
