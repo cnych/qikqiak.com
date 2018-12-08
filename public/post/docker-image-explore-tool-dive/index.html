@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>Docker 镜像分析工具 Dive(附视频)-www.qikqiak.com|阳明的博客|Kubernetes|Docker|istio|Python|Golang|Cloud Native</title>
+  <meta property="og:title" content="Docker 镜像分析工具 Dive(附视频)" />
+  <meta name="twitter:title" content="Docker 镜像分析工具 Dive(附视频)" />
+
+  <meta name="description" content="我们知道用docker inspect命令可以查看一个 docker 镜像的 meta 信息，用docker history命令可以了解一个镜像的构建历史，但是这些信息对我们去分析一个镜像的具体一层的组成来说还是不太够，不够清晰明了。
+
+">
+  <meta property="og:description" content="我们知道用docker inspect命令可以查看一个 docker 镜像的 meta 信息，用docker history命令可以了解一个镜像的构建历史，但是这些信息对我们去分析一个镜像的具体一层的组成来说还是不太够，不够清晰明了。
+
+">
+  <meta name="twitter:description" content="我们知道用docker inspect命令可以查看一个 docker 镜像的 meta 信息，用docker history命令可以了解一个镜像的构建历史，但是这些信息对我们去分析一个镜像的具体一层的组成来说还是不太够，不够清晰明了。
+
+">
+  <meta name="author" content=""/>
+  <link href='https://www.qikqiak.com/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/docker-image-explore-tool-dive/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.41" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/docker-image-explore-tool-dive/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/pygment_highlights.css" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/highlight.min.css" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/prism.css?t=123" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/search.css" />
+  
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/reward.css" />
+  
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="docker, 镜像, dive">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='//www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/">阳明的博客</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Home" href="https://www.qikqiak.com/">Home</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">Categories</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/page/archive/">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/ops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">projects</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">优点知识</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">我们一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务实战</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown转微信</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="About" href="https://www.qikqiak.com/page/about/">About</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://www.qikqiak.com/img/posts/photo-1544137105-295758788545.jpeg" data-img-desc-1="Monte Due Mani, Italy"></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>Docker 镜像分析工具 Dive(附视频)</h1>
+                  
+                  
+                    <span class="post-meta">
+  Posted on December 8, 2018
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>Docker 镜像分析工具 Dive(附视频)</h1>
+                
+                
+                  <span class="post-meta">
+  Posted on December 8, 2018
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+
+      <div>
+          
+          
+          <h5 id="tags" style="margin-top: 0px;">标签:
+            
+                <a href="https://www.qikqiak.com/tags/docker/">docker</a> &nbsp;
+            
+                <a href="https://www.qikqiak.com/tags/%E9%95%9C%E5%83%8F/">镜像</a> &nbsp;
+            
+                <a href="https://www.qikqiak.com/tags/dive/">dive</a> &nbsp;
+            
+          </h5>
+          
+      </div>
+
+      <article role="main" class="blog-post" itemprop="articleBody" id="content">
+        
+        <p>我们知道用<code>docker inspect</code>命令可以查看一个 docker 镜像的 meta 信息，用<code>docker history</code>命令可以了解一个镜像的构建历史，但是这些信息对我们去分析一个镜像的具体一层的组成来说还是不太够，不够清晰明了。</p>
+
+<p></p>
+
+<pre><code class="language-shell">$ docker images
+REPOSITORY                         TAG                 IMAGE ID            CREATED             SIZE
+python                             3.6.4               07d72c0beb99        8 months ago        689MB
+$ docker inspect python:3.6.4
+[
+    {
+        ......
+        &quot;RootFS&quot;: {
+            &quot;Type&quot;: &quot;layers&quot;,
+            &quot;Layers&quot;: [
+                &quot;sha256:8fad67424c4e7098f255513e160caa00852bcff347bc9f920a82ddf3f60229de&quot;,
+                &quot;sha256:86985c679800f423275a0ea3ad540e9b7f522dcdcd65ec2b20f407996162f2e0&quot;,
+                &quot;sha256:6e5e20cbf4a7246b94f7acf2a2ceb2c521e95daca334dd1e8ba388fa73443dfe&quot;,
+                &quot;sha256:ff57bdb79ac820da132ad1fdc1e2d250de5985b264dbdf60aa4ce83a05c4da75&quot;,
+                &quot;sha256:6e1b48dc2cccd7c0faf316e5975f1a02f5897723d7fa3b0367b28a20173931d6&quot;,
+                &quot;sha256:325a22db58ea59d76568ded2fac6b783554f8cd5fa8e851c260da4b141c55c6c&quot;,
+                &quot;sha256:a4a7a3673769ce5035e06f56458cab872bb5dc561bebe3571ac62fe2b52f0aaf&quot;,
+                &quot;sha256:c83faac49cbc38f1e458dfffb71b1c87860f56ac34602befefe6005177474ba3&quot;
+            ]
+        },
+        &quot;Metadata&quot;: {
+            &quot;LastTagTime&quot;: &quot;0001-01-01T00:00:00Z&quot;
+        }
+    }
+]
+$ docker history python:3.6.4
+IMAGE               CREATED             CREATED BY                                      SIZE                COMMENT
+07d72c0beb99        8 months ago        /bin/sh -c #(nop)  CMD [&quot;python3&quot;]              0B
+&lt;missing&gt;           8 months ago        /bin/sh -c set -ex;   wget -O get-pip.py 'ht…   6.06MB
+&lt;missing&gt;           8 months ago        /bin/sh -c #(nop)  ENV PYTHON_PIP_VERSION=9.…   0B
+&lt;missing&gt;           8 months ago        /bin/sh -c cd /usr/local/bin  &amp;&amp; ln -s idle3…   32B
+&lt;missing&gt;           8 months ago        /bin/sh -c set -ex  &amp;&amp; buildDeps='   dpkg-de…   62.9MB
+&lt;missing&gt;           8 months ago        /bin/sh -c #(nop)  ENV PYTHON_VERSION=3.6.4     0B
+&lt;missing&gt;           8 months ago        /bin/sh -c #(nop)  ENV GPG_KEY=0D96DF4D4110E…   0B
+&lt;missing&gt;           8 months ago        /bin/sh -c apt-get update &amp;&amp; apt-get install…   8.67MB
+&lt;missing&gt;           8 months ago        /bin/sh -c #(nop)  ENV LANG=C.UTF-8             0B
+&lt;missing&gt;           8 months ago        /bin/sh -c #(nop)  ENV PATH=/usr/local/bin:/…   0B
+&lt;missing&gt;           8 months ago        /bin/sh -c set -ex;  apt-get update;  apt-ge…   320MB
+&lt;missing&gt;           8 months ago        /bin/sh -c apt-get update &amp;&amp; apt-get install…   123MB
+&lt;missing&gt;           8 months ago        /bin/sh -c set -ex;  if ! command -v gpg &gt; /…   0B
+&lt;missing&gt;           8 months ago        /bin/sh -c apt-get update &amp;&amp; apt-get install…   44.6MB
+&lt;missing&gt;           8 months ago        /bin/sh -c #(nop)  CMD [&quot;bash&quot;]                 0B
+&lt;missing&gt;           8 months ago        /bin/sh -c #(nop) ADD file:bc844c4763367b5f0…   123MB
+</code></pre>
+
+<h3 id="介绍">介绍</h3>
+
+<p>接下来我们给大家介绍一个用来分析 docker 镜像层信息的一个工具：dive，地址：<a href="https://github.com/wagoodman/dive">https://github.com/wagoodman/dive</a>，该工具主要用于探索 docker 镜像层内容以及发现减小 docker 镜像大小的方法。</p>
+
+<iframe src="//player.bilibili.com/player.html?aid=37644304&cid=66182617&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true" style="width: 800px; height: 600px; max-width: 100%"></iframe>
+
+<p>要分析一个 docker 镜像，只需要在 dive 工具后面添加上镜像的 tag 即可：</p>
+
+<pre><code class="language-shell">$ dive &lt;镜像TAG&gt;
+</code></pre>
+
+<p>除此之外，还可以通过 build 命令去构建 docker 镜像后，直接进入分析结果：</p>
+
+<pre><code class="language-shell">$ dive build -t &lt;镜像TAG&gt; .
+</code></pre>
+
+<h3 id="基本功能">基本功能</h3>
+
+<ul>
+<li>显示每层的 docker 镜像内容：当您在左侧选择一个层时，将在右侧线上显示该层的所有内容，此外，您可以使用箭头按键来浏览整个文件树内容。</li>
+<li>指出每层中发生了哪些变化：在文件树中标明已修改、添加或删除的文件，可以调整此值以显示特定层的更改。</li>
+<li>估计“镜像效率”：左下方窗格显示基本层信息和一个实验指标，用于猜测图像所包含的空间浪费。这可能是跨层的一些重复文件，跨层移动文件或不完全删除的文件。提供了一个百分比的“得分”和总浪费的文件空间。</li>
+<li>快速构建/分析周期：您可以构建 docker 镜像并使用一个命令立即进行分析：<code>dive build -t some-tag .</code>，您只需要将<code>docker build</code>命令用相同的<code>dive build</code>命令替换即可。</li>
+</ul>
+
+<h3 id="安装">安装</h3>
+
+<p>安装非常简单，我们这里为了方便，直接使用 docker 镜像的方式，其他的安装方法在 dive 文档中查看即可。</p>
+
+<pre><code class="language-shell">$ docker pull wagoodman/dive
+</code></pre>
+
+<p>镜像 pull 下来后，然后使用该镜像运行一个临时的容器，加上我们需要分析的镜像即可：</p>
+
+<pre><code class="language-shell">$ docker run --rm -it \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    wagoodman/dive:latest &lt;dive arguments...&gt;
+</code></pre>
+
+<p>比如，我们这里来分析下<code>python:3.6.4</code>这个镜像：</p>
+
+<pre><code class="language-shell">$ docker run --rm -it \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    wagoodman/dive:latest python:3.6.4
+Analyzing Image
+  Fetching metadata...
+  Fetching image...
+    ├─ [layer:  0] 2f1b3001b085f94 : [========================================&gt;] 100 % (465/465)
+    ├─ [layer:  1] 383de4491c61a96 : [========================================&gt;] 100 % (7/7)
+    ├─ [layer:  2] 5a18124b107698b : [========================================&gt;] 100 % (1382/1382)
+    ├─ [layer:  3] 68c6148e6856d76 : [========================================&gt;] 100 % (568/568)
+    ├─ [layer:  4] 872e2e8e6109ee2 : [========================================&gt;] 100 % (5421/5421)
+    ├─ [layer:  5] 8aa62fd66ae0210 : [========================================&gt;] 100 % (8252/8252)
+    ├─ [layer:  6] 93e9cefe47e6b15 : [========================================&gt;] 100 % (11545/11545)
+    ├─ [layer:  7] f1a4ff99e76e332 : [========================================&gt;] 100 % (1482/1482)
+    ╧
+  Building tree...
+  Analyzing layers...
+</code></pre>
+
+<p>分析完成后，我们就可以进入到一个可操作的界面之中，然后可以使用键盘上的<code>上下按键</code>去切换镜像的每一层，在左下角会出现这一层的详细信息，有的层就会出现计算出的一些浪费空间的结果，我们就可以根据这个信息去分析如何减少镜像大小，而右侧区域则是显示当前镜像层的内容文件树：
+<img src="https://www.qikqiak.com/img/posts/dive.png" alt="dive" /></p>
+
+<p>更多的信息可以查看 dive 的<a href="https://github.com/wagoodman/dive">github</a>仓库页面，也可以查看上面的视频教程。</p>
+
+<h2 id="推荐">推荐</h2>
+
+<p>给大家推荐一个本人精心打造的一个精品课程，现在限时优惠中：<a href="https://youdianzhishi.com/course/6n8xd6/">从 Docker 到 Kubernetes 进阶</a>
+<a href="https://youdianzhishi.com/course/6n8xd6/"><img src="http://sdn.haimaxy.com/covers/2018/4/21/c4082e0f09c746aa848279a2567cffed.png" alt="从 Docker 到 Kubernetes 进阶" /></a></p>
+
+<p>扫描下面的二维码(或微信搜索<code>k8s技术圈</code>)关注我们的微信公众帐号，在微信公众帐号中回复 <strong>加群</strong> 即可加入到我们的 kubernetes 讨论群里面共同学习。
+<img src="https://www.qikqiak.com/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg" alt="qrcode" /></p>
+        
+          <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+        
+      </article>
+
+      
+        
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/dockerfile-best-practice/">Dockerfile 最佳实践</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/pod-init-container/">初始化容器</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/write-kubernets-golang-service-step-by-step/">手摸手教你写 Kubernetes 的 golang 服务</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/multi-stage-build-for-docker/">Docker 的多阶段构建</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/python-virtualenv-all-know/">Python 虚拟环境全知道</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/install-docker-registry-harbor-in-kubernetes/">在kubernetes 集群上搭建docker 私有仓库Harbor</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/manual-install-high-available-kubernetes-cluster/">手动搭建高可用的kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/tdd-develop-python-microservice-app-part2/">TDD开发容器化的Python微服务应用(二)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/tdd-develop-python-microservice-app/">TDD开发容器化的Python微服务应用(一)</a></li>
+    
+</ul>
+
+      
+
+      
+      <ul class="pager blog-pager">
+        
+          <li class="previous">
+            <a href="https://www.qikqiak.com/post/k8s-api-resources-group-and-version/" data-toggle="tooltip" data-placement="top" title="Kubernetes API 资源使用">&larr; Previous Post</a>
+          </li>
+        
+        
+      </ul>
+      
+
+      
+
+      
+      <div id="git-comments"></div>
+      <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+      <script src="https://www.qikqiak.com/js/gitment.browser.js"></script>
+      <script>
+      var gitment = new Gitment({
+        id: 'docker-image-explore-tool-dive',
+        title: 'Docker 镜像分析工具 Dive(附视频)',
+        owner: 'cnych',
+        repo: 'blog',
+        oauth: {
+          client_id: 'bdb76dbb2e9d0786e350',
+          client_secret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        }
+      })
+      gitment.render('git-comments')
+      </script>
+      
+
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2018
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.41</a> powered &nbsp;&bull;&nbsp; Theme by <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a> adapted to <a href="https://github.com/cnych/qikqiak-blog">qikqiak-blog</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+<script src="https://www.qikqiak.com/js/jquery-1.11.2.min.js"></script>
+<script src="https://www.qikqiak.com/js/bootstrap.min.js"></script>
+<script src="https://www.qikqiak.com/js/main.min.js"></script>
+<script src="https://www.qikqiak.com/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script src="https://www.qikqiak.com/js/prism.js?t=123"></script>
+
+<script src="https://www.qikqiak.com/js/reward.js"></script>
+
+
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+  </body>
+</html>
+
