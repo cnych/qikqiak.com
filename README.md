@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [Prometheus Operator 初体验](https://www.qikqiak.com/post/first-use-prometheus-operator)
  * [Docker 镜像分析工具 Dive(附视频)](https://www.qikqiak.com/post/docker-image-explore-tool-dive)
  * [Kubernetes API 资源使用](https://www.qikqiak.com/post/k8s-api-resources-group-and-version)
  * [Kubernetes Ingress 自动化 HTTPS](https://www.qikqiak.com/post/automatic-kubernetes-ingress-https-with-lets-encrypt)

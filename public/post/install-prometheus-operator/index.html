@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>Prometheus Operator 的安装使用-www.qikqiak.com|阳明的博客|Kubernetes|Docker|istio|Python|Golang|Cloud Native</title>
+  <meta property="og:title" content="Prometheus Operator 的安装使用" />
+  <meta name="twitter:title" content="Prometheus Operator 的安装使用" />
+
+  <meta name="description" content="前面的课程中我们学习了用自定义的方式来对 Kubernetes 集群进行监控，但是还是有一些缺陷，比如 Prometheus、AlertManager 这些组件服务本身的高可用，当然我们也完全可以用自定义的方式来实现这些需求，我们也知道 Promethues 在代码上就已经对 Kubernetes 有了原生的支持，可以通过服务发现的形式来自动监控集群，因此我们可以使用另外一种更加高级的方式来部署 Prometheus：Operator 框架。
+
+">
+  <meta property="og:description" content="前面的课程中我们学习了用自定义的方式来对 Kubernetes 集群进行监控，但是还是有一些缺陷，比如 Prometheus、AlertManager 这些组件服务本身的高可用，当然我们也完全可以用自定义的方式来实现这些需求，我们也知道 Promethues 在代码上就已经对 Kubernetes 有了原生的支持，可以通过服务发现的形式来自动监控集群，因此我们可以使用另外一种更加高级的方式来部署 Prometheus：Operator 框架。
+
+">
+  <meta name="twitter:description" content="前面的课程中我们学习了用自定义的方式来对 Kubernetes 集群进行监控，但是还是有一些缺陷，比如 Prometheus、AlertManager 这些组件服务本身的高可用，当然我们也完全可以用自定义的方式来实现这些需求，我们也知道 Promethues 在代码上就已经对 Kubernetes 有了原生的支持，可以通过服务发现的形式来自动监控集群， …">
+  <meta name="author" content=""/>
+  <link href='https://www.qikqiak.com/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/install-prometheus-operator/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.41" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/install-prometheus-operator/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/pygment_highlights.css" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/highlight.min.css" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/prism.css?t=123" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/search.css" />
+  
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/reward.css" />
+  
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, prometheus, operator, 安装, prometheus-operator">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='//www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/">阳明的博客</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Home" href="https://www.qikqiak.com/">Home</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">Categories</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/page/archive/">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/ops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">projects</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">优点知识</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">我们一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务实战</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown转微信</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="About" href="https://www.qikqiak.com/page/about/">About</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://www.qikqiak.com/img/posts/photo-1544436595-18448ba66450.jpeg" data-img-desc-1="Cold lake"></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>Prometheus Operator 的安装使用</h1>
+                  
+                  
+                    <span class="post-meta">
+  Posted on December 11, 2018
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>Prometheus Operator 的安装使用</h1>
+                
+                
+                  <span class="post-meta">
+  Posted on December 11, 2018
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+
+      <div>
+          
+          
+          <h5 id="tags" style="margin-top: 0px;">标签:
+            
+                <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+            
+                <a href="https://www.qikqiak.com/tags/prometheus/">prometheus</a> &nbsp;
+            
+                <a href="https://www.qikqiak.com/tags/operator/">operator</a> &nbsp;
+            
+          </h5>
+          
+      </div>
+
+      <article role="main" class="blog-post" itemprop="articleBody" id="content">
+        
+          
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#operator">Operator</a></li>
+<li><a href="#介绍">介绍</a></li>
+<li><a href="#安装">安装</a></li>
+<li><a href="#配置">配置</a></li>
+<li><a href="#推荐">推荐</a></li>
+</ul></li>
+</ul>
+</nav>
+</aside>
+
+        
+        <p>前面的课程中我们学习了<a href="https://www.qikqiak.com/k8s-book/docs/52.Prometheus%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8.html">用自定义的方式来对 Kubernetes 集群进行监控</a>，但是还是有一些缺陷，比如 Prometheus、AlertManager 这些组件服务本身的高可用，当然我们也完全可以用自定义的方式来实现这些需求，我们也知道 Promethues 在代码上就已经对 Kubernetes 有了原生的支持，可以通过服务发现的形式来自动监控集群，因此我们可以使用另外一种更加高级的方式来部署 Prometheus：<code>Operator</code> 框架。</p>
+
+<p></p>
+
+<h2 id="operator">Operator</h2>
+
+<p><code>Operator</code>是由<a href="https://coreos.com/">CoreOS</a>公司开发的，用来扩展 Kubernetes API，特定的应用程序控制器，它用来创建、配置和管理复杂的有状态应用，如数据库、缓存和监控系统。<code>Operator</code>基于 Kubernetes 的资源和控制器概念之上构建，但同时又包含了应用程序特定的一些专业知识，比如创建一个数据库的<code>Operator</code>，则必须对创建的数据库的各种运维方式非常了解，创建<code>Operator</code>的关键是<code>CRD</code>（自定义资源）的设计。</p>
+
+<blockquote>
+<p><code>CRD</code>是对 Kubernetes API 的扩展，Kubernetes 中的每个资源都是一个 API 对象的集合，例如我们在YAML文件里定义的那些<code>spec</code>都是对 Kubernetes 中的资源对象的定义，所有的自定义资源可以跟 Kubernetes 中内建的资源一样使用 kubectl 操作。</p>
+</blockquote>
+
+<p><code>Operator</code>是将运维人员对软件操作的知识给代码化，同时利用 Kubernetes 强大的抽象来管理大规模的软件应用。目前<code>CoreOS</code>官方提供了几种<code>Operator</code>的实现，其中就包括我们今天的主角：<code>Prometheus Operator</code>，<code>Operator</code>的核心实现就是基于 Kubernetes 的以下两个概念：</p>
+
+<ul>
+<li>资源：对象的状态定义</li>
+<li>控制器：观测、分析和行动，以调节资源的分布</li>
+</ul>
+
+<p>当然我们如果有对应的需求也完全可以自己去实现一个<code>Operator</code>，接下来我们就来给大家详细介绍下<code>Prometheus-Operator</code>的使用方法。</p>
+
+<h2 id="介绍">介绍</h2>
+
+<p>首先我们先来了解下<code>Prometheus-Operator</code>的架构图：</p>
+
+<p><img src="https://www.qikqiak.com/img/posts/prometheus-operator.png" alt="promtheus opeator" /></p>
+
+<p>上图是<code>Prometheus-Operator</code>官方提供的架构图，其中<code>Operator</code>是最核心的部分，作为一个控制器，他会去创建<code>Prometheus</code>、<code>ServiceMonitor</code>、<code>AlertManager</code>以及<code>PrometheusRule</code>4个<code>CRD</code>资源对象，然后会一直监控并维持这4个资源对象的状态。</p>
+
+<p>其中创建的<code>prometheus</code>这种资源对象就是作为<code>Prometheus Server</code>存在，而<code>ServiceMonitor</code>就是<code>exporter</code>的各种抽象，<code>exporter</code>前面我们已经学习了，是用来提供专门提供<code>metrics</code>数据接口的工具，<code>Prometheus</code>就是通过<code>ServiceMonitor</code>提供的<code>metrics</code>数据接口去 pull 数据的，当然<code>alertmanager</code>这种资源对象就是对应的<code>AlertManager</code>的抽象，而<code>PrometheusRule</code>是用来被<code>Prometheus</code>实例使用的报警规则文件。</p>
+
+<p>这样我们要在集群中监控什么数据，就变成了直接去操作 Kubernetes 集群的资源对象了，是不是方便很多了。上图中的 Service 和 ServiceMonitor 都是 Kubernetes 的资源，一个 ServiceMonitor 可以通过 labelSelector 的方式去匹配一类 Service，Prometheus 也可以通过 labelSelector 去匹配多个ServiceMonitor。</p>
+
+<h2 id="安装">安装</h2>
+
+<p>我们这里直接通过 Prometheus-Operator 的源码来进行安装，当然也可以用 Helm 来进行一键安装，我们采用源码安装可以去了解更多的实现细节。首页将源码 Clone 下来：</p>
+
+<pre><code class="language-shell">$ git clone https://github.com/coreos/prometheus-operator
+$ cd contrib/kube-prometheus/manifests/
+$ ls
+00namespace-namespace.yaml                                         node-exporter-clusterRole.yaml
+0prometheus-operator-0alertmanagerCustomResourceDefinition.yaml    node-exporter-daemonset.yaml
+......
+</code></pre>
+
+<p>进入到 manifests 目录下面，这个目录下面包含我们所有的资源清单文件，我们需要对其中的文件 prometheus-serviceMonitorKubelet.yaml 进行简单的修改，因为默认情况下，这个 ServiceMonitor 是关联的 kubelet 的10250端口去采集的节点数据，而我们前面说过为了安全，这个 metrics 数据已经迁移到10255这个只读端口上面去了，我们只需要将文件中的<code>https-metrics</code>更改成<code>http-metrics</code>即可，这个在 Prometheus-Operator 对节点端点同步的代码中有相关定义，感兴趣的可以<a href="https://github.com/coreos/prometheus-operator/blob/7a8bc75512e39a984f46b2788b5fa9bf64999571/pkg/prometheus/operator.go#L400">点此查看完整代码</a>：</p>
+
+<pre><code class="language-go">Subsets: []v1.EndpointSubset{
+    {
+        Ports: []v1.EndpointPort{
+            {
+                Name: &quot;https-metrics&quot;,
+                Port: 10250,
+            },
+            {
+                Name: &quot;http-metrics&quot;,
+                Port: 10255,
+            },
+            {
+                Name: &quot;cadvisor&quot;,
+                Port: 4194,
+            },
+        },
+    },
+},
+</code></pre>
+
+<p>修改完成后，直接在该文件夹下面执行创建资源命令即可：</p>
+
+<pre><code class="language-shell">$ kubectl apply -f .
+</code></pre>
+
+<p>部署完成后，会创建一个名为<code>monitoring</code>的 namespace，所以资源对象对将部署在改命名空间下面，此外 Operator 会自动创建4个 CRD 资源对象：</p>
+
+<pre><code class="language-shell">$ kubectl get crd |grep coreos
+alertmanagers.monitoring.coreos.com     5d
+prometheuses.monitoring.coreos.com      5d
+prometheusrules.monitoring.coreos.com   5d
+servicemonitors.monitoring.coreos.com   5d
+</code></pre>
+
+<p>可以在 monitoring 命名空间下面查看所有的 Pod，其中 alertmanager 和 prometheus 是用 StatefulSet 控制器管理的，其中还有一个比较核心的 prometheus-operator 的 Pod，用来控制其他资源对象和监听对象变化的：</p>
+
+<pre><code class="language-shell">$ kubectl get pods -n monitoring
+NAME                                  READY     STATUS    RESTARTS   AGE
+alertmanager-main-0                   2/2       Running   0          21h
+alertmanager-main-1                   2/2       Running   0          21h
+alertmanager-main-2                   2/2       Running   0          21h
+grafana-df9bfd765-f4dvw               1/1       Running   0          22h
+kube-state-metrics-77c9658489-ntj66   4/4       Running   0          20h
+node-exporter-4sr7f                   2/2       Running   0          21h
+node-exporter-9mh2r                   2/2       Running   0          21h
+node-exporter-m2gkp                   2/2       Running   0          21h
+prometheus-adapter-dc548cc6-r6lhb     1/1       Running   0          22h
+prometheus-k8s-0                      3/3       Running   1          21h
+prometheus-k8s-1                      3/3       Running   1          21h
+prometheus-operator-bdf79ff67-9dc48   1/1       Running   0          21h
+</code></pre>
+
+<p>查看创建的 Service:</p>
+
+<pre><code class="language-shell">$ kubectl get svc -n monitoring
+NAME                    TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)             AGE
+alertmanager-main       ClusterIP   10.110.204.224   &lt;none&gt;        9093/TCP            23h
+alertmanager-operated   ClusterIP   None             &lt;none&gt;        9093/TCP,6783/TCP   23h
+grafana                 ClusterIP   10.98.191.31     &lt;none&gt;        3000/TCP            23h
+kube-state-metrics      ClusterIP   None             &lt;none&gt;        8443/TCP,9443/TCP   23h
+node-exporter           ClusterIP   None             &lt;none&gt;        9100/TCP            23h
+prometheus-adapter      ClusterIP   10.107.201.172   &lt;none&gt;        443/TCP             23h
+prometheus-k8s          ClusterIP   10.107.105.53    &lt;none&gt;        9090/TCP            23h
+prometheus-operated     ClusterIP   None             &lt;none&gt;        9090/TCP            23h
+prometheus-operator     ClusterIP   None             &lt;none&gt;        8080/TCP            23h
+</code></pre>
+
+<p>可以看到上面针对 grafana 和 prometheus 都创建了一个类型为 ClusterIP 的 Service，当然如果我们想要在外网访问这两个服务的话可以通过创建对应的 Ingress 对象或者使用 NodePort 类型的 Service，我们这里为了简单，直接使用 NodePort 类型的服务即可，编辑 grafana 和 prometheus-k8s 这两个 Service，将服务类型更改为 NodePort:</p>
+
+<pre><code class="language-shell">$ kubectl edit svc grafana -n monitoring
+$ kubectl edit svc prometheus-k8s -n monitoring
+$ kubectl get svc -n monitoring
+NAME                    TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)             AGE
+grafana                 NodePort    10.98.191.31     &lt;none&gt;        3000:32333/TCP      23h
+prometheus-k8s          NodePort    10.107.105.53    &lt;none&gt;        9090:30166/TCP      23h
+......
+</code></pre>
+
+<p>更改完成后，我们就可以通过<a href="NodeIP:NodePort">NodeIP:NodePort</a>去访问上面的两个服务了，比如查看 prometheus 的 targets 页面：</p>
+
+<p><img src="https://www.qikqiak.com/img/posts/promethues-operator-targets.png" alt="promtheus operator targets" /></p>
+
+<h2 id="配置">配置</h2>
+
+<p>我们可以看到大部分的配置都是正常的，只有两三个没有管理到对应的监控目标，比如 kube-controller-manager 和 kube-scheduler 这两个系统组件，这就和 ServiceMonitor 的定义有关系了，我们先来查看下 kube-scheduler 组件对应的 ServiceMonitor 资源的定义：(prometheus-serviceMonitorKubeScheduler.yaml)</p>
+
+<pre><code class="language-yaml">apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    k8s-app: kube-scheduler
+  name: kube-scheduler
+  namespace: monitoring
+spec:
+  endpoints:
+  - interval: 30s # 每30s获取一次信息
+    port: http-metrics  # 对应service的端口名
+  jobLabel: k8s-app
+  namespaceSelector: # 表示去匹配某一命名空间中的service，如果想从所有的namespace中匹配用any: true
+    matchNames:
+    - kube-system
+  selector:  # 匹配的 Service 的labels，如果使用mathLabels，则下面的所有标签都匹配时才会匹配该service，如果使用matchExpressions，则至少匹配一个标签的service都会被选择
+    matchLabels:
+      k8s-app: kube-scheduler
+</code></pre>
+
+<p>上面是一个典型的 ServiceMonitor 资源文件的声明方式，上面我们通过<code>selector.matchLabels</code>在 kube-system 这个命名空间下面匹配具有<code>k8s-app=kube-scheduler</code>这样的 Service，但是我们系统中根本就没有对应的 Service，所以我们需要手动创建一个 Service：（prometheus-kubeSchedulerService.yaml）</p>
+
+<pre><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  namespace: kube-system
+  name: kube-scheduler
+  labels:
+    k8s-app: kube-scheduler
+spec:
+  selector:
+    component: kube-scheduler
+  ports:
+  - name: http-metrics
+    port: 10251
+    targetPort: 10251
+    protocol: TCP
+</code></pre>
+
+<blockquote>
+<p>10251是<code>kube-scheduler</code>组件 metrics 数据所在的端口，10252是<code>kube-controller-manager</code>组件的监控数据所在端口。</p>
+</blockquote>
+
+<p>其中最重要的是上面 labels 和 selector 部分，labels 区域的配置必须和我们上面的 ServiceMonitor 对象中的 selector 保持一致，<code>selector</code>下面配置的是<code>component=kube-scheduler</code>，为什么会是这个 label 标签呢，我们可以去 describe 下 kube-scheduelr 这个 Pod：</p>
+
+<pre><code class="language-shell">$ kubectl describe pod kube-scheduler-master -n kube-system
+Name:         kube-scheduler-master
+Namespace:    kube-system
+Node:         master/10.151.30.57
+Start Time:   Sun, 05 Aug 2018 18:13:32 +0800
+Labels:       component=kube-scheduler
+              tier=control-plane
+......
+</code></pre>
+
+<p>我们可以看到这个 Pod 具有<code>component=kube-scheduler</code>和<code>tier=control-plane</code>这两个标签，而前面这个标签具有更唯一的特性，所以使用前面这个标签较好，这样上面创建的 Service 就可以和我们的 Pod 进行关联了，直接创建即可：</p>
+
+<pre><code class="language-shell">$ kubectl create -f prometheus-kubeSchedulerService.yaml
+$ kubectl get svc -n kube-system -l k8s-app=kube-scheduler
+NAME             TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)     AGE
+kube-scheduler   ClusterIP   10.102.119.231   &lt;none&gt;        10251/TCP   18m
+</code></pre>
+
+<p>创建完成后，隔一小会儿后去 prometheus 查看 targets 下面 kube-scheduler 的状态：</p>
+
+<p><img src="https://www.qikqiak.com/img/posts/promethues-operator-kube-scheduler-error.png" alt="promethus kube-scheduler error" /></p>
+
+<p>我们可以看到现在已经发现了 target，但是抓取数据结果出错了，这个错误是因为我们集群是使用 kubeadm 搭建的，其中 kube-scheduler 默认是绑定在<code>127.0.0.1</code>上面的，而上面我们这个地方是想通过节点的 IP 去访问，所以访问被拒绝了，我们只要把 kube-scheduler 绑定的地址更改成<code>0.0.0.0</code>即可满足要求，由于 kube-scheduler 是以静态 Pod 的形式运行在集群中的，所以我们只需要更改静态 Pod 目录下面对应的 YAML 文件即可：</p>
+
+<pre><code class="language-shell">$ ls /etc/kubernetes/manifests/
+etcd.yaml  kube-apiserver.yaml  kube-controller-manager.yaml  kube-scheduler.yaml
+</code></pre>
+
+<p>将 kube-scheduler.yaml 文件中<code>-command</code>的<code>--address</code>地址更改成<code>0.0.0.0</code>：</p>
+
+<pre><code class="language-yaml">containers:
+- command:
+- kube-scheduler
+- --leader-elect=true
+- --kubeconfig=/etc/kubernetes/scheduler.conf
+- --address=0.0.0.0
+</code></pre>
+
+<p>修改完成后我们将该文件从当前文件夹中移除，隔一会儿再移回该目录，就可以自动更新了，然后再去看 prometheus 中 kube-scheduler 这个 target 是否已经正常了：</p>
+
+<p><img src="https://www.qikqiak.com/img/posts/promethues-operator-kube-scheduler.png" alt="promethues-operator-kube-scheduler" /></p>
+
+<p>大家可以按照上面的方法尝试去修复下 kube-controller-manager 组件的监控。</p>
+
+<p>上面的监控数据配置完成后，现在我们可以去查看下 grafana 下面的 dashboard，同样使用上面的 NodePort 访问即可，第一次登录使用 admin:admin 登录即可，进入首页后，可以发现已经和我们的 Prometheus 数据源关联上了，正常来说可以看到一些监控图表了：</p>
+
+<p><img src="https://www.qikqiak.com/img/posts/promethues-operator-grafana.png" alt="promethues-operator-grafana" /></p>
+
+<p>下节课我们再来和大家介绍怎样来完全自定义一个 ServiceMonitor 以及 AlertManager 相关的配置。</p>
+
+<h2 id="推荐">推荐</h2>
+
+<p>最后打个广告，给大家推荐一个本人精心打造的一个精品课程，现在限时优惠中：<a href="https://youdianzhishi.com/course/6n8xd6/">从 Docker 到 Kubernetes 进阶</a>
+<a href="https://youdianzhishi.com/course/6n8xd6/"><img src="http://sdn.haimaxy.com/covers/2018/4/21/c4082e0f09c746aa848279a2567cffed.png" alt="从 Docker 到 Kubernetes 进阶" /></a></p>
+
+<p>扫描下面的二维码(或微信搜索<code>k8s技术圈</code>)关注我们的微信公众帐号，在微信公众帐号中回复 <strong>加群</strong> 即可加入到我们的 kubernetes 讨论群里面共同学习。
+<img src="https://www.qikqiak.com/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg" alt="qrcode" /></p>
+        
+          <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+        
+      </article>
+
+      
+        
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/grafana-usage-in-k8s/">Grafana 在 Kubernetes 中的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/alertmanager-of-prometheus-in-practice/">Prometheus报警AlertManager实战</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-monitor-prometheus-grafana/">Kubernetes使用Prometheus搭建监控平台</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/manual-install-high-available-kubernetes-cluster/">手动搭建高可用的kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/update-prometheus-2-in-kubernetes/">Kubernetes 下升级Prometheus2.0</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-api-resources-group-and-version/">Kubernetes API 资源使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/automatic-kubernetes-ingress-https-with-lets-encrypt/">Kubernetes Ingress 自动化 HTTPS</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-dashboard-wayne-usage/">360 开源 K8S Dashboard Wayne 的安装使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/course-11-promotion/">双11优点知识课程优惠活动</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/promethues-monitor-k8s-nodes/">监控 Kubernetes 集群节点</a></li>
+    
+</ul>
+
+      
+
+      
+      <ul class="pager blog-pager">
+        
+          <li class="previous">
+            <a href="https://www.qikqiak.com/post/docker-image-explore-tool-dive/" data-toggle="tooltip" data-placement="top" title="Docker 镜像分析工具 Dive(附视频)">&larr; Previous Post</a>
+          </li>
+        
+        
+      </ul>
+      
+
+      
+
+      
+      <div id="git-comments"></div>
+      <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+      <script src="https://www.qikqiak.com/js/gitment.browser.js"></script>
+      <script>
+      var gitment = new Gitment({
+        id: 'install-prometheus-operator',
+        title: 'Prometheus Operator 的安装使用',
+        owner: 'cnych',
+        repo: 'blog',
+        oauth: {
+          client_id: 'bdb76dbb2e9d0786e350',
+          client_secret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        }
+      })
+      gitment.render('git-comments')
+      </script>
+      
+
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2018
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.41</a> powered &nbsp;&bull;&nbsp; Theme by <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a> adapted to <a href="https://github.com/cnych/qikqiak-blog">qikqiak-blog</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+<script src="https://www.qikqiak.com/js/jquery-1.11.2.min.js"></script>
+<script src="https://www.qikqiak.com/js/bootstrap.min.js"></script>
+<script src="https://www.qikqiak.com/js/main.min.js"></script>
+<script src="https://www.qikqiak.com/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script src="https://www.qikqiak.com/js/prism.js?t=123"></script>
+
+<script src="https://www.qikqiak.com/js/reward.js"></script>
+
+
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+  </body>
+</html>
+

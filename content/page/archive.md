@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [Prometheus Operator 初体验](https://www.qikqiak.com/post/first-use-prometheus-operator)
  * [Docker 镜像分析工具 Dive(附视频)](https://www.qikqiak.com/post/docker-image-explore-tool-dive)
  * [Kubernetes API 资源使用](https://www.qikqiak.com/post/k8s-api-resources-group-and-version)
  * [Kubernetes Ingress 自动化 HTTPS](https://www.qikqiak.com/post/automatic-kubernetes-ingress-https-with-lets-encrypt)
