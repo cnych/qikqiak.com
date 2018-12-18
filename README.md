@@ -12,7 +12,8 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
- * [Grafana 日志聚合工具 Loki](https://www.qikqiak.com/grafana-log-tool-loki)
+ * [Prometheus Operator 监控 etcd 集群](https://www.qikqiak.com/post/prometheus-operator-monitor-etcd)
+ * [Grafana 日志聚合工具 Loki](https://www.qikqiak.com/post/grafana-log-tool-loki)
  * [Prometheus Operator 初体验](https://www.qikqiak.com/post/first-use-prometheus-operator)
  * [Docker 镜像分析工具 Dive(附视频)](https://www.qikqiak.com/post/docker-image-explore-tool-dive)
  * [Kubernetes API 资源使用](https://www.qikqiak.com/post/k8s-api-resources-group-and-version)
