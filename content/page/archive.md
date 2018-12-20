@@ -8,6 +8,8 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [Prometheus Operator 高级配置](https://www.qikqiak.com/post/prometheus-operator-advance)
+ * [Prometheus Operator 自定义报警](https://www.qikqiak.com/post/prometheus-operator-custom-alert)
  * [Prometheus Operator 监控 etcd 集群](https://www.qikqiak.com/post/prometheus-operator-monitor-etcd)
  * [Grafana 日志聚合工具 Loki](https://www.qikqiak.com/post/grafana-log-tool-loki)
  * [Prometheus Operator 初体验](https://www.qikqiak.com/post/first-use-prometheus-operator)
