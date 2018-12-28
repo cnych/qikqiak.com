@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [kubernetes 日志架构](https://www.qikqiak.com/post/kubernetes-logs-architecture)
  * [Prometheus Operator 高级配置](https://www.qikqiak.com/post/prometheus-operator-advance)
  * [Prometheus Operator 自定义报警](https://www.qikqiak.com/post/prometheus-operator-custom-alert)
  * [Prometheus Operator 监控 etcd 集群](https://www.qikqiak.com/post/prometheus-operator-monitor-etcd)
