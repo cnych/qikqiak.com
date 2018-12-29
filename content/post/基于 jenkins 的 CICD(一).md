@@ -153,11 +153,10 @@ metadata:
 
 ---
 
-kind: Role
+kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: jenkins2
-  namespace: kube-ops
 rules:
   - apiGroups: ["extensions", "apps"]
     resources: ["deployments"]
@@ -180,13 +179,12 @@ rules:
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: RoleBinding
+kind: ClusterRoleBinding
 metadata:
   name: jenkins2
-  namespace: kube-ops
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: Role
+  kind: ClusterRole
   name: jenkins2
 subjects:
   - kind: ServiceAccount
