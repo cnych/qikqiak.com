@@ -109,3 +109,8 @@
  * [给博客加上HTTPS](https://www.qikqiak.com/post/make-https-blog/)
  * [用awk做基本运算](https://www.qikqiak.com/post/awk-base-compute/)
  * [Nginx中如何设置301跳转](https://www.qikqiak.com/post/nginx-301-redirect/)
+
+
+## 博客Demo：
+![demo](https://ws4.sinaimg.cn/large/006tNc79gy1fytaagykj1j30u042de88.jpg)
+
