@@ -9,7 +9,7 @@ bigimg: [{src: "/img/posts/photo-1544436595-18448ba66450.jpeg", desc: "Cold lake
 category: "kubernetes"
 ---
 
-前面的课程中我们学习了[用自定义的方式来对 Kubernetes 集群进行监控](https://www.qikqiak.com/k8s-book/docs/52.Prometheus%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8.html)，但是还是有一些缺陷，比如 Prometheus、AlertManager 这些组件服务本身的高可用，当然我们也完全可以用自定义的方式来实现这些需求，我们也知道 Promethues 在代码上就已经对 Kubernetes 有了原生的支持，可以通过服务发现的形式来自动监控集群，因此我们可以使用另外一种更加高级的方式来部署 Prometheus：`Operator` 框架。
+前面的课程中我们学习了[用自定义的方式来对 Kubernetes 集群进行监控](https://www.qikqiak.com/k8s-book/docs/52.Prometheus%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8.html)，但是还是有一些缺陷，比如 Prometheus、AlertManager 这些组件服务本身的高可用，当然我们也完全可以用自定义的方式来实现这些需求，我们也知道 Prometheus 在代码上就已经对 Kubernetes 有了原生的支持，可以通过服务发现的形式来自动监控集群，因此我们可以使用另外一种更加高级的方式来部署 Prometheus：`Operator` 框架。
 
 <!--more-->
 
@@ -218,14 +218,14 @@ containers:
 
 修改完成后我们将该文件从当前文件夹中移除，隔一会儿再移回该目录，就可以自动更新了，然后再去看 prometheus 中 kube-scheduler 这个 target 是否已经正常了：
 
-![promethues-operator-kube-scheduler](/img/posts/promethues-operator-kube-scheduler.png)
+![prometheus-operator-kube-scheduler](/img/posts/promethues-operator-kube-scheduler.png)
 
 
 大家可以按照上面的方法尝试去修复下 kube-controller-manager 组件的监控。
 
 上面的监控数据配置完成后，现在我们可以去查看下 grafana 下面的 dashboard，同样使用上面的 NodePort 访问即可，第一次登录使用 admin:admin 登录即可，进入首页后，可以发现已经和我们的 Prometheus 数据源关联上了，正常来说可以看到一些监控图表了：
 
-![promethues-operator-grafana](/img/posts/promethues-operator-grafana.png)
+![prometheus-operator-grafana](/img/posts/promethues-operator-grafana.png)
 
 下节课我们再来和大家介绍怎样来完全自定义一个 ServiceMonitor 以及 AlertManager 相关的配置。
 

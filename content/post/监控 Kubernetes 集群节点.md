@@ -3,14 +3,14 @@ title: 监控 Kubernetes 集群节点
 subtitle: 使用 Prometheus 监控 Kubernetes 集群节点
 date: 2018-11-05
 slug: promethues-monitor-k8s-nodes
-tags: ["promethues", "monitor", "kubernetes"]
-keywords: ["kubernetes", "监控", "promethues"]
+tags: ["prometheus", "monitor", "kubernetes"]
+keywords: ["kubernetes", "监控", "prometheus"]
 gitcomment: true
 notoc: true
 category: "kubernetes"
 ---
 
-[![promethues monitor k8s node](/img/posts/promethus-k8s-node-cover.png)](https://mp.weixin.qq.com/s/JAOW9Zc8FSPk4xtIXVruag)
+[![prometheus monitor k8s node](/img/posts/promethus-k8s-node-cover.png)](https://mp.weixin.qq.com/s/JAOW9Zc8FSPk4xtIXVruag)
 [上节课我们和大家学习了怎样用 Promethues 来监控 Kubernetes 集群中的应用](https://www.qikqiak.com/post/promethues-monitor-k8s-app/)，但是对于 Kubernetes 集群本身的监控也是非常重要的，我们需要时时刻刻了解集群的运行状态。
 
 对于集群的监控一般我们需要考虑以下几个方面：

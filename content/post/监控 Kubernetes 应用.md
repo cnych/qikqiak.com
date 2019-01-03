@@ -3,8 +3,8 @@ title: Kubernetes 应用监控
 subtitle: 使用 Prometheus 监控 Kubernetes 集群应用
 date: 2018-10-28
 slug: promethues-monitor-k8s-app
-tags: ["promethues", "monitor", "kubernetes"]
-keywords: ["kubernetes", "监控", "promethues"]
+tags: ["prometheus", "monitor", "kubernetes"]
+keywords: ["kubernetes", "监控", "prometheus"]
 gitcomment: true
 notoc: true
 category: "kubernetes"
