@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [办公环境下 kubernetes 网络互通方案](https://www.qikqiak.com/post/office-env-k8s-network)
  * [Prometheus 删除数据指标](https://www.qikqiak.com/post/prometheus-delete-metrics)
  * [kubernetes 日志架构](https://www.qikqiak.com/post/kubernetes-logs-architecture)
  * [Prometheus Operator 高级配置](https://www.qikqiak.com/post/prometheus-operator-advance)
