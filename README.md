@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [在 Kubernetes 上搭建 EFK 日志收集系统](https://www.qikqiak.com/post/install-efk-stack-on-k8s)
  * [Kubernetes CKA 实训视频课程](https://www.qikqiak.com/post/k8s-cka-course)
  * [办公环境下 kubernetes 网络互通方案](https://www.qikqiak.com/post/office-env-k8s-network)
  * [Prometheus 删除数据指标](https://www.qikqiak.com/post/prometheus-delete-metrics)
