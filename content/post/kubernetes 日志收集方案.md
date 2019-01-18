@@ -123,4 +123,4 @@ fluentd-pilot     4         4         4         4            4           <none> 
 
 ## EFK 方案
 
-TODO
+参考文章：[在 Kubernetes 上搭建 EFK 日志收集系统](/post/install-efk-stack-on-k8s/)
