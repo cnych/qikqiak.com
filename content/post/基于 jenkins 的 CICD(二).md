@@ -35,6 +35,7 @@ Jenkins Pipeline 有几个核心概念：
 
 * 新建 Job：在 Web UI 中点击 New Item -> 输入名称：pipeline-demo -> 选择下面的 Pipeline -> 点击 OK
 * 配置：在最下方的 Pipeline 区域输入如下 Script 脚本，然后点击保存。
+
 ```shell
 node {
     stage('Clone') {
@@ -61,7 +62,8 @@ node {
 > 如果大家对 Pipeline 语法不是特别熟悉的，可以前往输入脚本的下面的链接[Pipeline Syntax](http://k8s.haimaxy.com:30001/job/pipeline-demo/pipeline-syntax/)中进行查看，这里有很多关于 Pipeline 语法的介绍，也可以自动帮我们生成一些脚本。
 
 ## 在 Slave 中构建任务
-上面我们创建了一个简单的 Pipeline 任务，但是我们可以看到这个任务并没有在 Jenkins 的 Slave 中运行，那么如何让我们的任务跑在 Slave 中呢？还记得上节课我们在添加 Slave Pod 的时候，一定要记住添加的 label 吗？没错，我们就需要用到这个 label，我们重新编辑上面创建的 Pipeline 脚本，给 node 添加一个 label 属性，如下：
+上面我们创建了一个简单的 Pipeline 任务，但是我们可以看到这个任务并没有在 Jenkins 的 Slave 中运行，那么如何让我们的任务跑在 Slave 中呢？还记得上节课我们在添加 Slave Pod 的时候，一定要记住添加的 label 吗？没错，我们就需要用到这个 label，我们重新编辑上面创建的 Pipeline 脚本，给 node 添加一个 label 属性，如下：
+
 ```shell
 node('haimaxy-jnlp') {
     stage('Clone') {
@@ -79,14 +81,14 @@ node('haimaxy-jnlp') {
 }
 ```
 
-我们这里只是给 node 添加了一个 haimaxy-jnlp 这样的一个label，然后我们保存，构建之前查看下 kubernetes 集群中的 Pod：
+我们这里只是给 node 添加了一个 haimaxy-jnlp 这样的一个label，然后我们保存，构建之前查看下 kubernetes 集群中的 Pod：
 ```shell
 $ kubectl get pods -n kube-ops
 NAME                       READY     STATUS              RESTARTS   AGE
 jenkins-7c85b6f4bd-rfqgv   1/1       Running             4          6d
 ```
 
-然后重新触发立刻构建：
+然后重新触发立刻构建：
 ```shell
 $ kubectl get pods -n kube-ops
 NAME                       READY     STATUS    RESTARTS   AGE
@@ -94,7 +96,7 @@ jenkins-7c85b6f4bd-rfqgv   1/1       Running   4          6d
 jnlp-0hrrz                 1/1       Running   0          23s
 ```
 
-我们发现多了一个名叫**jnlp-0hrrz**的 Pod 正在运行，隔一会儿这个 Pod 就不再了：
+我们发现多了一个名叫**jnlp-0hrrz**的 Pod 正在运行，隔一会儿这个 Pod 就不再了：
 ```
 $ kubectl get pods -n kube-ops
 NAME                       READY     STATUS    RESTARTS   AGE
@@ -104,25 +106,25 @@ jenkins-7c85b6f4bd-rfqgv   1/1       Running   4          6d
 这也证明我们的 Job 构建完成了，同样回到 Jenkins 的 Web UI 界面中查看 Console Output，可以看到如下的信息：
 
 ![pipeline demo2](/img/posts/pipeline-demo2.png)
-是不是也证明我们当前的任务在跑在上面动态生成的这个 Pod 中，也符合我们的预期。我们回到 [Job 的主界面](http://k8s.haimaxy.com:30001/job/pipeline-demo/)，也可以看到大家可能比较熟悉的 Stage View 界面：
+是不是也证明我们当前的任务在跑在上面动态生成的这个 Pod 中，也符合我们的预期。我们回到 [Job 的主界面](http://k8s.haimaxy.com:30001/job/pipeline-demo/)，也可以看到大家可能比较熟悉的 Stage View 界面：
 
 ![pipeline demo3](/img/posts/pipeline-demo3.png)
 
 
 ## 部署 Kubernetes 应用
-上面我们已经知道了如何在 Jenkins Slave 中构建任务了，那么如何来部署一个原生的 Kubernetes 应用呢？
-要部署 Kubernetes 应用，我们就得对我们之前部署应用的流程要非常熟悉才行，我们之前的流程是怎样的：
+上面我们已经知道了如何在 Jenkins Slave 中构建任务了，那么如何来部署一个原生的 Kubernetes 应用呢？
+要部署 Kubernetes 应用，我们就得对我们之前部署应用的流程要非常熟悉才行，我们之前的流程是怎样的：
 
 * 编写代码
 * 测试
 * 编写 Dockerfile
 * 构建打包 Docker 镜像
-* 推送 Docker 镜像到仓库
+* 推送 Docker 镜像到仓库
 * 编写 Kubernetes YAML 文件
 * 更改 YAML 文件中 Docker 镜像 TAG
-* 利用 kubectl 工具部署应用
+* 利用 kubectl 工具部署应用
 
-我们之前在 Kubernetes 环境中部署一个原生应用的流程应该基本上是上面这些流程吧？现在我们就需要把上面这些流程放入 Jenkins 中来自动帮我们完成(当然编码除外)，从测试到更新 YAML 文件属于 CI 流程，后面部署属于 CD 的流程。如果按照我们上面的示例，我们现在要来编写一个 Pipeline 的脚本，应该怎么编写呢？
+我们之前在 Kubernetes 环境中部署一个原生应用的流程应该基本上是上面这些流程吧？现在我们就需要把上面这些流程放入 Jenkins 中来自动帮我们完成(当然编码除外)，从测试到更新 YAML 文件属于 CI 流程，后面部署属于 CD 的流程。如果按照我们上面的示例，我们现在要来编写一个 Pipeline 的脚本，应该怎么编写呢？
 ```shell
 node('haimaxy-jnlp') {
     stage('Clone') {
@@ -146,18 +148,18 @@ node('haimaxy-jnlp') {
 }
 ```
 
-这里我们来将一个简单 golang 程序，部署到 kubernetes 环境中，代码链接：[https://github.com/cnych/jenkins-demo](https://github.com/cnych/jenkins-demo)。如果按照之前的示例，我们是不是应该像这样来编写 Pipeline 脚本：
+这里我们来将一个简单 golang 程序，部署到 kubernetes 环境中，代码链接：[https://github.com/cnych/jenkins-demo](https://github.com/cnych/jenkins-demo)。如果按照之前的示例，我们是不是应该像这样来编写 Pipeline 脚本：
 
 * 第一步，clone 代码，这个没得说吧
 * 第二步，进行测试，如果测试通过了才继续下面的任务
 * 第三步，由于 Dockerfile 基本上都是放入源码中进行管理的，所以我们这里就是直接构建 Docker 镜像了
 * 第四步，镜像打包完成，就应该推送到镜像仓库中吧
-* 第五步，镜像推送完成，是不是需要更改 YAML 文件中的镜像 TAG 为这次镜像的 TAG
-* 第六步，万事俱备，只差最后一步，使用 kubectl 命令行工具进行部署了
+* 第五步，镜像推送完成，是不是需要更改 YAML 文件中的镜像 TAG 为这次镜像的 TAG
+* 第六步，万事俱备，只差最后一步，使用 kubectl 命令行工具进行部署了
 
 到这里我们的整个 CI/CD 的流程是不是就都完成了。
 
-接下来我们就来对每一步具体要做的事情进行详细描述就行了：
+接下来我们就来对每一步具体要做的事情进行详细描述就行了：
 
 #### 第一步，Clone 代码
 ```shell
@@ -177,7 +179,7 @@ stage('Build') {
     sh "docker build -t cnych/jenkins-demo:${build_tag} ."
 }
 ```
-我们平时构建的时候是不是都是直接使用`docker build`命令进行构建就行了，那么这个地方呢？我们上节课给大家提供的 Slave Pod 的镜像里面是不是采用的 `Docker In Docker` 的方式，也就是说我们也可以直接在 Slave 中使用 docker build 命令，所以我们这里直接使用 sh 直接执行 docker build 命令即可，但是镜像的 tag 呢？如果我们使用镜像 tag，则每次都是 latest 的 tag，这对于以后的排查或者回滚之类的工作会带来很大麻烦，我们这里采用和**git commit**的记录为镜像的 tag，这里有一个好处就是镜像的 tag 可以和 git 提交记录对应起来，也方便日后对应查看。但是由于这个 tag 不只是我们这一个 stage 需要使用，下一个推送镜像是不是也需要，所以这里我们把这个 tag 编写成一个公共的参数，把它放在 Clone 这个 stage 中，这样一来我们前两个 stage 就变成了下面这个样子：
+我们平时构建的时候是不是都是直接使用`docker build`命令进行构建就行了，那么这个地方呢？我们上节课给大家提供的 Slave Pod 的镜像里面是不是采用的 `Docker In Docker` 的方式，也就是说我们也可以直接在 Slave 中使用 docker build 命令，所以我们这里直接使用 sh 直接执行 docker build 命令即可，但是镜像的 tag 呢？如果我们使用镜像 tag，则每次都是 latest 的 tag，这对于以后的排查或者回滚之类的工作会带来很大麻烦，我们这里采用和**git commit**的记录为镜像的 tag，这里有一个好处就是镜像的 tag 可以和 git 提交记录对应起来，也方便日后对应查看。但是由于这个 tag 不只是我们这一个 stage 需要使用，下一个推送镜像是不是也需要，所以这里我们把这个 tag 编写成一个公共的参数，把它放在 Clone 这个 stage 中，这样一来我们前两个 stage 就变成了下面这个样子：
 ```shell
 stage('Clone') {
     echo "1.Clone Stage"
@@ -195,9 +197,9 @@ stage('Build') {
 #### 第四步，推送镜像
 镜像构建完成了，现在我们就需要将此处构建的镜像推送到镜像仓库中去，当然如果你有私有镜像仓库也可以，我们这里还没有自己搭建私有的仓库，所以直接使用 docker hub 即可。
 
-> 在后面的课程中我们学习了私有仓库 Harbor 的搭建后，再来更改成 Harbor 仓库
+> 在后面的课程中我们学习了私有仓库 Harbor 的搭建后，再来更改成 Harbor 仓库
 
-我们知道 docker hub 是公共的镜像仓库，任何人都可以获取上面的镜像，但是要往上推送镜像我们就需要用到一个帐号了，所以我们需要提前注册一个 docker hub 的帐号，记住用户名和密码，我们这里需要使用。正常来说我们在本地推送 docker 镜像的时候，是不是需要使用**docker login**命令，然后输入用户名和密码，认证通过后，就可以使用**docker push**命令来推送本地的镜像到 docker hub 上面去了，如果是这样的话，我们这里的 Pipeline 是不是就该这样写了：
+我们知道 docker hub 是公共的镜像仓库，任何人都可以获取上面的镜像，但是要往上推送镜像我们就需要用到一个帐号了，所以我们需要提前注册一个 docker hub 的帐号，记住用户名和密码，我们这里需要使用。正常来说我们在本地推送 docker 镜像的时候，是不是需要使用**docker login**命令，然后输入用户名和密码，认证通过后，就可以使用**docker push**命令来推送本地的镜像到 docker hub 上面去了，如果是这样的话，我们这里的 Pipeline 是不是就该这样写了：
 ```shell
 stage('Push') {
     echo "4.Push Docker Image Stage"
@@ -206,7 +208,7 @@ stage('Push') {
 }
 ```
 
-如果我们只是在 Jenkins 的 Web UI 界面中来完成这个任务的话，我们这里的 Pipeline 是可以这样写的，但是我们是不是推荐使用 Jenkinsfile 的形式放入源码中进行版本管理，这样的话我们直接把 docker 仓库的用户名和密码暴露给别人这样很显然是非常非常不安全的，更何况我们这里使用的是 github 的公共代码仓库，所有人都可以直接看到我们的源码，所以我们应该用一种方式来隐藏用户名和密码这种私密信息，幸运的是 Jenkins 为我们提供了解决方法。
+如果我们只是在 Jenkins 的 Web UI 界面中来完成这个任务的话，我们这里的 Pipeline 是可以这样写的，但是我们是不是推荐使用 Jenkinsfile 的形式放入源码中进行版本管理，这样的话我们直接把 docker 仓库的用户名和密码暴露给别人这样很显然是非常非常不安全的，更何况我们这里使用的是 github 的公共代码仓库，所有人都可以直接看到我们的源码，所以我们应该用一种方式来隐藏用户名和密码这种私密信息，幸运的是 Jenkins 为我们提供了解决方法。
 
 在首页点击 Credentials -> Stores scoped to Jenkins 下面的 Jenkins -> Global credentials (unrestricted) -> 左侧的 Add Credentials：添加一个 Username with password 类型的认证信息，如下：
 
@@ -224,11 +226,11 @@ stage('Push') {
 }
 ```
 
-注意我们这里在 stage 中使用了一个新的函数**withCredentials**，其中有一个`credentialsId`值就是我们刚刚创建的 ID 值，然后我们就可以在脚本中直接使用这里两个变量值来直接替换掉之前的登录 docker hub 的用户名和密码，现在是不是就很安全了，我只是传递进去了两个变量而已，别人并不知道我的真正用户名和密码，只有我们自己的 Jenkins 平台上添加的才知道。
+注意我们这里在 stage 中使用了一个新的函数**withCredentials**，其中有一个`credentialsId`值就是我们刚刚创建的 ID 值，然后我们就可以在脚本中直接使用这里两个变量值来直接替换掉之前的登录 docker hub 的用户名和密码，现在是不是就很安全了，我只是传递进去了两个变量而已，别人并不知道我的真正用户名和密码，只有我们自己的 Jenkins 平台上添加的才知道。
 
 
 #### 第五步，更改 YAML
-上面我们已经完成了镜像的打包、推送的工作，接下来我们是不是应该更新 Kubernetes 系统中应用的镜像版本了，当然为了方便维护，我们都是用 YAML 文件的形式来编写应用部署规则，比如我们这里的 YAML 文件：(k8s.yaml)
+上面我们已经完成了镜像的打包、推送的工作，接下来我们是不是应该更新 Kubernetes 系统中应用的镜像版本了，当然为了方便维护，我们都是用 YAML 文件的形式来编写应用部署规则，比如我们这里的 YAML 文件：(k8s.yaml)
 ```yaml
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -246,7 +248,7 @@ spec:
         name: jenkins-demo
 ```
 
-对于 Kubernetes 比较熟悉的同学，对上面这个 YAML 文件一定不会陌生，我们使用一个 Deployment 资源对象来管理 Pod，该 Pod 使用的就是我们上面推送的镜像，唯一不同的地方是 Docker 镜像的 tag 不是我们平常见的具体的 tag，而是一个<BUILD_TAG> 的标识，实际上如果我们将这个标识替换成上面的 Docker 镜像的 tag，是不是就是最终我们本次构建需要使用到的镜像？怎么替换呢？其实也很简单，我们使用一个**sed**命令就可以实现了：
+对于 Kubernetes 比较熟悉的同学，对上面这个 YAML 文件一定不会陌生，我们使用一个 Deployment 资源对象来管理 Pod，该 Pod 使用的就是我们上面推送的镜像，唯一不同的地方是 Docker 镜像的 tag 不是我们平常见的具体的 tag，而是一个<BUILD_TAG> 的标识，实际上如果我们将这个标识替换成上面的 Docker 镜像的 tag，是不是就是最终我们本次构建需要使用到的镜像？怎么替换呢？其实也很简单，我们使用一个**sed**命令就可以实现了：
 ```shell
 stage('YAML') {
     echo "5. Change YAML File Stage"
@@ -258,7 +260,7 @@ stage('YAML') {
 
 
 #### 第六步，部署
-Kubernetes 应用的 YAML 文件已经更改完成了，之前我们手动的环境下，是不是直接使用 kubectl apply 命令就可以直接更新应用了啊？当然我们这里只是写入到了 Pipeline 里面，思路都是一样的：
+Kubernetes 应用的 YAML 文件已经更改完成了，之前我们手动的环境下，是不是直接使用 kubectl apply 命令就可以直接更新应用了啊？当然我们这里只是写入到了 Pipeline 里面，思路都是一样的：
 ```shell
 stage('Deploy') {
     echo "6. Deploy Stage"
@@ -270,13 +272,13 @@ stage('Deploy') {
 
 
 ## 人工确认
-理论上来说我们上面的6个步骤其实已经完成了，但是一般在我们的实际项目实践过程中，可能还需要一些人工干预的步骤，这是为什么呢？比如我们提交了一次代码，测试也通过了，镜像也打包上传了，但是这个版本并不一定就是要立刻上线到生产环境的，对吧，我们可能需要将该版本先发布到测试环境、QA 环境、或者预览环境之类的，总之直接就发布到线上环境去还是挺少见的，所以我们需要增加人工确认的环节，一般都是在 CD 的环节才需要人工干预，比如我们这里的最后两步，我们就可以在前面加上确认，比如：
+理论上来说我们上面的6个步骤其实已经完成了，但是一般在我们的实际项目实践过程中，可能还需要一些人工干预的步骤，这是为什么呢？比如我们提交了一次代码，测试也通过了，镜像也打包上传了，但是这个版本并不一定就是要立刻上线到生产环境的，对吧，我们可能需要将该版本先发布到测试环境、QA 环境、或者预览环境之类的，总之直接就发布到线上环境去还是挺少见的，所以我们需要增加人工确认的环节，一般都是在 CD 的环节才需要人工干预，比如我们这里的最后两步，我们就可以在前面加上确认，比如：
 ```shell
 stage('YAML') {
     echo "5. Change YAML File Stage"
     def userInput = input(
         id: 'userInput',
-        message: 'Choose a deploy environment',
+        message: 'Choose a deploy environment',
         parameters: [
             [
                 $class: 'ChoiceParameterDefinition',
@@ -333,7 +335,7 @@ node('haimaxy-jnlp') {
         echo "5. Deploy Stage"
         def userInput = input(
             id: 'userInput',
-            message: 'Choose a deploy environment',
+            message: 'Choose a deploy environment',
             parameters: [
                 [
                     $class: 'ChoiceParameterDefinition',
@@ -359,10 +361,10 @@ node('haimaxy-jnlp') {
 现在我们在 Jenkins Web UI 中重新配置 jenkins-demo 这个任务，将上面的脚本粘贴到 Script 区域，重新保存，然后点击左侧的 Build Now，触发构建，然后过一会儿我们就可以看到 Stage View 界面出现了暂停的情况：
 
 ![pipeline demo5](/img/posts/pipeline-demo5.png)
-这就是我们上面 Deploy 阶段加入了人工确认的步骤，所以这个时候构建暂停了，需要我们人为的确认下，比如我们这里选择 QA，然后点击 Proceed，就可以继续往下走了，然后构建就成功了，我们在 Stage View 的 Deploy 这个阶段可以看到如下的一些日志信息：
+这就是我们上面 Deploy 阶段加入了人工确认的步骤，所以这个时候构建暂停了，需要我们人为的确认下，比如我们这里选择 QA，然后点击 Proceed，就可以继续往下走了，然后构建就成功了，我们在 Stage View 的 Deploy 这个阶段可以看到如下的一些日志信息：
 
 ![pipeline demo6](/img/posts/pipeline-demo6.png)
-打印出来了 QA，和我们刚刚的选择是一致的，现在我们去 Kubernetes 集群中观察下部署的应用：
+打印出来了 QA，和我们刚刚的选择是一致的，现在我们去 Kubernetes 集群中观察下部署的应用：
 ```shell
 $ kubectl get deployment -n kube-ops
 NAME           DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
@@ -376,7 +378,7 @@ $ kubectl logs jenkins-demo-f6f4f646b-2zdrq -n kube-ops
 Hello, Kubernetes！I'm from Jenkins CI！
 ```
 
-我们可以看到我们的应用已经正确的部署到了 Kubernetes 的集群环境中了。
+我们可以看到我们的应用已经正确的部署到了 Kubernetes 的集群环境中了。
 
 
 本文节选自视频教程[从 Docker 到 Kubernetes 进阶](https://www.haimaxy.com/course/6n8xd6/)
