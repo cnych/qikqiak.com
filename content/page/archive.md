@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [Istio 实训免费视频课程](https://www.qikqiak.com/post/k8s-istio-course)
  * [在 Kubernetes 上搭建 EFK 日志收集系统](https://www.qikqiak.com/post/install-efk-stack-on-k8s)
  * [Kubernetes CKA 实训视频课程](https://www.qikqiak.com/post/k8s-cka-course)
  * [办公环境下 kubernetes 网络互通方案](https://www.qikqiak.com/post/office-env-k8s-network)
