@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [Kubernetes 部署策略详解](https://www.qikqiak.com/post/k8s-deployment-strategies)
  * [Helm monitor 插件(附视频)](https://www.qikqiak.com/post/helm-monitor-plugin)
  * [Istio 实训免费视频课程](https://www.qikqiak.com/post/k8s-istio-course)
  * [在 Kubernetes 上搭建 EFK 日志收集系统](https://www.qikqiak.com/post/install-efk-stack-on-k8s)
