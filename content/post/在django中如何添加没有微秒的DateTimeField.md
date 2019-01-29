@@ -154,3 +154,6 @@ Records: 156  Duplicates: 0  Warnings: 0
 
 这样数据重复的 BUG 就解决了。
 
+> 参考链接：[https://stackoverflow.com/questions/46539755/how-to-add-datetimefield-in-django-without-microsecond](https://stackoverflow.com/questions/46539755/how-to-add-datetimefield-in-django-without-microsecond)
+
+
