@@ -81,6 +81,7 @@ nopager: true
  * [Kubernetes使用Prometheus搭建监控平台](https://www.qikqiak.com/post/kubernetes-monitor-prometheus-grafana/)
 
 #### Python
+ * [在 Django 中如何添加没有微秒的 DateTimeField 属性](https://www.qikqiak.com/post/how-to-add-datetimefield-in-django-without-microsecond)
  * [Mac 下安装 cryptography 失败](https://www.qikqiak.com/post/install-cryptography-failed-in-mac/)
  * [TDD开发容器化的Python微服务应用(二)](https://www.qikqiak.com/post/tdd-develop-python-microservice-app-part2/)
  * [TDD开发容器化的Python微服务应用(一)](https://www.qikqiak.com/post/tdd-develop-python-microservice-app/)
