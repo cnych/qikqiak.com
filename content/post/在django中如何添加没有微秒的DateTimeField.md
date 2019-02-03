@@ -13,14 +13,14 @@ category: "django"
 今天在项目中遇到一个`Django`的大坑，一个很简单的分页问题，造成了数据重复。最后排查发现是`DateTimeField` 属性引起的。
 
 下面描述下问题，下面是我需要用到的一个 Task Model 基本定义：
+<!--more-->
+
 ```python
 class Task(models.Model):
     # ...... 省略了其他字段
     title = models.CharField(max_length=256, verbose_name=u'标题')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=u'创建时间')
 ```
-
-<!--more-->
 
 ### 问题描述
 
