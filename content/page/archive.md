@@ -97,6 +97,7 @@ nopager: true
  * [用python处理csv文件](https://www.qikqiak.com/post/python-process-csv-file/)
 
 #### 课程
+ * [小白入行 AI 的必修课](https://www.qikqiak.com/post/post/ai-start-course)
  * [圣诞元旦课程优惠活动](https://www.qikqiak.com/post/shengdan-promotion)
  * [双11优点知识课程优惠活动](https://www.qikqiak.com/post/course-11-promotion)
  * [国庆 K8S 课程特别活动](https://www.qikqiak.com/post/k8s-course-promotion)
