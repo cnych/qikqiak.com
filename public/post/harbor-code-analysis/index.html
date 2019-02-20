@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>Harbor 源码浅析-www.qikqiak.com|阳明的博客|Kubernetes|Docker|istio|Python|Golang|Cloud Native</title>
+  <meta property="og:title" content="Harbor 源码浅析" />
+  <meta name="twitter:title" content="Harbor 源码浅析" />
+
+  <meta name="description" content="
+
+Harbor 是一个CNCF基金会托管的开源的可信的云原生docker registry项目，可以用于存储、签名、扫描镜像内容，Harbor 通过添加一些常用的功能如安全性、身份权限管理等来扩展 docker registry 项目，此外还支持在 registry 之间复制镜像，还提供更加高级的安全功能，如用户管理、访问控制和活动审计等，在新版本中还添加了Helm仓库托管的支持。">
+  <meta property="og:description" content="
+
+Harbor 是一个CNCF基金会托管的开源的可信的云原生docker registry项目，可以用于存储、签名、扫描镜像内容，Harbor 通过添加一些常用的功能如安全性、身份权限管理等来扩展 docker registry 项目，此外还支持在 registry 之间复制镜像，还提供更加高级的安全功能，如用户管理、访问控制和活动审计等，在新版本中还添加了Helm仓库托管的支持。">
+  <meta name="twitter:description" content="
+
+Harbor 是一个CNCF基金会托管的开源的可信的云原生docker registry项目，可以用于存储、签名、扫描镜像内容，Harbor 通过添加一些常用的功能如安全性、身份权限管理等来扩展 docker registry 项目，此外还支持在 registry 之间复制镜像，还提供更加高级的安全功能，如用户管理、访问控制和活动审计等，在新版本中还添加了Helm仓库托管的支持。">
+  <meta name="author" content=""/>
+  <link href='https://www.qikqiak.com/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/harbor-code-analysis/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.53" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/harbor-code-analysis/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=126" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/pygment_highlights.css" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/highlight.min.css" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/prism.css?t=123" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/search.css" />
+  
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/reward.css" />
+  
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="harbor, docker, kubernetes, 源码, registry">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/">阳明的博客</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Home" href="https://www.qikqiak.com/">Home</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">Categories</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/page/archive/">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/ops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">projects</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">优点知识</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">我们一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务实战</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown转微信</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="About" href="https://www.qikqiak.com/page/about/">About</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>Harbor 源码浅析</h1>
+                
+                
+                  <span class="post-meta">
+  Posted on February 20, 2019
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+
+      <div>
+          
+          
+          <h5 id="tags" style="margin-top: 0px;">标签:
+            
+                <a href="https://www.qikqiak.com/tags/harbor/">harbor</a> &nbsp;
+            
+                <a href="https://www.qikqiak.com/tags/docker/">docker</a> &nbsp;
+            
+                <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+            
+          </h5>
+          
+      </div>
+
+      <article role="main" class="blog-post" itemprop="articleBody" id="content">
+        
+        <p><a href="https://www.qikqiak.com/post/harbor-code-analysis/"><img src="https://ws4.sinaimg.cn/large/006tKfTcgy1g0cz18sku5j321r0kz0ux.jpg" alt="harbor" /></a></p>
+
+<p><a href="https://github.com/goharbor/harbor">Harbor</a> 是一个<code>CNCF</code>基金会托管的开源的可信的云原生<code>docker registry</code>项目，可以用于存储、签名、扫描镜像内容，Harbor 通过添加一些常用的功能如安全性、身份权限管理等来扩展 docker registry 项目，此外还支持在 registry 之间复制镜像，还提供更加高级的安全功能，如用户管理、访问控制和活动审计等，在新版本中还添加了<code>Helm</code>仓库托管的支持。</p>
+
+<blockquote>
+<p>本文所有源码基于 Harbor release-1.7.0 版本进行分析。</p>
+</blockquote>
+
+<p><code>Harbor</code>最核心的功能就是给 docker registry 添加上一层权限保护的功能，要实现这个功能，就需要我们在使用 docker login、pull、push 等命令的时候进行拦截，先进行一些权限相关的校验，再进行操作，其实这一系列的操作 docker registry v2 就已经为我们提供了支持，v2 集成了一个安全认证的功能，将安全认证暴露给外部服务，让外部服务去实现。</p>
+
+<h3 id="docker-registry-v2-认证">docker registry v2 认证</h3>
+
+<p>上面我们说了 docker registry v2 将安全认证暴露给了外部服务使用，那么是怎样暴露的呢？我们在命令行中输入<code>docker login https://registry.qikqiak.com</code>为例来为大家说明下认证流程：</p>
+
+<ul>
+<li>1. docker client 接收到用户输入的 docker login 命令，将命令转化为调用 engine api 的 RegistryLogin 方法</li>
+<li>2. 在 RegistryLogin 方法中通过 http 盗用 registry 服务中的 auth 方法</li>
+<li>3. 因为我们这里使用的是 v2 版本的服务，所以会调用 loginV2 方法，在 loginV2 方法中会进行 /v2/ 接口调用，该接口会对请求进行认证</li>
+<li>4. 此时的请求中并没有包含 token 信息，认证会失败，返回 401 错误，同时会在 header 中返回去哪里请求认证的服务器地址</li>
+<li>5. registry client 端收到上面的返回结果后，便会去返回的认证服务器那里进行认证请求，向认证服务器发送的请求的 header 中包含有加密的用户名和密码</li>
+<li>6. 认证服务器从 header 中获取到加密的用户名和密码，这个时候就可以结合实际的认证系统进行认证了，比如从数据库中查询用户认证信息或者对接 ldap 服务进行认证校验</li>
+<li>7. 认证成功后，会返回一个 token 信息，client 端会拿着返回的 token 再次向 registry 服务发送请求，这次需要带上得到的 token，请求验证成功，返回状态码就是200了</li>
+<li>8. docker client 端接收到返回的200状态码，说明操作成功，在控制台上打印<code>Login Succeeded</code>的信息</li>
+</ul>
+
+<p>至此，整个登录过程完成，整个过程可以用下面的流程图来说明：</p>
+
+<p><img src="https://ws4.sinaimg.cn/large/006tKfTcgy1g0cwrqk1mqj310q0iuwgt.jpg" alt="docker login" /></p>
+
+<p>要完成上面的登录认证过程有两个关键点需要注意：怎样让 registry 服务知道服务认证地址？我们自己提供的认证服务生成的 token 为什么 registry 就能够识别？</p>
+
+<p>对于第一个问题，比较好解决，registry 服务本身就提供了一个配置文件，可以在启动 registry 服务的配置文件中指定上认证服务地址即可，其中有如下这样的一段配置信息：</p>
+
+<pre><code class="language-yaml">......
+auth:
+  token:
+    realm: token-realm
+    service: token-service
+    issuer: registry-token-issuer
+    rootcertbundle: /root/certs/bundle
+......
+</code></pre>
+
+<p>其中 realm 就可以用来指定一个认证服务的地址，下面我们可以看到 Harbor 中该配置的内容</p>
+
+<blockquote>
+<p>关于 registry 的配置，可以参考官方文档：<a href="https://docs.docker.com/registry/configuration/">https://docs.docker.com/registry/configuration/</a></p>
+</blockquote>
+
+<p>第二个问题，就是 registry 怎么能够识别我们返回的 token 文件？如果按照 registry 的要求生成一个 token，是不是 registry 就可以识别了？所以我们需要在我们的认证服务器中按照 registry 的要求生成 token，而不是随便乱生成。那么要怎么生成呢？我们可以在 docker registry 的源码中可以看到 token 是如何定义的，文件路径在<code>distribution/registry/token/token.go</code>，从源码中我们可以看到 token 是通过<code>JWT（JSON Web Token）</code>来实现的，所以我们按照要求生成一个 JWT 的 token 就可以了。</p>
+
+<h3 id="harbor-认证">Harbor 认证</h3>
+
+<p>上面我们已经说明了 docker registry v2 认证的整个流程，Harbor 实际上核心的功能就是提供上面的认证服务的功能。我们在 Harbor 的源码目录中可以查看到 registry 服务的配置文件，路径为：<code>make/common/templates/registry/config.yml</code>，其中有两个非常重要的配置信息：</p>
+
+<pre><code class="language-yaml">......
+auth:
+  token:
+    issuer: harbor-token-issuer
+    realm: $public_url/service/token
+    rootcertbundle: /etc/registry/root.crt
+    service: harbor-registry
+......
+</code></pre>
+
+<p>一个就是上面我们提到的 auth.token.realm，是用来提供 registry v2 安全认证的外部服务地址，这里默认的配置是<code>$public_url/service/token</code>，其中<code>$public_url</code>就是 Harbor 服务的主域地址，所以安全认证服务就是去请求<code>/service/token</code>这个地址了，由于 Harbor 是基于 beego 这个 web 框架进行开发的，所以我们只需要去查找下<code>/service/token</code>这个路由，就可以找到对应的请求处理方法了。可以很容易在文件<code>src/core/router.go</code>文件中找到改路由：</p>
+
+<pre><code class="language-golang">func initRouters() {
+    ......
+    beego.Router(&quot;/service/token&quot;, &amp;token.Handler{})
+    ......
+}
+</code></pre>
+
+<p>上面的请求处理方法在<code>src/core/service/token.go</code>文件中，里面有一个<code>Get</code>方法就是用来处理该请求的：</p>
+
+<pre><code class="language-golang">func (h *Handler) Get() {
+    request := h.Ctx.Request
+    log.Debugf(&quot;URL for token request: %s&quot;, request.URL.String())
+    service := h.GetString(&quot;service&quot;)
+    tokenCreator, ok := creatorMap[service]
+    if !ok {
+        errMsg := fmt.Sprintf(&quot;Unable to handle service: %s&quot;, service)
+        log.Errorf(errMsg)
+        h.CustomAbort(http.StatusBadRequest, errMsg)
+    }
+    token, err := tokenCreator.Create(request)
+    if err != nil {
+        if _, ok := err.(*unauthorizedError); ok {
+            h.CustomAbort(http.StatusUnauthorized, &quot;&quot;)
+        }
+        log.Errorf(&quot;Unexpected error when creating the token, error: %v&quot;, err)
+        h.CustomAbort(http.StatusInternalServerError, &quot;&quot;)
+    }
+    h.Data[&quot;json&quot;] = token
+    h.ServeJSON()
+
+}
+</code></pre>
+
+<p>上面的方法通过参数 service 来获取一个 tokenCreator，然后调用 Create 方法生成 token，方法如下：</p>
+
+<pre><code class="language-golang">func (g generalCreator) Create(r *http.Request) (*models.Token, error) {
+    var err error
+    scopes := parseScopes(r.URL)
+    log.Debugf(&quot;scopes: %v&quot;, scopes)
+
+    ctx, err := filter.GetSecurityContext(r)
+    if err != nil {
+        return nil, fmt.Errorf(&quot;failed to  get security context from request&quot;)
+    }
+
+    pm, err := filter.GetProjectManager(r)
+    if err != nil {
+        return nil, fmt.Errorf(&quot;failed to  get project manager from request&quot;)
+    }
+
+    // for docker login
+    if !ctx.IsAuthenticated() {
+        if len(scopes) == 0 {
+            return nil, &amp;unauthorizedError{}
+        }
+    }
+    access := GetResourceActions(scopes)
+    err = filterAccess(access, ctx, pm, g.filterMap)
+    if err != nil {
+        return nil, err
+    }
+    return MakeToken(ctx.GetUsername(), g.service, access)
+}
+</code></pre>
+
+<p>这里就做了一系列的权限校验，如果没有问题就生成一个 token 对象返回，这里生成的 Token 对象结构体如下：</p>
+
+<pre><code class="language-golang">type Token struct {
+    Token     string `json:&quot;token&quot;`
+    ExpiresIn int    `json:&quot;expires_in&quot;`
+    IssuedAt  string `json:&quot;issued_at&quot;`
+}
+</code></pre>
+
+<p>和 JWT 定义的 token 格式是保持一致的，所以 docker registry v2 能够识别我们返回的 token 字符串。</p>
+
+<h3 id="harbor-api">Harbor API</h3>
+
+<p>上面是 Harbor 提供的最核心的认证服务功能，除此之外还有很多其他的功能，比如 Harbor 还提供了一个额外的 Dashboard 可供我们操作，还支持 Helm Chart 仓库。同样我们再看下之前的<code>src/core/router.go</code>文件：</p>
+
+<pre><code class="language-golang">func initRouters() {
+
+    // standalone
+    if !config.WithAdmiral() {
+        // Controller API:
+        beego.Router(&quot;/c/login&quot;, &amp;controllers.CommonController{}, &quot;post:Login&quot;)
+        beego.Router(&quot;/c/log_out&quot;, &amp;controllers.CommonController{}, &quot;get:LogOut&quot;)
+        beego.Router(&quot;/c/reset&quot;, &amp;controllers.CommonController{}, &quot;post:ResetPassword&quot;)
+        beego.Router(&quot;/c/userExists&quot;, &amp;controllers.CommonController{}, &quot;post:UserExists&quot;)
+        beego.Router(&quot;/c/sendEmail&quot;, &amp;controllers.CommonController{}, &quot;get:SendResetEmail&quot;)
+
+        // API:
+        beego.Router(&quot;/api/projects/:pid([0-9]+)/members/?:pmid([0-9]+)&quot;, &amp;api.ProjectMemberAPI{})
+        beego.Router(&quot;/api/projects/&quot;, &amp;api.ProjectAPI{}, &quot;head:Head&quot;)
+        beego.Router(&quot;/api/projects/:id([0-9]+)&quot;, &amp;api.ProjectAPI{})
+
+        beego.Router(&quot;/api/users/:id&quot;, &amp;api.UserAPI{}, &quot;get:Get;delete:Delete;put:Put&quot;)
+        beego.Router(&quot;/api/users&quot;, &amp;api.UserAPI{}, &quot;get:List;post:Post&quot;)
+        beego.Router(&quot;/api/users/:id([0-9]+)/password&quot;, &amp;api.UserAPI{}, &quot;put:ChangePassword&quot;)
+        beego.Router(&quot;/api/users/:id/sysadmin&quot;, &amp;api.UserAPI{}, &quot;put:ToggleUserAdminRole&quot;)
+        beego.Router(&quot;/api/usergroups/?:ugid([0-9]+)&quot;, &amp;api.UserGroupAPI{})
+        beego.Router(&quot;/api/ldap/ping&quot;, &amp;api.LdapAPI{}, &quot;post:Ping&quot;)
+        beego.Router(&quot;/api/ldap/users/search&quot;, &amp;api.LdapAPI{}, &quot;get:Search&quot;)
+        beego.Router(&quot;/api/ldap/groups/search&quot;, &amp;api.LdapAPI{}, &quot;get:SearchGroup&quot;)
+        beego.Router(&quot;/api/ldap/users/import&quot;, &amp;api.LdapAPI{}, &quot;post:ImportUser&quot;)
+        beego.Router(&quot;/api/email/ping&quot;, &amp;api.EmailAPI{}, &quot;post:Ping&quot;)
+    }
+
+    // API
+    beego.Router(&quot;/api/ping&quot;, &amp;api.SystemInfoAPI{}, &quot;get:Ping&quot;)
+    beego.Router(&quot;/api/search&quot;, &amp;api.SearchAPI{})
+    beego.Router(&quot;/api/projects/&quot;, &amp;api.ProjectAPI{}, &quot;get:List;post:Post&quot;)
+    beego.Router(&quot;/api/projects/:id([0-9]+)/logs&quot;, &amp;api.ProjectAPI{}, &quot;get:Logs&quot;)
+    beego.Router(&quot;/api/projects/:id([0-9]+)/_deletable&quot;, &amp;api.ProjectAPI{}, &quot;get:Deletable&quot;)
+    beego.Router(&quot;/api/projects/:id([0-9]+)/metadatas/?:name&quot;, &amp;api.MetadataAPI{}, &quot;get:Get&quot;)
+    beego.Router(&quot;/api/projects/:id([0-9]+)/metadatas/&quot;, &amp;api.MetadataAPI{}, &quot;post:Post&quot;)
+    beego.Router(&quot;/api/projects/:id([0-9]+)/metadatas/:name&quot;, &amp;api.MetadataAPI{}, &quot;put:Put;delete:Delete&quot;)
+    beego.Router(&quot;/api/repositories&quot;, &amp;api.RepositoryAPI{}, &quot;get:Get&quot;)
+    beego.Router(&quot;/api/repositories/scanAll&quot;, &amp;api.RepositoryAPI{}, &quot;post:ScanAll&quot;)
+    beego.Router(&quot;/api/repositories/*&quot;, &amp;api.RepositoryAPI{}, &quot;delete:Delete;put:Put&quot;)
+    beego.Router(&quot;/api/repositories/*/labels&quot;, &amp;api.RepositoryLabelAPI{}, &quot;get:GetOfRepository;post:AddToRepository&quot;)
+    beego.Router(&quot;/api/repositories/*/labels/:id([0-9]+)&quot;, &amp;api.RepositoryLabelAPI{}, &quot;delete:RemoveFromRepository&quot;)
+    beego.Router(&quot;/api/repositories/*/tags/:tag&quot;, &amp;api.RepositoryAPI{}, &quot;delete:Delete;get:GetTag&quot;)
+    beego.Router(&quot;/api/repositories/*/tags/:tag/labels&quot;, &amp;api.RepositoryLabelAPI{}, &quot;get:GetOfImage;post:AddToImage&quot;)
+    beego.Router(&quot;/api/repositories/*/tags/:tag/labels/:id([0-9]+)&quot;, &amp;api.RepositoryLabelAPI{}, &quot;delete:RemoveFromImage&quot;)
+    beego.Router(&quot;/api/repositories/*/tags&quot;, &amp;api.RepositoryAPI{}, &quot;get:GetTags;post:Retag&quot;)
+    beego.Router(&quot;/api/repositories/*/tags/:tag/scan&quot;, &amp;api.RepositoryAPI{}, &quot;post:ScanImage&quot;)
+    beego.Router(&quot;/api/repositories/*/tags/:tag/vulnerability/details&quot;, &amp;api.RepositoryAPI{}, &quot;Get:VulnerabilityDetails&quot;)
+    beego.Router(&quot;/api/repositories/*/tags/:tag/manifest&quot;, &amp;api.RepositoryAPI{}, &quot;get:GetManifests&quot;)
+    beego.Router(&quot;/api/repositories/*/signatures&quot;, &amp;api.RepositoryAPI{}, &quot;get:GetSignatures&quot;)
+    beego.Router(&quot;/api/repositories/top&quot;, &amp;api.RepositoryAPI{}, &quot;get:GetTopRepos&quot;)
+    beego.Router(&quot;/api/jobs/replication/&quot;, &amp;api.RepJobAPI{}, &quot;get:List;put:StopJobs&quot;)
+    beego.Router(&quot;/api/jobs/replication/:id([0-9]+)&quot;, &amp;api.RepJobAPI{})
+    beego.Router(&quot;/api/jobs/replication/:id([0-9]+)/log&quot;, &amp;api.RepJobAPI{}, &quot;get:GetLog&quot;)
+    beego.Router(&quot;/api/jobs/scan/:id([0-9]+)/log&quot;, &amp;api.ScanJobAPI{}, &quot;get:GetLog&quot;)
+
+    beego.Router(&quot;/api/system/gc&quot;, &amp;api.GCAPI{}, &quot;get:List&quot;)
+    beego.Router(&quot;/api/system/gc/:id&quot;, &amp;api.GCAPI{}, &quot;get:GetGC&quot;)
+    beego.Router(&quot;/api/system/gc/:id([0-9]+)/log&quot;, &amp;api.GCAPI{}, &quot;get:GetLog&quot;)
+    beego.Router(&quot;/api/system/gc/schedule&quot;, &amp;api.GCAPI{}, &quot;get:Get;put:Put;post:Post&quot;)
+
+    beego.Router(&quot;/api/policies/replication/:id([0-9]+)&quot;, &amp;api.RepPolicyAPI{})
+    beego.Router(&quot;/api/policies/replication&quot;, &amp;api.RepPolicyAPI{}, &quot;get:List&quot;)
+    beego.Router(&quot;/api/policies/replication&quot;, &amp;api.RepPolicyAPI{}, &quot;post:Post&quot;)
+    beego.Router(&quot;/api/targets/&quot;, &amp;api.TargetAPI{}, &quot;get:List&quot;)
+    beego.Router(&quot;/api/targets/&quot;, &amp;api.TargetAPI{}, &quot;post:Post&quot;)
+    beego.Router(&quot;/api/targets/:id([0-9]+)&quot;, &amp;api.TargetAPI{})
+    beego.Router(&quot;/api/targets/:id([0-9]+)/policies/&quot;, &amp;api.TargetAPI{}, &quot;get:ListPolicies&quot;)
+    beego.Router(&quot;/api/targets/ping&quot;, &amp;api.TargetAPI{}, &quot;post:Ping&quot;)
+    beego.Router(&quot;/api/logs&quot;, &amp;api.LogAPI{})
+    beego.Router(&quot;/api/configs&quot;, &amp;api.ConfigAPI{}, &quot;get:GetInternalConfig&quot;)
+    beego.Router(&quot;/api/configurations&quot;, &amp;api.ConfigAPI{})
+    beego.Router(&quot;/api/configurations/reset&quot;, &amp;api.ConfigAPI{}, &quot;post:Reset&quot;)
+    beego.Router(&quot;/api/statistics&quot;, &amp;api.StatisticAPI{})
+    beego.Router(&quot;/api/replications&quot;, &amp;api.ReplicationAPI{})
+    beego.Router(&quot;/api/labels&quot;, &amp;api.LabelAPI{}, &quot;post:Post;get:List&quot;)
+    beego.Router(&quot;/api/labels/:id([0-9]+)&quot;, &amp;api.LabelAPI{}, &quot;get:Get;put:Put;delete:Delete&quot;)
+    beego.Router(&quot;/api/labels/:id([0-9]+)/resources&quot;, &amp;api.LabelAPI{}, &quot;get:ListResources&quot;)
+
+    beego.Router(&quot;/api/systeminfo&quot;, &amp;api.SystemInfoAPI{}, &quot;get:GetGeneralInfo&quot;)
+    beego.Router(&quot;/api/systeminfo/volumes&quot;, &amp;api.SystemInfoAPI{}, &quot;get:GetVolumeInfo&quot;)
+    beego.Router(&quot;/api/systeminfo/getcert&quot;, &amp;api.SystemInfoAPI{}, &quot;get:GetCert&quot;)
+
+    beego.Router(&quot;/api/internal/syncregistry&quot;, &amp;api.InternalAPI{}, &quot;post:SyncRegistry&quot;)
+    beego.Router(&quot;/api/internal/renameadmin&quot;, &amp;api.InternalAPI{}, &quot;post:RenameAdmin&quot;)
+    beego.Router(&quot;/api/internal/configurations&quot;, &amp;api.ConfigAPI{}, &quot;get:GetInternalConfig&quot;)
+
+    // external service that hosted on harbor process:
+    beego.Router(&quot;/service/notifications&quot;, &amp;registry.NotificationHandler{})
+    beego.Router(&quot;/service/notifications/clair&quot;, &amp;clair.Handler{}, &quot;post:Handle&quot;)
+    beego.Router(&quot;/service/notifications/jobs/scan/:id([0-9]+)&quot;, &amp;jobs.Handler{}, &quot;post:HandleScan&quot;)
+    beego.Router(&quot;/service/notifications/jobs/replication/:id([0-9]+)&quot;, &amp;jobs.Handler{}, &quot;post:HandleReplication&quot;)
+    beego.Router(&quot;/service/notifications/jobs/adminjob/:id([0-9]+)&quot;, &amp;admin.Handler{}, &quot;post:HandleAdminJob&quot;)
+    beego.Router(&quot;/service/token&quot;, &amp;token.Handler{})
+
+    beego.Router(&quot;/v2/*&quot;, &amp;controllers.RegistryProxy{}, &quot;*:Handle&quot;)
+
+    // APIs for chart repository
+    if config.WithChartMuseum() {
+        // Charts are controlled under projects
+        chartRepositoryAPIType := &amp;api.ChartRepositoryAPI{}
+        beego.Router(&quot;/api/chartrepo/health&quot;, chartRepositoryAPIType, &quot;get:GetHealthStatus&quot;)
+        beego.Router(&quot;/api/chartrepo/:repo/charts&quot;, chartRepositoryAPIType, &quot;get:ListCharts&quot;)
+        beego.Router(&quot;/api/chartrepo/:repo/charts/:name&quot;, chartRepositoryAPIType, &quot;get:ListChartVersions&quot;)
+        beego.Router(&quot;/api/chartrepo/:repo/charts/:name&quot;, chartRepositoryAPIType, &quot;delete:DeleteChart&quot;)
+        beego.Router(&quot;/api/chartrepo/:repo/charts/:name/:version&quot;, chartRepositoryAPIType, &quot;get:GetChartVersion&quot;)
+        beego.Router(&quot;/api/chartrepo/:repo/charts/:name/:version&quot;, chartRepositoryAPIType, &quot;delete:DeleteChartVersion&quot;)
+        beego.Router(&quot;/api/chartrepo/:repo/charts&quot;, chartRepositoryAPIType, &quot;post:UploadChartVersion&quot;)
+        beego.Router(&quot;/api/chartrepo/:repo/prov&quot;, chartRepositoryAPIType, &quot;post:UploadChartProvFile&quot;)
+        beego.Router(&quot;/api/chartrepo/charts&quot;, chartRepositoryAPIType, &quot;post:UploadChartVersion&quot;)
+
+        // Repository services
+        beego.Router(&quot;/chartrepo/:repo/index.yaml&quot;, chartRepositoryAPIType, &quot;get:GetIndexByRepo&quot;)
+        beego.Router(&quot;/chartrepo/index.yaml&quot;, chartRepositoryAPIType, &quot;get:GetIndex&quot;)
+        beego.Router(&quot;/chartrepo/:repo/charts/:filename&quot;, chartRepositoryAPIType, &quot;get:DownloadChart&quot;)
+
+        // Labels for chart
+        chartLabelAPIType := &amp;api.ChartLabelAPI{}
+        beego.Router(&quot;/api/chartrepo/:repo/charts/:name/:version/labels&quot;, chartLabelAPIType, &quot;get:GetLabels;post:MarkLabel&quot;)
+        beego.Router(&quot;/api/chartrepo/:repo/charts/:name/:version/labels/:id([0-9]+)&quot;, chartLabelAPIType, &quot;delete:RemoveLabel&quot;)
+    }
+
+    // Error pages
+    beego.ErrorController(&amp;controllers.ErrorController{})
+
+}
+</code></pre>
+
+<p>上面这个文件里面就定义了 Harbor 核心的一些 API，其中如果<code>!config.WithAdmiral()</code>为真，则定义的一些用登录相关接口就会生效，Admiral 是 Vmware 的一个容器管理平台，如果我们在配置文件中定义了参数<code>admiral_url</code>，那么 Harbor 就会和 Admiral 进行交互，如果没有配置这个参数，那么就会去和我们定义的 login 相关接口进行交互了。我们这里简单介绍一下主要的接口，第一个登录接口<code>post:Login</code>：</p>
+
+<pre><code class="language-golang">// Login handles login request from UI.
+func (cc *CommonController) Login() {
+    principal := cc.GetString(&quot;principal&quot;)
+    password := cc.GetString(&quot;password&quot;)
+
+    user, err := auth.Login(models.AuthModel{
+        Principal: principal,
+        Password:  password,
+    })
+    if err != nil {
+        log.Errorf(&quot;Error occurred in UserLogin: %v&quot;, err)
+        cc.CustomAbort(http.StatusUnauthorized, &quot;&quot;)
+    }
+
+    if user == nil {
+        cc.CustomAbort(http.StatusUnauthorized, &quot;&quot;)
+    }
+    cc.SetSession(&quot;user&quot;, *user)
+}
+</code></pre>
+
+<p>根据请求获取用户名和密码，然后调用<code>auth.Login</code>方法进行登录校验，方法位于文件<code>src/core/auth/authenticator.go</code>下：</p>
+
+<pre><code class="language-golang">// Login authenticates user credentials based on setting.
+func Login(m models.AuthModel) (*models.User, error) {
+
+    authMode, err := config.AuthMode()
+    if err != nil {
+        return nil, err
+    }
+    if authMode == &quot;&quot; || dao.IsSuperUser(m.Principal) {
+        authMode = common.DBAuth
+    }
+    log.Debug(&quot;Current AUTH_MODE is &quot;, authMode)
+
+    authenticator, ok := registry[authMode]
+    if !ok {
+        return nil, fmt.Errorf(&quot;Unrecognized auth_mode: %s&quot;, authMode)
+    }
+    if lock.IsLocked(m.Principal) {
+        log.Debugf(&quot;%s is locked due to login failure, login failed&quot;, m.Principal)
+        return nil, nil
+    }
+    user, err := authenticator.Authenticate(m)
+    if err != nil {
+        if _, ok = err.(ErrAuth); ok {
+            log.Debugf(&quot;Login failed, locking %s, and sleep for %v&quot;, m.Principal, frozenTime)
+            lock.Lock(m.Principal)
+            time.Sleep(frozenTime)
+        }
+        return nil, err
+    }
+    err = authenticator.PostAuthenticate(user)
+    return user, err
+}
+</code></pre>
+
+<p>通过<code>authenticator.Authenticate</code>方法进行验证，这里就需要通过 authMode 来进行判断应该调用哪个认证方法
+验证，该参数就是 Harbor 全局配置文件中的<code>auth_mode</code>参数，默认情况下<code>auth_mode=db_auth</code>，除此之外还可以设置成<code>ldap_auth</code>来通过提供一个<code>LDAP Server</code>进行用户认证，也可以设置成<code>uaa_auth</code>来通过 cloud foundry 的 id manager 来进行用户认证。比如如果使用数据库验证的话，那么校验方法就在文件<code>src/core/auth/db/db.go</code>中，方法如下：</p>
+
+<pre><code class="language-golang">// Authenticate calls dao to authenticate user.
+func (d *Auth) Authenticate(m models.AuthModel) (*models.User, error) {
+    u, err := dao.LoginByDb(m)
+    if err != nil {
+        return nil, err
+    }
+    if u == nil {
+        return nil, auth.NewErrAuth(&quot;Invalid credentials&quot;)
+    }
+    return u, nil
+}
+</code></pre>
+
+<p>进入<code>LoginByDb</code>方法，位于<code>src/common/dao/user.go</code>文件：</p>
+
+<pre><code class="language-yaml">// LoginByDb is used for user to login with database auth mode.
+func LoginByDb(auth models.AuthModel) (*models.User, error) {
+    o := GetOrmer()
+
+    var users []models.User
+    n, err := o.Raw(`select * from harbor_user where (username = ? or email = ?) and deleted = false`,
+        auth.Principal, auth.Principal).QueryRows(&amp;users)
+    if err != nil {
+        return nil, err
+    }
+    if n == 0 {
+        return nil, nil
+    }
+
+    user := users[0]
+
+    if user.Password != utils.Encrypt(auth.Password, user.Salt) {
+        return nil, nil
+    }
+
+    user.Password = &quot;&quot; // do not return the password
+
+    return &amp;user, nil
+}
+</code></pre>
+
+<p>上面这段代码逻辑就很简单了，首先根据用户名获取用户，然后将密码加密进行比较，验证通过就将 user 对象返回，并保存到 session 里面，这个后面会用到。</p>
+
+<p>其它的 API 操作类似，在此不再一一讲述，另外再和大家介绍一下镜像仓库的相关 API 操作，镜像操作相关 API 主要位于<code>/api/repositories</code>下面，请求处理方法主要位于文件<code>src/ui/api/repository.go</code>中，比如获取镜像分页列表数据：</p>
+
+<pre><code class="language-golang">func (ra *RepositoryAPI) Get() {
+    projectID, err := ra.GetInt64(&quot;project_id&quot;)
+    if err != nil || projectID &lt;= 0 {
+        ra.HandleBadRequest(fmt.Sprintf(&quot;invalid project_id %s&quot;, ra.GetString(&quot;project_id&quot;)))
+        return
+    }
+
+    labelID, err := ra.GetInt64(&quot;label_id&quot;, 0)
+    if err != nil {
+        ra.HandleBadRequest(fmt.Sprintf(&quot;invalid label_id: %s&quot;, ra.GetString(&quot;label_id&quot;)))
+        return
+    }
+
+    exist, err := ra.ProjectMgr.Exists(projectID)
+    if err != nil {
+        ra.ParseAndHandleError(fmt.Sprintf(&quot;failed to check the existence of project %d&quot;,
+            projectID), err)
+        return
+    }
+
+    if !exist {
+        ra.HandleNotFound(fmt.Sprintf(&quot;project %d not found&quot;, projectID))
+        return
+    }
+
+    if !ra.SecurityCtx.HasReadPerm(projectID) {
+        if !ra.SecurityCtx.IsAuthenticated() {
+            ra.HandleUnauthorized()
+            return
+        }
+        ra.HandleForbidden(ra.SecurityCtx.GetUsername())
+        return
+    }
+
+    query := &amp;models.RepositoryQuery{
+        ProjectIDs: []int64{projectID},
+        Name:       ra.GetString(&quot;q&quot;),
+        LabelID:    labelID,
+    }
+    query.Page, query.Size = ra.GetPaginationParams()
+    query.Sort = ra.GetString(&quot;sort&quot;)
+
+    total, err := dao.GetTotalOfRepositories(query)
+    if err != nil {
+        ra.HandleInternalServerError(fmt.Sprintf(&quot;failed to get total of repositories of project %d: %v&quot;,
+            projectID, err))
+        return
+    }
+
+    repositories, err := getRepositories(query)
+    if err != nil {
+        ra.HandleInternalServerError(fmt.Sprintf(&quot;failed to get repository: %v&quot;, err))
+        return
+    }
+
+    ra.SetPaginationHeader(total, query.Page, query.Size)
+    ra.Data[&quot;json&quot;] = repositories
+    ra.ServeJSON()
+}
+</code></pre>
+
+<p>上面的逻辑也相对比较简单，获取请求的参数，拼凑成一个 RepositoryQuery 对象，然后根据该对象去查询仓库列表数据，并支持分页返回，查询只是就是简单的操作数据库而已，其他操作也类似。不过我们仔细查看改文件中，并没有提供创建仓库的接口，这是因为创建 Repository 是在上传镜像的时候创建的，这里又回到 registry 的配置文件，里面有一段如下的配置：</p>
+
+<pre><code class="language-yaml">......
+notifications:
+  endpoints:
+  - name: harbor
+    disabled: false
+    url: $core_url/service/notifications
+......
+</code></pre>
+
+<p>其中配置的 url 就是仓库的一个回调 web hook 地址，在<code>pull</code>或者<code>push</code>镜像后就会触发该 hook 请求，比如 Harbor 这里就会去请求<code>/service/notifications</code>这个 url：</p>
+
+<pre><code class="language-golang">// Post handles POST request, and records audit log or refreshes cache based on event.
+func (n *NotificationHandler) Post() {
+    var notification models.Notification
+    err := json.Unmarshal(n.Ctx.Input.CopyBody(1&lt;&lt;32), &amp;notification)
+
+    if err != nil {
+        log.Errorf(&quot;failed to decode notification: %v&quot;, err)
+        return
+    }
+
+    events, err := filterEvents(&amp;notification)
+    if err != nil {
+        log.Errorf(&quot;failed to filter events: %v&quot;, err)
+        return
+    }
+
+    for _, event := range events {
+        repository := event.Target.Repository
+        project, _ := utils.ParseRepository(repository)
+        tag := event.Target.Tag
+        action := event.Action
+
+        user := event.Actor.Name
+        if len(user) == 0 {
+            user = &quot;anonymous&quot;
+        }
+
+        pro, err := config.GlobalProjectMgr.Get(project)
+        if err != nil {
+            log.Errorf(&quot;failed to get project by name %s: %v&quot;, project, err)
+            return
+        }
+        if pro == nil {
+            log.Warningf(&quot;project %s not found&quot;, project)
+            continue
+        }
+
+        go func() {
+            if err := dao.AddAccessLog(models.AccessLog{
+                Username:  user,
+                ProjectID: pro.ProjectID,
+                RepoName:  repository,
+                RepoTag:   tag,
+                Operation: action,
+                OpTime:    time.Now(),
+            }); err != nil {
+                log.Errorf(&quot;failed to add access log: %v&quot;, err)
+            }
+        }()
+
+        if action == &quot;push&quot; {
+            go func() {
+                exist := dao.RepositoryExists(repository)
+                if exist {
+                    return
+                }
+                log.Debugf(&quot;Add repository %s into DB.&quot;, repository)
+                repoRecord := models.RepoRecord{
+                    Name:      repository,
+                    ProjectID: pro.ProjectID,
+                }
+                if err := dao.AddRepository(repoRecord); err != nil {
+                    log.Errorf(&quot;Error happens when adding repository: %v&quot;, err)
+                }
+            }()
+            if !coreutils.WaitForManifestReady(repository, tag, 5) {
+                log.Errorf(&quot;Manifest for image %s:%s is not ready, skip the follow up actions.&quot;, repository, tag)
+                return
+            }
+
+            go func() {
+                image := repository + &quot;:&quot; + tag
+                err := notifier.Publish(topic.ReplicationEventTopicOnPush, rep_notification.OnPushNotification{
+                    Image: image,
+                })
+                if err != nil {
+                    log.Errorf(&quot;failed to publish on push topic for resource %s: %v&quot;, image, err)
+                    return
+                }
+                log.Debugf(&quot;the on push topic for resource %s published&quot;, image)
+            }()
+
+            if autoScanEnabled(pro) {
+                last, err := clairdao.GetLastUpdate()
+                if err != nil {
+                    log.Errorf(&quot;Failed to get last update from Clair DB, error: %v, the auto scan will be skipped.&quot;, err)
+                } else if last == 0 {
+                    log.Infof(&quot;The Vulnerability data is not ready in Clair DB, the auto scan will be skipped.&quot;, err)
+                } else if err := coreutils.TriggerImageScan(repository, tag); err != nil {
+                    log.Warningf(&quot;Failed to scan image, repository: %s, tag: %s, error: %v&quot;, repository, tag, err)
+                }
+            }
+        }
+        if action == &quot;pull&quot; {
+            go func() {
+                log.Debugf(&quot;Increase the repository %s pull count.&quot;, repository)
+                if err := dao.IncreasePullCount(repository); err != nil {
+                    log.Errorf(&quot;Error happens when increasing pull count: %v&quot;, repository)
+                }
+            }()
+        }
+    }
+}
+</code></pre>
+
+<p>从上面代码中可以看到首先在 hook 中我们可以获取到当前操作的动作，如果是 push 操作，首先判断 repository 是否存在，如果不存在则创建，对于 pull 镜像操作通过 IncreasePullCount 更新数据库 pull 镜像次数：</p>
+
+<pre><code class="language-golang">// IncreasePullCount ...
+func IncreasePullCount(name string) (err error) {
+    o := GetOrmer()
+    num, err := o.QueryTable(&quot;repository&quot;).Filter(&quot;name&quot;, name).Update(
+        orm.Params{
+            &quot;pull_count&quot;:  orm.ColValue(orm.ColAdd, 1),
+            &quot;update_time&quot;: time.Now(),
+        })
+    if err != nil {
+        return err
+    }
+    if num == 0 {
+        return fmt.Errorf(&quot;Failed to increase repository pull count with name: %s&quot;, name)
+    }
+    return nil
+}
+</code></pre>
+
+<p>除此之外，在路由文件中还可以看到<code>config.WithChartMuseum()</code>配置，如果在全局配置中配置了<code>with_chartmuseum=true</code>，则就会开启 Helm Chart 仓库所需要的 API，相关的请求处理方法位于文件<code>src/core/api/chart_repository.go</code>文件中。</p>
+
+<p>除了上面的一些主要功能之外，Harbor 还有很多高级可能，感兴趣的同学可以下载 Harbor 的源码自行研究，当我们对源码比较熟悉之后，对于我们搭建 Harbor 显然是非常有帮助的，下节课给大家介绍怎样在 Kubernetes 集群中来搭建 Harbor。</p>
+
+<h3 id="推荐">推荐</h3>
+
+<p>给大家推荐一个本人精心打造的一个精品课程，现在限时优惠中：<a href="https://youdianzhishi.com/course/6n8xd6/">从 Docker 到 Kubernetes 进阶</a>
+<a href="https://youdianzhishi.com/course/6n8xd6/"><img src="http://sdn.haimaxy.com/covers/2018/4/21/c4082e0f09c746aa848279a2567cffed.png" alt="从 Docker 到 Kubernetes 进阶" /></a></p>
+
+<p>扫描下面的二维码(或微信搜索<code>k8s技术圈</code>)关注我们的微信公众帐号，在微信公众帐号中回复 <strong>加群</strong> 即可加入到我们的 kubernetes 讨论群里面共同学习。
+<img src="https://www.qikqiak.com/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg" alt="qrcode" /></p>
+        
+          <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+        
+        
+        <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+        
+      </article>
+
+      
+        
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/dockerfile-best-practice/">Dockerfile 最佳实践</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/pod-init-container/">初始化容器</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/write-kubernets-golang-service-step-by-step/">手摸手教你写 Kubernetes 的 golang 服务</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/install-docker-registry-harbor-in-kubernetes/">在kubernetes 集群上搭建docker 私有仓库Harbor</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/manual-install-high-available-kubernetes-cluster/">手动搭建高可用的kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/multi-stage-build-for-docker/">Docker 的多阶段构建</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-deployment-strategies/">Kubernetes 部署策略详解</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-istio-course/">Istio 实训免费视频课程</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/install-efk-stack-on-k8s/">在 Kubernetes 上搭建 EFK 日志收集系统</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-cka-course/">Kubernetes CKA 实训免费视频课程</a></li>
+    
+</ul>
+
+      
+
+      
+      <ul class="pager blog-pager">
+        
+          <li class="previous">
+            <a href="https://www.qikqiak.com/post/what-is-metaclass-in-python/" data-toggle="tooltip" data-placement="top" title="深入理解 Python 元类">&larr; Previous Post</a>
+          </li>
+        
+        
+      </ul>
+      
+
+      
+
+      
+      <div id="git-comments"></div>
+      <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+      <script src="https://www.qikqiak.com/js/gitment.browser.js"></script>
+      <script>
+      var gitment = new Gitment({
+        id: 'harbor-code-analysis',
+        title: 'Harbor 源码浅析',
+        owner: 'cnych',
+        repo: 'blog',
+        oauth: {
+          client_id: 'bdb76dbb2e9d0786e350',
+          client_secret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        }
+      })
+      gitment.render('git-comments')
+      </script>
+      
+
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2019
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.53</a> powered &nbsp;&bull;&nbsp; Theme by <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a> adapted to <a href="https://github.com/cnych/qikqiak-blog">qikqiak-blog</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+<script src="https://www.qikqiak.com/js/jquery-1.11.2.min.js"></script>
+<script src="https://www.qikqiak.com/js/bootstrap.min.js"></script>
+<script src="https://www.qikqiak.com/js/main.min.js"></script>
+<script src="https://www.qikqiak.com/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script src="https://www.qikqiak.com/js/prism.js?t=123"></script>
+
+<script src="https://www.qikqiak.com/js/reward.js"></script>
+
+
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+  </body>
+</html>
+
