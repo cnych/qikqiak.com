@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [Harbor 快速安装使用](https://www.qikqiak.com/post/harbor-quick-install)
  * [Harbor 源码浅析](https://www.qikqiak.com/post/harbor-code-analysis)
  * [Kubernetes 部署策略详解](https://www.qikqiak.com/post/k8s-deployment-strategies)
  * [Helm monitor 插件(附视频)](https://www.qikqiak.com/post/helm-monitor-plugin)
