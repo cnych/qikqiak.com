@@ -465,7 +465,7 @@ storageclass.storage.k8s.io "harbor-data" created
 
 创建完成后，使用上面自定义的 values 文件安装：
 ```shell
-$ helm install --name harbor -f qikqiak-values.yaml --namespace kube-ops
+$ helm install --name harbor -f qikqiak-values.yaml . --namespace kube-ops
 NAME:   harbor
 LAST DEPLOYED: Fri Feb 22 22:39:22 2019
 NAMESPACE: kube-ops
