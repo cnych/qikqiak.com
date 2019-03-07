@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [在 Kubernetes 上安装 Gitlab](https://www.qikqiak.com/post/gitlab-install-on-k8s)
  * [Harbor 快速安装使用](https://www.qikqiak.com/post/harbor-quick-install)
  * [Harbor 源码浅析](https://www.qikqiak.com/post/harbor-code-analysis)
  * [Kubernetes 部署策略详解](https://www.qikqiak.com/post/k8s-deployment-strategies)
