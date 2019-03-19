@@ -6,8 +6,10 @@ tags: ["kubernetes", "gitlab", "ci"]
 keywords: ["kubernetes", "gitlab", "ci", "runner"]
 slug: gitlab-runner-install-on-k8s
 gitcomment: true
+bigimg: [{src: "https://ws3.sinaimg.cn/large/006tKfTcgy1g18ciwz60yj315q0rtgpr.jpg", desc: "Copperopolis, Copperopolis, California, USA"}]
 category: "kubernetes"
 ---
+
 
 [上节课我们使用 Helm 快速的将 Gitlab 安装到了我们的 Kubernetes 集群中](/post/gitlab-install-on-k8s/)，这节课来和大家介绍如何使用 Gitlab CI 来做持续集成，首先先给大家介绍一些关于 Gitlab CI 的一些基本概念，以及如何在 Kubernetes 上安装 Gitlab CI Runner。
 
