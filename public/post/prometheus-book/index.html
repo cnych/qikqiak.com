@@ -6,24 +6,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
 
-  <title>kubernetes PodPreset 的使用-www.qikqiak.com|阳明的博客|Kubernetes|Docker|istio|Python|Golang|Cloud Native</title>
-  <meta property="og:title" content="kubernetes PodPreset 的使用" />
-  <meta name="twitter:title" content="kubernetes PodPreset 的使用" />
+  <title>《深入浅出Prometheus》-www.qikqiak.com|阳明的博客|Kubernetes|Docker|istio|Python|Golang|Cloud Native</title>
+  <meta property="og:title" content="《深入浅出Prometheus》" />
+  <meta name="twitter:title" content="《深入浅出Prometheus》" />
 
-  <meta name="description" content="最近在kubernetes上安装 sentry 的时候，我将sentry需要运行的3个服务放到同一个POD中的，WEB、Celery Worker、Crontab 分别用一个独立的容器来运行的，但是这三个容器需要用到环境变量基本上都是一样的，比如数据库的配置、消息队列的配置，这样就造成一个问题是我需要把完全一模一样的环境配置复制3份，因为3个容器都需要使用，这样如果需要更改的话也要改3个地方。幸好kubernetes给我们提供了一种新的特性：PodPreset，该对象用来在 Pod 创建的时候向 Pod 中注入某些特定信息，可以包括 secret、volume、volume mount 和环境变量等。">
-  <meta property="og:description" content="最近在kubernetes上安装 sentry 的时候，我将sentry需要运行的3个服务放到同一个POD中的，WEB、Celery Worker、Crontab 分别用一个独立的容器来运行的，但是这三个容器需要用到环境变量基本上都是一样的，比如数据库的配置、消息队列的配置，这样就造成一个问题是我需要把完全一模一样的环境配置复制3份，因为3个容器都需要使用，这样如果需要更改的话也要改3个地方。幸好kubernetes给我们提供了一种新的特性：PodPreset，该对象用来在 Pod 创建的时候向 Pod 中注入某些特定信息，可以包括 secret、volume、volume mount 和环境变量等。">
-  <meta name="twitter:description" content="最近在kubernetes上安装 sentry 的时候，我将sentry需要运行的3个服务放到同一个POD中的，WEB、Celery Worker、Crontab 分别用一个独立的容器来运行的，但是这三个容器需要用到环境变量基本上都是一样的，比如数据库的配置、消息队列的配置，这样就造成一个问题是我需要把完全一模一样的环境配置复制3份，因为3个容器都需要使用，这样如果需要更改的话也要改3个地方。 …">
+  <meta name="description" content="原理、应用、源码与拓展详解">
+  <meta property="og:description" content="原理、应用、源码与拓展详解">
+  <meta name="twitter:description" content="原理、应用、源码与拓展详解">
   <meta name="author" content=""/>
   <link href='https://www.qikqiak.com/img/favicon.ico' rel='icon' type='image/x-icon'/>
   <meta property="og:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
   <meta name="twitter:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
   <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://www.qikqiak.com/post/how-to-use-podpreset-in-kubernetes/" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/prometheus-book/" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="阳明的博客" />
 
   <meta name="generator" content="Hugo 0.53" />
-  <link rel="canonical" href="https://www.qikqiak.com/post/how-to-use-podpreset-in-kubernetes/" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/prometheus-book/" />
   <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
   <link rel="stylesheet" href="https://www.qikqiak.com/css/font-awesome.min.css" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/bootstrap.min.css" />
@@ -39,7 +39,7 @@
   
 <meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
 <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-<meta name="keywords" content="kubernetes, PodPreset, 用法">
+<meta name="keywords" content="kubernetes, prometheus, 书籍, 深入浅出">
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -210,33 +210,8 @@ autocomplete('#aa-search-input',
 
 
   
-    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://www.qikqiak.com/img/posts/photo-1498637841888-108c6b723fcb.jpeg" data-img-desc-1="Transfagarasan by Drone"></div>
-  
 
-  <header class="header-section has-img">
-    
-      <div class="intro-header big-img">
-        
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-              <div class="post-heading">
-                <h1>kubernetes PodPreset 的使用</h1>
-                  
-                  
-                    <span class="post-meta">
-  Posted on January 23, 2018
-  
-</span>
-
-
-                  
-              </div>
-            </div>
-          </div>
-        </div>
-        <span class="img-desc" style="display: inline;"></span>
-      </div>
+  <header class="header-section ">
     
     <div class="intro-header no-img">
       
@@ -244,11 +219,15 @@ autocomplete('#aa-search-input',
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
             <div class="post-heading">
-              <h1>kubernetes PodPreset 的使用</h1>
+              <h1>《深入浅出Prometheus》</h1>
+                
+                  
+                    <h2 class="post-subheading">原理、应用、源码与拓展详解</h2>
+                  
                 
                 
                   <span class="post-meta">
-  Posted on January 23, 2018
+  Posted on April 1, 2019
   
 </span>
 
@@ -274,7 +253,7 @@ autocomplete('#aa-search-input',
             
                 <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
             
-                <a href="https://www.qikqiak.com/tags/podpreset/">PodPreset</a> &nbsp;
+                <a href="https://www.qikqiak.com/tags/prometheus/">prometheus</a> &nbsp;
             
           </h5>
           
@@ -284,129 +263,48 @@ autocomplete('#aa-search-input',
         
           
         
-        <p>最近在<code>kubernetes</code>上安装 <a href="https://github.com/cnych/k8s-repo/tree/master/sentry">sentry</a> 的时候，我将<code>sentry</code>需要运行的3个服务放到同一个<strong>POD</strong>中的，WEB、Celery Worker、Crontab 分别用一个独立的容器来运行的，但是这三个容器需要用到环境变量基本上都是一样的，比如数据库的配置、消息队列的配置，这样就造成一个问题是我需要把完全一模一样的环境配置复制3份，因为3个容器都需要使用，这样如果需要更改的话也要改3个地方。幸好<code>kubernetes</code>给我们提供了一种新的特性：<strong>PodPreset</strong>，该对象用来在 Pod 创建的时候向 Pod 中注入某些特定信息，可以包括 secret、volume、volume mount 和环境变量等。</p>
+        <p>千呼万唤始出来，国内第一本全方位讲解<code>Prometheus</code>的书籍<code>《深入浅出Prometheus》</code>终于出版了，非常荣幸能和陈晓宇、陈啸两位老师参与本书的编写，这也是我参与的第一本严格意义上的书籍，另外两位老师对于<code>Prometheus</code>研究的深度让我非常佩服，在编写本书的过程中也学习到了很多专业的知识，特别是关于<code>Prometheus</code>原理和源码方面的认识，之前都只是局限于应用层面，在了解了原理过后显然可以让我们更加有信心去使用<code>Prometheus</code>。</p>
 
-<blockquote>
-<p>注意：<code>PodPreset</code>资源对象只有<strong>kubernetes 1.8</strong>以上版本才支持。</p>
-</blockquote>
+<h2 id="内容简介">内容简介</h2>
 
-<h2 id="podpreset">PodPreset</h2>
+<p>Prometheus 是由 SoundCloud 开源的监控系统，是 Google BorgMon 监控系统的开源版本。伴随着容器及<code>Kubernetes</code>技术的兴起，Prometheus 越来越受到大家的关注。</p>
 
-<p><code>PodPreset</code>是用来在 Pod 被创建的时候向其中注入额外的信息的API 资源。您可以使用<code>label selector</code> 来匹配为哪些 Pod 应用<code>PodPreset</code>。</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tKfTcgy1g1g79t3evxj30u011ktmw.jpg" alt="prometheus book" /></p>
 
-<p><code>kubernetes</code>提供了一个准入控制器（PodPreset），当启用后，<code>PodPreset</code>会将应用创建请求传入到该控制器上。当有 Pod 创建请求发生时，系统将执行以下操作：</p>
+<p>本书系统讲解了 Prometheus 的原理、应用、源码和拓展，图文并茂、讲解全面。原理篇主要介绍了 Prometheus 的整体架构及与其他监控系统的对比和优势，让读者从整体上把握 Prometheus 的相关概念。应用篇从传统应用监控和 Kubernetes 监控两方面讲解 Prometheus 的安装、配置及优秀实践，着重介绍 Redis、MySQL server 等常用中间件监控，并结合 Kubernetes，详细讲解如何通过 Prometheus 监控容器集群，还对每个操作都进行了非常详尽的记录。源码与拓展篇从整体到局部详细剖析 Prometheus 的源码架构，并且结合实际生产环境二次定制 Prometheus 的部分功能，可加深读者对 Prometheus 的理解，也能很好地帮助读者提升 Prometheus 开发技能。</p>
+
+<p>Prometheus 将会成为监控运维方面最锋利的瑞士军刀。无论是对于运维工程师、软件架构师、研发工程师，还是对于资深IT人士来说，《深入浅出Prometheus：原理、应用、源码与拓展详解》都能带来一些新的思路和方式。</p>
+
+<h2 id="内容目录">内容目录</h2>
+
+<p>Prometheus 是一个Go语言编写的高性能监控系统，采用拉取的方式获取被监控对象监控信息并提供了多维度数据模型和灵活的查询接口。Prometheus 不仅可以通过静态文件配置监控对象，还支持自动发现机制，能够通过 Kubernetes、Consul、DNS 等多种方式动态获取监控对象。在数据采集方面，借助 Go 语言的高并发特性单机 Prometheus 支持数百个节点监控数据的采集。数据存储方面，本地时序数据库不断优化，支持单机每秒一千万个指标的采集。如果需要存储大量历史监控数据，Prometheus 还可以支持远端存储，更好的扩展 Prometheus 的数据存储。</p>
+
+<p>本书共分为4篇12章，分别讲解了 Prometheus 原理、传统应用监控和 Kubernetes 中的监控应用，以及源码和拓展，具体目录如下：</p>
 
 <ul>
-<li>检索所有可用的<code>PodPresets</code></li>
-<li>检查有<code>PodPreset</code>的标签选择器上的标签与正在创建的Pod 上的标签是否匹配。</li>
-<li>尝试将由<code>PodPreset</code>定义的各种资源合并到正在创建的Pod 中。</li>
-<li>出现错误时，在该 Pod 上引发记录合并错误的事件，PodPreset 不会注入任何资源到创建的 Pod 中。</li>
-<li>注释刚生成的修改过的 Pod spec，以表明它已被 PodPreset 修改过。注释的格式为 <code>podpreset.admission.kubernetes.io/podpreset-&lt;pod-preset name&gt;&quot;: &quot;&lt;resource version&gt;&quot;</code>。</li>
+<li>1. 主要介绍监控系统概念和架构设计，剖析监控系统内部结构。从程序运行的角度逐一分析，介绍了基础资源监控、中间件监控、应用程序监控和日志监控，然后对比了多种监控系统优缺点，并指出Prometheus独特的优势。</li>
+<li>2. 首先介绍Prometheus相关概念，包括数据指标的定义和分类。接着介绍了Prometheus总体架构和工作原理，包括指标采集、监控数据存储以及基于监控数据的告警。最后概要介绍了Prometheus联邦以及Thanos原理。</li>
+<li>3. 主要介绍Prometheus数据存储，首先介绍了本地时序数据库（Prometheus TSDB），从台的历史演进、设计理念、实现原理多个方面详细介绍本地熟悉数据库，接着介绍了远端存储的使用方式和实现原理，通过Influxdb为例，详细分析Adapter的工作原理。</li>
+<li>4. 主要介绍Prometheus exporter背景、使用方式和工作原理，首先介绍了几个常用的exporter，包括MySQL server exporter、Redis exporter、Node exporter的内部构造，最后通过源码角度解析exporter，并编写一个简单的exporter。</li>
+<li>5. 主要介绍了 Kubernetes 集群常用的一些监控方案，包括 Heapster、kube-state-metrics、metrics-server，最后介绍了 Prometheus 在 Kubernetes 集群中监控的优点。</li>
+<li>6. 主要介绍了 Prometheus 在 Kubernetes 集群中的安装配置，首先介绍了如何用常规的手动方式在 Kubernetes 集群中安装 Prometheus，然后介绍了 Kubernetes 中另外一种更加高级的监控方案 Prometheus Operator 的安装使用，包括添加自定义监控项、添加自定义报警、自动发现配置、数据持久化配置等。</li>
+<li>7. 主要介绍了 Prometheus 监控 Kubernetes 集群服务的一些配置方法，首先介绍了手动的静态配置方法，然后介绍了如何使用 Prometheus 中的服务发现配置来自动发现 Kubernetes 中的 Service 服务。</li>
+<li>8. 主要介绍了 Promethues 监控 Kubernetes 集群的一些常用监控对象，包括使用 cAdvisor 进行容器监控、apiserver 的监控、Service 的监控、kube-state-metrics 在 Kubernetes 集群中的监控应用，最后介绍了如何使用 node-exporter 监控 Kubernetes 集群的节点。</li>
+<li>9. 主要介绍了 Prometheus 监控 Kubernetes 集群的数据展示，首先介绍了在 Kubernetes 集群中安装 Grafana 的方法，然后介绍了 Grafana 配置 Prometheus 数据源以及一些常用的 Dashboard 的配置方法，还介绍了 Grafana 针对 Kubernetes 集群监控的一个常用插件 grafana-kuberentes-app 的安装使用，最后介绍了如何使用 Grafana 报警，包括邮件、钉钉报警等。</li>
+<li>10. 主要介绍了 Prometheus 监控 Kubernetes 集群的报警功能，首先介绍了如何在 Kubernetes 集群中安装 Prometheus 的报警模块 Alertmanager，然后介绍了如何通过 Configmap 资源对象配置报警规则，最后介绍了如何写一个 webhook 接收器来处理 Alertmanager 报警数据。</li>
+<li>11. 主要对Prometheus源码进行分析，包括Prometheus初始化、数据采集、通知管理、规则管理和查询引擎五个部分，以二次开发实战的方式加深对Prometheus程序结构的理解。</li>
+<li>12. 主要对AlertManager源码进行分析，包括接受告警、告警调度、告警匹配、告警处理和告警通知五个部分，结合配置文件中的配置项，从源码角度理解告警分组、告警频次控制、告警路由、告警抑制和告警静默功能的实现。</li>
 </ul>
 
-<p>每个 Pod 可以匹配零个或多个 PodPrestet；并且每个 PodPreset 可以应用于零个或多个 Pod。 PodPreset 应用于一个或多个 Pod 时，Kubernetes 会修改 Pod Spec。对于 Env、EnvFrom 和 VolumeMounts 的更改，Kubernetes 修改 Pod 中所有容器的容器 spec；对于 Volume 的更改，Kubernetes 修改 Pod Spec。</p>
+<h2 id="送书活动">送书活动</h2>
 
-<p>可能在某些情况下，您希望 Pod 不会被任何 Pod Preset 突变所改变。在这些情况下，您可以在 Pod 的 Pod Spec 中添加注释：<code>podpreset.admission.kubernetes.io/exclude：&quot;true&quot;</code>。</p>
+<p>现在天猫和京东都是预售（离发货也很快了），我这里第一时间获得了4本现货书籍，为了回馈<code>k8s技术圈</code>社区的朋友，特意赠送给大家。活动规则：<code>转发此文到朋友圈，明天(4月2日)晚上10点前截图发送到【k8s技术圈】公众号后台，截图中点赞数量最多的四人将每人免费获得一本该书籍。</code>当然没有获得免费赠送的也可以通过下面的链接参与购买。</p>
 
-<h2 id="启用-podpreset">启用 PodPreset</h2>
-
-<p>要启用<code>PodPreset</code>功能，需要确保你使用的是<code>kubernetes 1.8</code>版本以上，然后需要在准入控制中加入<code>PodPreset</code>，另外为了定义<code>PodPreset</code>对象，还需要其中<code>podpreset</code>的API 类型：</p>
+<h2 id="购买链接">购买链接</h2>
 
 <ul>
-<li>&mdash;admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota,<code>PodPreset</code></li>
-<li>&mdash;runtime-config=rbac.authorization.k8s.io/v1alpha1=true,<code>settings.k8s.io/v1alpha1=true</code></li>
-</ul>
-
-<p>注意上面的<code>kube-apiserver</code>中的启动参数(前面是两个<strong>-</strong>)，参数修改完成后，重启<code>kube-apiserver</code>即可。</p>
-
-<h2 id="示例">示例</h2>
-
-<p>比如我们将我们上面的<code>sentry</code>的环境变量定义成一个<code>PodPreset</code>对象：(sentry-podpreset.yaml)</p>
-
-<pre><code class="language-yaml">apiVersion: settings.k8s.io/v1alpha1
-kind: PodPreset
-metadata:
-  name: sentry-env
-  namespace: kube-ops
-spec:
-  selector:
-    matchLabels:
-      app: sentry
-  env:
-  - name: C_FORCE_ROOT
-    value: &quot;true&quot;
-  - name: SENTRY_REDIS_HOST
-    value: &quot;redis&quot;
-  - name: SENTRY_REDIS_PORT
-    value: &quot;6379&quot;
-  - name: SENTRY_REDIS_DB
-    value: &quot;2&quot;
-  - name: SENTRY_RABBITMQ_HOST
-    value: &quot;rabbitmq:5672&quot;
-  - name: SENTRY_RABBITMQ_USERNAME
-    value: &quot;root&quot;
-  - name: SENTRY_RABBITMQ_PASSWORD
-    value: &quot;root&quot;
-  - name: SENTRY_SECRET_KEY
-    value: &quot;xxxxxxxxxxxxx&quot;
-  - name: SENTRY_POSTGRES_HOST
-    value: &quot;postgresql&quot;
-  - name: SENTRY_POSTGRES_PORT
-    value: &quot;5432&quot;
-  - name: SENTRY_DB_NAME
-    value: &quot;sentry&quot;
-  - name: SENTRY_DB_USER
-    value: &quot;sentry&quot;
-  - name: SENTRY_DB_PASSWORD
-    value: &quot;sentry321&quot;
-</code></pre>
-
-<p>我们可以看到定义的<code>PodPreset</code>匹配了一个标签：<code>app: sentry</code>，所有带有该标签的 POD 都会被注入上面的环境变量。</p>
-
-<p>然后我们的<code>sentry</code>的部署文件就可以简化成这样了：(sentry-deployment.yaml)</p>
-
-<pre><code class="language-yaml">apiVersion: extensions/v1beta1
-kind: Deployment
-metadata:
-  labels:
-    app: sentry
-  name: sentry
-  namespace: kube-ops
-spec:
-  template:
-    metadata:
-      labels:
-        app: sentry
-    spec:
-      containers:
-      - image: sentry:8.22.0
-        imagePullPolicy: Always
-        name: sentry
-        ports:
-        - containerPort: 9000
-          name: web
-      - image: sentry:8.22.0
-        imagePullPolicy: Always
-        name: sentry-worker
-        command: [&quot;sentry&quot;, &quot;run&quot;, &quot;worker&quot;]
-      - image: sentry:8.22.0
-        imagePullPolicy: Always
-        name: sentry-cron
-        command: [&quot;sentry&quot;, &quot;run&quot;, &quot;cron&quot;]
-</code></pre>
-
-<p>然后执行命令：</p>
-
-<pre><code class="language-shell">$ kubectl create -f sentry-podpreset.yaml
-$ kubectl create -f sentry-deployment.yaml
-</code></pre>
-
-<p>然后我们可以去 dashboard 中或者通过 kubectl 命令查看创建的 sentry POD已经被注入了所有的环境变量了。</p>
-
-<h2 id="参考资料">参考资料</h2>
-
-<ul>
-<li><a href="https://kubernetes.io/docs/tasks/inject-data-application/podpreset/">https://kubernetes.io/docs/tasks/inject-data-application/podpreset/</a></li>
+<li>天猫预售地址：<a href="https://detail.tmall.com/item.htm?spm=a212k0.12153887.0.0.64a3687dQ6nSzh&amp;id=590161370307">https://detail.tmall.com/item.htm?spm=a212k0.12153887.0.0.64a3687dQ6nSzh&amp;id=590161370307</a></li>
+<li>京东购买地址：<a href="https://item.jd.com/44066787013.html">https://item.jd.com/44066787013.html</a></li>
 </ul>
 
 <p>扫描下面的二维码(或微信搜索<code>k8s技术圈</code>)关注我们的微信公众帐号，在微信公众帐号中回复 <strong>加群</strong> 即可加入到我们的 kubernetes 讨论群里面共同学习。
@@ -468,25 +366,25 @@ $ kubectl create -f sentry-deployment.yaml
 <h3>相关文章</h3>
 <ul style="margin-bottom: 25px;">
     
-    <li><a href="https://www.qikqiak.com/post/first-use-helm-on-kubernetes/">Kubernetes Helm 初体验</a></li>
+    <li><a href="https://www.qikqiak.com/post/prometheus-operator-advance/">Prometheus Operator 高级配置</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/add-authorization-for-kubernetes-dashboard/">为kubernetes dashboard访问用户添加权限控制</a></li>
+    <li><a href="https://www.qikqiak.com/post/prometheus-operator-custom-alert/">Prometheus Operator 自定义报警</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/understand-kubernetes-configmap-and-secrets/">kubernetes ConfigMap 和 Secrets</a></li>
+    <li><a href="https://www.qikqiak.com/post/prometheus-operator-monitor-etcd/">Prometheus Operator 监控 etcd 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/grafana-log-tool-loki/">Grafana 日志聚合工具 Loki</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/first-use-prometheus-operator/">Prometheus Operator 初体验</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/grafana-usage-in-k8s/">Grafana 在 Kubernetes 中的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/promethues-monitor-k8s-nodes/">监控 Kubernetes 集群节点</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/promethues-monitor-k8s-app/">Kubernetes 应用监控</a></li>
     
     <li><a href="https://www.qikqiak.com/post/alertmanager-of-prometheus-in-practice/">Prometheus报警AlertManager实战</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/kubernetes-logs-collect/">kubernetes 日志收集方案</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/update-prometheus-2-in-kubernetes/">Kubernetes 下升级Prometheus2.0</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/socketio-multiple-nodes-in-kubernetes/">kubernetes 下实现socket.io 的集群模式</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/install-docker-registry-harbor-in-kubernetes/">在kubernetes 集群上搭建docker 私有仓库Harbor</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/update-kubernetes-dashboard-more-secure/">kubernetes dashboard 升级之路</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/manual-install-high-available-kubernetes-cluster/">手动搭建高可用的kubernetes 集群</a></li>
+    <li><a href="https://www.qikqiak.com/post/kubernetes-monitor-prometheus-grafana/">Kubernetes使用Prometheus搭建监控平台</a></li>
     
 </ul>
 
@@ -496,13 +394,9 @@ $ kubectl create -f sentry-deployment.yaml
       <ul class="pager blog-pager">
         
           <li class="previous">
-            <a href="https://www.qikqiak.com/post/add-authorization-for-kubernetes-dashboard/" data-toggle="tooltip" data-placement="top" title="为kubernetes dashboard访问用户添加权限控制">&larr; Previous Post</a>
+            <a href="https://www.qikqiak.com/post/gitlab-ci-k8s-cluster-feature/" data-toggle="tooltip" data-placement="top" title="Gitlab CI 与 Kubernetes 的结合">&larr; Previous Post</a>
           </li>
         
-        
-          <li class="next">
-            <a href="https://www.qikqiak.com/post/first-use-helm-on-kubernetes/" data-toggle="tooltip" data-placement="top" title="Kubernetes Helm 初体验">Next Post &rarr;</a>
-          </li>
         
       </ul>
       
@@ -515,8 +409,8 @@ $ kubectl create -f sentry-deployment.yaml
       <script src="https://www.qikqiak.com/js/gitment.browser.js"></script>
       <script>
       var gitment = new Gitment({
-        id: 'how-to-use-podpreset-in-kubernetes',
-        title: 'kubernetes PodPreset 的使用',
+        id: 'prometheus-book',
+        title: '《深入浅出Prometheus》',
         owner: 'cnych',
         repo: 'blog',
         oauth: {
