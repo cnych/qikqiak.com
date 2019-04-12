@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(一)](https://www.qikqiak.com/post/complete-cicd-demonstrate-1)
  * [《深入浅出Prometheus》](https://www.qikqiak.com/post/prometheus-book)
  * [Gitlab CI 与 Kubernetes 的结合](https://www.qikqiak.com/post/gitlab-ci-k8s-cluster-feature)
  * [在 Kubernetes 上安装 Gitlab CI Runner](https://www.qikqiak.com/post/gitlab-runner-install-on-k8s)
