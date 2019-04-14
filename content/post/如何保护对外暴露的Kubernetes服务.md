@@ -148,7 +148,7 @@ nginx.ingress.kubernetes.io/auth-signin: "https://$host/oauth2/start?rd=$escaped
 
 然后按照上面的思路重新创建 Jenkins 的两个 Ingress 对象：
 ```shell
-⚡ cat <<EOF | kubectl create -f -
+$ cat <<EOF | kubectl apply -f -
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
