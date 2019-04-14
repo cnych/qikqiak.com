@@ -16,7 +16,7 @@ category: "kubernetes"
 
 ## Jenkins Pipeline 介绍
 要实现在 Jenkins 中的构建工作，可以有多种方式，我们这里采用比较常用的 `Pipeline` 这种方式。Pipeline，简单来说，就是一套运行在 Jenkins 上的工作流框架，将原来独立运行于单个或者多个节点的任务连接起来，实现单个任务难以完成的复杂流程**编排**和**可视化**的工作。
-
+<!--adsense-text-->
 Jenkins Pipeline 有几个核心概念：
 
 * Node：节点，一个 Node 就是一个 Jenkins 节点，Master 或者 Agent，是执行 Step 的具体运行环境，比如我们之前动态运行的 Jenkins Slave 就是一个 Node 节点
@@ -209,7 +209,7 @@ stage('Push') {
 ```
 
 如果我们只是在 Jenkins 的 Web UI 界面中来完成这个任务的话，我们这里的 Pipeline 是可以这样写的，但是我们是不是推荐使用 Jenkinsfile 的形式放入源码中进行版本管理，这样的话我们直接把 docker 仓库的用户名和密码暴露给别人这样很显然是非常非常不安全的，更何况我们这里使用的是 github 的公共代码仓库，所有人都可以直接看到我们的源码，所以我们应该用一种方式来隐藏用户名和密码这种私密信息，幸运的是 Jenkins 为我们提供了解决方法。
-
+<!--adsense-text-->
 在首页点击 Credentials -> Stores scoped to Jenkins 下面的 Jenkins -> Global credentials (unrestricted) -> 左侧的 Add Credentials：添加一个 Username with password 类型的认证信息，如下：
 
 ![Add Credentials](/img/posts/pipeline-demo4.png)

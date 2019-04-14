@@ -86,7 +86,7 @@ MASTER_URL="k8s-api.virtual.local"
 ```
 
 将上面变量保存为: **env.sh**，然后将脚本拷贝到所有机器的`/usr/k8s/bin`目录。
-
+<!--adsense-text-->
 为方便后面迁移，我们在集群内定义一个域名用于访问`apiserver`，在每个节点的`/etc/hosts`文件中添加记录：**192.168.1.137 k8s-api.virtual.local k8s-api**
 
 其中`192.168.1.137`为master01 的IP，暂时使用该IP 来做apiserver 的负载地址
@@ -328,6 +328,7 @@ $ sudo systemctl status etcd
 ```
 
 最先启动的etcd 进程会卡住一段时间，等待其他节点启动加入集群，在所有的etcd 节点重复上面的步骤，直到所有的机器etcd 服务都已经启动。
+<!--adsense-text-->
 
 ### 验证服务
 
@@ -352,7 +353,6 @@ https://192.168.1.170:2379 is healthy: successfully committed proposal: took = 1
 ```
 
 可以看到上面的信息3个节点上的etcd 均为**healthy**，则表示集群服务正常。
-
 
 
 ## 4. 配置kubectl 命令行工具<a id="kubectl"></a>
@@ -1079,6 +1079,8 @@ $ sudo systemctl status haproxy
 这种方式实际上是最省心的，在阿里云上建一个内网的SLB，将master01 与master02 添加到SLB 机器组中，转发80(http)和443(https)端口即可（注意下面的提示）
 
 > 注意：阿里云的负载均衡是四层TCP负责，不支持后端ECS实例既作为Real Server又作为客户端向所在的负载均衡实例发送请求。因为返回的数据包只在云服务器内部转发，不经过负载均衡，所以在后端ECS实例上去访问负载均衡的服务地址是不通的。什么意思？就是如果你要使用阿里云的SLB的话，那么你不能在`apiserver`节点上使用SLB（比如在apiserver 上安装kubectl，然后将apiserver的地址设置为SLB的负载地址使用），因为这样的话就可能造成回环了，所以简单的做法是另外用两个新的节点做`HA`实例，然后将这两个实例添加到`SLB` 机器组中。
+
+<!--adsense-->
 
 #### 方式2：使用keepalived
 

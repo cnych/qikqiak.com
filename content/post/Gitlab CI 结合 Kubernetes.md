@@ -54,7 +54,7 @@ ERROR: Job failed: command terminated with exit code 1
 ```
 
 出现上面的错误是因为我们并没有在 Gitlab 中开启 Container Registry，所以环境变量中并没有这些值，还记得前面章节中我们安装的 [Harbor](https://www.qikqiak.com/tags/harbor/)吗？我们这里使用 [Harbor](https://www.qikqiak.com/tags/harbor/) 来作为我们的镜像仓库，这里我们只需要把 [Harbor](https://www.qikqiak.com/tags/harbor/) 相关的配置以参数的形式配置到环境中就可以了。
-
+<!--adsense-text-->
 定位到项目 -> 设置 -> CI/CD，展开`Environment variables`栏目，配置镜像仓库相关的参数值：
 
 ![gitlab ci env](https://ws1.sinaimg.cn/large/006tKfTcgy1g19duem1bdj31jc0m6jvl.jpg)
@@ -338,8 +338,7 @@ deploy_live:
 ```
 
 上面的`.gitlab-ci.yml`文件中还有一些特殊的属性，如限制运行的的`when`和`only`参数，例如`only: ["tags"]`表示只为创建的标签运行，更多的信息，我可以通过查看 Gitlab CI YAML 文件查看：[https://docs.gitlab.com/ce/ci/yaml/README.html](https://docs.gitlab.com/ce/ci/yaml/README.html)
-
-
+<!--adsense-->
 由于我们在`.gitlab-ci.yml`文件中将应用的镜像构建完成后推送到了我们的私有仓库，而 Kubernetes 资源清单文件中使用的私有镜像，所以我们需要配置一个`imagePullSecret`，否则在 Kubernetes 集群中是无法拉取我们的私有镜像的：(替换下面相关信息为自己的)
 ```shell
 $ kubectl create secret docker-registry myregistry --docker-server=registry.qikqiak.com --docker-username=xxxx --docker-password=xxxxxx --docker-email=xxxx -n gitlab
