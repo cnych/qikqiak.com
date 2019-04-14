@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [如何保护对外暴露的 Kubernetes 服务](https://www.qikqiak.com/post/how-to-protect-exposed-k8s-server)
  * [基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(一)](https://www.qikqiak.com/post/complete-cicd-demonstrate-1)
  * [《深入浅出Prometheus》](https://www.qikqiak.com/post/prometheus-book)
  * [Gitlab CI 与 Kubernetes 的结合](https://www.qikqiak.com/post/gitlab-ci-k8s-cluster-feature)

@@ -1,21 +1,22 @@
 ---
 title: 如何保护对外暴露的 Kubernetes 服务
-date: 2019-04-13
+date: 2019-04-14
 tags: ["kubernetes", "traefik", "nginx", "ingress", "oauth"]
-keywords: ["kubernetes", "traefik", "nginx", "ingress", "oauth", "basic auth"]
+keywords: ["kubernetes", "traefik", "nginx", "ingress", "oauth", "basic auth", "安全"]
 slug: how-to-protect-exposed-k8s-server
 gitcomment: true
-bigimg: [{src: "https://ws4.sinaimg.cn/large/006tNc79gy1g1zqfxynhpj31dp0u01kx.jpg", desc: "devops"}]
+bigimg: [{src: "https://ws3.sinaimg.cn/large/006tNc79gy1g21yvqruqhj315o0rswgx.jpg", desc: "oauth"}]
 category: "kubernetes"
-draft: true
 ---
 
 有时候我们需要在 Kubernetes 中暴露一些没有任何安全验证机制的服务，比如没有安装 xpack 的 Kibana，没有开启登录认证的 Jenkins 服务之类的，我们也想通过域名来进行访问，比较域名比较方便，更主要的是对于 Kubernetes 里面的服务，通过 Ingress 暴露一个服务太方便了，而且还可以通过 cert-manager 来自动的完成`HTTPS`化。所以就非常有必要对这些服务进行一些安全验证了。
 
+<!--more-->
+
 ## Basic Auth 认证
 我们在前面升级 Dashboard 的文章中就给大家提到过两种方式来为我们的服务添加 Basic Auth 认证：haproxy/nginx 和 traefik/nginx-ingress。
-
-使用 haproxy/nginx 的方式非常简单，就是直接添加 basic auth 认证，然后将请求转发到后面的服务；而 traefik/nginx-ingress 都直接提供了 basic auth 的支持，我们这里使用 traefik 来为 Jenkins 服务添加一个 basic auth 的认证服务。
+<!--adsense-text-->
+使用 haproxy/nginx 的方式非常简单，就是直接添加 basic auth 认证，然后将请求转发到后面的服务；而 traefik/nginx-ingress 都直接提供了 basic auth 的支持，我们这里使用 nginx-ingress 来为 Jenkins 服务添加一个 basic auth 的认证服务。
 
 首先，我们需要创建用于存储用户名和密码的`htpasswd`文件：
 ```shell
@@ -29,7 +30,7 @@ $ kubectl create secret generic jenkins-basic-auth --from-file=auth -n kube-ops
 secret "jenkins-basic-auth" created
 ```
 
-最后，我们需要在 Ingress 对象中添加`auth-type：basic`和`auth-secret：system-basic-auth`两个 annotations：（ingress.yaml）
+最后，我们需要在 Ingress 对象中添加`auth-type：basic`和`auth-jenkins-basic-auth`两个 annotations：（ingress.yaml）
 ```yaml
 apiVersion: extensions/v1beta1
 kind: Ingress
@@ -37,9 +38,13 @@ metadata:
   name: jenkins
   namespace: kube-ops
   annotations:
-    kubernetes.io/ingress.class: traefik
-    ingress.kubernetes.io/auth-type: basic
-    ingress.kubernetes.io/auth-secret: jenkins-basic-auth
+    kubernetes.io/ingress.class: nginx
+    # 认证类型
+    nginx.ingress.kubernetes.io/auth-type: basic
+    # 包含 user/password 的 Secret 名称
+    nginx.ingress.kubernetes.io/auth-secret: jenkins-basic-auth
+    # 当认证的时候显示一个合适的上下文信息
+    nginx.ingress.kubernetes.io/auth-realm: 'Authentication Required - admin'
 spec:
   rules:
   - host: jenkins.qikqiak.com
@@ -62,16 +67,16 @@ ingress.extensions "jenkins" configured
 
 
 ## OAuth 认证
-除了上面的 Basic Auth 认证方式以为，我们还可以通过 Github、Google 等提供的 OAuth 服务来进行身份验证。我们可以通过名为`OAuth2 Proxy`的工具来代理请求，它通过提供一个外部身份验证的反向代理来实现，使用起来也相对简单。
+除了上面的 Basic Auth 认证方式以为，我们还可以通过 Github、Google 等提供的 OAuth 服务来进行身份验证。我们可以通过名为[OAuth2 Proxy](https://github.com/pusher/oauth2_proxy)的工具来代理请求，它通过提供一个外部身份验证的反向代理来实现，使用起来也相对简单。
 
 ### 安装
 首先我们需要为我们的应用添加自动的 HTTPS，可以参考我们前面的文章[使用 Let's Encrypt 实现 Kubernetes Ingress 自动化 HTTPS](https://www.qikqiak.com/post/automatic-kubernetes-ingress-https-with-lets-encrypt/)。
 
 然后登录 Github，在[https://github.com/settings/applications/new](https://github.com/settings/applications/new)添加一个新的`OAuth`应用程序：
 
-![register github app](https://ws4.sinaimg.cn/large/006tNc79gy1g2142eks7wj317y0u0ae7.jpg)
+![register github app](https://ws4.sinaimg.cn/large/006tNc79gy1g21yei4dgej31600nmq64.jpg)
 
-替换成你自己需要使用的域名，然后在回调 URL 上添加`/oauth2`，点击注册后，记录下应用详细页面`Client ID`和`Client Secret`的值。然后还需要生成一个 cookie 密钥，当然如果我们系统中安装了 python 环境可以直接生成，没有的话用 Docker 容器运行当然也行：
+替换成你自己需要使用的域名，然后在回调 URL 上添加`/oauth2/callback`，点击注册后，记录下应用详细页面`Client ID`和`Client Secret`的值。然后还需要生成一个 cookie 密钥，当然如果我们系统中安装了 python 环境可以直接生成，没有的话用 Docker 容器运行当然也行：
 ```shell
 $ docker run -ti --rm python:3-alpine \
     python -c 'import secrets,base64; print(base64.b64encode(base64.b64encode(secrets.token_bytes(16))));'
@@ -130,54 +135,56 @@ authproxy-oauth2-proxy-cdb4f675b-wvdg5   1/1       Running   0          1m
 
 ### 测试
 同样我们这里还是使用一个 Jenkins 服务，大家也可以使用任意的一个服务来验证，当然最好是没有身份验证功能的，比如没有安装 x-pack 的 Kibana。
+<!--adsense-text-->
+要实现外部服务来进行认证的关键点在于 nginx-ingress-controller 在 annotations 中为我们提供了`auth-url`和`auth-signin`两个注解来允许配置外部身份验证的入口。
 
-ingress.kubernetes.io/auth-url: https://example.com
+> 上面这两个 annotation 需要 nginx-ingress-controller 在 v0.9.0 版本或以上。
 
-现在有一个很小的问题。不确定这是一个错误还是设计错误。您需要为两个服务（Kibana和OAuth2代理）创建两个入口资源，但要在同一FQDN上可用。否则你最终将使用auth循环，GitHub将阻止你一段时间。我没有时间深入研究它。
-
-Kibana路径将打开\，OAuth2打开\oauth2，同一个域。这部分是配置Nginx ingress首先将请求路由到auth服务：
-
+我们在 Jenkins 的核心 Ingress 对象中配置服务认证的 url：`https://$host/oauth2/auth`，然后通过创建一个同域的 Ingress 对象将`oauth2`路径代理到`OAuth2 proxy`应用去处理认证服务：
+```yaml
 nginx.ingress.kubernetes.io/auth-url: "https://$host/oauth2/auth"
-nginx.ingress.kubernetes.io/auth-signin: "https://$host/oauth2/start?rd=$request_uri"
-并且您将仅向Kibana入口添加上述注释。
+nginx.ingress.kubernetes.io/auth-signin: "https://$host/oauth2/start?rd=$escaped_request_uri"
+```
 
-我可以直接使用Helm创建入口资源，但如果我手动执行它，您将更容易理解。让我们用kubectl创建两个入口资源：
-
+然后按照上面的思路重新创建 Jenkins 的两个 Ingress 对象：
+```shell
 ⚡ cat <<EOF | kubectl create -f -
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: kibana-test
+  name: jenkins
+  namespace: kube-ops
   annotations:
     kubernetes.io/ingress.class: nginx
     kubernetes.io/tls-acme: "true"
-    nginx.ingress.kubernetes.io/auth-url: "https://\$host/oauth2/auth"
-    nginx.ingress.kubernetes.io/auth-signin: "https://\$host/oauth2/start?rd=\$request_uri"
+    nginx.ingress.kubernetes.io/auth-url: "https://$host/oauth2/auth"
+    nginx.ingress.kubernetes.io/auth-signin: "https://$host/oauth2/start?rd=$escaped_request_uri"
 spec:
   rules:
-  - host: kibana.test.akomljen.com
+  - host: jenkins.qikqiak.com
     http:
       paths:
       - backend:
-          serviceName: kibana-test
-          servicePort: 5601
+          serviceName: jenkins
+          servicePort: web
         path: /
   tls:
   - hosts:
-    - kibana.test.akomljen.com
-    secretName: kibana-tls
+    - jenkins.qikqiak.com
+    secretName: jenkins-tls
+
 ---
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: authproxy-oauth2-proxy
-  namespace: ingress
+  namespace: kube-system
   annotations:
     kubernetes.io/ingress.class: nginx
     kubernetes.io/tls-acme: "true"
 spec:
   rules:
-  - host: kibana.test.akomljen.com
+  - host: jenkins.qikqiak.com
     http:
       paths:
       - backend:
@@ -186,13 +193,23 @@ spec:
         path: /oauth2
   tls:
   - hosts:
-    - kibana.test.akomljen.com
-    secretName: kibana-tls
+    - jenkins.qikqiak.com
+    secretName: jenkins-tls
 EOF
-kibana.test.akomljen.com将可通过HTTPS访问。打开您为Kibana配置为入口主机的URL，系统会提示您使用GitHub登录屏幕：
+```
 
+我们这里通过`cert-manager`来自动为服务添加 HTTPS ，添加了`kubernetes.io/tls-acme=true`这个注解，然后我们在浏览器中打开我们的 Jenkins 服务，正常就会跳转到 GitHub 登录页面了：
 
-如果要向OAuth代理添加更多服务，可以编辑其入口并添加其他主机。
+![github oauth](https://ws2.sinaimg.cn/large/006tNc79gy1g21yeyk5m5j312x0u043z.jpg)
 
-摘要
-Cloud Native工具再次使事情变得更容易。人们只是喜欢，当你可以快速提供工作的东西和OAuth代理没有什么不同。一些基本的安全性肯定更容易。请继续关注下一个。
+然后认证通过后就可以跳转到我们的 Jenkins 服务了：
+
+![jenkins](https://ws3.sinaimg.cn/large/006tNc79gy1g21yhlshzjj318x0u0tgq.jpg)
+
+当然除了使用 GitHub 之外，还可以使用其他的 OAuth 认证服务，比如 Google，我们可以根据需要自行去添加即可。
+
+## 相关链接
+* [OAuth2 Proxy](https://github.com/pusher/oauth2_proxy)
+* [ingress-nginx oauth external auth exmaple](https://github.com/kubernetes/ingress-nginx/tree/master/docs/examples/auth/oauth-external-auth)
+* [Kubernetes Helm 初体验](https://www.qikqiak.com/post/first-use-helm-on-kubernetes/)
+* [使用 Let's Encrypt 实现 Kubernetes Ingress 自动化 HTTPS](https://www.qikqiak.com/automatic-kubernetes-ingress-https-with-lets-encrypt/)
