@@ -27,12 +27,9 @@
   <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
   <link rel="stylesheet" href="https://www.qikqiak.com/css/font-awesome.min.css" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/bootstrap.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=456" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=4567" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/pygment_highlights.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/highlight.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/prism.css?t=123" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/search.css" />
   
   <link rel="stylesheet" href="https://www.qikqiak.com/css/reward.css" />
@@ -98,7 +95,7 @@ if (!doNotTrack) {
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
                 
-                  <a href="https://www.qikqiak.com/page/archive/">Archive</a>
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
                 
                   <a href="https://www.qikqiak.com/tags">tags</a>
                 
@@ -316,48 +313,36 @@ autocomplete('#aa-search-input',
 (adsbygoogle = window.adsbygoogle || []).push({});
 </script>
 由于 nginx-ingress 所在的节点需要能够访问外网，这样域名可以解析到这些节点上直接使用，所以需要让 nginx-ingress 绑定节点的 80 和 443 端口，所以我们这里通过 DasemonSet 和 hostPort 来进行部署，当然需要通过 nodeSelector 来筛选有外网 IP 的<strong>边缘节点</strong>。</p>
-
-<pre><code class="language-shell">$ kubectl get nodes --show-labels
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get nodes --show-labels
 NAME          STATUS    ROLES     AGE       VERSION   LABELS
-ydzs-master   Ready     master    30d       v1.10.0   beta.kubernetes.io/arch=amd64,beta.kubernetes.io/os=linux,kubernetes.io/hostname=ydzs-master,node-role.kubernetes.io/master=
-ydzs-node1    Ready     &lt;none&gt;    30d       v1.10.0   beta.kubernetes.io/arch=amd64,beta.kubernetes.io/os=linux,kubernetes.io/hostname=ydzs-node1
-ydzs-node2    Ready     &lt;none&gt;    30d       v1.10.0   beta.kubernetes.io/arch=amd64,beta.kubernetes.io/os=linux,kubernetes.io/hostname=ydzs-node2
-</code></pre>
-
+ydzs-master   Ready     master    30d       v1.10.0   beta.kubernetes.io/arch<span style="color:#ff79c6">=</span>amd64,beta.kubernetes.io/os<span style="color:#ff79c6">=</span>linux,kubernetes.io/hostname<span style="color:#ff79c6">=</span>ydzs-master,node-role.kubernetes.io/master<span style="color:#ff79c6">=</span>
+ydzs-node1    Ready     &lt;none&gt;    30d       v1.10.0   beta.kubernetes.io/arch<span style="color:#ff79c6">=</span>amd64,beta.kubernetes.io/os<span style="color:#ff79c6">=</span>linux,kubernetes.io/hostname<span style="color:#ff79c6">=</span>ydzs-node1
+ydzs-node2    Ready     &lt;none&gt;    30d       v1.10.0   beta.kubernetes.io/arch<span style="color:#ff79c6">=</span>amd64,beta.kubernetes.io/os<span style="color:#ff79c6">=</span>linux,kubernetes.io/hostname<span style="color:#ff79c6">=</span>ydzs-node2</code></pre></div>
 <p>比如我们集群使用 kubeadm 安装的，而且只有 master 节点有外网 IP，所以需要将 nginx-ingress 绑定在 master 节点上，通过 nodeSelector 绑定 label 标签：<code>kubernetes.io/hostname=ydzs-master</code>，当然还需要容忍该节点的污点，这个需要结合你的节点实际情况进行绑定，然后新建 custom.yaml 文件来覆盖 nginx-ingress Chart 包的一些默认参数：</p>
-
-<pre><code class="language-yaml">controller:
-  hostNetwork: true
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">controller:
+  hostNetwork: <span style="color:#ff79c6">true</span>
   daemonset:
-    useHostPort: false
+    useHostPort: <span style="color:#ff79c6">false</span>
     hostPorts:
-      http: 80
-      https: 443
+      http: <span style="color:#bd93f9">80</span>
+      https: <span style="color:#bd93f9">443</span>
   service:
     type: ClusterIP
   tolerations:
-    - operator: &quot;Exists&quot;
+    - operator: <span style="color:#f1fa8c">&#34;Exists&#34;</span>
   nodeSelector:
     kubernetes.io/hostname: ydzs-master
 
 defaultBackend:
   tolerations:
-    - operator: &quot;Exists&quot;
+    - operator: <span style="color:#f1fa8c">&#34;Exists&#34;</span>
   nodeSelector:
-    kubernetes.io/hostname: ydzs-master
-</code></pre>
-
+    kubernetes.io/hostname: ydzs-master</code></pre></div>
 <p>要获取 Chart 包的默认参数值可以通过下面的命令获取：</p>
-
-<pre><code class="language-shell">$ helm fetch stable/nginx-ingress
-$ tar -xvf nginx-ingress-1.4.0.tgz
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ helm fetch stable/nginx-ingress
+$ tar -xvf nginx-ingress-1.4.0.tgz</code></pre></div>
 <p>nginx-ingress 目录下面的<code>values.yaml</code>文件即为默认参数值，大家可以根据自己的实际情况进行覆盖，然后使用下面的命令安装：</p>
-
-<pre><code class="language-shell">$ helm install stable/nginx-ingress --namespace kube-system --name nginx-ingress -f custom.yaml
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ helm install stable/nginx-ingress --namespace kube-system --name nginx-ingress -f custom.yaml</code></pre></div>
 <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
 <ins class="adsbygoogle"
      style="display:block; text-align:center;"
@@ -371,12 +356,9 @@ $ tar -xvf nginx-ingress-1.4.0.tgz
 
 
 <p>安装完成后可以通过下面的命令查看 nginx-ingress 的 Pod 使用运行成功：</p>
-
-<pre><code class="language-shell">$ kubectl get pods -n kube-system | grep nginx-ingress
-nginx-ingress-controller-587b4c68bf-vsqgm        1/1       Running   0          11h
-nginx-ingress-default-backend-64fd9fd685-lmxhw   1/1       Running   0          1d
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-system | grep nginx-ingress
+nginx-ingress-controller-587b4c68bf-vsqgm        <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          11h
+nginx-ingress-default-backend-64fd9fd685-lmxhw   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          1d</code></pre></div>
 <blockquote>
 <p>安装过程中需要用到<code>gcr.io</code>和<code>quay.io</code>的镜像，大家可以在 dockerhub 上搜索，pull 下来后重新打上 tag 即可。</p>
 </blockquote>
@@ -384,8 +366,7 @@ nginx-ingress-default-backend-64fd9fd685-lmxhw   1/1       Running   0          
 <h2 id="测试">测试</h2>
 
 <p>上面的 nginx-ingress 安装成功后，我们可以通过一个简单的示例来测试下：(ngdemo.yaml)</p>
-
-<pre><code class="language-shell">apiVersion: extensions/v1beta1
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: my-nginx
@@ -399,7 +380,7 @@ spec:
       - name: my-nginx
         image: nginx:1.7.9
         ports:
-        - containerPort: 80
+        - containerPort: <span style="color:#bd93f9">80</span>
 ---
 apiVersion: v1
 kind: Service
@@ -409,7 +390,7 @@ metadata:
     app: my-nginx
 spec:
   ports:
-  - port: 80
+  - port: <span style="color:#bd93f9">80</span>
     protocol: TCP
     name: http
   selector:
@@ -420,7 +401,7 @@ kind: Ingress
 metadata:
   name: my-nginx
   annotations:
-    kubernetes.io/ingress.class: &quot;nginx&quot;
+    kubernetes.io/ingress.class: <span style="color:#f1fa8c">&#34;nginx&#34;</span>
 spec:
   rules:
   - host: ngdemo.qikqiak.com
@@ -429,17 +410,12 @@ spec:
       - path: /
         backend:
           serviceName: my-nginx
-          servicePort: 80
-</code></pre>
-
+          servicePort: <span style="color:#bd93f9">80</span></code></pre></div>
 <p>直接创建上面的资源对象：</p>
-
-<pre><code class="language-shell">$ kubectl apply -f ngdemo.yaml
-deployment.extensions &quot;my-nginx&quot; created
-service &quot;my-nginx&quot; created
-ingress.extensions &quot;my-nginx&quot; created
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f ngdemo.yaml
+deployment.extensions <span style="color:#f1fa8c">&#34;my-nginx&#34;</span> created
+service <span style="color:#f1fa8c">&#34;my-nginx&#34;</span> created
+ingress.extensions <span style="color:#f1fa8c">&#34;my-nginx&#34;</span> created</code></pre></div>
 <p>注意我们在 Ingress 资源对象中添加了一个 annotations：<code>kubernetes.io/ingress.class: &quot;nginx&quot;</code>，这就是指定让这个 Ingress 通过 nginx-ingress 来处理。
 <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
 <ins class="adsbygoogle"
@@ -652,6 +628,8 @@ ingress.extensions &quot;my-nginx&quot; created
             <a href="https://www.qikqiak.com/">阳明的博客</a>
             &nbsp;&bull;&nbsp;
             <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/archives/">文章归档</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
           
@@ -670,9 +648,9 @@ ingress.extensions &quot;my-nginx&quot; created
 <script src="https://www.qikqiak.com/js/jquery-1.11.2.min.js"></script>
 <script src="https://www.qikqiak.com/js/bootstrap.min.js"></script>
 <script src="https://www.qikqiak.com/js/main.min.js"></script>
-<script src="https://www.qikqiak.com/js/highlight.min.js"></script>
-<script> hljs.initHighlightingOnLoad(); </script>
-<script src="https://www.qikqiak.com/js/prism.js?t=123"></script>
+
+
+
 
 <script src="https://www.qikqiak.com/js/reward.js"></script>
 

@@ -27,12 +27,9 @@
   <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
   <link rel="stylesheet" href="https://www.qikqiak.com/css/font-awesome.min.css" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/bootstrap.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=456" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=4567" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/pygment_highlights.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/highlight.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/prism.css?t=123" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/search.css" />
   
   <link rel="stylesheet" href="https://www.qikqiak.com/css/reward.css" />
@@ -98,7 +95,7 @@ if (!doNotTrack) {
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
                 
-                  <a href="https://www.qikqiak.com/page/archive/">Archive</a>
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
                 
                   <a href="https://www.qikqiak.com/tags">tags</a>
                 
@@ -317,8 +314,7 @@ autocomplete('#aa-search-input',
 <p>我们可以通过 DaemonSet 控制器来部署该服务，这样每一个节点都会自动运行一个这样的 Pod，如果我们从集群中删除或者添加节点后，也会进行自动扩展。</p>
 
 <p>在部署 node-exporter 的时候有一些细节需要注意，如下资源清单文件：(prome-node-exporter.yaml)</p>
-
-<pre><code class="language-yaml">apiVersion: extensions/v1beta1
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
   name: node-exporter
@@ -331,26 +327,26 @@ spec:
       labels:
         name: node-exporter
     spec:
-      hostPID: true
-      hostIPC: true
-      hostNetwork: true
+      hostPID: <span style="color:#ff79c6">true</span>
+      hostIPC: <span style="color:#ff79c6">true</span>
+      hostNetwork: <span style="color:#ff79c6">true</span>
       containers:
       - name: node-exporter
-        image: prom/node-exporter:v0.16.0
+        image: prom/node-exporter:v0.<span style="color:#bd93f9">16.0</span>
         ports:
-        - containerPort: 9100
+        - containerPort: <span style="color:#bd93f9">9100</span>
         resources:
           requests:
-            cpu: 0.15
+            cpu: <span style="color:#bd93f9">0.15</span>
         securityContext:
-          privileged: true
+          privileged: <span style="color:#ff79c6">true</span>
         args:
         - --path.procfs
         - /host/proc
         - --path.sysfs
         - /host/sys
         - --collector.filesystem.ignored-mount-points
-        - '&quot;^/(sys|proc|dev|host|etc)($|/)&quot;'
+        - <span style="color:#f1fa8c">&#39;&#34;^/(sys|proc|dev|host|etc)($|/)&#34;&#39;</span>
         volumeMounts:
         - name: dev
           mountPath: /host/dev
@@ -361,9 +357,9 @@ spec:
         - name: rootfs
           mountPath: /rootfs
       tolerations:
-      - key: &quot;node-role.kubernetes.io/master&quot;
-        operator: &quot;Exists&quot;
-        effect: &quot;NoSchedule&quot;
+      - key: <span style="color:#f1fa8c">&#34;node-role.kubernetes.io/master&#34;</span>
+        operator: <span style="color:#f1fa8c">&#34;Exists&#34;</span>
+        effect: <span style="color:#f1fa8c">&#34;NoSchedule&#34;</span>
       volumes:
         - name: proc
           hostPath:
@@ -376,9 +372,7 @@ spec:
             path: /sys
         - name: rootfs
           hostPath:
-            path: /
-</code></pre>
-
+            path: /</code></pre></div>
 <p>由于我们要获取到的数据是主机的监控指标数据，而我们的 node-exporter 是运行在容器中的，所以我们在 Pod 中需要配置一些 Pod 的安全策略，这里我们就添加了<code>hostPID: true</code>、<code>hostIPC: true</code>、<code>hostNetwork: true</code>3个策略，用来使用主机的 PID namespace、IPC namespace 以及主机网络，这些 namespace 就是用于容器隔离的关键技术，要注意这里的 namespace 和集群中的 namespace 是两个完全不相同的概念。</p>
 
 <p>另外我们还将主机的<code>/dev</code>、<code>/proc</code>、<code>/sys</code>这些目录挂载到容器中，这些因为我们采集的很多节点数据都是通过这些文件夹下面的文件来获取到的，比如我们在使用<code>top</code>命令可以查看当前<code>cpu</code>使用情况，数据就来源于文件<code>/proc/stat</code>，使用<code>free</code>命令可以查看当前内存使用情况，其数据来源是来自<code>/proc/meminfo</code>文件。</p>
@@ -386,34 +380,25 @@ spec:
 <p>另外由于我们集群使用的是 kubeadm 搭建的，所以如果希望 master 节点也一起被监控，则需要添加响应的容忍，对于污点和容忍还不是很熟悉的同学可以在前面的章节中回顾下。</p>
 
 <p>然后直接创建上面的资源对象即可：</p>
-
-<pre><code class="language-shell">$ kubectl create -f prome-node-exporter.yaml
-daemonset.extensions &quot;node-exporter&quot; created
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create -f prome-node-exporter.yaml
+daemonset.extensions <span style="color:#f1fa8c">&#34;node-exporter&#34;</span> created
 $ kubectl get pods -n kube-ops -o wide
 NAME                          READY     STATUS    RESTARTS   AGE       IP             NODE
-node-exporter-jfwfv           1/1       Running   0          30m       10.151.30.63   node02
-node-exporter-kr8rt           1/1       Running   0          30m       10.151.30.64   node03
-node-exporter-whb7n           1/1       Running   0          20m       10.151.30.57   master
-prometheus-8566cd9699-gt9wh   1/1       Running   0          4d        10.244.4.39    node02
-redis-544b6c8c54-8xd2g        2/2       Running   0          23h       10.244.2.87    node03
-</code></pre>
-
+node-exporter-jfwfv           <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          30m       <span style="color:#bd93f9">10</span>.151.30.63   node02
+node-exporter-kr8rt           <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          30m       <span style="color:#bd93f9">10</span>.151.30.64   node03
+node-exporter-whb7n           <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          20m       <span style="color:#bd93f9">10</span>.151.30.57   master
+prometheus-8566cd9699-gt9wh   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          4d        <span style="color:#bd93f9">10</span>.244.4.39    node02
+redis-544b6c8c54-8xd2g        <span style="color:#bd93f9">2</span>/2       Running   <span style="color:#bd93f9">0</span>          23h       <span style="color:#bd93f9">10</span>.244.2.87    node03</code></pre></div>
 <p>部署完成后，我们可以看到在3个节点上都运行了一个 Pod，有的同学可能会说我们这里不需要创建一个 Service 吗？我们应该怎样去获取<code>/metrics</code>数据呢？我们上面是不是指定了<code>hostNetwork=true</code>，所以在每个节点上就会绑定一个端口 9100，我们可以通过这个端口去获取到监控指标数据：</p>
-
-<pre><code class="language-shell">$ curl 127.0.0.1:9100/metrics
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ curl <span style="color:#bd93f9">127</span>.0.0.1:9100/metrics
 ...
-node_filesystem_device_error{device=&quot;shm&quot;,fstype=&quot;tmpfs&quot;,mountpoint=&quot;/rootfs/var/lib/docker/containers/aefe8b1b63c3aa5f27766053ec817415faf8f6f417bb210d266fef0c2da64674/shm&quot;} 1
-node_filesystem_device_error{device=&quot;shm&quot;,fstype=&quot;tmpfs&quot;,mountpoint=&quot;/rootfs/var/lib/docker/containers/c8652ca72230496038a07e4fe4ee47046abb5f88d9d2440f0c8a923d5f3e133c/shm&quot;} 1
-node_filesystem_device_error{device=&quot;tmpfs&quot;,fstype=&quot;tmpfs&quot;,mountpoint=&quot;/dev&quot;} 0
-node_filesystem_device_error{device=&quot;tmpfs&quot;,fstype=&quot;tmpfs&quot;,mountpoint=&quot;/dev/shm&quot;} 0
-...
-</code></pre>
-
+node_filesystem_device_error<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">device</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;shm&#34;</span>,fstype<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;tmpfs&#34;</span>,mountpoint<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;/rootfs/var/lib/docker/containers/aefe8b1b63c3aa5f27766053ec817415faf8f6f417bb210d266fef0c2da64674/shm&#34;</span><span style="color:#ff79c6">}</span> <span style="color:#bd93f9">1</span>
+node_filesystem_device_error<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">device</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;shm&#34;</span>,fstype<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;tmpfs&#34;</span>,mountpoint<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;/rootfs/var/lib/docker/containers/c8652ca72230496038a07e4fe4ee47046abb5f88d9d2440f0c8a923d5f3e133c/shm&#34;</span><span style="color:#ff79c6">}</span> <span style="color:#bd93f9">1</span>
+node_filesystem_device_error<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">device</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;tmpfs&#34;</span>,fstype<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;tmpfs&#34;</span>,mountpoint<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;/dev&#34;</span><span style="color:#ff79c6">}</span> <span style="color:#bd93f9">0</span>
+node_filesystem_device_error<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">device</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;tmpfs&#34;</span>,fstype<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;tmpfs&#34;</span>,mountpoint<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;/dev/shm&#34;</span><span style="color:#ff79c6">}</span> <span style="color:#bd93f9">0</span>
+...</code></pre></div>
 <p>当然如果你觉得上面的手动安装方式比较麻烦，我们也可以使用 Helm 的方式来安装：</p>
-
-<pre><code class="language-shell">$ helm install --name node-exporter stable/prometheus-node-exporter --namespace kube-ops
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ helm install --name node-exporter stable/prometheus-node-exporter --namespace kube-ops</code></pre></div>
 <h2 id="服务发现">服务发现</h2>
 
 <p>由于我们这里3个节点上面都运行了 node-exporter 程序，如果我们通过一个 Service 来将数据收集到一起用静态配置的方式配置到 Prometheus 去中，就只会显示一条数据，我们得自己在指标数据中去过滤每个节点的数据，那么有没有一种方式可以让 Prometheus 去自动发现我们节点的 node-exporter 程序，并且按节点进行分组呢？是有的，就是我们前面和大家提到过的<strong>服务发现</strong>。</p>
@@ -421,54 +406,41 @@ node_filesystem_device_error{device=&quot;tmpfs&quot;,fstype=&quot;tmpfs&quot;,m
 <p>在 Kubernetes 下，Promethues 通过与 Kubernetes API 集成，目前主要支持5中服务发现模式，分别是：Node、Service、Pod、Endpoints、Ingress。</p>
 
 <p>我们通过 kubectl 命令可以很方便的获取到当前集群中的所有节点信息：</p>
-
-<pre><code class="language-shell">$ kubectl get nodes
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get nodes
 NAME      STATUS    ROLES     AGE       VERSION
 master    Ready     master    165d      v1.10.0
 node02    Ready     &lt;none&gt;    85d       v1.10.0
-node03    Ready     &lt;none&gt;    145d      v1.10.0
-</code></pre>
-
+node03    Ready     &lt;none&gt;    145d      v1.10.0</code></pre></div>
 <p>但是要让 Prometheus 也能够获取到当前集群中的所有节点信息的话，我们就需要利用 Node 的服务发现模式，同样的，在 prometheus.yml 文件中配置如下的 job 任务即可：</p>
-
-<pre><code class="language-yaml">- job_name: 'kubernetes-nodes'
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">- job_name: <span style="color:#f1fa8c">&#39;kubernetes-nodes&#39;</span>
   tls_config:
     ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
   bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
   kubernetes_sd_configs:
-  - role: node
-</code></pre>
-
+  - role: node</code></pre></div>
 <p>通过指定<code>kubernetes_sd_configs</code>的模式为<code>node</code>，Prometheus 就会自动从 Kubernetes 中发现所有的 node 节点并作为当前 job 监控的目标实例，发现的节点<code>/metrics</code>接口是默认的 kubelet 的 HTTP 接口，另外这里还需要指定用于访问 Kubernetes API 的 ca 以及 token 文件路径，ca 证书和 token 文件都是 Pod 启动后集群自动注入到 Pod 中的文件。</p>
 
 <p>prometheus 的 ConfigMap 更新完成后，同样的我们执行 reload 操作，让配置生效：</p>
-
-<pre><code class="language-shell">$ kubectl delete -f prome-cm.yaml
-configmap &quot;prometheus-config&quot; deleted
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl delete -f prome-cm.yaml
+configmap <span style="color:#f1fa8c">&#34;prometheus-config&#34;</span> deleted
 $ kubectl create -f prome-cm.yaml
-configmap &quot;prometheus-config&quot; created
-# 隔一会儿再执行下面的 reload 操作
+configmap <span style="color:#f1fa8c">&#34;prometheus-config&#34;</span> created
+<span style="color:#6272a4"># 隔一会儿再执行下面的 reload 操作</span>
 $ kubectl get svc -n kube-ops
-NAME            TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                          AGE
-prometheus      NodePort    10.102.74.90    &lt;none&gt;        9090:30358/TCP                   5d
+NAME            TYPE        CLUSTER-IP      EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>                          AGE
+prometheus      NodePort    <span style="color:#bd93f9">10</span>.102.74.90    &lt;none&gt;        <span style="color:#bd93f9">9090</span>:30358/TCP                   5d
 ......
-$ curl -X POST &quot;http://10.102.74.90:9090/-/reload&quot;
-</code></pre>
-
+$ curl -X POST <span style="color:#f1fa8c">&#34;http://10.102.74.90:9090/-/reload&#34;</span></code></pre></div>
 <p>配置生效后，我们再去 prometheus 的 dashboard 中查看 Targets 是否能够正常抓取数据，访问<strong>任意节点IP:30358</strong>：</p>
 
 <p><img src="https://www.qikqiak.com/img/posts/prometheus-nodes-target.png" alt="prometheus nodes target" /></p>
 
 <p>我们可以看到上面的<code>kubernetes-nodes</code>这个 job 任务已经自动发现了我们3个 node 节点，但是在获取数据的时候失败了，出现了类似于下面的错误信息：</p>
-
-<pre><code class="language-shell">Get http://10.151.30.57:10250/metrics: net/http: HTTP/1.x transport connection broken: malformed HTTP response &quot;\x15\x03\x01\x00\x02\x02&quot;
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">Get http://10.151.30.57:10250/metrics: net/http: HTTP/1.x transport connection broken: malformed HTTP response <span style="color:#f1fa8c">&#34;\x15\x03\x01\x00\x02\x02&#34;</span></code></pre></div>
 <p>这个是因为 prometheus 去发现 Node 模式的服务的时候，访问的端口默认是<strong>10250</strong>，而现在该端口下面已经没有了<code>/metrics</code>指标数据了，现在 kubelet 只读的数据接口统一通过<strong>10255</strong>端口进行暴露了，所以我们应该去替换掉这里的端口，但是我们是要替换成<strong>10255</strong>端口吗？不是的，因为我们是要去配置上面通过<code>node-exporter</code>抓取到的节点指标数据，而我们上面是不是指定了<code>hostNetwork=true</code>，所以在每个节点上就会绑定一个端口<strong>9100</strong>，所以我们应该将这里的<strong>10250</strong>替换成<strong>9100</strong>，但是应该怎样替换呢？</p>
 
 <p>这里我们就需要使用到 Prometheus 提供的<code>relabel_configs</code>中的<code>replace</code>能力了，relabel 可以在 Prometheus 采集数据之前，通过Target 实例的 Metadata 信息，动态重新写入 Label 的值。除此之外，我们还能根据 Target 实例的 Metadata 信息选择是否采集或者忽略该 Target 实例。比如我们这里就可以去匹配<code>__address__</code>这个 Label 标签，然后替换掉其中的端口：</p>
-
-<pre><code class="language-yaml">- job_name: 'kubernetes-nodes'
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">- job_name: <span style="color:#f1fa8c">&#39;kubernetes-nodes&#39;</span>
   tls_config:
     ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
   bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
@@ -476,12 +448,10 @@ $ curl -X POST &quot;http://10.102.74.90:9090/-/reload&quot;
   - role: node
   relabel_configs:
   - source_labels: [__address__]
-    regex: '(.*):10250'
-    replacement: '${1}:9100'
+    regex: <span style="color:#f1fa8c">&#39;(.*):10250&#39;</span>
+    replacement: <span style="color:#f1fa8c">&#39;${1}:9100&#39;</span>
     target_label: __address__
-    action: replace
-</code></pre>
-
+    action: replace</code></pre></div>
 <p>这里就是一个正则表达式，去匹配<code>__address__</code>，然后将 host 部分保留下来，port 替换成了<strong>9100</strong>，现在我们重新更新配置文件，执行 reload 操作，然后再去看 Prometheus 的 Dashboard 的 Targets 路径下面 kubernetes-nodes 这个 job 任务是否正常了：</p>
 
 <p><img src="https://www.qikqiak.com/img/posts/promethues-nodes-target2.png" alt="prometheus nodes target2" /></p>
@@ -489,8 +459,7 @@ $ curl -X POST &quot;http://10.102.74.90:9090/-/reload&quot;
 <p>我们可以看到现在已经正常了，但是还有一个问题就是我们采集的指标数据 Label 标签就只有一个节点的 hostname，这对于我们在进行监控分组分类查询的时候带来了很多不方便的地方，要是我们能够将集群中 Node 节点的 Label 标签也能获取到就很好了。</p>
 
 <p>这里我们可以通过<code>labelmap</code>这个属性来将 Kubernetes 的 Label 标签添加为 Prometheus 的指标标签：</p>
-
-<pre><code class="language-yaml">- job_name: 'kubernetes-nodes'
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">- job_name: <span style="color:#f1fa8c">&#39;kubernetes-nodes&#39;</span>
   tls_config:
     ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
   bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
@@ -498,14 +467,12 @@ $ curl -X POST &quot;http://10.102.74.90:9090/-/reload&quot;
   - role: node
   relabel_configs:
   - source_labels: [__address__]
-    regex: '(.*):10250'
-    replacement: '${1}:9100'
+    regex: <span style="color:#f1fa8c">&#39;(.*):10250&#39;</span>
+    replacement: <span style="color:#f1fa8c">&#39;${1}:9100&#39;</span>
     target_label: __address__
     action: replace
   - action: labelmap
-    regex: __meta_kubernetes_node_label_(.+)
-</code></pre>
-
+    regex: __meta_kubernetes_node_label_(.+)</code></pre></div>
 <p>添加了一个 action 为<code>labelmap</code>，正则表达式是<code>__meta_kubernetes_node_label_(.+)</code>的配置，这里的意思就是表达式中匹配都的数据也添加到指标数据的 Label 标签中去。</p>
 
 <p>对于 kubernetes_sd_configs 下面可用的标签如下：
@@ -523,8 +490,7 @@ $ curl -X POST &quot;http://10.102.74.90:9090/-/reload&quot;
 </blockquote>
 
 <p>另外由于 kubelet 也自带了一些监控指标数据，就上面我们提到的<strong>10255</strong>端口，所以我们这里也把 kubelet 的监控任务也一并配置上：</p>
-
-<pre><code class="language-yaml">- job_name: 'kubernetes-nodes'
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">- job_name: <span style="color:#f1fa8c">&#39;kubernetes-nodes&#39;</span>
   tls_config:
     ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
   bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
@@ -532,14 +498,14 @@ $ curl -X POST &quot;http://10.102.74.90:9090/-/reload&quot;
   - role: node
   relabel_configs:
   - source_labels: [__address__]
-    regex: '(.*):10250'
-    replacement: '${1}:9100'
+    regex: <span style="color:#f1fa8c">&#39;(.*):10250&#39;</span>
+    replacement: <span style="color:#f1fa8c">&#39;${1}:9100&#39;</span>
     target_label: __address__
     action: replace
   - action: labelmap
     regex: __meta_kubernetes_node_label_(.+)
 
-- job_name: 'kubernetes-kubelet'
+- job_name: <span style="color:#f1fa8c">&#39;kubernetes-kubelet&#39;</span>
   tls_config:
     ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
   bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
@@ -547,14 +513,12 @@ $ curl -X POST &quot;http://10.102.74.90:9090/-/reload&quot;
   - role: node
   relabel_configs:
   - source_labels: [__address__]
-    regex: '(.*):10250'
-    replacement: '${1}:10255'
+    regex: <span style="color:#f1fa8c">&#39;(.*):10250&#39;</span>
+    replacement: <span style="color:#f1fa8c">&#39;${1}:10255&#39;</span>
     target_label: __address__
     action: replace
   - action: labelmap
-    regex: __meta_kubernetes_node_label_(.+)
-</code></pre>
-
+    regex: __meta_kubernetes_node_label_(.+)</code></pre></div>
 <p>现在我们再去更新下配置文件，执行 reload 操作，让配置生效，然后访问 Prometheus 的 Dashboard 查看 Targets 路径：</p>
 
 <p><img src="https://www.qikqiak.com/img/posts/prometheus-nodes-target2.png" alt="prometheus node targets" /></p>
@@ -767,6 +731,8 @@ $ curl -X POST &quot;http://10.102.74.90:9090/-/reload&quot;
             <a href="https://www.qikqiak.com/">阳明的博客</a>
             &nbsp;&bull;&nbsp;
             <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/archives/">文章归档</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
           
@@ -785,9 +751,9 @@ $ curl -X POST &quot;http://10.102.74.90:9090/-/reload&quot;
 <script src="https://www.qikqiak.com/js/jquery-1.11.2.min.js"></script>
 <script src="https://www.qikqiak.com/js/bootstrap.min.js"></script>
 <script src="https://www.qikqiak.com/js/main.min.js"></script>
-<script src="https://www.qikqiak.com/js/highlight.min.js"></script>
-<script> hljs.initHighlightingOnLoad(); </script>
-<script src="https://www.qikqiak.com/js/prism.js?t=123"></script>
+
+
+
 
 <script src="https://www.qikqiak.com/js/reward.js"></script>
 

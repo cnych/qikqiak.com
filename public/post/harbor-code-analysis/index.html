@@ -33,12 +33,9 @@ Harbor 是一个CNCF基金会托管的开源的可信的云原生docker registry
   <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
   <link rel="stylesheet" href="https://www.qikqiak.com/css/font-awesome.min.css" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/bootstrap.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=456" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=4567" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/pygment_highlights.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/highlight.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/prism.css?t=123" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/search.css" />
   
   <link rel="stylesheet" href="https://www.qikqiak.com/css/reward.css" />
@@ -104,7 +101,7 @@ if (!doNotTrack) {
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
                 
-                  <a href="https://www.qikqiak.com/page/archive/">Archive</a>
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
                 
                   <a href="https://www.qikqiak.com/tags">tags</a>
                 
@@ -306,17 +303,14 @@ autocomplete('#aa-search-input',
 <p>要完成上面的登录认证过程有两个关键点需要注意：怎样让 registry 服务知道服务认证地址？我们自己提供的认证服务生成的 token 为什么 registry 就能够识别？</p>
 
 <p>对于第一个问题，比较好解决，registry 服务本身就提供了一个配置文件，可以在启动 registry 服务的配置文件中指定上认证服务地址即可，其中有如下这样的一段配置信息：</p>
-
-<pre><code class="language-yaml">......
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">......
 auth:
   token:
     realm: token-realm
     service: token-service
     issuer: registry-token-issuer
     rootcertbundle: /root/certs/bundle
-......
-</code></pre>
-
+......</code></pre></div>
 <p>其中 realm 就可以用来指定一个认证服务的地址，下面我们可以看到 Harbor 中该配置的内容</p>
 
 <blockquote>
@@ -328,533 +322,491 @@ auth:
 <h3 id="harbor-认证">Harbor 认证</h3>
 
 <p>上面我们已经说明了 docker registry v2 认证的整个流程，Harbor 实际上核心的功能就是提供上面的认证服务的功能。我们在 Harbor 的源码目录中可以查看到 registry 服务的配置文件，路径为：<code>make/common/templates/registry/config.yml</code>，其中有两个非常重要的配置信息：</p>
-
-<pre><code class="language-yaml">......
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">......
 auth:
   token:
     issuer: harbor-token-issuer
     realm: $public_url/service/token
     rootcertbundle: /etc/registry/root.crt
     service: harbor-registry
-......
-</code></pre>
-
+......</code></pre></div>
 <p>一个就是上面我们提到的 auth.token.realm，是用来提供 registry v2 安全认证的外部服务地址，这里默认的配置是<code>$public_url/service/token</code>，其中<code>$public_url</code>就是 Harbor 服务的主域地址，所以安全认证服务就是去请求<code>/service/token</code>这个地址了，由于 Harbor 是基于 beego 这个 web 框架进行开发的，所以我们只需要去查找下<code>/service/token</code>这个路由，就可以找到对应的请求处理方法了。可以很容易在文件<code>src/core/router.go</code>文件中找到改路由：</p>
-
-<pre><code class="language-golang">func initRouters() {
-    ......
-    beego.Router(&quot;/service/token&quot;, &amp;token.Handler{})
-    ......
-}
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">initRouters</span>() {
+    <span style="color:#ff79c6">......</span>
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/service/token&#34;</span>, <span style="color:#ff79c6">&amp;</span>token.Handler{})
+    <span style="color:#ff79c6">......</span>
+}</code></pre></div>
 <p>上面的请求处理方法在<code>src/core/service/token.go</code>文件中，里面有一个<code>Get</code>方法就是用来处理该请求的：</p>
-
-<pre><code class="language-golang">func (h *Handler) Get() {
-    request := h.Ctx.Request
-    log.Debugf(&quot;URL for token request: %s&quot;, request.URL.String())
-    service := h.GetString(&quot;service&quot;)
-    tokenCreator, ok := creatorMap[service]
-    if !ok {
-        errMsg := fmt.Sprintf(&quot;Unable to handle service: %s&quot;, service)
-        log.Errorf(errMsg)
-        h.CustomAbort(http.StatusBadRequest, errMsg)
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#8be9fd;font-style:italic">func</span> (h <span style="color:#ff79c6">*</span>Handler) <span style="color:#50fa7b">Get</span>() {
+    request <span style="color:#ff79c6">:=</span> h.Ctx.Request
+    log.<span style="color:#50fa7b">Debugf</span>(<span style="color:#f1fa8c">&#34;URL for token request: %s&#34;</span>, request.URL.<span style="color:#50fa7b">String</span>())
+    service <span style="color:#ff79c6">:=</span> h.<span style="color:#50fa7b">GetString</span>(<span style="color:#f1fa8c">&#34;service&#34;</span>)
+    tokenCreator, ok <span style="color:#ff79c6">:=</span> creatorMap[service]
+    <span style="color:#ff79c6">if</span> !ok {
+        errMsg <span style="color:#ff79c6">:=</span> fmt.<span style="color:#50fa7b">Sprintf</span>(<span style="color:#f1fa8c">&#34;Unable to handle service: %s&#34;</span>, service)
+        log.<span style="color:#50fa7b">Errorf</span>(errMsg)
+        h.<span style="color:#50fa7b">CustomAbort</span>(http.StatusBadRequest, errMsg)
     }
-    token, err := tokenCreator.Create(request)
-    if err != nil {
-        if _, ok := err.(*unauthorizedError); ok {
-            h.CustomAbort(http.StatusUnauthorized, &quot;&quot;)
+    token, err <span style="color:#ff79c6">:=</span> tokenCreator.<span style="color:#50fa7b">Create</span>(request)
+    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+        <span style="color:#ff79c6">if</span> _, ok <span style="color:#ff79c6">:=</span> err.(<span style="color:#ff79c6">*</span>unauthorizedError); ok {
+            h.<span style="color:#50fa7b">CustomAbort</span>(http.StatusUnauthorized, <span style="color:#f1fa8c">&#34;&#34;</span>)
         }
-        log.Errorf(&quot;Unexpected error when creating the token, error: %v&quot;, err)
-        h.CustomAbort(http.StatusInternalServerError, &quot;&quot;)
+        log.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;Unexpected error when creating the token, error: %v&#34;</span>, err)
+        h.<span style="color:#50fa7b">CustomAbort</span>(http.StatusInternalServerError, <span style="color:#f1fa8c">&#34;&#34;</span>)
     }
-    h.Data[&quot;json&quot;] = token
-    h.ServeJSON()
+    h.Data[<span style="color:#f1fa8c">&#34;json&#34;</span>] = token
+    h.<span style="color:#50fa7b">ServeJSON</span>()
 
-}
-</code></pre>
-
+}</code></pre></div>
 <p>上面的方法通过参数 service 来获取一个 tokenCreator，然后调用 Create 方法生成 token，方法如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#8be9fd;font-style:italic">func</span> (g generalCreator) <span style="color:#50fa7b">Create</span>(r <span style="color:#ff79c6">*</span>http.Request) (<span style="color:#ff79c6">*</span>models.Token, <span style="color:#8be9fd">error</span>) {
+    <span style="color:#8be9fd;font-style:italic">var</span> err <span style="color:#8be9fd">error</span>
+    scopes <span style="color:#ff79c6">:=</span> <span style="color:#50fa7b">parseScopes</span>(r.URL)
+    log.<span style="color:#50fa7b">Debugf</span>(<span style="color:#f1fa8c">&#34;scopes: %v&#34;</span>, scopes)
 
-<pre><code class="language-golang">func (g generalCreator) Create(r *http.Request) (*models.Token, error) {
-    var err error
-    scopes := parseScopes(r.URL)
-    log.Debugf(&quot;scopes: %v&quot;, scopes)
-
-    ctx, err := filter.GetSecurityContext(r)
-    if err != nil {
-        return nil, fmt.Errorf(&quot;failed to  get security context from request&quot;)
+    ctx, err <span style="color:#ff79c6">:=</span> filter.<span style="color:#50fa7b">GetSecurityContext</span>(r)
+    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+        <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, fmt.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;failed to  get security context from request&#34;</span>)
     }
 
-    pm, err := filter.GetProjectManager(r)
-    if err != nil {
-        return nil, fmt.Errorf(&quot;failed to  get project manager from request&quot;)
+    pm, err <span style="color:#ff79c6">:=</span> filter.<span style="color:#50fa7b">GetProjectManager</span>(r)
+    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+        <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, fmt.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;failed to  get project manager from request&#34;</span>)
     }
 
-    // for docker login
-    if !ctx.IsAuthenticated() {
-        if len(scopes) == 0 {
-            return nil, &amp;unauthorizedError{}
+    <span style="color:#6272a4">// for docker login
+</span><span style="color:#6272a4"></span>    <span style="color:#ff79c6">if</span> !ctx.<span style="color:#50fa7b">IsAuthenticated</span>() {
+        <span style="color:#ff79c6">if</span> <span style="color:#8be9fd;font-style:italic">len</span>(scopes) <span style="color:#ff79c6">==</span> <span style="color:#bd93f9">0</span> {
+            <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, <span style="color:#ff79c6">&amp;</span>unauthorizedError{}
         }
     }
-    access := GetResourceActions(scopes)
-    err = filterAccess(access, ctx, pm, g.filterMap)
-    if err != nil {
-        return nil, err
+    access <span style="color:#ff79c6">:=</span> <span style="color:#50fa7b">GetResourceActions</span>(scopes)
+    err = <span style="color:#50fa7b">filterAccess</span>(access, ctx, pm, g.filterMap)
+    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+        <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, err
     }
-    return MakeToken(ctx.GetUsername(), g.service, access)
-}
-</code></pre>
-
+    <span style="color:#ff79c6">return</span> <span style="color:#50fa7b">MakeToken</span>(ctx.<span style="color:#50fa7b">GetUsername</span>(), g.service, access)
+}</code></pre></div>
 <p>这里就做了一系列的权限校验，如果没有问题就生成一个 token 对象返回，这里生成的 Token 对象结构体如下：</p>
-
-<pre><code class="language-golang">type Token struct {
-    Token     string `json:&quot;token&quot;`
-    ExpiresIn int    `json:&quot;expires_in&quot;`
-    IssuedAt  string `json:&quot;issued_at&quot;`
-}
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#8be9fd;font-style:italic">type</span> Token <span style="color:#8be9fd;font-style:italic">struct</span> {
+    Token     <span style="color:#8be9fd">string</span> <span style="color:#f1fa8c">`json:&#34;token&#34;`</span>
+    ExpiresIn <span style="color:#8be9fd">int</span>    <span style="color:#f1fa8c">`json:&#34;expires_in&#34;`</span>
+    IssuedAt  <span style="color:#8be9fd">string</span> <span style="color:#f1fa8c">`json:&#34;issued_at&#34;`</span>
+}</code></pre></div>
 <p>和 JWT 定义的 token 格式是保持一致的，所以 docker registry v2 能够识别我们返回的 token 字符串。</p>
 
 <h3 id="harbor-api">Harbor API</h3>
 
 <p>上面是 Harbor 提供的最核心的认证服务功能，除此之外还有很多其他的功能，比如 Harbor 还提供了一个额外的 Dashboard 可供我们操作，还支持 Helm Chart 仓库。同样我们再看下之前的<code>src/core/router.go</code>文件：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">initRouters</span>() {
 
-<pre><code class="language-golang">func initRouters() {
+    <span style="color:#6272a4">// standalone
+</span><span style="color:#6272a4"></span>    <span style="color:#ff79c6">if</span> !config.<span style="color:#50fa7b">WithAdmiral</span>() {
+        <span style="color:#6272a4">// Controller API:
+</span><span style="color:#6272a4"></span>        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/c/login&#34;</span>, <span style="color:#ff79c6">&amp;</span>controllers.CommonController{}, <span style="color:#f1fa8c">&#34;post:Login&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/c/log_out&#34;</span>, <span style="color:#ff79c6">&amp;</span>controllers.CommonController{}, <span style="color:#f1fa8c">&#34;get:LogOut&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/c/reset&#34;</span>, <span style="color:#ff79c6">&amp;</span>controllers.CommonController{}, <span style="color:#f1fa8c">&#34;post:ResetPassword&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/c/userExists&#34;</span>, <span style="color:#ff79c6">&amp;</span>controllers.CommonController{}, <span style="color:#f1fa8c">&#34;post:UserExists&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/c/sendEmail&#34;</span>, <span style="color:#ff79c6">&amp;</span>controllers.CommonController{}, <span style="color:#f1fa8c">&#34;get:SendResetEmail&#34;</span>)
 
-    // standalone
-    if !config.WithAdmiral() {
-        // Controller API:
-        beego.Router(&quot;/c/login&quot;, &amp;controllers.CommonController{}, &quot;post:Login&quot;)
-        beego.Router(&quot;/c/log_out&quot;, &amp;controllers.CommonController{}, &quot;get:LogOut&quot;)
-        beego.Router(&quot;/c/reset&quot;, &amp;controllers.CommonController{}, &quot;post:ResetPassword&quot;)
-        beego.Router(&quot;/c/userExists&quot;, &amp;controllers.CommonController{}, &quot;post:UserExists&quot;)
-        beego.Router(&quot;/c/sendEmail&quot;, &amp;controllers.CommonController{}, &quot;get:SendResetEmail&quot;)
+        <span style="color:#6272a4">// API:
+</span><span style="color:#6272a4"></span>        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/projects/:pid([0-9]+)/members/?:pmid([0-9]+)&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.ProjectMemberAPI{})
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/projects/&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.ProjectAPI{}, <span style="color:#f1fa8c">&#34;head:Head&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/projects/:id([0-9]+)&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.ProjectAPI{})
 
-        // API:
-        beego.Router(&quot;/api/projects/:pid([0-9]+)/members/?:pmid([0-9]+)&quot;, &amp;api.ProjectMemberAPI{})
-        beego.Router(&quot;/api/projects/&quot;, &amp;api.ProjectAPI{}, &quot;head:Head&quot;)
-        beego.Router(&quot;/api/projects/:id([0-9]+)&quot;, &amp;api.ProjectAPI{})
-
-        beego.Router(&quot;/api/users/:id&quot;, &amp;api.UserAPI{}, &quot;get:Get;delete:Delete;put:Put&quot;)
-        beego.Router(&quot;/api/users&quot;, &amp;api.UserAPI{}, &quot;get:List;post:Post&quot;)
-        beego.Router(&quot;/api/users/:id([0-9]+)/password&quot;, &amp;api.UserAPI{}, &quot;put:ChangePassword&quot;)
-        beego.Router(&quot;/api/users/:id/sysadmin&quot;, &amp;api.UserAPI{}, &quot;put:ToggleUserAdminRole&quot;)
-        beego.Router(&quot;/api/usergroups/?:ugid([0-9]+)&quot;, &amp;api.UserGroupAPI{})
-        beego.Router(&quot;/api/ldap/ping&quot;, &amp;api.LdapAPI{}, &quot;post:Ping&quot;)
-        beego.Router(&quot;/api/ldap/users/search&quot;, &amp;api.LdapAPI{}, &quot;get:Search&quot;)
-        beego.Router(&quot;/api/ldap/groups/search&quot;, &amp;api.LdapAPI{}, &quot;get:SearchGroup&quot;)
-        beego.Router(&quot;/api/ldap/users/import&quot;, &amp;api.LdapAPI{}, &quot;post:ImportUser&quot;)
-        beego.Router(&quot;/api/email/ping&quot;, &amp;api.EmailAPI{}, &quot;post:Ping&quot;)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/users/:id&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.UserAPI{}, <span style="color:#f1fa8c">&#34;get:Get;delete:Delete;put:Put&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/users&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.UserAPI{}, <span style="color:#f1fa8c">&#34;get:List;post:Post&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/users/:id([0-9]+)/password&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.UserAPI{}, <span style="color:#f1fa8c">&#34;put:ChangePassword&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/users/:id/sysadmin&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.UserAPI{}, <span style="color:#f1fa8c">&#34;put:ToggleUserAdminRole&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/usergroups/?:ugid([0-9]+)&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.UserGroupAPI{})
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/ldap/ping&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.LdapAPI{}, <span style="color:#f1fa8c">&#34;post:Ping&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/ldap/users/search&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.LdapAPI{}, <span style="color:#f1fa8c">&#34;get:Search&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/ldap/groups/search&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.LdapAPI{}, <span style="color:#f1fa8c">&#34;get:SearchGroup&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/ldap/users/import&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.LdapAPI{}, <span style="color:#f1fa8c">&#34;post:ImportUser&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/email/ping&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.EmailAPI{}, <span style="color:#f1fa8c">&#34;post:Ping&#34;</span>)
     }
 
-    // API
-    beego.Router(&quot;/api/ping&quot;, &amp;api.SystemInfoAPI{}, &quot;get:Ping&quot;)
-    beego.Router(&quot;/api/search&quot;, &amp;api.SearchAPI{})
-    beego.Router(&quot;/api/projects/&quot;, &amp;api.ProjectAPI{}, &quot;get:List;post:Post&quot;)
-    beego.Router(&quot;/api/projects/:id([0-9]+)/logs&quot;, &amp;api.ProjectAPI{}, &quot;get:Logs&quot;)
-    beego.Router(&quot;/api/projects/:id([0-9]+)/_deletable&quot;, &amp;api.ProjectAPI{}, &quot;get:Deletable&quot;)
-    beego.Router(&quot;/api/projects/:id([0-9]+)/metadatas/?:name&quot;, &amp;api.MetadataAPI{}, &quot;get:Get&quot;)
-    beego.Router(&quot;/api/projects/:id([0-9]+)/metadatas/&quot;, &amp;api.MetadataAPI{}, &quot;post:Post&quot;)
-    beego.Router(&quot;/api/projects/:id([0-9]+)/metadatas/:name&quot;, &amp;api.MetadataAPI{}, &quot;put:Put;delete:Delete&quot;)
-    beego.Router(&quot;/api/repositories&quot;, &amp;api.RepositoryAPI{}, &quot;get:Get&quot;)
-    beego.Router(&quot;/api/repositories/scanAll&quot;, &amp;api.RepositoryAPI{}, &quot;post:ScanAll&quot;)
-    beego.Router(&quot;/api/repositories/*&quot;, &amp;api.RepositoryAPI{}, &quot;delete:Delete;put:Put&quot;)
-    beego.Router(&quot;/api/repositories/*/labels&quot;, &amp;api.RepositoryLabelAPI{}, &quot;get:GetOfRepository;post:AddToRepository&quot;)
-    beego.Router(&quot;/api/repositories/*/labels/:id([0-9]+)&quot;, &amp;api.RepositoryLabelAPI{}, &quot;delete:RemoveFromRepository&quot;)
-    beego.Router(&quot;/api/repositories/*/tags/:tag&quot;, &amp;api.RepositoryAPI{}, &quot;delete:Delete;get:GetTag&quot;)
-    beego.Router(&quot;/api/repositories/*/tags/:tag/labels&quot;, &amp;api.RepositoryLabelAPI{}, &quot;get:GetOfImage;post:AddToImage&quot;)
-    beego.Router(&quot;/api/repositories/*/tags/:tag/labels/:id([0-9]+)&quot;, &amp;api.RepositoryLabelAPI{}, &quot;delete:RemoveFromImage&quot;)
-    beego.Router(&quot;/api/repositories/*/tags&quot;, &amp;api.RepositoryAPI{}, &quot;get:GetTags;post:Retag&quot;)
-    beego.Router(&quot;/api/repositories/*/tags/:tag/scan&quot;, &amp;api.RepositoryAPI{}, &quot;post:ScanImage&quot;)
-    beego.Router(&quot;/api/repositories/*/tags/:tag/vulnerability/details&quot;, &amp;api.RepositoryAPI{}, &quot;Get:VulnerabilityDetails&quot;)
-    beego.Router(&quot;/api/repositories/*/tags/:tag/manifest&quot;, &amp;api.RepositoryAPI{}, &quot;get:GetManifests&quot;)
-    beego.Router(&quot;/api/repositories/*/signatures&quot;, &amp;api.RepositoryAPI{}, &quot;get:GetSignatures&quot;)
-    beego.Router(&quot;/api/repositories/top&quot;, &amp;api.RepositoryAPI{}, &quot;get:GetTopRepos&quot;)
-    beego.Router(&quot;/api/jobs/replication/&quot;, &amp;api.RepJobAPI{}, &quot;get:List;put:StopJobs&quot;)
-    beego.Router(&quot;/api/jobs/replication/:id([0-9]+)&quot;, &amp;api.RepJobAPI{})
-    beego.Router(&quot;/api/jobs/replication/:id([0-9]+)/log&quot;, &amp;api.RepJobAPI{}, &quot;get:GetLog&quot;)
-    beego.Router(&quot;/api/jobs/scan/:id([0-9]+)/log&quot;, &amp;api.ScanJobAPI{}, &quot;get:GetLog&quot;)
+    <span style="color:#6272a4">// API
+</span><span style="color:#6272a4"></span>    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/ping&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.SystemInfoAPI{}, <span style="color:#f1fa8c">&#34;get:Ping&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/search&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.SearchAPI{})
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/projects/&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.ProjectAPI{}, <span style="color:#f1fa8c">&#34;get:List;post:Post&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/projects/:id([0-9]+)/logs&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.ProjectAPI{}, <span style="color:#f1fa8c">&#34;get:Logs&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/projects/:id([0-9]+)/_deletable&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.ProjectAPI{}, <span style="color:#f1fa8c">&#34;get:Deletable&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/projects/:id([0-9]+)/metadatas/?:name&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.MetadataAPI{}, <span style="color:#f1fa8c">&#34;get:Get&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/projects/:id([0-9]+)/metadatas/&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.MetadataAPI{}, <span style="color:#f1fa8c">&#34;post:Post&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/projects/:id([0-9]+)/metadatas/:name&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.MetadataAPI{}, <span style="color:#f1fa8c">&#34;put:Put;delete:Delete&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/repositories&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.RepositoryAPI{}, <span style="color:#f1fa8c">&#34;get:Get&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/repositories/scanAll&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.RepositoryAPI{}, <span style="color:#f1fa8c">&#34;post:ScanAll&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/repositories/*&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.RepositoryAPI{}, <span style="color:#f1fa8c">&#34;delete:Delete;put:Put&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/repositories/*/labels&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.RepositoryLabelAPI{}, <span style="color:#f1fa8c">&#34;get:GetOfRepository;post:AddToRepository&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/repositories/*/labels/:id([0-9]+)&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.RepositoryLabelAPI{}, <span style="color:#f1fa8c">&#34;delete:RemoveFromRepository&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/repositories/*/tags/:tag&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.RepositoryAPI{}, <span style="color:#f1fa8c">&#34;delete:Delete;get:GetTag&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/repositories/*/tags/:tag/labels&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.RepositoryLabelAPI{}, <span style="color:#f1fa8c">&#34;get:GetOfImage;post:AddToImage&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/repositories/*/tags/:tag/labels/:id([0-9]+)&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.RepositoryLabelAPI{}, <span style="color:#f1fa8c">&#34;delete:RemoveFromImage&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/repositories/*/tags&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.RepositoryAPI{}, <span style="color:#f1fa8c">&#34;get:GetTags;post:Retag&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/repositories/*/tags/:tag/scan&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.RepositoryAPI{}, <span style="color:#f1fa8c">&#34;post:ScanImage&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/repositories/*/tags/:tag/vulnerability/details&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.RepositoryAPI{}, <span style="color:#f1fa8c">&#34;Get:VulnerabilityDetails&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/repositories/*/tags/:tag/manifest&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.RepositoryAPI{}, <span style="color:#f1fa8c">&#34;get:GetManifests&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/repositories/*/signatures&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.RepositoryAPI{}, <span style="color:#f1fa8c">&#34;get:GetSignatures&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/repositories/top&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.RepositoryAPI{}, <span style="color:#f1fa8c">&#34;get:GetTopRepos&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/jobs/replication/&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.RepJobAPI{}, <span style="color:#f1fa8c">&#34;get:List;put:StopJobs&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/jobs/replication/:id([0-9]+)&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.RepJobAPI{})
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/jobs/replication/:id([0-9]+)/log&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.RepJobAPI{}, <span style="color:#f1fa8c">&#34;get:GetLog&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/jobs/scan/:id([0-9]+)/log&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.ScanJobAPI{}, <span style="color:#f1fa8c">&#34;get:GetLog&#34;</span>)
 
-    beego.Router(&quot;/api/system/gc&quot;, &amp;api.GCAPI{}, &quot;get:List&quot;)
-    beego.Router(&quot;/api/system/gc/:id&quot;, &amp;api.GCAPI{}, &quot;get:GetGC&quot;)
-    beego.Router(&quot;/api/system/gc/:id([0-9]+)/log&quot;, &amp;api.GCAPI{}, &quot;get:GetLog&quot;)
-    beego.Router(&quot;/api/system/gc/schedule&quot;, &amp;api.GCAPI{}, &quot;get:Get;put:Put;post:Post&quot;)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/system/gc&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.GCAPI{}, <span style="color:#f1fa8c">&#34;get:List&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/system/gc/:id&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.GCAPI{}, <span style="color:#f1fa8c">&#34;get:GetGC&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/system/gc/:id([0-9]+)/log&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.GCAPI{}, <span style="color:#f1fa8c">&#34;get:GetLog&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/system/gc/schedule&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.GCAPI{}, <span style="color:#f1fa8c">&#34;get:Get;put:Put;post:Post&#34;</span>)
 
-    beego.Router(&quot;/api/policies/replication/:id([0-9]+)&quot;, &amp;api.RepPolicyAPI{})
-    beego.Router(&quot;/api/policies/replication&quot;, &amp;api.RepPolicyAPI{}, &quot;get:List&quot;)
-    beego.Router(&quot;/api/policies/replication&quot;, &amp;api.RepPolicyAPI{}, &quot;post:Post&quot;)
-    beego.Router(&quot;/api/targets/&quot;, &amp;api.TargetAPI{}, &quot;get:List&quot;)
-    beego.Router(&quot;/api/targets/&quot;, &amp;api.TargetAPI{}, &quot;post:Post&quot;)
-    beego.Router(&quot;/api/targets/:id([0-9]+)&quot;, &amp;api.TargetAPI{})
-    beego.Router(&quot;/api/targets/:id([0-9]+)/policies/&quot;, &amp;api.TargetAPI{}, &quot;get:ListPolicies&quot;)
-    beego.Router(&quot;/api/targets/ping&quot;, &amp;api.TargetAPI{}, &quot;post:Ping&quot;)
-    beego.Router(&quot;/api/logs&quot;, &amp;api.LogAPI{})
-    beego.Router(&quot;/api/configs&quot;, &amp;api.ConfigAPI{}, &quot;get:GetInternalConfig&quot;)
-    beego.Router(&quot;/api/configurations&quot;, &amp;api.ConfigAPI{})
-    beego.Router(&quot;/api/configurations/reset&quot;, &amp;api.ConfigAPI{}, &quot;post:Reset&quot;)
-    beego.Router(&quot;/api/statistics&quot;, &amp;api.StatisticAPI{})
-    beego.Router(&quot;/api/replications&quot;, &amp;api.ReplicationAPI{})
-    beego.Router(&quot;/api/labels&quot;, &amp;api.LabelAPI{}, &quot;post:Post;get:List&quot;)
-    beego.Router(&quot;/api/labels/:id([0-9]+)&quot;, &amp;api.LabelAPI{}, &quot;get:Get;put:Put;delete:Delete&quot;)
-    beego.Router(&quot;/api/labels/:id([0-9]+)/resources&quot;, &amp;api.LabelAPI{}, &quot;get:ListResources&quot;)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/policies/replication/:id([0-9]+)&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.RepPolicyAPI{})
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/policies/replication&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.RepPolicyAPI{}, <span style="color:#f1fa8c">&#34;get:List&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/policies/replication&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.RepPolicyAPI{}, <span style="color:#f1fa8c">&#34;post:Post&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/targets/&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.TargetAPI{}, <span style="color:#f1fa8c">&#34;get:List&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/targets/&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.TargetAPI{}, <span style="color:#f1fa8c">&#34;post:Post&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/targets/:id([0-9]+)&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.TargetAPI{})
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/targets/:id([0-9]+)/policies/&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.TargetAPI{}, <span style="color:#f1fa8c">&#34;get:ListPolicies&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/targets/ping&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.TargetAPI{}, <span style="color:#f1fa8c">&#34;post:Ping&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/logs&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.LogAPI{})
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/configs&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.ConfigAPI{}, <span style="color:#f1fa8c">&#34;get:GetInternalConfig&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/configurations&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.ConfigAPI{})
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/configurations/reset&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.ConfigAPI{}, <span style="color:#f1fa8c">&#34;post:Reset&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/statistics&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.StatisticAPI{})
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/replications&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.ReplicationAPI{})
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/labels&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.LabelAPI{}, <span style="color:#f1fa8c">&#34;post:Post;get:List&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/labels/:id([0-9]+)&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.LabelAPI{}, <span style="color:#f1fa8c">&#34;get:Get;put:Put;delete:Delete&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/labels/:id([0-9]+)/resources&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.LabelAPI{}, <span style="color:#f1fa8c">&#34;get:ListResources&#34;</span>)
 
-    beego.Router(&quot;/api/systeminfo&quot;, &amp;api.SystemInfoAPI{}, &quot;get:GetGeneralInfo&quot;)
-    beego.Router(&quot;/api/systeminfo/volumes&quot;, &amp;api.SystemInfoAPI{}, &quot;get:GetVolumeInfo&quot;)
-    beego.Router(&quot;/api/systeminfo/getcert&quot;, &amp;api.SystemInfoAPI{}, &quot;get:GetCert&quot;)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/systeminfo&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.SystemInfoAPI{}, <span style="color:#f1fa8c">&#34;get:GetGeneralInfo&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/systeminfo/volumes&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.SystemInfoAPI{}, <span style="color:#f1fa8c">&#34;get:GetVolumeInfo&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/systeminfo/getcert&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.SystemInfoAPI{}, <span style="color:#f1fa8c">&#34;get:GetCert&#34;</span>)
 
-    beego.Router(&quot;/api/internal/syncregistry&quot;, &amp;api.InternalAPI{}, &quot;post:SyncRegistry&quot;)
-    beego.Router(&quot;/api/internal/renameadmin&quot;, &amp;api.InternalAPI{}, &quot;post:RenameAdmin&quot;)
-    beego.Router(&quot;/api/internal/configurations&quot;, &amp;api.ConfigAPI{}, &quot;get:GetInternalConfig&quot;)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/internal/syncregistry&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.InternalAPI{}, <span style="color:#f1fa8c">&#34;post:SyncRegistry&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/internal/renameadmin&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.InternalAPI{}, <span style="color:#f1fa8c">&#34;post:RenameAdmin&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/internal/configurations&#34;</span>, <span style="color:#ff79c6">&amp;</span>api.ConfigAPI{}, <span style="color:#f1fa8c">&#34;get:GetInternalConfig&#34;</span>)
 
-    // external service that hosted on harbor process:
-    beego.Router(&quot;/service/notifications&quot;, &amp;registry.NotificationHandler{})
-    beego.Router(&quot;/service/notifications/clair&quot;, &amp;clair.Handler{}, &quot;post:Handle&quot;)
-    beego.Router(&quot;/service/notifications/jobs/scan/:id([0-9]+)&quot;, &amp;jobs.Handler{}, &quot;post:HandleScan&quot;)
-    beego.Router(&quot;/service/notifications/jobs/replication/:id([0-9]+)&quot;, &amp;jobs.Handler{}, &quot;post:HandleReplication&quot;)
-    beego.Router(&quot;/service/notifications/jobs/adminjob/:id([0-9]+)&quot;, &amp;admin.Handler{}, &quot;post:HandleAdminJob&quot;)
-    beego.Router(&quot;/service/token&quot;, &amp;token.Handler{})
+    <span style="color:#6272a4">// external service that hosted on harbor process:
+</span><span style="color:#6272a4"></span>    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/service/notifications&#34;</span>, <span style="color:#ff79c6">&amp;</span>registry.NotificationHandler{})
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/service/notifications/clair&#34;</span>, <span style="color:#ff79c6">&amp;</span>clair.Handler{}, <span style="color:#f1fa8c">&#34;post:Handle&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/service/notifications/jobs/scan/:id([0-9]+)&#34;</span>, <span style="color:#ff79c6">&amp;</span>jobs.Handler{}, <span style="color:#f1fa8c">&#34;post:HandleScan&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/service/notifications/jobs/replication/:id([0-9]+)&#34;</span>, <span style="color:#ff79c6">&amp;</span>jobs.Handler{}, <span style="color:#f1fa8c">&#34;post:HandleReplication&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/service/notifications/jobs/adminjob/:id([0-9]+)&#34;</span>, <span style="color:#ff79c6">&amp;</span>admin.Handler{}, <span style="color:#f1fa8c">&#34;post:HandleAdminJob&#34;</span>)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/service/token&#34;</span>, <span style="color:#ff79c6">&amp;</span>token.Handler{})
 
-    beego.Router(&quot;/v2/*&quot;, &amp;controllers.RegistryProxy{}, &quot;*:Handle&quot;)
+    beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/v2/*&#34;</span>, <span style="color:#ff79c6">&amp;</span>controllers.RegistryProxy{}, <span style="color:#f1fa8c">&#34;*:Handle&#34;</span>)
 
-    // APIs for chart repository
-    if config.WithChartMuseum() {
-        // Charts are controlled under projects
-        chartRepositoryAPIType := &amp;api.ChartRepositoryAPI{}
-        beego.Router(&quot;/api/chartrepo/health&quot;, chartRepositoryAPIType, &quot;get:GetHealthStatus&quot;)
-        beego.Router(&quot;/api/chartrepo/:repo/charts&quot;, chartRepositoryAPIType, &quot;get:ListCharts&quot;)
-        beego.Router(&quot;/api/chartrepo/:repo/charts/:name&quot;, chartRepositoryAPIType, &quot;get:ListChartVersions&quot;)
-        beego.Router(&quot;/api/chartrepo/:repo/charts/:name&quot;, chartRepositoryAPIType, &quot;delete:DeleteChart&quot;)
-        beego.Router(&quot;/api/chartrepo/:repo/charts/:name/:version&quot;, chartRepositoryAPIType, &quot;get:GetChartVersion&quot;)
-        beego.Router(&quot;/api/chartrepo/:repo/charts/:name/:version&quot;, chartRepositoryAPIType, &quot;delete:DeleteChartVersion&quot;)
-        beego.Router(&quot;/api/chartrepo/:repo/charts&quot;, chartRepositoryAPIType, &quot;post:UploadChartVersion&quot;)
-        beego.Router(&quot;/api/chartrepo/:repo/prov&quot;, chartRepositoryAPIType, &quot;post:UploadChartProvFile&quot;)
-        beego.Router(&quot;/api/chartrepo/charts&quot;, chartRepositoryAPIType, &quot;post:UploadChartVersion&quot;)
+    <span style="color:#6272a4">// APIs for chart repository
+</span><span style="color:#6272a4"></span>    <span style="color:#ff79c6">if</span> config.<span style="color:#50fa7b">WithChartMuseum</span>() {
+        <span style="color:#6272a4">// Charts are controlled under projects
+</span><span style="color:#6272a4"></span>        chartRepositoryAPIType <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">&amp;</span>api.ChartRepositoryAPI{}
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/chartrepo/health&#34;</span>, chartRepositoryAPIType, <span style="color:#f1fa8c">&#34;get:GetHealthStatus&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/chartrepo/:repo/charts&#34;</span>, chartRepositoryAPIType, <span style="color:#f1fa8c">&#34;get:ListCharts&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/chartrepo/:repo/charts/:name&#34;</span>, chartRepositoryAPIType, <span style="color:#f1fa8c">&#34;get:ListChartVersions&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/chartrepo/:repo/charts/:name&#34;</span>, chartRepositoryAPIType, <span style="color:#f1fa8c">&#34;delete:DeleteChart&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/chartrepo/:repo/charts/:name/:version&#34;</span>, chartRepositoryAPIType, <span style="color:#f1fa8c">&#34;get:GetChartVersion&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/chartrepo/:repo/charts/:name/:version&#34;</span>, chartRepositoryAPIType, <span style="color:#f1fa8c">&#34;delete:DeleteChartVersion&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/chartrepo/:repo/charts&#34;</span>, chartRepositoryAPIType, <span style="color:#f1fa8c">&#34;post:UploadChartVersion&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/chartrepo/:repo/prov&#34;</span>, chartRepositoryAPIType, <span style="color:#f1fa8c">&#34;post:UploadChartProvFile&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/chartrepo/charts&#34;</span>, chartRepositoryAPIType, <span style="color:#f1fa8c">&#34;post:UploadChartVersion&#34;</span>)
 
-        // Repository services
-        beego.Router(&quot;/chartrepo/:repo/index.yaml&quot;, chartRepositoryAPIType, &quot;get:GetIndexByRepo&quot;)
-        beego.Router(&quot;/chartrepo/index.yaml&quot;, chartRepositoryAPIType, &quot;get:GetIndex&quot;)
-        beego.Router(&quot;/chartrepo/:repo/charts/:filename&quot;, chartRepositoryAPIType, &quot;get:DownloadChart&quot;)
+        <span style="color:#6272a4">// Repository services
+</span><span style="color:#6272a4"></span>        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/chartrepo/:repo/index.yaml&#34;</span>, chartRepositoryAPIType, <span style="color:#f1fa8c">&#34;get:GetIndexByRepo&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/chartrepo/index.yaml&#34;</span>, chartRepositoryAPIType, <span style="color:#f1fa8c">&#34;get:GetIndex&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/chartrepo/:repo/charts/:filename&#34;</span>, chartRepositoryAPIType, <span style="color:#f1fa8c">&#34;get:DownloadChart&#34;</span>)
 
-        // Labels for chart
-        chartLabelAPIType := &amp;api.ChartLabelAPI{}
-        beego.Router(&quot;/api/chartrepo/:repo/charts/:name/:version/labels&quot;, chartLabelAPIType, &quot;get:GetLabels;post:MarkLabel&quot;)
-        beego.Router(&quot;/api/chartrepo/:repo/charts/:name/:version/labels/:id([0-9]+)&quot;, chartLabelAPIType, &quot;delete:RemoveLabel&quot;)
+        <span style="color:#6272a4">// Labels for chart
+</span><span style="color:#6272a4"></span>        chartLabelAPIType <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">&amp;</span>api.ChartLabelAPI{}
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/chartrepo/:repo/charts/:name/:version/labels&#34;</span>, chartLabelAPIType, <span style="color:#f1fa8c">&#34;get:GetLabels;post:MarkLabel&#34;</span>)
+        beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/api/chartrepo/:repo/charts/:name/:version/labels/:id([0-9]+)&#34;</span>, chartLabelAPIType, <span style="color:#f1fa8c">&#34;delete:RemoveLabel&#34;</span>)
     }
 
-    // Error pages
-    beego.ErrorController(&amp;controllers.ErrorController{})
+    <span style="color:#6272a4">// Error pages
+</span><span style="color:#6272a4"></span>    beego.<span style="color:#50fa7b">ErrorController</span>(<span style="color:#ff79c6">&amp;</span>controllers.ErrorController{})
 
-}
-</code></pre>
-
+}</code></pre></div>
 <p>上面这个文件里面就定义了 Harbor 核心的一些 API，其中如果<code>!config.WithAdmiral()</code>为真，则定义的一些用登录相关接口就会生效，Admiral 是 Vmware 的一个容器管理平台，如果我们在配置文件中定义了参数<code>admiral_url</code>，那么 Harbor 就会和 Admiral 进行交互，如果没有配置这个参数，那么就会去和我们定义的 login 相关接口进行交互了。我们这里简单介绍一下主要的接口，第一个登录接口<code>post:Login</code>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#6272a4">// Login handles login request from UI.
+</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">func</span> (cc <span style="color:#ff79c6">*</span>CommonController) <span style="color:#50fa7b">Login</span>() {
+    principal <span style="color:#ff79c6">:=</span> cc.<span style="color:#50fa7b">GetString</span>(<span style="color:#f1fa8c">&#34;principal&#34;</span>)
+    password <span style="color:#ff79c6">:=</span> cc.<span style="color:#50fa7b">GetString</span>(<span style="color:#f1fa8c">&#34;password&#34;</span>)
 
-<pre><code class="language-golang">// Login handles login request from UI.
-func (cc *CommonController) Login() {
-    principal := cc.GetString(&quot;principal&quot;)
-    password := cc.GetString(&quot;password&quot;)
-
-    user, err := auth.Login(models.AuthModel{
+    user, err <span style="color:#ff79c6">:=</span> auth.<span style="color:#50fa7b">Login</span>(models.AuthModel{
         Principal: principal,
         Password:  password,
     })
-    if err != nil {
-        log.Errorf(&quot;Error occurred in UserLogin: %v&quot;, err)
-        cc.CustomAbort(http.StatusUnauthorized, &quot;&quot;)
+    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+        log.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;Error occurred in UserLogin: %v&#34;</span>, err)
+        cc.<span style="color:#50fa7b">CustomAbort</span>(http.StatusUnauthorized, <span style="color:#f1fa8c">&#34;&#34;</span>)
     }
 
-    if user == nil {
-        cc.CustomAbort(http.StatusUnauthorized, &quot;&quot;)
+    <span style="color:#ff79c6">if</span> user <span style="color:#ff79c6">==</span> <span style="color:#ff79c6">nil</span> {
+        cc.<span style="color:#50fa7b">CustomAbort</span>(http.StatusUnauthorized, <span style="color:#f1fa8c">&#34;&#34;</span>)
     }
-    cc.SetSession(&quot;user&quot;, *user)
-}
-</code></pre>
-
+    cc.<span style="color:#50fa7b">SetSession</span>(<span style="color:#f1fa8c">&#34;user&#34;</span>, <span style="color:#ff79c6">*</span>user)
+}</code></pre></div>
 <p>根据请求获取用户名和密码，然后调用<code>auth.Login</code>方法进行登录校验，方法位于文件<code>src/core/auth/authenticator.go</code>下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#6272a4">// Login authenticates user credentials based on setting.
+</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">Login</span>(m models.AuthModel) (<span style="color:#ff79c6">*</span>models.User, <span style="color:#8be9fd">error</span>) {
 
-<pre><code class="language-golang">// Login authenticates user credentials based on setting.
-func Login(m models.AuthModel) (*models.User, error) {
-
-    authMode, err := config.AuthMode()
-    if err != nil {
-        return nil, err
+    authMode, err <span style="color:#ff79c6">:=</span> config.<span style="color:#50fa7b">AuthMode</span>()
+    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+        <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, err
     }
-    if authMode == &quot;&quot; || dao.IsSuperUser(m.Principal) {
+    <span style="color:#ff79c6">if</span> authMode <span style="color:#ff79c6">==</span> <span style="color:#f1fa8c">&#34;&#34;</span> <span style="color:#ff79c6">||</span> dao.<span style="color:#50fa7b">IsSuperUser</span>(m.Principal) {
         authMode = common.DBAuth
     }
-    log.Debug(&quot;Current AUTH_MODE is &quot;, authMode)
+    log.<span style="color:#50fa7b">Debug</span>(<span style="color:#f1fa8c">&#34;Current AUTH_MODE is &#34;</span>, authMode)
 
-    authenticator, ok := registry[authMode]
-    if !ok {
-        return nil, fmt.Errorf(&quot;Unrecognized auth_mode: %s&quot;, authMode)
+    authenticator, ok <span style="color:#ff79c6">:=</span> registry[authMode]
+    <span style="color:#ff79c6">if</span> !ok {
+        <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, fmt.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;Unrecognized auth_mode: %s&#34;</span>, authMode)
     }
-    if lock.IsLocked(m.Principal) {
-        log.Debugf(&quot;%s is locked due to login failure, login failed&quot;, m.Principal)
-        return nil, nil
+    <span style="color:#ff79c6">if</span> lock.<span style="color:#50fa7b">IsLocked</span>(m.Principal) {
+        log.<span style="color:#50fa7b">Debugf</span>(<span style="color:#f1fa8c">&#34;%s is locked due to login failure, login failed&#34;</span>, m.Principal)
+        <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, <span style="color:#ff79c6">nil</span>
     }
-    user, err := authenticator.Authenticate(m)
-    if err != nil {
-        if _, ok = err.(ErrAuth); ok {
-            log.Debugf(&quot;Login failed, locking %s, and sleep for %v&quot;, m.Principal, frozenTime)
-            lock.Lock(m.Principal)
-            time.Sleep(frozenTime)
+    user, err <span style="color:#ff79c6">:=</span> authenticator.<span style="color:#50fa7b">Authenticate</span>(m)
+    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+        <span style="color:#ff79c6">if</span> _, ok = err.(ErrAuth); ok {
+            log.<span style="color:#50fa7b">Debugf</span>(<span style="color:#f1fa8c">&#34;Login failed, locking %s, and sleep for %v&#34;</span>, m.Principal, frozenTime)
+            lock.<span style="color:#50fa7b">Lock</span>(m.Principal)
+            time.<span style="color:#50fa7b">Sleep</span>(frozenTime)
         }
-        return nil, err
+        <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, err
     }
-    err = authenticator.PostAuthenticate(user)
-    return user, err
-}
-</code></pre>
-
+    err = authenticator.<span style="color:#50fa7b">PostAuthenticate</span>(user)
+    <span style="color:#ff79c6">return</span> user, err
+}</code></pre></div>
 <p>通过<code>authenticator.Authenticate</code>方法进行验证，这里就需要通过 authMode 来进行判断应该调用哪个认证方法
 验证，该参数就是 Harbor 全局配置文件中的<code>auth_mode</code>参数，默认情况下<code>auth_mode=db_auth</code>，除此之外还可以设置成<code>ldap_auth</code>来通过提供一个<code>LDAP Server</code>进行用户认证，也可以设置成<code>uaa_auth</code>来通过 cloud foundry 的 id manager 来进行用户认证。比如如果使用数据库验证的话，那么校验方法就在文件<code>src/core/auth/db/db.go</code>中，方法如下：</p>
-
-<pre><code class="language-golang">// Authenticate calls dao to authenticate user.
-func (d *Auth) Authenticate(m models.AuthModel) (*models.User, error) {
-    u, err := dao.LoginByDb(m)
-    if err != nil {
-        return nil, err
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#6272a4">// Authenticate calls dao to authenticate user.
+</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">func</span> (d <span style="color:#ff79c6">*</span>Auth) <span style="color:#50fa7b">Authenticate</span>(m models.AuthModel) (<span style="color:#ff79c6">*</span>models.User, <span style="color:#8be9fd">error</span>) {
+    u, err <span style="color:#ff79c6">:=</span> dao.<span style="color:#50fa7b">LoginByDb</span>(m)
+    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+        <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, err
     }
-    if u == nil {
-        return nil, auth.NewErrAuth(&quot;Invalid credentials&quot;)
+    <span style="color:#ff79c6">if</span> u <span style="color:#ff79c6">==</span> <span style="color:#ff79c6">nil</span> {
+        <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, auth.<span style="color:#50fa7b">NewErrAuth</span>(<span style="color:#f1fa8c">&#34;Invalid credentials&#34;</span>)
     }
-    return u, nil
-}
-</code></pre>
-
+    <span style="color:#ff79c6">return</span> u, <span style="color:#ff79c6">nil</span>
+}</code></pre></div>
 <p>进入<code>LoginByDb</code>方法，位于<code>src/common/dao/user.go</code>文件：</p>
-
-<pre><code class="language-yaml">// LoginByDb is used for user to login with database auth mode.
-func LoginByDb(auth models.AuthModel) (*models.User, error) {
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">// LoginByDb is used for user to login with database auth mode.
+func LoginByDb(auth models.AuthModel) (<span style="color:#ff79c6">*models.User,</span> error) {
     o := GetOrmer()
 
     var users []models.User
-    n, err := o.Raw(`select * from harbor_user where (username = ? or email = ?) and deleted = false`,
-        auth.Principal, auth.Principal).QueryRows(&amp;users)
+    n, err := o.Raw(`select * from harbor_user where (username = ? or email = ?) and deleted = <span style="color:#ff79c6">false</span>`,
+        auth.Principal, auth.Principal).QueryRows(<span style="color:#ff79c6">&amp;users)</span>
     if err != nil {
         return nil, err
     }
-    if n == 0 {
+    if n == <span style="color:#bd93f9">0</span> {
         return nil, nil
     }
 
-    user := users[0]
+    user := users[<span style="color:#bd93f9">0</span>]
 
     if user.Password != utils.Encrypt(auth.Password, user.Salt) {
         return nil, nil
     }
 
-    user.Password = &quot;&quot; // do not return the password
+    user.Password = <span style="color:#f1fa8c">&#34;&#34;</span> // do not return the password
 
-    return &amp;user, nil
-}
-</code></pre>
-
+    return <span style="color:#ff79c6">&amp;user,</span> nil
+}</code></pre></div>
 <p>上面这段代码逻辑就很简单了，首先根据用户名获取用户，然后将密码加密进行比较，验证通过就将 user 对象返回，并保存到 session 里面，这个后面会用到。</p>
 
 <p>其它的 API 操作类似，在此不再一一讲述，另外再和大家介绍一下镜像仓库的相关 API 操作，镜像操作相关 API 主要位于<code>/api/repositories</code>下面，请求处理方法主要位于文件<code>src/ui/api/repository.go</code>中，比如获取镜像分页列表数据：</p>
-
-<pre><code class="language-golang">func (ra *RepositoryAPI) Get() {
-    projectID, err := ra.GetInt64(&quot;project_id&quot;)
-    if err != nil || projectID &lt;= 0 {
-        ra.HandleBadRequest(fmt.Sprintf(&quot;invalid project_id %s&quot;, ra.GetString(&quot;project_id&quot;)))
-        return
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#8be9fd;font-style:italic">func</span> (ra <span style="color:#ff79c6">*</span>RepositoryAPI) <span style="color:#50fa7b">Get</span>() {
+    projectID, err <span style="color:#ff79c6">:=</span> ra.<span style="color:#50fa7b">GetInt64</span>(<span style="color:#f1fa8c">&#34;project_id&#34;</span>)
+    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> <span style="color:#ff79c6">||</span> projectID <span style="color:#ff79c6">&lt;=</span> <span style="color:#bd93f9">0</span> {
+        ra.<span style="color:#50fa7b">HandleBadRequest</span>(fmt.<span style="color:#50fa7b">Sprintf</span>(<span style="color:#f1fa8c">&#34;invalid project_id %s&#34;</span>, ra.<span style="color:#50fa7b">GetString</span>(<span style="color:#f1fa8c">&#34;project_id&#34;</span>)))
+        <span style="color:#ff79c6">return</span>
     }
 
-    labelID, err := ra.GetInt64(&quot;label_id&quot;, 0)
-    if err != nil {
-        ra.HandleBadRequest(fmt.Sprintf(&quot;invalid label_id: %s&quot;, ra.GetString(&quot;label_id&quot;)))
-        return
+    labelID, err <span style="color:#ff79c6">:=</span> ra.<span style="color:#50fa7b">GetInt64</span>(<span style="color:#f1fa8c">&#34;label_id&#34;</span>, <span style="color:#bd93f9">0</span>)
+    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+        ra.<span style="color:#50fa7b">HandleBadRequest</span>(fmt.<span style="color:#50fa7b">Sprintf</span>(<span style="color:#f1fa8c">&#34;invalid label_id: %s&#34;</span>, ra.<span style="color:#50fa7b">GetString</span>(<span style="color:#f1fa8c">&#34;label_id&#34;</span>)))
+        <span style="color:#ff79c6">return</span>
     }
 
-    exist, err := ra.ProjectMgr.Exists(projectID)
-    if err != nil {
-        ra.ParseAndHandleError(fmt.Sprintf(&quot;failed to check the existence of project %d&quot;,
+    exist, err <span style="color:#ff79c6">:=</span> ra.ProjectMgr.<span style="color:#50fa7b">Exists</span>(projectID)
+    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+        ra.<span style="color:#50fa7b">ParseAndHandleError</span>(fmt.<span style="color:#50fa7b">Sprintf</span>(<span style="color:#f1fa8c">&#34;failed to check the existence of project %d&#34;</span>,
             projectID), err)
-        return
+        <span style="color:#ff79c6">return</span>
     }
 
-    if !exist {
-        ra.HandleNotFound(fmt.Sprintf(&quot;project %d not found&quot;, projectID))
-        return
+    <span style="color:#ff79c6">if</span> !exist {
+        ra.<span style="color:#50fa7b">HandleNotFound</span>(fmt.<span style="color:#50fa7b">Sprintf</span>(<span style="color:#f1fa8c">&#34;project %d not found&#34;</span>, projectID))
+        <span style="color:#ff79c6">return</span>
     }
 
-    if !ra.SecurityCtx.HasReadPerm(projectID) {
-        if !ra.SecurityCtx.IsAuthenticated() {
-            ra.HandleUnauthorized()
-            return
+    <span style="color:#ff79c6">if</span> !ra.SecurityCtx.<span style="color:#50fa7b">HasReadPerm</span>(projectID) {
+        <span style="color:#ff79c6">if</span> !ra.SecurityCtx.<span style="color:#50fa7b">IsAuthenticated</span>() {
+            ra.<span style="color:#50fa7b">HandleUnauthorized</span>()
+            <span style="color:#ff79c6">return</span>
         }
-        ra.HandleForbidden(ra.SecurityCtx.GetUsername())
-        return
+        ra.<span style="color:#50fa7b">HandleForbidden</span>(ra.SecurityCtx.<span style="color:#50fa7b">GetUsername</span>())
+        <span style="color:#ff79c6">return</span>
     }
 
-    query := &amp;models.RepositoryQuery{
-        ProjectIDs: []int64{projectID},
-        Name:       ra.GetString(&quot;q&quot;),
+    query <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">&amp;</span>models.RepositoryQuery{
+        ProjectIDs: []<span style="color:#8be9fd">int64</span>{projectID},
+        Name:       ra.<span style="color:#50fa7b">GetString</span>(<span style="color:#f1fa8c">&#34;q&#34;</span>),
         LabelID:    labelID,
     }
-    query.Page, query.Size = ra.GetPaginationParams()
-    query.Sort = ra.GetString(&quot;sort&quot;)
+    query.Page, query.Size = ra.<span style="color:#50fa7b">GetPaginationParams</span>()
+    query.Sort = ra.<span style="color:#50fa7b">GetString</span>(<span style="color:#f1fa8c">&#34;sort&#34;</span>)
 
-    total, err := dao.GetTotalOfRepositories(query)
-    if err != nil {
-        ra.HandleInternalServerError(fmt.Sprintf(&quot;failed to get total of repositories of project %d: %v&quot;,
+    total, err <span style="color:#ff79c6">:=</span> dao.<span style="color:#50fa7b">GetTotalOfRepositories</span>(query)
+    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+        ra.<span style="color:#50fa7b">HandleInternalServerError</span>(fmt.<span style="color:#50fa7b">Sprintf</span>(<span style="color:#f1fa8c">&#34;failed to get total of repositories of project %d: %v&#34;</span>,
             projectID, err))
-        return
+        <span style="color:#ff79c6">return</span>
     }
 
-    repositories, err := getRepositories(query)
-    if err != nil {
-        ra.HandleInternalServerError(fmt.Sprintf(&quot;failed to get repository: %v&quot;, err))
-        return
+    repositories, err <span style="color:#ff79c6">:=</span> <span style="color:#50fa7b">getRepositories</span>(query)
+    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+        ra.<span style="color:#50fa7b">HandleInternalServerError</span>(fmt.<span style="color:#50fa7b">Sprintf</span>(<span style="color:#f1fa8c">&#34;failed to get repository: %v&#34;</span>, err))
+        <span style="color:#ff79c6">return</span>
     }
 
-    ra.SetPaginationHeader(total, query.Page, query.Size)
-    ra.Data[&quot;json&quot;] = repositories
-    ra.ServeJSON()
-}
-</code></pre>
-
+    ra.<span style="color:#50fa7b">SetPaginationHeader</span>(total, query.Page, query.Size)
+    ra.Data[<span style="color:#f1fa8c">&#34;json&#34;</span>] = repositories
+    ra.<span style="color:#50fa7b">ServeJSON</span>()
+}</code></pre></div>
 <p>上面的逻辑也相对比较简单，获取请求的参数，拼凑成一个 RepositoryQuery 对象，然后根据该对象去查询仓库列表数据，并支持分页返回，查询只是就是简单的操作数据库而已，其他操作也类似。不过我们仔细查看改文件中，并没有提供创建仓库的接口，这是因为创建 Repository 是在上传镜像的时候创建的，这里又回到 registry 的配置文件，里面有一段如下的配置：</p>
-
-<pre><code class="language-yaml">......
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">......
 notifications:
   endpoints:
   - name: harbor
-    disabled: false
+    disabled: <span style="color:#ff79c6">false</span>
     url: $core_url/service/notifications
-......
-</code></pre>
-
+......</code></pre></div>
 <p>其中配置的 url 就是仓库的一个回调 web hook 地址，在<code>pull</code>或者<code>push</code>镜像后就会触发该 hook 请求，比如 Harbor 这里就会去请求<code>/service/notifications</code>这个 url：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#6272a4">// Post handles POST request, and records audit log or refreshes cache based on event.
+</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">func</span> (n <span style="color:#ff79c6">*</span>NotificationHandler) <span style="color:#50fa7b">Post</span>() {
+    <span style="color:#8be9fd;font-style:italic">var</span> notification models.Notification
+    err <span style="color:#ff79c6">:=</span> json.<span style="color:#50fa7b">Unmarshal</span>(n.Ctx.Input.<span style="color:#50fa7b">CopyBody</span>(<span style="color:#bd93f9">1</span><span style="color:#ff79c6">&lt;&lt;</span><span style="color:#bd93f9">32</span>), <span style="color:#ff79c6">&amp;</span>notification)
 
-<pre><code class="language-golang">// Post handles POST request, and records audit log or refreshes cache based on event.
-func (n *NotificationHandler) Post() {
-    var notification models.Notification
-    err := json.Unmarshal(n.Ctx.Input.CopyBody(1&lt;&lt;32), &amp;notification)
-
-    if err != nil {
-        log.Errorf(&quot;failed to decode notification: %v&quot;, err)
-        return
+    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+        log.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;failed to decode notification: %v&#34;</span>, err)
+        <span style="color:#ff79c6">return</span>
     }
 
-    events, err := filterEvents(&amp;notification)
-    if err != nil {
-        log.Errorf(&quot;failed to filter events: %v&quot;, err)
-        return
+    events, err <span style="color:#ff79c6">:=</span> <span style="color:#50fa7b">filterEvents</span>(<span style="color:#ff79c6">&amp;</span>notification)
+    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+        log.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;failed to filter events: %v&#34;</span>, err)
+        <span style="color:#ff79c6">return</span>
     }
 
-    for _, event := range events {
-        repository := event.Target.Repository
-        project, _ := utils.ParseRepository(repository)
-        tag := event.Target.Tag
-        action := event.Action
+    <span style="color:#ff79c6">for</span> _, event <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">range</span> events {
+        repository <span style="color:#ff79c6">:=</span> event.Target.Repository
+        project, _ <span style="color:#ff79c6">:=</span> utils.<span style="color:#50fa7b">ParseRepository</span>(repository)
+        tag <span style="color:#ff79c6">:=</span> event.Target.Tag
+        action <span style="color:#ff79c6">:=</span> event.Action
 
-        user := event.Actor.Name
-        if len(user) == 0 {
-            user = &quot;anonymous&quot;
+        user <span style="color:#ff79c6">:=</span> event.Actor.Name
+        <span style="color:#ff79c6">if</span> <span style="color:#8be9fd;font-style:italic">len</span>(user) <span style="color:#ff79c6">==</span> <span style="color:#bd93f9">0</span> {
+            user = <span style="color:#f1fa8c">&#34;anonymous&#34;</span>
         }
 
-        pro, err := config.GlobalProjectMgr.Get(project)
-        if err != nil {
-            log.Errorf(&quot;failed to get project by name %s: %v&quot;, project, err)
-            return
+        pro, err <span style="color:#ff79c6">:=</span> config.GlobalProjectMgr.<span style="color:#50fa7b">Get</span>(project)
+        <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+            log.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;failed to get project by name %s: %v&#34;</span>, project, err)
+            <span style="color:#ff79c6">return</span>
         }
-        if pro == nil {
-            log.Warningf(&quot;project %s not found&quot;, project)
-            continue
+        <span style="color:#ff79c6">if</span> pro <span style="color:#ff79c6">==</span> <span style="color:#ff79c6">nil</span> {
+            log.<span style="color:#50fa7b">Warningf</span>(<span style="color:#f1fa8c">&#34;project %s not found&#34;</span>, project)
+            <span style="color:#ff79c6">continue</span>
         }
 
-        go func() {
-            if err := dao.AddAccessLog(models.AccessLog{
+        <span style="color:#ff79c6">go</span> <span style="color:#8be9fd;font-style:italic">func</span>() {
+            <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">:=</span> dao.<span style="color:#50fa7b">AddAccessLog</span>(models.AccessLog{
                 Username:  user,
                 ProjectID: pro.ProjectID,
                 RepoName:  repository,
                 RepoTag:   tag,
                 Operation: action,
-                OpTime:    time.Now(),
-            }); err != nil {
-                log.Errorf(&quot;failed to add access log: %v&quot;, err)
+                OpTime:    time.<span style="color:#50fa7b">Now</span>(),
+            }); err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+                log.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;failed to add access log: %v&#34;</span>, err)
             }
         }()
 
-        if action == &quot;push&quot; {
-            go func() {
-                exist := dao.RepositoryExists(repository)
-                if exist {
-                    return
+        <span style="color:#ff79c6">if</span> action <span style="color:#ff79c6">==</span> <span style="color:#f1fa8c">&#34;push&#34;</span> {
+            <span style="color:#ff79c6">go</span> <span style="color:#8be9fd;font-style:italic">func</span>() {
+                exist <span style="color:#ff79c6">:=</span> dao.<span style="color:#50fa7b">RepositoryExists</span>(repository)
+                <span style="color:#ff79c6">if</span> exist {
+                    <span style="color:#ff79c6">return</span>
                 }
-                log.Debugf(&quot;Add repository %s into DB.&quot;, repository)
-                repoRecord := models.RepoRecord{
+                log.<span style="color:#50fa7b">Debugf</span>(<span style="color:#f1fa8c">&#34;Add repository %s into DB.&#34;</span>, repository)
+                repoRecord <span style="color:#ff79c6">:=</span> models.RepoRecord{
                     Name:      repository,
                     ProjectID: pro.ProjectID,
                 }
-                if err := dao.AddRepository(repoRecord); err != nil {
-                    log.Errorf(&quot;Error happens when adding repository: %v&quot;, err)
+                <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">:=</span> dao.<span style="color:#50fa7b">AddRepository</span>(repoRecord); err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+                    log.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;Error happens when adding repository: %v&#34;</span>, err)
                 }
             }()
-            if !coreutils.WaitForManifestReady(repository, tag, 5) {
-                log.Errorf(&quot;Manifest for image %s:%s is not ready, skip the follow up actions.&quot;, repository, tag)
-                return
+            <span style="color:#ff79c6">if</span> !coreutils.<span style="color:#50fa7b">WaitForManifestReady</span>(repository, tag, <span style="color:#bd93f9">5</span>) {
+                log.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;Manifest for image %s:%s is not ready, skip the follow up actions.&#34;</span>, repository, tag)
+                <span style="color:#ff79c6">return</span>
             }
 
-            go func() {
-                image := repository + &quot;:&quot; + tag
-                err := notifier.Publish(topic.ReplicationEventTopicOnPush, rep_notification.OnPushNotification{
+            <span style="color:#ff79c6">go</span> <span style="color:#8be9fd;font-style:italic">func</span>() {
+                image <span style="color:#ff79c6">:=</span> repository <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#34;:&#34;</span> <span style="color:#ff79c6">+</span> tag
+                err <span style="color:#ff79c6">:=</span> notifier.<span style="color:#50fa7b">Publish</span>(topic.ReplicationEventTopicOnPush, rep_notification.OnPushNotification{
                     Image: image,
                 })
-                if err != nil {
-                    log.Errorf(&quot;failed to publish on push topic for resource %s: %v&quot;, image, err)
-                    return
+                <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+                    log.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;failed to publish on push topic for resource %s: %v&#34;</span>, image, err)
+                    <span style="color:#ff79c6">return</span>
                 }
-                log.Debugf(&quot;the on push topic for resource %s published&quot;, image)
+                log.<span style="color:#50fa7b">Debugf</span>(<span style="color:#f1fa8c">&#34;the on push topic for resource %s published&#34;</span>, image)
             }()
 
-            if autoScanEnabled(pro) {
-                last, err := clairdao.GetLastUpdate()
-                if err != nil {
-                    log.Errorf(&quot;Failed to get last update from Clair DB, error: %v, the auto scan will be skipped.&quot;, err)
-                } else if last == 0 {
-                    log.Infof(&quot;The Vulnerability data is not ready in Clair DB, the auto scan will be skipped.&quot;, err)
-                } else if err := coreutils.TriggerImageScan(repository, tag); err != nil {
-                    log.Warningf(&quot;Failed to scan image, repository: %s, tag: %s, error: %v&quot;, repository, tag, err)
+            <span style="color:#ff79c6">if</span> <span style="color:#50fa7b">autoScanEnabled</span>(pro) {
+                last, err <span style="color:#ff79c6">:=</span> clairdao.<span style="color:#50fa7b">GetLastUpdate</span>()
+                <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+                    log.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;Failed to get last update from Clair DB, error: %v, the auto scan will be skipped.&#34;</span>, err)
+                } <span style="color:#ff79c6">else</span> <span style="color:#ff79c6">if</span> last <span style="color:#ff79c6">==</span> <span style="color:#bd93f9">0</span> {
+                    log.<span style="color:#50fa7b">Infof</span>(<span style="color:#f1fa8c">&#34;The Vulnerability data is not ready in Clair DB, the auto scan will be skipped.&#34;</span>, err)
+                } <span style="color:#ff79c6">else</span> <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">:=</span> coreutils.<span style="color:#50fa7b">TriggerImageScan</span>(repository, tag); err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+                    log.<span style="color:#50fa7b">Warningf</span>(<span style="color:#f1fa8c">&#34;Failed to scan image, repository: %s, tag: %s, error: %v&#34;</span>, repository, tag, err)
                 }
             }
         }
-        if action == &quot;pull&quot; {
-            go func() {
-                log.Debugf(&quot;Increase the repository %s pull count.&quot;, repository)
-                if err := dao.IncreasePullCount(repository); err != nil {
-                    log.Errorf(&quot;Error happens when increasing pull count: %v&quot;, repository)
+        <span style="color:#ff79c6">if</span> action <span style="color:#ff79c6">==</span> <span style="color:#f1fa8c">&#34;pull&#34;</span> {
+            <span style="color:#ff79c6">go</span> <span style="color:#8be9fd;font-style:italic">func</span>() {
+                log.<span style="color:#50fa7b">Debugf</span>(<span style="color:#f1fa8c">&#34;Increase the repository %s pull count.&#34;</span>, repository)
+                <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">:=</span> dao.<span style="color:#50fa7b">IncreasePullCount</span>(repository); err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+                    log.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;Error happens when increasing pull count: %v&#34;</span>, repository)
                 }
             }()
         }
     }
-}
-</code></pre>
-
+}</code></pre></div>
 <p>从上面代码中可以看到首先在 hook 中我们可以获取到当前操作的动作，如果是 push 操作，首先判断 repository 是否存在，如果不存在则创建，对于 pull 镜像操作通过 IncreasePullCount 更新数据库 pull 镜像次数：</p>
-
-<pre><code class="language-golang">// IncreasePullCount ...
-func IncreasePullCount(name string) (err error) {
-    o := GetOrmer()
-    num, err := o.QueryTable(&quot;repository&quot;).Filter(&quot;name&quot;, name).Update(
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#6272a4">// IncreasePullCount ...
+</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">IncreasePullCount</span>(name <span style="color:#8be9fd">string</span>) (err <span style="color:#8be9fd">error</span>) {
+    o <span style="color:#ff79c6">:=</span> <span style="color:#50fa7b">GetOrmer</span>()
+    num, err <span style="color:#ff79c6">:=</span> o.<span style="color:#50fa7b">QueryTable</span>(<span style="color:#f1fa8c">&#34;repository&#34;</span>).<span style="color:#50fa7b">Filter</span>(<span style="color:#f1fa8c">&#34;name&#34;</span>, name).<span style="color:#50fa7b">Update</span>(
         orm.Params{
-            &quot;pull_count&quot;:  orm.ColValue(orm.ColAdd, 1),
-            &quot;update_time&quot;: time.Now(),
+            <span style="color:#f1fa8c">&#34;pull_count&#34;</span>:  orm.<span style="color:#50fa7b">ColValue</span>(orm.ColAdd, <span style="color:#bd93f9">1</span>),
+            <span style="color:#f1fa8c">&#34;update_time&#34;</span>: time.<span style="color:#50fa7b">Now</span>(),
         })
-    if err != nil {
-        return err
+    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+        <span style="color:#ff79c6">return</span> err
     }
-    if num == 0 {
-        return fmt.Errorf(&quot;Failed to increase repository pull count with name: %s&quot;, name)
+    <span style="color:#ff79c6">if</span> num <span style="color:#ff79c6">==</span> <span style="color:#bd93f9">0</span> {
+        <span style="color:#ff79c6">return</span> fmt.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;Failed to increase repository pull count with name: %s&#34;</span>, name)
     }
-    return nil
-}
-</code></pre>
-
+    <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>
+}</code></pre></div>
 <p>除此之外，在路由文件中还可以看到<code>config.WithChartMuseum()</code>配置，如果在全局配置中配置了<code>with_chartmuseum=true</code>，则就会开启 Helm Chart 仓库所需要的 API，相关的请求处理方法位于文件<code>src/core/api/chart_repository.go</code>文件中。</p>
 
 <p>除了上面的一些主要功能之外，Harbor 还有很多高级可能，感兴趣的同学可以下载 Harbor 的源码自行研究，当我们对源码比较熟悉之后，对于我们搭建 Harbor 显然是非常有帮助的，下节课给大家介绍怎样在 Kubernetes 集群中来搭建 Harbor。</p>
@@ -1053,6 +1005,8 @@ func IncreasePullCount(name string) (err error) {
             <a href="https://www.qikqiak.com/">阳明的博客</a>
             &nbsp;&bull;&nbsp;
             <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/archives/">文章归档</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
           
@@ -1071,9 +1025,9 @@ func IncreasePullCount(name string) (err error) {
 <script src="https://www.qikqiak.com/js/jquery-1.11.2.min.js"></script>
 <script src="https://www.qikqiak.com/js/bootstrap.min.js"></script>
 <script src="https://www.qikqiak.com/js/main.min.js"></script>
-<script src="https://www.qikqiak.com/js/highlight.min.js"></script>
-<script> hljs.initHighlightingOnLoad(); </script>
-<script src="https://www.qikqiak.com/js/prism.js?t=123"></script>
+
+
+
 
 <script src="https://www.qikqiak.com/js/reward.js"></script>
 

@@ -27,12 +27,9 @@
   <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
   <link rel="stylesheet" href="https://www.qikqiak.com/css/font-awesome.min.css" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/bootstrap.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=456" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=4567" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/pygment_highlights.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/highlight.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/prism.css?t=123" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/search.css" />
   
   <link rel="stylesheet" href="https://www.qikqiak.com/css/reward.css" />
@@ -98,7 +95,7 @@ if (!doNotTrack) {
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
                 
-                  <a href="https://www.qikqiak.com/page/archive/">Archive</a>
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
                 
                   <a href="https://www.qikqiak.com/tags">tags</a>
                 
@@ -344,95 +341,74 @@ autocomplete('#aa-search-input',
 <h2 id="安装">安装</h2>
 
 <p>我们这里直接通过 Prometheus-Operator 的源码来进行安装，当然也可以用 Helm 来进行一键安装，我们采用源码安装可以去了解更多的实现细节。首页将源码 Clone 下来：</p>
-
-<pre><code class="language-shell">$ git clone https://github.com/coreos/prometheus-operator
-$ cd contrib/kube-prometheus/manifests/
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ git clone https://github.com/coreos/prometheus-operator
+$ <span style="color:#8be9fd;font-style:italic">cd</span> contrib/kube-prometheus/manifests/
 $ ls
 00namespace-namespace.yaml                                         node-exporter-clusterRole.yaml
 0prometheus-operator-0alertmanagerCustomResourceDefinition.yaml    node-exporter-daemonset.yaml
-......
-</code></pre>
-
+......</code></pre></div>
 <p>进入到 manifests 目录下面，这个目录下面包含我们所有的资源清单文件，我们需要对其中的文件 prometheus-serviceMonitorKubelet.yaml 进行简单的修改，因为默认情况下，这个 ServiceMonitor 是关联的 kubelet 的10250端口去采集的节点数据，而我们前面说过为了安全，这个 metrics 数据已经迁移到10255这个只读端口上面去了，我们只需要将文件中的<code>https-metrics</code>更改成<code>http-metrics</code>即可，这个在 Prometheus-Operator 对节点端点同步的代码中有相关定义，感兴趣的可以<a href="https://github.com/coreos/prometheus-operator/blob/7a8bc75512e39a984f46b2788b5fa9bf64999571/pkg/prometheus/operator.go#L400">点此查看完整代码</a>：</p>
-
-<pre><code class="language-go">Subsets: []v1.EndpointSubset{
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">Subsets: []v1.EndpointSubset{
     {
         Ports: []v1.EndpointPort{
             {
-                Name: &quot;https-metrics&quot;,
-                Port: 10250,
+                Name: <span style="color:#f1fa8c">&#34;https-metrics&#34;</span>,
+                Port: <span style="color:#bd93f9">10250</span>,
             },
             {
-                Name: &quot;http-metrics&quot;,
-                Port: 10255,
+                Name: <span style="color:#f1fa8c">&#34;http-metrics&#34;</span>,
+                Port: <span style="color:#bd93f9">10255</span>,
             },
             {
-                Name: &quot;cadvisor&quot;,
-                Port: 4194,
+                Name: <span style="color:#f1fa8c">&#34;cadvisor&#34;</span>,
+                Port: <span style="color:#bd93f9">4194</span>,
             },
         },
     },
-},
-</code></pre>
-
+},</code></pre></div>
 <p>修改完成后，直接在该文件夹下面执行创建资源命令即可：</p>
-
-<pre><code class="language-shell">$ kubectl apply -f .
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f .</code></pre></div>
 <p>部署完成后，会创建一个名为<code>monitoring</code>的 namespace，所以资源对象对将部署在改命名空间下面，此外 Operator 会自动创建4个 CRD 资源对象：</p>
-
-<pre><code class="language-shell">$ kubectl get crd |grep coreos
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get crd |grep coreos
 alertmanagers.monitoring.coreos.com     5d
 prometheuses.monitoring.coreos.com      5d
 prometheusrules.monitoring.coreos.com   5d
-servicemonitors.monitoring.coreos.com   5d
-</code></pre>
-
+servicemonitors.monitoring.coreos.com   5d</code></pre></div>
 <p>可以在 monitoring 命名空间下面查看所有的 Pod，其中 alertmanager 和 prometheus 是用 StatefulSet 控制器管理的，其中还有一个比较核心的 prometheus-operator 的 Pod，用来控制其他资源对象和监听对象变化的：</p>
-
-<pre><code class="language-shell">$ kubectl get pods -n monitoring
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n monitoring
 NAME                                  READY     STATUS    RESTARTS   AGE
-alertmanager-main-0                   2/2       Running   0          21h
-alertmanager-main-1                   2/2       Running   0          21h
-alertmanager-main-2                   2/2       Running   0          21h
-grafana-df9bfd765-f4dvw               1/1       Running   0          22h
-kube-state-metrics-77c9658489-ntj66   4/4       Running   0          20h
-node-exporter-4sr7f                   2/2       Running   0          21h
-node-exporter-9mh2r                   2/2       Running   0          21h
-node-exporter-m2gkp                   2/2       Running   0          21h
-prometheus-adapter-dc548cc6-r6lhb     1/1       Running   0          22h
-prometheus-k8s-0                      3/3       Running   1          21h
-prometheus-k8s-1                      3/3       Running   1          21h
-prometheus-operator-bdf79ff67-9dc48   1/1       Running   0          21h
-</code></pre>
-
+alertmanager-main-0                   <span style="color:#bd93f9">2</span>/2       Running   <span style="color:#bd93f9">0</span>          21h
+alertmanager-main-1                   <span style="color:#bd93f9">2</span>/2       Running   <span style="color:#bd93f9">0</span>          21h
+alertmanager-main-2                   <span style="color:#bd93f9">2</span>/2       Running   <span style="color:#bd93f9">0</span>          21h
+grafana-df9bfd765-f4dvw               <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          22h
+kube-state-metrics-77c9658489-ntj66   <span style="color:#bd93f9">4</span>/4       Running   <span style="color:#bd93f9">0</span>          20h
+node-exporter-4sr7f                   <span style="color:#bd93f9">2</span>/2       Running   <span style="color:#bd93f9">0</span>          21h
+node-exporter-9mh2r                   <span style="color:#bd93f9">2</span>/2       Running   <span style="color:#bd93f9">0</span>          21h
+node-exporter-m2gkp                   <span style="color:#bd93f9">2</span>/2       Running   <span style="color:#bd93f9">0</span>          21h
+prometheus-adapter-dc548cc6-r6lhb     <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          22h
+prometheus-k8s-0                      <span style="color:#bd93f9">3</span>/3       Running   <span style="color:#bd93f9">1</span>          21h
+prometheus-k8s-1                      <span style="color:#bd93f9">3</span>/3       Running   <span style="color:#bd93f9">1</span>          21h
+prometheus-operator-bdf79ff67-9dc48   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          21h</code></pre></div>
 <p>查看创建的 Service:</p>
-
-<pre><code class="language-shell">$ kubectl get svc -n monitoring
-NAME                    TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)             AGE
-alertmanager-main       ClusterIP   10.110.204.224   &lt;none&gt;        9093/TCP            23h
-alertmanager-operated   ClusterIP   None             &lt;none&gt;        9093/TCP,6783/TCP   23h
-grafana                 ClusterIP   10.98.191.31     &lt;none&gt;        3000/TCP            23h
-kube-state-metrics      ClusterIP   None             &lt;none&gt;        8443/TCP,9443/TCP   23h
-node-exporter           ClusterIP   None             &lt;none&gt;        9100/TCP            23h
-prometheus-adapter      ClusterIP   10.107.201.172   &lt;none&gt;        443/TCP             23h
-prometheus-k8s          ClusterIP   10.107.105.53    &lt;none&gt;        9090/TCP            23h
-prometheus-operated     ClusterIP   None             &lt;none&gt;        9090/TCP            23h
-prometheus-operator     ClusterIP   None             &lt;none&gt;        8080/TCP            23h
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get svc -n monitoring
+NAME                    TYPE        CLUSTER-IP       EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>             AGE
+alertmanager-main       ClusterIP   <span style="color:#bd93f9">10</span>.110.204.224   &lt;none&gt;        <span style="color:#bd93f9">9093</span>/TCP            23h
+alertmanager-operated   ClusterIP   None             &lt;none&gt;        <span style="color:#bd93f9">9093</span>/TCP,6783/TCP   23h
+grafana                 ClusterIP   <span style="color:#bd93f9">10</span>.98.191.31     &lt;none&gt;        <span style="color:#bd93f9">3000</span>/TCP            23h
+kube-state-metrics      ClusterIP   None             &lt;none&gt;        <span style="color:#bd93f9">8443</span>/TCP,9443/TCP   23h
+node-exporter           ClusterIP   None             &lt;none&gt;        <span style="color:#bd93f9">9100</span>/TCP            23h
+prometheus-adapter      ClusterIP   <span style="color:#bd93f9">10</span>.107.201.172   &lt;none&gt;        <span style="color:#bd93f9">443</span>/TCP             23h
+prometheus-k8s          ClusterIP   <span style="color:#bd93f9">10</span>.107.105.53    &lt;none&gt;        <span style="color:#bd93f9">9090</span>/TCP            23h
+prometheus-operated     ClusterIP   None             &lt;none&gt;        <span style="color:#bd93f9">9090</span>/TCP            23h
+prometheus-operator     ClusterIP   None             &lt;none&gt;        <span style="color:#bd93f9">8080</span>/TCP            23h</code></pre></div>
 <p>可以看到上面针对 grafana 和 prometheus 都创建了一个类型为 ClusterIP 的 Service，当然如果我们想要在外网访问这两个服务的话可以通过创建对应的 Ingress 对象或者使用 NodePort 类型的 Service，我们这里为了简单，直接使用 NodePort 类型的服务即可，编辑 grafana 和 prometheus-k8s 这两个 Service，将服务类型更改为 NodePort:</p>
-
-<pre><code class="language-shell">$ kubectl edit svc grafana -n monitoring
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl edit svc grafana -n monitoring
 $ kubectl edit svc prometheus-k8s -n monitoring
 $ kubectl get svc -n monitoring
-NAME                    TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)             AGE
-grafana                 NodePort    10.98.191.31     &lt;none&gt;        3000:32333/TCP      23h
-prometheus-k8s          NodePort    10.107.105.53    &lt;none&gt;        9090:30166/TCP      23h
-......
-</code></pre>
-
+NAME                    TYPE        CLUSTER-IP       EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>             AGE
+grafana                 NodePort    <span style="color:#bd93f9">10</span>.98.191.31     &lt;none&gt;        <span style="color:#bd93f9">3000</span>:32333/TCP      23h
+prometheus-k8s          NodePort    <span style="color:#bd93f9">10</span>.107.105.53    &lt;none&gt;        <span style="color:#bd93f9">9090</span>:30166/TCP      23h
+......</code></pre></div>
 <p>更改完成后，我们就可以通过<a href="NodeIP:NodePort">NodeIP:NodePort</a>去访问上面的两个服务了，比如查看 prometheus 的 targets 页面：</p>
 
 <p><img src="https://www.qikqiak.com/img/posts/promethues-operator-targets.png" alt="promtheus operator targets" /></p>
@@ -440,8 +416,7 @@ prometheus-k8s          NodePort    10.107.105.53    &lt;none&gt;        9090:30
 <h2 id="配置">配置</h2>
 
 <p>我们可以看到大部分的配置都是正常的，只有两三个没有管理到对应的监控目标，比如 kube-controller-manager 和 kube-scheduler 这两个系统组件，这就和 ServiceMonitor 的定义有关系了，我们先来查看下 kube-scheduler 组件对应的 ServiceMonitor 资源的定义：(prometheus-serviceMonitorKubeScheduler.yaml)</p>
-
-<pre><code class="language-yaml">apiVersion: monitoring.coreos.com/v1
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   labels:
@@ -450,20 +425,17 @@ metadata:
   namespace: monitoring
 spec:
   endpoints:
-  - interval: 30s # 每30s获取一次信息
-    port: http-metrics  # 对应service的端口名
+  - interval: 30s <span style="color:#6272a4"># 每30s获取一次信息</span>
+    port: http-metrics  <span style="color:#6272a4"># 对应service的端口名</span>
   jobLabel: k8s-app
-  namespaceSelector: # 表示去匹配某一命名空间中的service，如果想从所有的namespace中匹配用any: true
+  namespaceSelector: <span style="color:#6272a4"># 表示去匹配某一命名空间中的service，如果想从所有的namespace中匹配用any: true</span>
     matchNames:
     - kube-system
-  selector:  # 匹配的 Service 的labels，如果使用mathLabels，则下面的所有标签都匹配时才会匹配该service，如果使用matchExpressions，则至少匹配一个标签的service都会被选择
+  selector:  <span style="color:#6272a4"># 匹配的 Service 的labels，如果使用mathLabels，则下面的所有标签都匹配时才会匹配该service，如果使用matchExpressions，则至少匹配一个标签的service都会被选择</span>
     matchLabels:
-      k8s-app: kube-scheduler
-</code></pre>
-
+      k8s-app: kube-scheduler</code></pre></div>
 <p>上面是一个典型的 ServiceMonitor 资源文件的声明方式，上面我们通过<code>selector.matchLabels</code>在 kube-system 这个命名空间下面匹配具有<code>k8s-app=kube-scheduler</code>这样的 Service，但是我们系统中根本就没有对应的 Service，所以我们需要手动创建一个 Service：（prometheus-kubeSchedulerService.yaml）</p>
-
-<pre><code class="language-yaml">apiVersion: v1
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
 kind: Service
 metadata:
   namespace: kube-system
@@ -475,55 +447,41 @@ spec:
     component: kube-scheduler
   ports:
   - name: http-metrics
-    port: 10251
-    targetPort: 10251
-    protocol: TCP
-</code></pre>
-
+    port: <span style="color:#bd93f9">10251</span>
+    targetPort: <span style="color:#bd93f9">10251</span>
+    protocol: TCP</code></pre></div>
 <blockquote>
 <p>10251是<code>kube-scheduler</code>组件 metrics 数据所在的端口，10252是<code>kube-controller-manager</code>组件的监控数据所在端口。</p>
 </blockquote>
 
 <p>其中最重要的是上面 labels 和 selector 部分，labels 区域的配置必须和我们上面的 ServiceMonitor 对象中的 selector 保持一致，<code>selector</code>下面配置的是<code>component=kube-scheduler</code>，为什么会是这个 label 标签呢，我们可以去 describe 下 kube-scheduelr 这个 Pod：</p>
-
-<pre><code class="language-shell">$ kubectl describe pod kube-scheduler-master -n kube-system
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl describe pod kube-scheduler-master -n kube-system
 Name:         kube-scheduler-master
 Namespace:    kube-system
 Node:         master/10.151.30.57
-Start Time:   Sun, 05 Aug 2018 18:13:32 +0800
-Labels:       component=kube-scheduler
-              tier=control-plane
-......
-</code></pre>
-
+Start Time:   Sun, <span style="color:#bd93f9">05</span> Aug <span style="color:#bd93f9">2018</span> <span style="color:#bd93f9">18</span>:13:32 +0800
+Labels:       <span style="color:#8be9fd;font-style:italic">component</span><span style="color:#ff79c6">=</span>kube-scheduler
+              <span style="color:#8be9fd;font-style:italic">tier</span><span style="color:#ff79c6">=</span>control-plane
+......</code></pre></div>
 <p>我们可以看到这个 Pod 具有<code>component=kube-scheduler</code>和<code>tier=control-plane</code>这两个标签，而前面这个标签具有更唯一的特性，所以使用前面这个标签较好，这样上面创建的 Service 就可以和我们的 Pod 进行关联了，直接创建即可：</p>
-
-<pre><code class="language-shell">$ kubectl create -f prometheus-kubeSchedulerService.yaml
-$ kubectl get svc -n kube-system -l k8s-app=kube-scheduler
-NAME             TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)     AGE
-kube-scheduler   ClusterIP   10.102.119.231   &lt;none&gt;        10251/TCP   18m
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create -f prometheus-kubeSchedulerService.yaml
+$ kubectl get svc -n kube-system -l k8s-app<span style="color:#ff79c6">=</span>kube-scheduler
+NAME             TYPE        CLUSTER-IP       EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>     AGE
+kube-scheduler   ClusterIP   <span style="color:#bd93f9">10</span>.102.119.231   &lt;none&gt;        <span style="color:#bd93f9">10251</span>/TCP   18m</code></pre></div>
 <p>创建完成后，隔一小会儿后去 prometheus 查看 targets 下面 kube-scheduler 的状态：</p>
 
 <p><img src="https://www.qikqiak.com/img/posts/promethues-operator-kube-scheduler-error.png" alt="promethus kube-scheduler error" /></p>
 
 <p>我们可以看到现在已经发现了 target，但是抓取数据结果出错了，这个错误是因为我们集群是使用 kubeadm 搭建的，其中 kube-scheduler 默认是绑定在<code>127.0.0.1</code>上面的，而上面我们这个地方是想通过节点的 IP 去访问，所以访问被拒绝了，我们只要把 kube-scheduler 绑定的地址更改成<code>0.0.0.0</code>即可满足要求，由于 kube-scheduler 是以静态 Pod 的形式运行在集群中的，所以我们只需要更改静态 Pod 目录下面对应的 YAML 文件即可：</p>
-
-<pre><code class="language-shell">$ ls /etc/kubernetes/manifests/
-etcd.yaml  kube-apiserver.yaml  kube-controller-manager.yaml  kube-scheduler.yaml
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ ls /etc/kubernetes/manifests/
+etcd.yaml  kube-apiserver.yaml  kube-controller-manager.yaml  kube-scheduler.yaml</code></pre></div>
 <p>将 kube-scheduler.yaml 文件中<code>-command</code>的<code>--address</code>地址更改成<code>0.0.0.0</code>：</p>
-
-<pre><code class="language-yaml">containers:
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">containers:
 - command:
 - kube-scheduler
-- --leader-elect=true
+- --leader-elect=<span style="color:#ff79c6">true</span>
 - --kubeconfig=/etc/kubernetes/scheduler.conf
-- --address=0.0.0.0
-</code></pre>
-
+- --address=<span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">0.0</span></code></pre></div>
 <p>修改完成后我们将该文件从当前文件夹中移除，隔一会儿再移回该目录，就可以自动更新了，然后再去看 prometheus 中 kube-scheduler 这个 target 是否已经正常了：</p>
 
 <p><img src="https://www.qikqiak.com/img/posts/promethues-operator-kube-scheduler.png" alt="prometheus-operator-kube-scheduler" /></p>
@@ -730,6 +688,8 @@ etcd.yaml  kube-apiserver.yaml  kube-controller-manager.yaml  kube-scheduler.yam
             <a href="https://www.qikqiak.com/">阳明的博客</a>
             &nbsp;&bull;&nbsp;
             <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/archives/">文章归档</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
           
@@ -748,9 +708,9 @@ etcd.yaml  kube-apiserver.yaml  kube-controller-manager.yaml  kube-scheduler.yam
 <script src="https://www.qikqiak.com/js/jquery-1.11.2.min.js"></script>
 <script src="https://www.qikqiak.com/js/bootstrap.min.js"></script>
 <script src="https://www.qikqiak.com/js/main.min.js"></script>
-<script src="https://www.qikqiak.com/js/highlight.min.js"></script>
-<script> hljs.initHighlightingOnLoad(); </script>
-<script src="https://www.qikqiak.com/js/prism.js?t=123"></script>
+
+
+
 
 <script src="https://www.qikqiak.com/js/reward.js"></script>
 

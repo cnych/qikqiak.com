@@ -27,12 +27,9 @@
   <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
   <link rel="stylesheet" href="https://www.qikqiak.com/css/font-awesome.min.css" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/bootstrap.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=456" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=4567" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/pygment_highlights.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/highlight.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/prism.css?t=123" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/search.css" />
   
   <link rel="stylesheet" href="https://www.qikqiak.com/css/reward.css" />
@@ -98,7 +95,7 @@ if (!doNotTrack) {
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
                 
-                  <a href="https://www.qikqiak.com/page/archive/">Archive</a>
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
                 
                   <a href="https://www.qikqiak.com/tags">tags</a>
                 
@@ -301,10 +298,7 @@ autocomplete('#aa-search-input',
 
 <ul>
 <li><p>第一种方法是使用<code>django.views.static.serve</code>来处理文件。在App的<code>urls.py</code>里面加上一条路由：</p>
-
-<pre><code class="language-python">url(r&quot;^(?/static/P&lt;path&gt;.*)$&quot;, &quot;django.views.static.serve&quot;, {&quot;document_root&quot; : &quot;/path/to/project/app/static/&quot;})
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">url(<span style="color:#f1fa8c">r</span><span style="color:#f1fa8c">&#34;^(?/static/P&lt;path&gt;.*)$&#34;</span>, <span style="color:#f1fa8c">&#34;django.views.static.serve&#34;</span>, {<span style="color:#f1fa8c">&#34;document_root&#34;</span> : <span style="color:#f1fa8c">&#34;/path/to/project/app/static/&#34;</span>})</code></pre></div>
 <p>但是这样的话线上的静态文件就都通过<code>Django</code>来进行处理了，这样速度太慢了，毕竟处理静态文件不是<code>Django</code>的特长。</p></li>
 
 <li><p>处理静态文件什么在行？<code>Nginx</code>再加上<code>CDN</code>呗，所以现在就可以将每个App 里面的静态文件复制到一个统一的文件夹里面，然后在<code>nginx</code>中将<code>/static/</code>映射到该目录就行。但是这样是不是特别麻烦啊，每次上线都得把每个App 下面的静态文件复制一遍。</p></li>
@@ -319,16 +313,13 @@ autocomplete('#aa-search-input',
 <h2 id="最佳实践">最佳实践</h2>
 
 <p>所以最佳的配置方式是将所有的App 下面的静态文件统一放置到一个目录下面，然后将该目录设置为<code>STATICFILES_DIRS</code>，<code>STATIC_ROOT</code>则设置为另外的目录。如下：</p>
-
-<pre><code class="language-python">STATIC_URL = '/static/'
-# 开发阶段放置项目自己的静态文件
-STATICFILES_DIRS = (
-    os.path.join(BASE_DIR, 'staticfiles'),
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">STATIC_URL <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#39;/static/&#39;</span>
+<span style="color:#6272a4"># 开发阶段放置项目自己的静态文件</span>
+STATICFILES_DIRS <span style="color:#ff79c6">=</span> (
+    os<span style="color:#ff79c6">.</span>path<span style="color:#ff79c6">.</span>join(BASE_DIR, <span style="color:#f1fa8c">&#39;staticfiles&#39;</span>),
 )
-# 执行collectstatic命令后会将项目中的静态文件收集到该目录下面来（所以不应该在该目录下面放置自己的一些静态文件，因为会覆盖掉）
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-</code></pre>
-
+<span style="color:#6272a4"># 执行collectstatic命令后会将项目中的静态文件收集到该目录下面来（所以不应该在该目录下面放置自己的一些静态文件，因为会覆盖掉）</span>
+STATIC_ROOT <span style="color:#ff79c6">=</span> os<span style="color:#ff79c6">.</span>path<span style="color:#ff79c6">.</span>join(BASE_DIR, <span style="color:#f1fa8c">&#39;static&#39;</span>)</code></pre></div>
 <p>在开发阶段，<code>Django</code>把/static 映射到<code>django.contrib.staticfiles</code>这个App。<code>staticfiles</code>自动地从<code>STATICFILES_DIRS</code>、<code>STATIC_ROOT</code>以及各个App的static子目录里面搜索静态文件。一旦布署到开发环境上，<code>settings.py</code>不需要重新编写，只要在<code>Nginx</code>的配置文件里面写好映射，/static将会被<code>Nginx</code>处理。<code>django.contrib.staticfiles</code>虽然仍然存在，但因为不会接收到以<code>/static/</code>开始的路径，所以将不会产生作用。不必担心<code>Django</code>会使用处理速度变慢。另外，当<code>settings.DEBUG is False</code>的时候，<code>staticfiles</code>将自动关闭。</p>
 
         
@@ -396,17 +387,17 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
     
     <li><a href="https://www.qikqiak.com/post/django-url-function-usage/">django下url函数的用法</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/some-pits-of-memcached/">Memcached的一些坑!!!</a></li>
+    <li><a href="https://www.qikqiak.com/post/django-i18n/">django国际化问题</a></li>
     
     <li><a href="https://www.qikqiak.com/post/django-custom-tag-inclusion_tag/">django自定义标签之inclusion_tag的用法</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/django-i18n/">django国际化问题</a></li>
+    <li><a href="https://www.qikqiak.com/post/some-pits-of-memcached/">Memcached的一些坑!!!</a></li>
     
     <li><a href="https://www.qikqiak.com/post/awk-base-compute/">用awk做基本运算</a></li>
     
     <li><a href="https://www.qikqiak.com/post/nginx-301-redirect/">Nginx中如何设置301跳转</a></li>
     
-    <li><a href="https://www.qikqiak.com/page/friend/">友情链接</a></li>
+    <li><a href="https://www.qikqiak.com/page/kubernetes.io/">Kubernetes</a></li>
     
 </ul>
 
@@ -517,6 +508,8 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
             <a href="https://www.qikqiak.com/">阳明的博客</a>
             &nbsp;&bull;&nbsp;
             <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/archives/">文章归档</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
           
@@ -535,9 +528,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 <script src="https://www.qikqiak.com/js/jquery-1.11.2.min.js"></script>
 <script src="https://www.qikqiak.com/js/bootstrap.min.js"></script>
 <script src="https://www.qikqiak.com/js/main.min.js"></script>
-<script src="https://www.qikqiak.com/js/highlight.min.js"></script>
-<script> hljs.initHighlightingOnLoad(); </script>
-<script src="https://www.qikqiak.com/js/prism.js?t=123"></script>
+
+
+
 
 <script src="https://www.qikqiak.com/js/reward.js"></script>
 

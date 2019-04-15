@@ -33,12 +33,9 @@ https证书服务大部分都是收费的，而且很贵，阿里云可以申请
   <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
   <link rel="stylesheet" href="https://www.qikqiak.com/css/font-awesome.min.css" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/bootstrap.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=456" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=4567" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/pygment_highlights.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/highlight.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/prism.css?t=123" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/search.css" />
   
   <link rel="stylesheet" href="https://www.qikqiak.com/css/reward.css" />
@@ -104,7 +101,7 @@ if (!doNotTrack) {
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
                 
-                  <a href="https://www.qikqiak.com/page/archive/">Archive</a>
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
                 
                   <a href="https://www.qikqiak.com/tags">tags</a>
                 
@@ -312,76 +309,55 @@ autocomplete('#aa-search-input',
 <h2 id="获取证书">获取证书</h2>
 
 <p><strong>Certbot</strong>是<code>Let's Encrypt</code>官方推荐的获取证书的客户端，可以帮我们获取免费的<code>Let's Encrypt</code> 证书。安装命令：</p>
-
-<pre><code class="language-shell">yum install certbot
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">yum install certbot</code></pre></div>
 <p>生成证书：</p>
-
-<pre><code class="language-shell">certbot certonly --email icnych@gmail.com --agree-tos --webroot -w /var/www/blogs -d blog.qikqiak.com
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">certbot certonly --email icnych@gmail.com --agree-tos --webroot -w /var/www/blogs -d blog.qikqiak.com</code></pre></div>
 <blockquote>
 <p>其中-w后面是网站根目录，-d后面是网站域名，所以需要保证目录存在并且可以正常访问。</p>
 </blockquote>
 
 <p>执行完生成证书的命令后，会生成相关的证书文件到<code>/etc/letsencrypt/live/blog.qikqiak.com/</code>目录下面：</p>
-
-<pre><code class="language-shell">$ ls /etc/letsencrypt/live/blog.qikqiak.com/
-cert.pem  chain.pem  fullchain.pem  privkey.pem  README
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ ls /etc/letsencrypt/live/blog.qikqiak.com/
+cert.pem  chain.pem  fullchain.pem  privkey.pem  README</code></pre></div>
 <p>至此证书生成完成。</p>
 
 <h2 id="nginx-配置https">Nginx 配置https</h2>
 
 <p>证书生成完成后，还需要更改我们的<code>Nginx</code>配置服务，主要是监听<strong>443</strong>端口，启用<code>SSL</code>，并配置<code>SSL</code>的证书路径（公钥，私钥的路径）。如下：</p>
-
-<pre><code class="language-shell">server
-{
-    listen       443;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">server
+<span style="color:#ff79c6">{</span>
+    listen       <span style="color:#bd93f9">443</span>;
     ssl on;
     ssl_certificate /etc/letsencrypt/live/blog.qikqiak.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/blog.qikqiak.com/privkey.pem;
     server_name blog.qikqiak.com;
     root /home/notes/apps/blog;
     index index.html;
-}
-</code></pre>
-
+<span style="color:#ff79c6">}</span></code></pre></div>
 <p>配置更改过后重新加载<code>Nginx</code>即可生效：</p>
-
-<pre><code class="language-shell">nginx -s reload
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">nginx -s reload</code></pre></div>
 <p>现在我们访问<code>https://blog.qikqiak.com</code>已经可以正常访问了，但是还有一个问题就是访问<code>http://blog.qikqiak.com</code>依然还是<code>http</code>的，所以我们需要配置将<code>http</code>更改为<code>https</code>，这样就完美了。这里可以用到之前我们的<a href="https://www.qikqiak.com/post/nginx-301-redirect/">301跳转</a>来解决这个问题，完整的配置如下：</p>
-
-<pre><code class="language-shell">server {
-    listen  80;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">server <span style="color:#ff79c6">{</span>
+    listen  <span style="color:#bd93f9">80</span>;
     server_name blog.qikqiak.com;
-    rewrite ^(.*)$  https://$host$1 permanent;
-}
+    rewrite ^<span style="color:#ff79c6">(</span>.*<span style="color:#ff79c6">)</span>$  https://<span style="color:#8be9fd;font-style:italic">$host$1</span> permanent;
+<span style="color:#ff79c6">}</span>
 
 server
-{
-    listen       443;
+<span style="color:#ff79c6">{</span>
+    listen       <span style="color:#bd93f9">443</span>;
     ssl on;
     ssl_certificate /etc/letsencrypt/live/blog.qikqiak.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/blog.qikqiak.com/privkey.pem;
     server_name blog.qikqiak.com;
     root /home/notes/apps/blog;
     index index.html;
-}
-</code></pre>
-
+<span style="color:#ff79c6">}</span></code></pre></div>
 <h2 id="更新证书">更新证书</h2>
 
 <p>到这里我们已经将博客<code>https</code>化了，但是还没有完的，由于<code>Let's Encrypt</code>证书的有效期只有<strong>90天</strong>，所以在到期之前我们需要更新整数，<code>certbot</code>给我们已经提供了这样的更新命令，我们只需要将更新命令添加到<code>crontab</code>下面定期更新即可：</p>
-
-<pre><code class="language-shell">$ crontab -l
-30 5 1 * * root /usr/bin/certbot renew --renew-hook &quot;/usr/sbin/nginx -s reload&quot;
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ crontab -l
+<span style="color:#bd93f9">30</span> <span style="color:#bd93f9">5</span> <span style="color:#bd93f9">1</span> * * root /usr/bin/certbot renew --renew-hook <span style="color:#f1fa8c">&#34;/usr/sbin/nginx -s reload&#34;</span></code></pre></div>
 <p>到这一步才算革命成功了~~~ 我们再也不用担心恶心的害虫了~~~</p>
 
         
@@ -455,9 +431,9 @@ server
     
     <li><a href="https://www.qikqiak.com/post/django-url-function-usage/">django下url函数的用法</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/some-pits-of-memcached/">Memcached的一些坑!!!</a></li>
-    
     <li><a href="https://www.qikqiak.com/post/django-custom-tag-inclusion_tag/">django自定义标签之inclusion_tag的用法</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/some-pits-of-memcached/">Memcached的一些坑!!!</a></li>
     
     <li><a href="https://www.qikqiak.com/post/django-i18n/">django国际化问题</a></li>
     
@@ -570,6 +546,8 @@ server
             <a href="https://www.qikqiak.com/">阳明的博客</a>
             &nbsp;&bull;&nbsp;
             <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/archives/">文章归档</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
           
@@ -588,9 +566,9 @@ server
 <script src="https://www.qikqiak.com/js/jquery-1.11.2.min.js"></script>
 <script src="https://www.qikqiak.com/js/bootstrap.min.js"></script>
 <script src="https://www.qikqiak.com/js/main.min.js"></script>
-<script src="https://www.qikqiak.com/js/highlight.min.js"></script>
-<script> hljs.initHighlightingOnLoad(); </script>
-<script src="https://www.qikqiak.com/js/prism.js?t=123"></script>
+
+
+
 
 <script src="https://www.qikqiak.com/js/reward.js"></script>
 

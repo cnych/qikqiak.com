@@ -39,12 +39,9 @@
   <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
   <link rel="stylesheet" href="https://www.qikqiak.com/css/font-awesome.min.css" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/bootstrap.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=456" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=4567" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/pygment_highlights.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/highlight.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/prism.css?t=123" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/search.css" />
   
   <link rel="stylesheet" href="https://www.qikqiak.com/css/reward.css" />
@@ -110,7 +107,7 @@ if (!doNotTrack) {
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
                 
-                  <a href="https://www.qikqiak.com/page/archive/">Archive</a>
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
                 
                   <a href="https://www.qikqiak.com/tags">tags</a>
                 
@@ -331,33 +328,27 @@ sessionAffinity是一个功能，将来自同一个客户端的请求总是被�
 </blockquote>
 
 <p>在<code>kubernetes</code>中启用<code>sessionAffinity</code>很简单，只需要简单的<code>Service</code>中配置即可：</p>
-
-<pre><code class="language-json">service.spec.sessionAffinity = &quot;ClientIP&quot;
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">service.spec.sessionAffinity = <span style="color:#f1fa8c">&#34;ClientIP&#34;</span></code></pre></div>
 <p>默认情况下sessionAffinity=None，会随机选择一个后端进行路由转发的，设置成<code>ClientIP</code>后就和上面的<code>ip_hash</code>功能一样了，由于我们使用的是<code>traefik ingress</code>，这里还需要在<code>Service</code>中添加一个<code>traefik</code>的<code>annotation</code>：</p>
-
-<pre><code class="language-yaml">apiVersion: v1
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
 kind: Service
 metadata:
   name: socket-demo
   namespace: kube-apps
   annotations:
-    traefik.backend.loadbalancer.stickiness: &quot;true&quot;
-    traefik.backend.loadbalancer.stickiness.cookieName: &quot;socket&quot;
+    traefik.backend.loadbalancer.stickiness: <span style="color:#f1fa8c">&#34;true&#34;</span>
+    traefik.backend.loadbalancer.stickiness.cookieName: <span style="color:#f1fa8c">&#34;socket&#34;</span>
   labels:
     k8s-app: socket-demo
 spec:
-  sessionAffinity: &quot;ClientIP&quot;
+  sessionAffinity: <span style="color:#f1fa8c">&#34;ClientIP&#34;</span>
   ports:
     - name: socketio
-      port: 80
+      port: <span style="color:#bd93f9">80</span>
       protocol: TCP
-      targetPort: 3000
+      targetPort: <span style="color:#bd93f9">3000</span>
   selector:
-    k8s-app: socket-demo
-</code></pre>
-
+    k8s-app: socket-demo</code></pre></div>
 <p>注意上面的<strong>annotations</strong>和<strong>sessionAffinity</strong>两项配置，然后我们再来看看我们的<code>socket.io</code>服务吧</p>
 
 <p><img src="https://www.qikqiak.com/img/posts/WX20171121-140324.png" alt="socket.io" />
@@ -372,48 +363,43 @@ spec:
 
 <p>The interface in charge of routing messages is what we call the Adapter. You can implement your own on top of the socket.io-adapter (by inheriting from it) or you can use the one we provide on top of Redis: socket.io-redis:</p>
 </blockquote>
-
-<pre><code class="language-javascript">var io = require('socket.io')(3000);
-var redis = require('socket.io-redis');
-io.adapter(redis({ host: 'localhost', port: 6379 }));
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-javascript" data-lang="javascript"><span style="color:#8be9fd;font-style:italic">var</span> io <span style="color:#ff79c6">=</span> require(<span style="color:#f1fa8c">&#39;socket.io&#39;</span>)(<span style="color:#bd93f9">3000</span>);
+<span style="color:#8be9fd;font-style:italic">var</span> redis <span style="color:#ff79c6">=</span> require(<span style="color:#f1fa8c">&#39;socket.io-redis&#39;</span>);
+io.adapter(redis({ host<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#39;localhost&#39;</span>, port<span style="color:#ff79c6">:</span> <span style="color:#bd93f9">6379</span> }));
+</code></pre></div>
 <p>总结起来就是你如果想在进程间或者节点之前发送信息，那么就需要实现自己实现一个<code>socket.io-adapter</code>或者利用官方提供的<code>socket.io-redis</code>。</p>
 
 <p>我们这里利用<code>socket.io-redis</code> 这个adapter 来实现消息的广播，最终的服务端代码如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-javascript" data-lang="javascript"><span style="color:#ff79c6">const</span> express <span style="color:#ff79c6">=</span> require(<span style="color:#f1fa8c">&#39;express&#39;</span>);
+<span style="color:#ff79c6">const</span> socketRedis <span style="color:#ff79c6">=</span> require(<span style="color:#f1fa8c">&#39;socket.io-redis&#39;</span>);
+<span style="color:#ff79c6">const</span> os <span style="color:#ff79c6">=</span> require(<span style="color:#f1fa8c">&#39;os&#39;</span>);
+<span style="color:#ff79c6">const</span> app <span style="color:#ff79c6">=</span> express();
+<span style="color:#ff79c6">const</span> http <span style="color:#ff79c6">=</span> require(<span style="color:#f1fa8c">&#39;http&#39;</span>).Server(app);
+<span style="color:#ff79c6">const</span> io <span style="color:#ff79c6">=</span> require(<span style="color:#f1fa8c">&#39;socket.io&#39;</span>)(http);
+<span style="color:#ff79c6">const</span> port <span style="color:#ff79c6">=</span> process.env.PORT <span style="color:#ff79c6">||</span> <span style="color:#bd93f9">3000</span>;
 
-<pre><code class="language-javascript">const express = require('express');
-const socketRedis = require('socket.io-redis');
-const os = require('os');
-const app = express();
-const http = require('http').Server(app);
-const io = require('socket.io')(http);
-const port = process.env.PORT || 3000;
+app.use(express.<span style="color:#ff79c6">static</span>(__dirname <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#39;/static&#39;</span>));
 
-app.use(express.static(__dirname + '/static'));
+app.engine(<span style="color:#f1fa8c">&#39;html&#39;</span>, require(<span style="color:#f1fa8c">&#39;ejs&#39;</span>).renderFile);
+app.set(<span style="color:#f1fa8c">&#39;view engine&#39;</span>, <span style="color:#f1fa8c">&#39;html&#39;</span>);
 
-app.engine('html', require('ejs').renderFile);
-app.set('view engine', 'html');
-
-app.get('/', function (req, res) {
-    res.render('index', {
-        'os': os.hostname()
+app.get(<span style="color:#f1fa8c">&#39;/&#39;</span>, <span style="color:#8be9fd;font-style:italic">function</span> (req, res) {
+    res.render(<span style="color:#f1fa8c">&#39;index&#39;</span>, {
+        <span style="color:#f1fa8c">&#39;os&#39;</span><span style="color:#ff79c6">:</span> os.hostname()
     });
 });
 
-function onConnection(socket){
-  socket.on('drawing', (data) =&gt; socket.broadcast.emit('drawing', data));
+<span style="color:#8be9fd;font-style:italic">function</span> onConnection(socket){
+  socket.on(<span style="color:#f1fa8c">&#39;drawing&#39;</span>, (data) =&gt; socket.broadcast.emit(<span style="color:#f1fa8c">&#39;drawing&#39;</span>, data));
 }
 
-io.adapter(socketRedis({host: 'redis', port: 6379}));
-io.on('connection', onConnection);
+io.adapter(socketRedis({host<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#39;redis&#39;</span>, port<span style="color:#ff79c6">:</span> <span style="color:#bd93f9">6379</span>}));
+io.on(<span style="color:#f1fa8c">&#39;connection&#39;</span>, onConnection);
 
-http.listen(port, () =&gt; console.log('listening on port ' + port));
-</code></pre>
-
+http.listen(port, () =&gt; console.log(<span style="color:#f1fa8c">&#39;listening on port &#39;</span> <span style="color:#ff79c6">+</span> port));
+</code></pre></div>
 <p>部署在<code>kubernetes</code>集群上的<code>yaml</code>文件如下：</p>
-
-<pre><code class="language-yaml">apiVersion: extensions/v1beta1
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: socket-demo
@@ -421,7 +407,7 @@ metadata:
   labels:
     k8s-app: socket-demo
 spec:
-  replicas: 3
+  replicas: <span style="color:#bd93f9">3</span>
   template:
     metadata:
       labels:
@@ -432,7 +418,7 @@ spec:
           imagePullPolicy: Always
           name: socketdemo
           ports:
-            - containerPort: 3000
+            - containerPort: <span style="color:#bd93f9">3000</span>
               protocol: TCP
           resources:
             limits:
@@ -449,21 +435,19 @@ metadata:
   name: socket-demo
   namespace: kube-apps
   annotations:
-    traefik.backend.loadbalancer.stickiness: &quot;true&quot;
-    traefik.backend.loadbalancer.stickiness.cookieName: &quot;socket&quot;
+    traefik.backend.loadbalancer.stickiness: <span style="color:#f1fa8c">&#34;true&#34;</span>
+    traefik.backend.loadbalancer.stickiness.cookieName: <span style="color:#f1fa8c">&#34;socket&#34;</span>
   labels:
     k8s-app: socket-demo
 spec:
   sessionAffinity: None
   ports:
     - name: socketio
-      port: 80
+      port: <span style="color:#bd93f9">80</span>
       protocol: TCP
-      targetPort: 3000
+      targetPort: <span style="color:#bd93f9">3000</span>
   selector:
-    k8s-app: socket-demo
-</code></pre>
-
+    k8s-app: socket-demo</code></pre></div>
 <p>现在看看最终的效果吧：
 <img src="https://www.qikqiak.com/img/posts/WX20171121-141623.png" alt="socket.io cluster" /></p>
 
@@ -673,6 +657,8 @@ spec:
             <a href="https://www.qikqiak.com/">阳明的博客</a>
             &nbsp;&bull;&nbsp;
             <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/archives/">文章归档</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
           
@@ -691,9 +677,9 @@ spec:
 <script src="https://www.qikqiak.com/js/jquery-1.11.2.min.js"></script>
 <script src="https://www.qikqiak.com/js/bootstrap.min.js"></script>
 <script src="https://www.qikqiak.com/js/main.min.js"></script>
-<script src="https://www.qikqiak.com/js/highlight.min.js"></script>
-<script> hljs.initHighlightingOnLoad(); </script>
-<script src="https://www.qikqiak.com/js/prism.js?t=123"></script>
+
+
+
 
 <script src="https://www.qikqiak.com/js/reward.js"></script>
 

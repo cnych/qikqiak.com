@@ -27,12 +27,9 @@
   <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
   <link rel="stylesheet" href="https://www.qikqiak.com/css/font-awesome.min.css" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/bootstrap.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=456" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=4567" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/pygment_highlights.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/highlight.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/prism.css?t=123" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/search.css" />
   
   <link rel="stylesheet" href="https://www.qikqiak.com/css/reward.css" />
@@ -98,7 +95,7 @@ if (!doNotTrack) {
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
                 
-                  <a href="https://www.qikqiak.com/page/archive/">Archive</a>
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
                 
                   <a href="https://www.qikqiak.com/tags">tags</a>
                 
@@ -309,8 +306,7 @@ autocomplete('#aa-search-input',
 <h3 id="环境变量的方式">环境变量的方式</h3>
 
 <p>我们通过<code>Downward API</code>来将 POD 的 IP、名称以及所对应的 namespace 注入到容器的环境变量中去，然后我们在容器中打印全部的环境变量来进行验证，对应的<strong>yaml</strong>文件如下：(<strong>test-env-pod.yaml</strong>)</p>
-
-<pre><code class="language-yaml">apiVersion: v1
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
 kind: Pod
 metadata:
     name: test-env-pod
@@ -319,7 +315,7 @@ spec:
     containers:
     - name: test-env-pod
       image: busybox:latest
-      command: [&quot;/bin/sh&quot;, &quot;-c&quot;, &quot;env&quot;]
+      command: [<span style="color:#f1fa8c">&#34;/bin/sh&#34;</span>, <span style="color:#f1fa8c">&#34;-c&#34;</span>, <span style="color:#f1fa8c">&#34;env&#34;</span>]
       env:
       - name: POD_NAME
         valueFrom:
@@ -332,9 +328,7 @@ spec:
       - name: POD_IP
         valueFrom:
           fieldRef:
-            fieldPath: status.podIP
-</code></pre>
-
+            fieldPath: status.podIP</code></pre></div>
 <p>我们可以看到上面我们使用了一种新的方式来设置<strong>env</strong>的值：<code>valueFrom</code>。另外我们需要注意的是 POD 的 name 和 namespace 属于元数据，是在 POD 创建之前就已经定下来了的，所以我们使用 metata 获取就可以了，但是对于 POD 的 IP 则不一样，因为我们知道 POD IP 是不固定的，POD 重建了就变了，它属于状态数据，所以我们使用 status 去获取。</p>
 
 <blockquote>
@@ -342,27 +336,20 @@ spec:
 </blockquote>
 
 <p>接下来我们利用<code>kubectl</code>工具创建上面的 POD：</p>
-
-<pre><code class="language-shell">$ kubectl create -f test-env-pod.yaml
-pod &quot;test-env-pod&quot; created
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create -f test-env-pod.yaml
+pod <span style="color:#f1fa8c">&#34;test-env-pod&#34;</span> created</code></pre></div>
 <p>POD 创建成功后，我们可以查看日志：</p>
-
-<pre><code class="language-shell">$ kubectl logs test-env-pod -n kube-system |grep POD
-POD_IP=172.30.19.24
-POD_NAME=test-env-pod
-POD_NAMESPACE=kube-system
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl logs test-env-pod -n kube-system |grep POD
+<span style="color:#8be9fd;font-style:italic">POD_IP</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">172</span>.30.19.24
+<span style="color:#8be9fd;font-style:italic">POD_NAME</span><span style="color:#ff79c6">=</span>test-env-pod
+<span style="color:#8be9fd;font-style:italic">POD_NAMESPACE</span><span style="color:#ff79c6">=</span>kube-system</code></pre></div>
 <p>我们可以看到 POD 的 IP、NAME、NAMESPACE 都通过环境变量打印出来了。</p>
 
 <h3 id="volume-挂载"><code>Volume</code>挂载</h3>
 
 <p><code>Downward API</code>除了提供环境变量的方式外，还提供了通过<code>Volume</code>挂载的方式去获取 POD 的基本信息。接下来我们通过<code>Downward API</code>将 POD 的 Label、Annotation 等信息通过 Volume 挂载到容器的某个文件中去，然后在容器中打印出该文件的值来验证。
 新建文件 yaml 文件：(<strong>test-volume-pod.yaml</strong>)</p>
-
-<pre><code class="language-yaml">apiVersion: v1
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
 kind: Pod
 metadata:
     name: test-volume-pod
@@ -377,14 +364,14 @@ spec:
     containers:
     - name: test-volume-pod-container
       image: busybox:latest
-      command: [&quot;sh&quot;, &quot;-c&quot;]
+      command: [<span style="color:#f1fa8c">&#34;sh&#34;</span>, <span style="color:#f1fa8c">&#34;-c&#34;</span>]
       args:
-      - while true; do
+      - while <span style="color:#ff79c6">true</span>; do
           if [[ -e /etc/podinfo/labels ]]; then
-            echo -en '\n\n'; cat /etc/podinfo/labels; fi;
+            echo -en <span style="color:#f1fa8c">&#39;\n\n&#39;</span>; cat /etc/podinfo/labels; fi;
           if [[ -e /etc/podinfo/annotations ]]; then
-            echo -en '\n\n'; cat /etc/podinfo/annotations; fi;
-          sleep 3600;
+            echo -en <span style="color:#f1fa8c">&#39;\n\n&#39;</span>; cat /etc/podinfo/annotations; fi;
+          sleep <span style="color:#bd93f9">3600</span>;
         done;
       volumeMounts:
       - name: podinfo
@@ -393,32 +380,24 @@ spec:
     - name: podinfo
       downwardAPI:
         items:
-        - path: &quot;labels&quot;
+        - path: <span style="color:#f1fa8c">&#34;labels&#34;</span>
           fieldRef:
             fieldPath: metadata.labels
-        - path: &quot;annotations&quot;
+        - path: <span style="color:#f1fa8c">&#34;annotations&#34;</span>
           fieldRef:
-            fieldPath: metadata.annotations
-</code></pre>
-
+            fieldPath: metadata.annotations</code></pre></div>
 <p>我们将元数据 labels 和 annotaions 以文件的形式挂载到了<code>/etc/podinfo</code>目录下，创建上面的 POD ：</p>
-
-<pre><code class="language-shell">$ kubectl create -f test-volume-pod.yaml
-pod &quot;test-volume-pod&quot; created
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create -f test-volume-pod.yaml
+pod <span style="color:#f1fa8c">&#34;test-volume-pod&#34;</span> created</code></pre></div>
 <p>然后查看日志：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl logs test-volume-pod -n kube-system
+k8s-app<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;test-volume&#34;</span>
+node-env<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;test&#34;</span>
 
-<pre><code class="language-shell">$ kubectl logs test-volume-pod -n kube-system
-k8s-app=&quot;test-volume&quot;
-node-env=&quot;test&quot;
-
-build=&quot;test&quot;
-kubernetes.io/config.seen=&quot;2018-03-02T17:51:10.856356259+08:00&quot;
-kubernetes.io/config.source=&quot;api&quot;
-own=&quot;qikqiak&quot;
-</code></pre>
-
+<span style="color:#8be9fd;font-style:italic">build</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;test&#34;</span>
+kubernetes.io/config.seen<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;2018-03-02T17:51:10.856356259+08:00&#34;</span>
+kubernetes.io/config.source<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;api&#34;</span>
+<span style="color:#8be9fd;font-style:italic">own</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;qikqiak&#34;</span></code></pre></div>
 <p>我们通过打印出来的日志可以看到 POD 的 Labels 和 Annotations 信息都被挂载到 <code>/etc/podinfo</code>目录下面的 lables 和 annotations 文件了。</p>
 
 <p>在实际应用中，如果你的应用有获取 POD 的基本信息的需求，一般我们就可以利用<code>Downward API</code>来获取基本信息，然后编写一个启动脚本或者利用<code>initContainer</code>将 POD 的信息注入到我们容器中去，然后在我们自己的应用中就可以正常的处理相关逻辑了。</p>
@@ -491,15 +470,15 @@ own=&quot;qikqiak&quot;
     
     <li><a href="https://www.qikqiak.com/post/use-yaml-create-kubernetes-deployment/">使用YAML 文件创建 Kubernetes Deployment</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/add-authorization-for-kubernetes-dashboard/">为kubernetes dashboard访问用户添加权限控制</a></li>
-    
     <li><a href="https://www.qikqiak.com/post/understand-kubernetes-configmap-and-secrets/">kubernetes ConfigMap 和 Secrets</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/add-authorization-for-kubernetes-dashboard/">为kubernetes dashboard访问用户添加权限控制</a></li>
     
     <li><a href="https://www.qikqiak.com/post/alertmanager-of-prometheus-in-practice/">Prometheus报警AlertManager实战</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/update-prometheus-2-in-kubernetes/">Kubernetes 下升级Prometheus2.0</a></li>
-    
     <li><a href="https://www.qikqiak.com/post/kubernetes-logs-collect/">kubernetes 日志收集方案</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/update-prometheus-2-in-kubernetes/">Kubernetes 下升级Prometheus2.0</a></li>
     
     <li><a href="https://www.qikqiak.com/post/socketio-multiple-nodes-in-kubernetes/">kubernetes 下实现socket.io 的集群模式</a></li>
     
@@ -612,6 +591,8 @@ own=&quot;qikqiak&quot;
             <a href="https://www.qikqiak.com/">阳明的博客</a>
             &nbsp;&bull;&nbsp;
             <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/archives/">文章归档</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
           
@@ -630,9 +611,9 @@ own=&quot;qikqiak&quot;
 <script src="https://www.qikqiak.com/js/jquery-1.11.2.min.js"></script>
 <script src="https://www.qikqiak.com/js/bootstrap.min.js"></script>
 <script src="https://www.qikqiak.com/js/main.min.js"></script>
-<script src="https://www.qikqiak.com/js/highlight.min.js"></script>
-<script> hljs.initHighlightingOnLoad(); </script>
-<script src="https://www.qikqiak.com/js/prism.js?t=123"></script>
+
+
+
 
 <script src="https://www.qikqiak.com/js/reward.js"></script>
 

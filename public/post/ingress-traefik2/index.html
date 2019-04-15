@@ -27,12 +27,9 @@
   <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
   <link rel="stylesheet" href="https://www.qikqiak.com/css/font-awesome.min.css" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/bootstrap.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=456" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=4567" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/pygment_highlights.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/highlight.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/prism.css?t=123" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/search.css" />
   
   <link rel="stylesheet" href="https://www.qikqiak.com/css/reward.css" />
@@ -98,7 +95,7 @@ if (!doNotTrack) {
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
                 
-                  <a href="https://www.qikqiak.com/page/archive/">Archive</a>
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
                 
                   <a href="https://www.qikqiak.com/tags">tags</a>
                 
@@ -327,42 +324,29 @@ autocomplete('#aa-search-input',
 <h2 id="tls-认证">TLS 认证</h2>
 
 <p>在现在大部分场景下面我们都会使用 https 来访问我们的服务，这节课我们将使用一个自签名的证书，当然你有在一些正规机构购买的 CA 证书是最好的，这样任何人访问你的服务的时候都是受浏览器信任的证书。使用下面的<code>openssl</code>命令生成 CA 证书：</p>
-
-<pre><code class="language-shell">$ openssl req -newkey rsa:2048 -nodes -keyout tls.key -x509 -days 365 -out tls.crt
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ openssl req -newkey rsa:2048 -nodes -keyout tls.key -x509 -days <span style="color:#bd93f9">365</span> -out tls.crt</code></pre></div>
 <p>现在我们有了证书，我们可以使用 kubectl 创建一个 secret 对象来存储上面的证书：</p>
-
-<pre><code class="language-shell">$ kubectl create secret generic traefik-cert --from-file=tls.crt --from-file=tls.key -n kube-system
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create secret generic traefik-cert --from-file<span style="color:#ff79c6">=</span>tls.crt --from-file<span style="color:#ff79c6">=</span>tls.key -n kube-system</code></pre></div>
 <h3 id="配置-traefik">配置 Traefik</h3>
 
 <p>前面我们使用的是 Traefik 的默认配置，现在我们来配置 Traefik，让其支持 https：</p>
-
-<pre><code class="language-toml">defaultEntryPoints = [&quot;http&quot;, &quot;https&quot;]
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-toml" data-lang="toml">defaultEntryPoints = [<span style="color:#f1fa8c">&#34;http&#34;</span>, <span style="color:#f1fa8c">&#34;https&#34;</span>]
 
 [entryPoints]
   [entryPoints.http]
-  address = &quot;:80&quot;
+  address = <span style="color:#f1fa8c">&#34;:80&#34;</span>
     [entryPoints.http.redirect]
-      entryPoint = &quot;https
-  [entryPoints.https]
-  address = &quot;:443&quot;
-    [entryPoints.https.tls]
-      [[entryPoints.https.tls.certificates]]
-      CertFile = &quot;/ssl/tls.crt&quot;
-      KeyFile = &quot;/ssl/tls.key&quot;
-</code></pre>
-
+      entryPoint = <span style="color:#f1fa8c">&#34;https
+</span><span style="color:#f1fa8c">  [entryPoints.https]
+</span><span style="color:#f1fa8c">  address = &#34;</span>:<span style="color:#bd93f9">443</span><span style="color:#f1fa8c">&#34;
+</span><span style="color:#f1fa8c">    [entryPoints.https.tls]
+</span><span style="color:#f1fa8c">      [[entryPoints.https.tls.certificates]]
+</span><span style="color:#f1fa8c">      CertFile = &#34;</span>/ssl/tls.crt<span style="color:#f1fa8c">&#34;
+</span><span style="color:#f1fa8c">      KeyFile = &#34;</span>/ssl/tls.key&#34;</code></pre></div>
 <p>上面的配置文件中我们配置了 http 和 https 两个入口，并且配置了将 http 服务强制跳转到 https 服务，这样我们所有通过 traefik 进来的服务都是 https 的，要访问 https 服务，当然就得配置对应的证书了，可以看到我们指定了 CertFile 和 KeyFile 两个文件，由于 traefik pod 中并没有这两个证书，所以我们要想办法将上面生成的证书挂载到 Pod 中去，是不是前面我们讲解过 secret 对象可以通过 volume 形式挂载到 Pod 中？至于上面的 traefik.toml 这个文件我们要怎么让 traefik pod 能够访问到呢？还记得我们前面讲过的 ConfigMap 吗？我们是不是可以将上面的 traefik.toml 配置文件通过一个 ConfigMap 对象挂载到 traefik pod 中去：</p>
-
-<pre><code class="language-shell">$ kubectl create configmap traefik-conf --from-file=traefik.toml -n kube-system
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create configmap traefik-conf --from-file<span style="color:#ff79c6">=</span>traefik.toml -n kube-system</code></pre></div>
 <p>现在就可以更改下上节课的 traefik pod 的 yaml 文件了：</p>
-
-<pre><code class="language-yaml">kind: Deployment
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">kind: Deployment
 apiVersion: extensions/v1beta1
 metadata:
   name: traefik-ingress-controller
@@ -370,7 +354,7 @@ metadata:
   labels:
     k8s-app: traefik-ingress-lb
 spec:
-  replicas: 1
+  replicas: <span style="color:#bd93f9">1</span>
   selector:
     matchLabels:
       k8s-app: traefik-ingress-lb
@@ -381,7 +365,7 @@ spec:
         name: traefik-ingress-lb
     spec:
       serviceAccountName: traefik-ingress-controller
-      terminationGracePeriodSeconds: 60
+      terminationGracePeriodSeconds: <span style="color:#bd93f9">60</span>
       volumes:
       - name: ssl
         secret:
@@ -390,42 +374,37 @@ spec:
         configMap:
           name: traefik-conf
       tolerations:
-      - operator: &quot;Exists&quot;
+      - operator: <span style="color:#f1fa8c">&#34;Exists&#34;</span>
       nodeSelector:
         kubernetes.io/hostname: master
       containers:
       - image: traefik
         name: traefik-ingress-lb
         volumeMounts:
-        - mountPath: &quot;/ssl&quot;
-          name: &quot;ssl&quot;
-        - mountPath: &quot;/config&quot;
-          name: &quot;config&quot;
+        - mountPath: <span style="color:#f1fa8c">&#34;/ssl&#34;</span>
+          name: <span style="color:#f1fa8c">&#34;ssl&#34;</span>
+        - mountPath: <span style="color:#f1fa8c">&#34;/config&#34;</span>
+          name: <span style="color:#f1fa8c">&#34;config&#34;</span>
         ports:
         - name: http
-          containerPort: 80
-          hostPort: 80
+          containerPort: <span style="color:#bd93f9">80</span>
+          hostPort: <span style="color:#bd93f9">80</span>
         - name: https
-          containerPort: 443
-          hostPort: 443
+          containerPort: <span style="color:#bd93f9">443</span>
+          hostPort: <span style="color:#bd93f9">443</span>
         - name: admin
-          containerPort: 8080
+          containerPort: <span style="color:#bd93f9">8080</span>
         args:
         - --configfile=/config/traefik.toml
         - --api
         - --kubernetes
-        - --logLevel=INFO
-</code></pre>
-
+        - --logLevel=INFO</code></pre></div>
 <p>和之前的比较，我们增加了 443 的端口配置，以及启动参数中通过 configfile 指定了 traefik.toml 配置文件，这个配置文件是通过 volume 挂载进来的。然后更新下 traefik pod:</p>
-
-<pre><code class="language-shell">$ kubectl apply -f traefik.yaml
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f traefik.yaml
 $ kubectl logs -f traefik-ingress-controller-7dcfd9c6df-v58k7 -n kube-system
-time=&quot;2018-08-26T11:26:44Z&quot; level=info msg=&quot;Server configuration reloaded on :80&quot;
-time=&quot;2018-08-26T11:26:44Z&quot; level=info msg=&quot;Server configuration reloaded on :443&quot;
-time=&quot;2018-08-26T11:26:44Z&quot; level=info msg=&quot;Server configuration reloaded on :8080&quot;
-</code></pre>
-
+<span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;2018-08-26T11:26:44Z&#34;</span> <span style="color:#8be9fd;font-style:italic">level</span><span style="color:#ff79c6">=</span>info <span style="color:#8be9fd;font-style:italic">msg</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;Server configuration reloaded on :80&#34;</span>
+<span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;2018-08-26T11:26:44Z&#34;</span> <span style="color:#8be9fd;font-style:italic">level</span><span style="color:#ff79c6">=</span>info <span style="color:#8be9fd;font-style:italic">msg</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;Server configuration reloaded on :443&#34;</span>
+<span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;2018-08-26T11:26:44Z&#34;</span> <span style="color:#8be9fd;font-style:italic">level</span><span style="color:#ff79c6">=</span>info <span style="color:#8be9fd;font-style:italic">msg</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;Server configuration reloaded on :8080&#34;</span></code></pre></div>
 <p>更新完成后我们查看 traefik pod 的日志，如果出现类似于上面的一些日志信息，证明更新成功了。现在我们去访问 traefik 的 dashboard 会跳转到 https 的地址，并会提示证书相关的报警信息，这是因为我们的证书是我们自建的，并不受浏览器信任，如果你是正规机构购买的证书并不会出现改报警信息，你应该可以看到我们常见的绿色标志：
 <img src="https://www.qikqiak.com/img/posts/traefik-tls.png" alt="traefik tls warning" /></p>
 
@@ -434,13 +413,12 @@ time=&quot;2018-08-26T11:26:44Z&quot; level=info msg=&quot;Server configuration 
 <h3 id="配置-ingress">配置 ingress</h3>
 
 <p>其实上面的 TLS 认证方式已经成功了，接下来我们通过一个实例来说明下 ingress 中 path 的用法，这里我们部署了3个简单的 web 服务，通过一个环境变量来标识当前运行的是哪个服务：（backend.yaml）</p>
-
-<pre><code class="language-yaml">kind: Deployment
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">kind: Deployment
 apiVersion: extensions/v1beta1
 metadata:
   name: svc1
 spec:
-  replicas: 1
+  replicas: <span style="color:#bd93f9">1</span>
   template:
     metadata:
       labels:
@@ -453,7 +431,7 @@ spec:
         - name: APP_SVC
           value: svc1
         ports:
-        - containerPort: 8080
+        - containerPort: <span style="color:#bd93f9">8080</span>
           protocol: TCP
 
 ---
@@ -462,7 +440,7 @@ apiVersion: extensions/v1beta1
 metadata:
   name: svc2
 spec:
-  replicas: 1
+  replicas: <span style="color:#bd93f9">1</span>
   template:
     metadata:
       labels:
@@ -475,7 +453,7 @@ spec:
         - name: APP_SVC
           value: svc2
         ports:
-        - containerPort: 8080
+        - containerPort: <span style="color:#bd93f9">8080</span>
           protocol: TCP
 
 ---
@@ -484,7 +462,7 @@ apiVersion: extensions/v1beta1
 metadata:
   name: svc3
 spec:
-  replicas: 1
+  replicas: <span style="color:#bd93f9">1</span>
   template:
     metadata:
       labels:
@@ -497,7 +475,7 @@ spec:
         - name: APP_SVC
           value: svc3
         ports:
-        - containerPort: 8080
+        - containerPort: <span style="color:#bd93f9">8080</span>
           protocol: TCP
 
 ---
@@ -510,7 +488,7 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - port: 8080
+  - port: <span style="color:#bd93f9">8080</span>
     name: http
   selector:
     app: svc1
@@ -525,7 +503,7 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - port: 8080
+  - port: <span style="color:#bd93f9">8080</span>
     name: http
   selector:
     app: svc2
@@ -540,31 +518,25 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - port: 8080
+  - port: <span style="color:#bd93f9">8080</span>
     name: http
   selector:
-    app: svc3
-</code></pre>
-
+    app: svc3</code></pre></div>
 <p>可以看到上面我们定义了3个 Deployment，分别对应3个 Service：</p>
-
-<pre><code class="language-shell">$ kubectl create -f backend.yaml
-deployment.extensions &quot;svc1&quot; created
-deployment.extensions &quot;svc2&quot; created
-deployment.extensions &quot;svc3&quot; created
-service &quot;svc1&quot; created
-service &quot;svc2&quot; created
-service &quot;svc3&quot; created
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create -f backend.yaml
+deployment.extensions <span style="color:#f1fa8c">&#34;svc1&#34;</span> created
+deployment.extensions <span style="color:#f1fa8c">&#34;svc2&#34;</span> created
+deployment.extensions <span style="color:#f1fa8c">&#34;svc3&#34;</span> created
+service <span style="color:#f1fa8c">&#34;svc1&#34;</span> created
+service <span style="color:#f1fa8c">&#34;svc2&#34;</span> created
+service <span style="color:#f1fa8c">&#34;svc3&#34;</span> created</code></pre></div>
 <p>然后我们创建一个 ingress 对象来访问上面的3个服务：（example-ingress.yaml）</p>
-
-<pre><code class="language-yaml">apiVersion: extensions/v1beta1
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: example-web-app
   annotations:
-    kubernetes.io/ingress.class: &quot;traefik&quot;
+    kubernetes.io/ingress.class: <span style="color:#f1fa8c">&#34;traefik&#34;</span>
 spec:
   rules:
   - host: example.haimaxy.com
@@ -573,41 +545,36 @@ spec:
       - path: /s1
         backend:
           serviceName: svc1
-          servicePort: 8080
+          servicePort: <span style="color:#bd93f9">8080</span>
       - path: /s2
         backend:
           serviceName: svc2
-          servicePort: 8080
+          servicePort: <span style="color:#bd93f9">8080</span>
       - path: /
         backend:
           serviceName: svc3
-          servicePort: 8080
-</code></pre>
-
+          servicePort: <span style="color:#bd93f9">8080</span></code></pre></div>
 <p>注意我们这里定义的 ingress 对象和之前有一个不同的地方是我们增加了 path 路径的定义，不指定的话默认是 &lsquo;/&lsquo;，创建该 ingress 对象：</p>
-
-<pre><code class="language-shell">$ kubectl create -f test-ingress.yaml
-ingress.extensions &quot;example-web-app&quot; created
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create -f test-ingress.yaml
+ingress.extensions <span style="color:#f1fa8c">&#34;example-web-app&#34;</span> created
 $ kubectl get ingress
 NAME              HOSTS                 ADDRESS   PORTS     AGE
-example-web-app   example.haimaxy.com             80        1m
+example-web-app   example.haimaxy.com             <span style="color:#bd93f9">80</span>        1m
 $ kubectl describe ingress example-web-app
 Name:             example-web-app
 Namespace:        default
 Address:
-Default backend:  default-http-backend:80 (&lt;none&gt;)
+Default backend:  default-http-backend:80 <span style="color:#ff79c6">(</span>&lt;none&gt;<span style="color:#ff79c6">)</span>
 Rules:
   Host                 Path  Backends
   ----                 ----  --------
   example.haimaxy.com
-                       /s1   svc1:8080 (&lt;none&gt;)
-                       /s2   svc2:8080 (&lt;none&gt;)
-                       /     svc3:8080 (&lt;none&gt;)
+                       /s1   svc1:8080 <span style="color:#ff79c6">(</span>&lt;none&gt;<span style="color:#ff79c6">)</span>
+                       /s2   svc2:8080 <span style="color:#ff79c6">(</span>&lt;none&gt;<span style="color:#ff79c6">)</span>
+                       /     svc3:8080 <span style="color:#ff79c6">(</span>&lt;none&gt;<span style="color:#ff79c6">)</span>
 Annotations:
   kubernetes.io/ingress.class:  traefik
-Events:                         &lt;none&gt;
-</code></pre>
-
+Events:                         &lt;none&gt;</code></pre></div>
 <p>现在我们可以在本地 hosts 里面给域名 example.haimaxy.com 添加对应的 hosts 解析，然后就可以在浏览器中访问，可以看到默认也会跳转到 https 的页面：
 <img src="https://www.qikqiak.com/img/posts/traefik-tls-demo1.png" alt="demo1" /></p>
 
@@ -622,21 +589,18 @@ Events:                         &lt;none&gt;
 </blockquote>
 
 <p>有的同学可能有这样的需求，就是不同的 ingress 对象是供不同的域名进行使用的，然后不同的域名的证书还不相同，这样我们想使用上面 traefik 给大家提供的统一的 https 证书就不行了，这个时候我们就可以单独为当前的服务提供单独的证书就可以，同样用证书文件创建一个 secret 对象，然后在 ingress 对象中声明一个 tls 对象即可，比如上面的 example.haimaxy.com 我们可以单独指定一个证书文件：</p>
-
-<pre><code class="language-yaml">apiVersion: extensions/v1beta1
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: example-web-app
   annotations:
-    kubernetes.io/ingress.class: &quot;traefik&quot;
+    kubernetes.io/ingress.class: <span style="color:#f1fa8c">&#34;traefik&#34;</span>
 spec:
   tls:
     - secretName: traefik-cert
   rules:
   - host:
-...
-</code></pre>
-
+...</code></pre></div>
 <p>本文节选自视频教程<a href="https://www.haimaxy.com/course/6n8xd6/">从 Docker 到 Kubernetes 进阶</a>
 <a href="https://www.haimaxy.com/course/6n8xd6/"><img src="https://www.qikqiak.com/img/posts/docker-k8s.png" alt="docker-k8s" /></a></p>
 
@@ -829,6 +793,8 @@ spec:
             <a href="https://www.qikqiak.com/">阳明的博客</a>
             &nbsp;&bull;&nbsp;
             <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/archives/">文章归档</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
           
@@ -847,9 +813,9 @@ spec:
 <script src="https://www.qikqiak.com/js/jquery-1.11.2.min.js"></script>
 <script src="https://www.qikqiak.com/js/bootstrap.min.js"></script>
 <script src="https://www.qikqiak.com/js/main.min.js"></script>
-<script src="https://www.qikqiak.com/js/highlight.min.js"></script>
-<script> hljs.initHighlightingOnLoad(); </script>
-<script src="https://www.qikqiak.com/js/prism.js?t=123"></script>
+
+
+
 
 <script src="https://www.qikqiak.com/js/reward.js"></script>
 

@@ -27,12 +27,9 @@
   <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
   <link rel="stylesheet" href="https://www.qikqiak.com/css/font-awesome.min.css" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/bootstrap.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=456" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=4567" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/pygment_highlights.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/highlight.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/prism.css?t=123" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/search.css" />
   
   <link rel="stylesheet" href="https://www.qikqiak.com/css/reward.css" />
@@ -98,7 +95,7 @@ if (!doNotTrack) {
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
                 
-                  <a href="https://www.qikqiak.com/page/archive/">Archive</a>
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
                 
                   <a href="https://www.qikqiak.com/tags">tags</a>
                 
@@ -433,184 +430,169 @@ autocomplete('#aa-search-input',
 <p><strong>1. kube-proxy 配置参数 &ndash;masquerade-all=true</strong></p>
 
 <p>如果 kube-proxy 配置了<code>--masquerade-all=true</code>参数，则 ipvs 将伪装所有访问 Service 的 Cluster IP 的流量，此时的行为和 iptables 是一致的，由 ipvs 添加的 iptables 规则如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># iptables -t nat -nL</span>
 
-<pre><code class="language-shell"># iptables -t nat -nL
+Chain PREROUTING <span style="color:#ff79c6">(</span>policy ACCEPT<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+KUBE-SERVICES  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            /* kubernetes service portals */
 
-Chain PREROUTING (policy ACCEPT)
-target     prot opt source               destination
-KUBE-SERVICES  all  --  0.0.0.0/0            0.0.0.0/0            /* kubernetes service portals */
+Chain OUTPUT <span style="color:#ff79c6">(</span>policy ACCEPT<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+KUBE-SERVICES  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            /* kubernetes service portals */
 
-Chain OUTPUT (policy ACCEPT)
-target     prot opt source               destination
-KUBE-SERVICES  all  --  0.0.0.0/0            0.0.0.0/0            /* kubernetes service portals */
+Chain POSTROUTING <span style="color:#ff79c6">(</span>policy ACCEPT<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+KUBE-POSTROUTING  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            /* kubernetes postrouting rules */
 
-Chain POSTROUTING (policy ACCEPT)
-target     prot opt source               destination
-KUBE-POSTROUTING  all  --  0.0.0.0/0            0.0.0.0/0            /* kubernetes postrouting rules */
+Chain KUBE-MARK-MASQ <span style="color:#ff79c6">(</span><span style="color:#bd93f9">2</span> references<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+MARK       all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            MARK or 0x4000
 
-Chain KUBE-MARK-MASQ (2 references)
-target     prot opt source               destination
-MARK       all  --  0.0.0.0/0            0.0.0.0/0            MARK or 0x4000
+Chain KUBE-POSTROUTING <span style="color:#ff79c6">(</span><span style="color:#bd93f9">1</span> references<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+MASQUERADE  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            /* kubernetes service traffic requiring SNAT */ mark match 0x4000/0x4000
+MASQUERADE  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            match-set KUBE-LOOP-BACK dst,dst,src
 
-Chain KUBE-POSTROUTING (1 references)
-target     prot opt source               destination
-MASQUERADE  all  --  0.0.0.0/0            0.0.0.0/0            /* kubernetes service traffic requiring SNAT */ mark match 0x4000/0x4000
-MASQUERADE  all  --  0.0.0.0/0            0.0.0.0/0            match-set KUBE-LOOP-BACK dst,dst,src
-
-Chain KUBE-SERVICES (2 references)
-target     prot opt source               destination
-KUBE-MARK-MASQ  all  --  0.0.0.0/0            0.0.0.0/0            match-set KUBE-CLUSTER-IP dst,dst
-ACCEPT     all  --  0.0.0.0/0            0.0.0.0/0            match-set KUBE-CLUSTER-IP dst,dst
-</code></pre>
-
+Chain KUBE-SERVICES <span style="color:#ff79c6">(</span><span style="color:#bd93f9">2</span> references<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+KUBE-MARK-MASQ  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            match-set KUBE-CLUSTER-IP dst,dst
+ACCEPT     all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            match-set KUBE-CLUSTER-IP dst,dst</code></pre></div>
 <p><strong>2. 在 kube-proxy 启动时指定集群 CIDR</strong></p>
 
 <p>如果 kube-proxy 配置了<code>--cluster-cidr=&lt;cidr&gt;</code>参数，则 ipvs 会伪装所有访问 Service Cluster IP 的外部流量，其行为和 iptables 相同，假设 kube-proxy 提供的集群 CIDR 值为：<strong>10.244.16.0/24</strong>，那么 ipvs 添加的 iptables 规则应该如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># iptables -t nat -nL</span>
 
-<pre><code class="language-shell"># iptables -t nat -nL
+Chain PREROUTING <span style="color:#ff79c6">(</span>policy ACCEPT<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+KUBE-SERVICES  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            /* kubernetes service portals */
 
-Chain PREROUTING (policy ACCEPT)
-target     prot opt source               destination
-KUBE-SERVICES  all  --  0.0.0.0/0            0.0.0.0/0            /* kubernetes service portals */
+Chain OUTPUT <span style="color:#ff79c6">(</span>policy ACCEPT<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+KUBE-SERVICES  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            /* kubernetes service portals */
 
-Chain OUTPUT (policy ACCEPT)
-target     prot opt source               destination
-KUBE-SERVICES  all  --  0.0.0.0/0            0.0.0.0/0            /* kubernetes service portals */
+Chain POSTROUTING <span style="color:#ff79c6">(</span>policy ACCEPT<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+KUBE-POSTROUTING  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            /* kubernetes postrouting rules */
 
-Chain POSTROUTING (policy ACCEPT)
-target     prot opt source               destination
-KUBE-POSTROUTING  all  --  0.0.0.0/0            0.0.0.0/0            /* kubernetes postrouting rules */
+Chain KUBE-MARK-MASQ <span style="color:#ff79c6">(</span><span style="color:#bd93f9">3</span> references<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+MARK       all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            MARK or 0x4000
 
-Chain KUBE-MARK-MASQ (3 references)
-target     prot opt source               destination
-MARK       all  --  0.0.0.0/0            0.0.0.0/0            MARK or 0x4000
+Chain KUBE-POSTROUTING <span style="color:#ff79c6">(</span><span style="color:#bd93f9">1</span> references<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+MASQUERADE  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            /* kubernetes service traffic requiring SNAT */ mark match 0x4000/0x4000
+MASQUERADE  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            match-set KUBE-LOOP-BACK dst,dst,src
 
-Chain KUBE-POSTROUTING (1 references)
-target     prot opt source               destination
-MASQUERADE  all  --  0.0.0.0/0            0.0.0.0/0            /* kubernetes service traffic requiring SNAT */ mark match 0x4000/0x4000
-MASQUERADE  all  --  0.0.0.0/0            0.0.0.0/0            match-set KUBE-LOOP-BACK dst,dst,src
-
-Chain KUBE-SERVICES (2 references)
-target     prot opt source               destination
-KUBE-MARK-MASQ  all  -- !10.244.16.0/24       0.0.0.0/0            match-set KUBE-CLUSTER-IP dst,dst
-ACCEPT     all  --  0.0.0.0/0            0.0.0.0/0            match-set KUBE-CLUSTER-IP dst,dst
-</code></pre>
-
+Chain KUBE-SERVICES <span style="color:#ff79c6">(</span><span style="color:#bd93f9">2</span> references<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+KUBE-MARK-MASQ  all  -- !10.244.16.0/24       <span style="color:#bd93f9">0</span>.0.0.0/0            match-set KUBE-CLUSTER-IP dst,dst
+ACCEPT     all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            match-set KUBE-CLUSTER-IP dst,dst</code></pre></div>
 <p><strong>3. Load Balancer 类型的 Service</strong></p>
 
 <p>对于<code>loadBalancer</code>类型的服务，ipvs 将安装匹配 KUBE-LOAD-BALANCER 的 ipset 的 iptables 规则。特别当服务的 LoadBalancerSourceRanges 被指定或指定 externalTrafficPolicy=local 的时候，ipvs 将创建 ipset 集合<code>KUBE-LOAD-BALANCER-LOCAL</code>/<code>KUBE-LOAD-BALANCER-FW</code>/<code>KUBE-LOAD-BALANCER-SOURCE-CIDR</code>，并添加相应的 iptables 规则，如下所示规则：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># iptables -t nat -nL</span>
 
-<pre><code class="language-shell"># iptables -t nat -nL
+Chain PREROUTING <span style="color:#ff79c6">(</span>policy ACCEPT<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+KUBE-SERVICES  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            /* kubernetes service portals */
 
-Chain PREROUTING (policy ACCEPT)
-target     prot opt source               destination
-KUBE-SERVICES  all  --  0.0.0.0/0            0.0.0.0/0            /* kubernetes service portals */
+Chain OUTPUT <span style="color:#ff79c6">(</span>policy ACCEPT<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+KUBE-SERVICES  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            /* kubernetes service portals */
 
-Chain OUTPUT (policy ACCEPT)
-target     prot opt source               destination
-KUBE-SERVICES  all  --  0.0.0.0/0            0.0.0.0/0            /* kubernetes service portals */
+Chain POSTROUTING <span style="color:#ff79c6">(</span>policy ACCEPT<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+KUBE-POSTROUTING  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            /* kubernetes postrouting rules */
 
-Chain POSTROUTING (policy ACCEPT)
-target     prot opt source               destination
-KUBE-POSTROUTING  all  --  0.0.0.0/0            0.0.0.0/0            /* kubernetes postrouting rules */
+Chain KUBE-FIREWALL <span style="color:#ff79c6">(</span><span style="color:#bd93f9">1</span> references<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+RETURN     all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            match-set KUBE-LOAD-BALANCER-SOURCE-CIDR dst,dst,src
+KUBE-MARK-DROP  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0
 
-Chain KUBE-FIREWALL (1 references)
-target     prot opt source               destination
-RETURN     all  --  0.0.0.0/0            0.0.0.0/0            match-set KUBE-LOAD-BALANCER-SOURCE-CIDR dst,dst,src
-KUBE-MARK-DROP  all  --  0.0.0.0/0            0.0.0.0/0
+Chain KUBE-LOAD-BALANCER <span style="color:#ff79c6">(</span><span style="color:#bd93f9">1</span> references<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+KUBE-FIREWALL  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            match-set KUBE-LOAD-BALANCER-FW dst,dst
+RETURN     all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            match-set KUBE-LOAD-BALANCER-LOCAL dst,dst
+KUBE-MARK-MASQ  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0
 
-Chain KUBE-LOAD-BALANCER (1 references)
-target     prot opt source               destination
-KUBE-FIREWALL  all  --  0.0.0.0/0            0.0.0.0/0            match-set KUBE-LOAD-BALANCER-FW dst,dst
-RETURN     all  --  0.0.0.0/0            0.0.0.0/0            match-set KUBE-LOAD-BALANCER-LOCAL dst,dst
-KUBE-MARK-MASQ  all  --  0.0.0.0/0            0.0.0.0/0
+Chain KUBE-MARK-DROP <span style="color:#ff79c6">(</span><span style="color:#bd93f9">1</span> references<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+MARK       all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            MARK or 0x8000
 
-Chain KUBE-MARK-DROP (1 references)
-target     prot opt source               destination
-MARK       all  --  0.0.0.0/0            0.0.0.0/0            MARK or 0x8000
+Chain KUBE-MARK-MASQ <span style="color:#ff79c6">(</span><span style="color:#bd93f9">2</span> references<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+MARK       all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            MARK or 0x4000
 
-Chain KUBE-MARK-MASQ (2 references)
-target     prot opt source               destination
-MARK       all  --  0.0.0.0/0            0.0.0.0/0            MARK or 0x4000
+Chain KUBE-POSTROUTING <span style="color:#ff79c6">(</span><span style="color:#bd93f9">1</span> references<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+MASQUERADE  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            /* kubernetes service traffic requiring SNAT */ mark match 0x4000/0x4000
+MASQUERADE  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            match-set KUBE-LOOP-BACK dst,dst,src
 
-Chain KUBE-POSTROUTING (1 references)
-target     prot opt source               destination
-MASQUERADE  all  --  0.0.0.0/0            0.0.0.0/0            /* kubernetes service traffic requiring SNAT */ mark match 0x4000/0x4000
-MASQUERADE  all  --  0.0.0.0/0            0.0.0.0/0            match-set KUBE-LOOP-BACK dst,dst,src
-
-Chain KUBE-SERVICES (2 references)
-target     prot opt source               destination
-KUBE-LOAD-BALANCER  all  --  0.0.0.0/0            0.0.0.0/0            match-set KUBE-LOAD-BALANCER dst,dst
-ACCEPT     all  --  0.0.0.0/0            0.0.0.0/0            match-set KUBE-LOAD-BALANCER dst,dst
-</code></pre>
-
+Chain KUBE-SERVICES <span style="color:#ff79c6">(</span><span style="color:#bd93f9">2</span> references<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+KUBE-LOAD-BALANCER  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            match-set KUBE-LOAD-BALANCER dst,dst
+ACCEPT     all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            match-set KUBE-LOAD-BALANCER dst,dst</code></pre></div>
 <p><strong>4. NodePort 类型的 Service</strong></p>
 
 <p>对于 NodePort 类型的服务，ipvs 将添加匹配<code>KUBE-NODE-PORT-TCP/KUBE-NODE-PORT-UDP</code>的 ipset 的iptables 规则。当指定<code>externalTrafficPolicy=local</code>时，ipvs 将创建 ipset 集<code>KUBE-NODE-PORT-LOCAL-TC/KUBE-NODE-PORT-LOCAL-UDP</code>并安装相应的 iptables 规则，如下所示：(假设服务使用 TCP 类型 nodePort)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">Chain PREROUTING <span style="color:#ff79c6">(</span>policy ACCEPT<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+KUBE-SERVICES  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            /* kubernetes service portals */
 
-<pre><code class="language-shell">Chain PREROUTING (policy ACCEPT)
-target     prot opt source               destination
-KUBE-SERVICES  all  --  0.0.0.0/0            0.0.0.0/0            /* kubernetes service portals */
+Chain OUTPUT <span style="color:#ff79c6">(</span>policy ACCEPT<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+KUBE-SERVICES  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            /* kubernetes service portals */
 
-Chain OUTPUT (policy ACCEPT)
-target     prot opt source               destination
-KUBE-SERVICES  all  --  0.0.0.0/0            0.0.0.0/0            /* kubernetes service portals */
+Chain POSTROUTING <span style="color:#ff79c6">(</span>policy ACCEPT<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+KUBE-POSTROUTING  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            /* kubernetes postrouting rules */
 
-Chain POSTROUTING (policy ACCEPT)
-target     prot opt source               destination
-KUBE-POSTROUTING  all  --  0.0.0.0/0            0.0.0.0/0            /* kubernetes postrouting rules */
+Chain KUBE-MARK-MASQ <span style="color:#ff79c6">(</span><span style="color:#bd93f9">2</span> references<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+MARK       all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            MARK or 0x4000
 
-Chain KUBE-MARK-MASQ (2 references)
-target     prot opt source               destination
-MARK       all  --  0.0.0.0/0            0.0.0.0/0            MARK or 0x4000
+Chain KUBE-NODE-PORT <span style="color:#ff79c6">(</span><span style="color:#bd93f9">1</span> references<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+RETURN     all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            match-set KUBE-NODE-PORT-LOCAL-TCP dst
+KUBE-MARK-MASQ  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0
 
-Chain KUBE-NODE-PORT (1 references)
-target     prot opt source               destination
-RETURN     all  --  0.0.0.0/0            0.0.0.0/0            match-set KUBE-NODE-PORT-LOCAL-TCP dst
-KUBE-MARK-MASQ  all  --  0.0.0.0/0            0.0.0.0/0
+Chain KUBE-POSTROUTING <span style="color:#ff79c6">(</span><span style="color:#bd93f9">1</span> references<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+MASQUERADE  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            /* kubernetes service traffic requiring SNAT */ mark match 0x4000/0x4000
+MASQUERADE  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            match-set KUBE-LOOP-BACK dst,dst,src
 
-Chain KUBE-POSTROUTING (1 references)
-target     prot opt source               destination
-MASQUERADE  all  --  0.0.0.0/0            0.0.0.0/0            /* kubernetes service traffic requiring SNAT */ mark match 0x4000/0x4000
-MASQUERADE  all  --  0.0.0.0/0            0.0.0.0/0            match-set KUBE-LOOP-BACK dst,dst,src
-
-Chain KUBE-SERVICES (2 references)
-target     prot opt source               destination
-KUBE-NODE-PORT  all  --  0.0.0.0/0            0.0.0.0/0            match-set KUBE-NODE-PORT-TCP dst
-</code></pre>
-
+Chain KUBE-SERVICES <span style="color:#ff79c6">(</span><span style="color:#bd93f9">2</span> references<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+KUBE-NODE-PORT  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            match-set KUBE-NODE-PORT-TCP dst</code></pre></div>
 <p><strong>5. 指定 externalIPs 的 Service</strong></p>
 
 <p>对于指定了<code>externalIPs</code>的 Service，ipvs 会安装匹配<code>KUBE-EXTERNAL-IP</code> ipset 集的 iptables 规则，假设我们有指定了 externalIPs 的 Service，则 iptables 规则应该如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">Chain PREROUTING <span style="color:#ff79c6">(</span>policy ACCEPT<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+KUBE-SERVICES  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            /* kubernetes service portals */
 
-<pre><code class="language-shell">Chain PREROUTING (policy ACCEPT)
-target     prot opt source               destination
-KUBE-SERVICES  all  --  0.0.0.0/0            0.0.0.0/0            /* kubernetes service portals */
+Chain OUTPUT <span style="color:#ff79c6">(</span>policy ACCEPT<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+KUBE-SERVICES  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            /* kubernetes service portals */
 
-Chain OUTPUT (policy ACCEPT)
-target     prot opt source               destination
-KUBE-SERVICES  all  --  0.0.0.0/0            0.0.0.0/0            /* kubernetes service portals */
+Chain POSTROUTING <span style="color:#ff79c6">(</span>policy ACCEPT<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+KUBE-POSTROUTING  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            /* kubernetes postrouting rules */
 
-Chain POSTROUTING (policy ACCEPT)
-target     prot opt source               destination
-KUBE-POSTROUTING  all  --  0.0.0.0/0            0.0.0.0/0            /* kubernetes postrouting rules */
+Chain KUBE-MARK-MASQ <span style="color:#ff79c6">(</span><span style="color:#bd93f9">2</span> references<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+MARK       all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            MARK or 0x4000
 
-Chain KUBE-MARK-MASQ (2 references)
-target     prot opt source               destination
-MARK       all  --  0.0.0.0/0            0.0.0.0/0            MARK or 0x4000
+Chain KUBE-POSTROUTING <span style="color:#ff79c6">(</span><span style="color:#bd93f9">1</span> references<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+MASQUERADE  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            /* kubernetes service traffic requiring SNAT */ mark match 0x4000/0x4000
+MASQUERADE  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            match-set KUBE-LOOP-BACK dst,dst,src
 
-Chain KUBE-POSTROUTING (1 references)
-target     prot opt source               destination
-MASQUERADE  all  --  0.0.0.0/0            0.0.0.0/0            /* kubernetes service traffic requiring SNAT */ mark match 0x4000/0x4000
-MASQUERADE  all  --  0.0.0.0/0            0.0.0.0/0            match-set KUBE-LOOP-BACK dst,dst,src
-
-Chain KUBE-SERVICES (2 references)
-target     prot opt source               destination
-KUBE-MARK-MASQ  all  --  0.0.0.0/0            0.0.0.0/0            match-set KUBE-EXTERNAL-IP dst,dst
-ACCEPT     all  --  0.0.0.0/0            0.0.0.0/0            match-set KUBE-EXTERNAL-IP dst,dst PHYSDEV match ! --physdev-is-in ADDRTYPE match src-type !LOCAL
-ACCEPT     all  --  0.0.0.0/0            0.0.0.0/0            match-set KUBE-EXTERNAL-IP dst,dst ADDRTYPE match dst-type LOCAL
-</code></pre>
-
+Chain KUBE-SERVICES <span style="color:#ff79c6">(</span><span style="color:#bd93f9">2</span> references<span style="color:#ff79c6">)</span>
+target     prot opt <span style="color:#8be9fd;font-style:italic">source</span>               destination
+KUBE-MARK-MASQ  all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            match-set KUBE-EXTERNAL-IP dst,dst
+ACCEPT     all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            match-set KUBE-EXTERNAL-IP dst,dst PHYSDEV match ! --physdev-is-in ADDRTYPE match src-type !LOCAL
+ACCEPT     all  --  <span style="color:#bd93f9">0</span>.0.0.0/0            <span style="color:#bd93f9">0</span>.0.0.0/0            match-set KUBE-EXTERNAL-IP dst,dst ADDRTYPE match dst-type LOCAL</code></pre></div>
 <h2 id="kube-proxy-使用-ipvs-模式">kube-proxy 使用 ipvs 模式</h2>
 
 <p>目前，本地化脚本、GCE 脚本和<code>kubeadm</code>支持通过导入环境变量或者指定标志来切换 ipvs 代理模式</p>
@@ -620,9 +602,8 @@ ACCEPT     all  --  0.0.0.0/0            0.0.0.0/0            match-set KUBE-EXT
 <p>确保 ipvs 需要的内核模块，需要下面几个模块：ip_vs、ip_vs_rr、ip_vs_wrr、ip_vs_sh、nf_conntrack_ipv4</p>
 
 <p>已编译到节点内核中的，可以使用如下命令检查：</p>
-
-<pre><code class="language-shell">$ grep -e ipvs -e nf_conntrack_ipv4 /lib/modules/$(uname -r)/modules.builtin
-# 如果相关内核模块已经编译到内核中，可以得到如下结果：
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ grep -e ipvs -e nf_conntrack_ipv4 /lib/modules/<span style="color:#ff79c6">$(</span>uname -r<span style="color:#ff79c6">)</span>/modules.builtin
+<span style="color:#6272a4"># 如果相关内核模块已经编译到内核中，可以得到如下结果：</span>
 kernel/net/ipv4/netfilter/nf_conntrack_ipv4.ko
 kernel/net/netfilter/ipvs/ip_vs.ko
 kernel/net/netfilter/ipvs/ip_vs_rr.ko
@@ -637,71 +618,51 @@ kernel/net/netfilter/ipvs/ip_vs_dh.ko
 kernel/net/netfilter/ipvs/ip_vs_sh.ko
 kernel/net/netfilter/ipvs/ip_vs_sed.ko
 kernel/net/netfilter/ipvs/ip_vs_nq.ko
-kernel/net/netfilter/ipvs/ip_vs_ftp.ko
-</code></pre>
-
+kernel/net/netfilter/ipvs/ip_vs_ftp.ko</code></pre></div>
 <p>已经加载。</p>
-
-<pre><code class="language-shell"># 加载模块 &lt;module_name&gt;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># 加载模块 &lt;module_name&gt;</span>
 modprobe -- ip_vs
 modprobe -- ip_vs_rr
 modprobe -- ip_vs_wrr
 modprobe -- ip_vs_sh
 modprobe -- nf_conntrack_ipv4
 
-# 检查加载的模块
+<span style="color:#6272a4"># 检查加载的模块</span>
 lsmod | grep -e ipvs -e nf_conntrack_ipv4
-# 或者
-cut -f1 -d &quot; &quot;  /proc/modules | grep -e ip_vs -e nf_conntrack_ipv4
-</code></pre>
-
+<span style="color:#6272a4"># 或者</span>
+cut -f1 -d <span style="color:#f1fa8c">&#34; &#34;</span>  /proc/modules | grep -e ip_vs -e nf_conntrack_ipv4</code></pre></div>
 <p>在使用 ipvs 模式之前，还应在节点上安装<code>ipset</code>相关的软件包，如果不满足需求 kube-proxy 会回退到 iptables 的模式。</p>
 
 <h3 id="本地集群">本地集群</h3>
 
 <p>在<a href="https://github.com/kubernetes/community/blob/master/contributors/devel/running-locally.md">本地集群</a>中 kube-proxy 默认会运行 iptables 的模式。
 要使用 ipvs 模式，在<a href="https://github.com/kubernetes/community/blob/master/contributors/devel/running-locally.md#starting-the-cluster">启动集群</a>之前需要导入<code>KUBE_PROXY_MODE=ipvs</code>的环境变量：</p>
-
-<pre><code class="language-shell"># 运行脚本 hack/local-up-cluster.sh 之前
-export KUBE_PROXY_MODE=ipvs
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># 运行脚本 hack/local-up-cluster.sh 之前</span>
+<span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">KUBE_PROXY_MODE</span><span style="color:#ff79c6">=</span>ipvs</code></pre></div>
 <h3 id="gce-集群">GCE 集群</h3>
 
 <p>和本地集群一样，<a href="https://kubernetes.io/docs/getting-started-guides/gce/">GCE 集群</a>中的 kube-proxy 默认也是 iptables 模式，在<a href="https://kubernetes.io/docs/getting-started-guides/gce/#starting-a-cluster">启动集群</a>之前同样需要导入环境变量<code>KUBE_PROXY_MODE=ipvs</code>:</p>
-
-<pre><code class="language-shell"># 运行前选择下面的一条命令启动集群:
-# curl -sS https://get.k8s.io | bash
-# wget -q -O - https://get.k8s.io | bash
-# cluster/kube-up.sh
-export KUBE_PROXY_MODE=ipvs
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># 运行前选择下面的一条命令启动集群:</span>
+<span style="color:#6272a4"># curl -sS https://get.k8s.io | bash</span>
+<span style="color:#6272a4"># wget -q -O - https://get.k8s.io | bash</span>
+<span style="color:#6272a4"># cluster/kube-up.sh</span>
+<span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">KUBE_PROXY_MODE</span><span style="color:#ff79c6">=</span>ipvs</code></pre></div>
 <h3 id="使用-kubeadm-搭建的集群">使用 kubeadm 搭建的集群</h3>
 
 <p>通过<a href="(https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/)">kubeadm</a>部署的集群中 kube-proxy 同样默认是 iptables 模式。</p>
 
 <p>如果你是通过<a href="https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init/#config-file">配置文件</a>来使用的 kubeadm，则可以在<code>kubeProxy</code>属性下面添加<code>SupportIPVSProxyMode: true</code>来启用 ipvs 模式：</p>
-
-<pre><code class="language-yaml">kind: MasterConfiguration
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">kind: MasterConfiguration
 apiVersion: kubeadm.k8s.io/v1alpha1
 ...
 kubeProxy:
   config:
     mode: ipvs
-...
-</code></pre>
-
+...</code></pre></div>
 <p>然后执行初始化命令即可：</p>
-
-<pre><code class="language-shell">$ kubeadm init --config &lt;path_to_configuration_file&gt;
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubeadm init --config &lt;path_to_configuration_file&gt;</code></pre></div>
 <p>如果你使用的是 v1.8 版本的 kubernetes，你也可以在<code>kubeadm init</code>命令中增加<code>--feature-gates=SupportIPVSProxyMode=true</code>标志来来启用 ipvs 模式：</p>
-
-<pre><code class="language-$">$ kubeadm init --feature-gates=SupportIPVSProxyMode=true
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-$" data-lang="$">$ kubeadm init --feature-gates=SupportIPVSProxyMode=true</code></pre></div>
 <blockquote>
 <p>注意该参数在 v1.9 后已经弃用掉了</p>
 </blockquote>
@@ -709,26 +670,17 @@ kubeProxy:
 <h3 id="注意">注意</h3>
 
 <p>如果成功启用了 ipvs 模式，你应该可以使用<code>ipvsadm</code>之类的工具看到如下的一些 ipvs 代理规则：</p>
-
-<pre><code class="language-shell"> # ipvsadm -ln
-IP Virtual Server version 1.2.1 (size=4096)
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"> <span style="color:#6272a4"># ipvsadm -ln</span>
+IP Virtual Server version <span style="color:#bd93f9">1</span>.2.1 <span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">size</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">4096</span><span style="color:#ff79c6">)</span>
 Prot LocalAddress:Port Scheduler Flags
   -&gt; RemoteAddress:Port           Forward Weight ActiveConn InActConn
-TCP  10.0.0.1:443 rr persistent 10800
-  -&gt; 192.168.0.1:6443             Masq    1      1          0
-</code></pre>
-
+TCP  <span style="color:#bd93f9">10</span>.0.0.1:443 rr persistent <span style="color:#bd93f9">10800</span>
+  -&gt; <span style="color:#bd93f9">192</span>.168.0.1:6443             Masq    <span style="color:#bd93f9">1</span>      <span style="color:#bd93f9">1</span>          <span style="color:#bd93f9">0</span></code></pre></div>
 <p>或者在 kube-proxy 日志中可以看到如下的一些日志信息：</p>
-
-<pre><code>Using ipvs Proxier.
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">Using ipvs Proxier.</pre></div>
 <p>当没有这些 ipvs 代理规则或者出现了下面的这些日志信息的时候表明 kube-proxy 的 ipvs 模式启用失败了：</p>
-
-<pre><code>Can't use ipvs proxier, trying iptables proxier
-Using iptables Proxier.
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">Can&#39;t use ipvs proxier, trying iptables proxier
+Using iptables Proxier.</pre></div>
 <p>可以参考下面的调试方法进行错误信息排查</p>
 
 <h2 id="调试">调试</h2>
@@ -736,27 +688,21 @@ Using iptables Proxier.
 <h3 id="检查-ipvs-代理规则">检查 ipvs 代理规则</h3>
 
 <p>用户可以使用<code>ipvsadm</code>工具检查 kube-proxy 是否维护正确的 ipvs 规则，比如，我们在集群中有以下一些服务：</p>
-
-<pre><code class="language-shell">$ kubectl get svc --all-namespaces
-NAMESPACE     NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)         AGE
-default       kubernetes   ClusterIP   10.0.0.1     &lt;none&gt;        443/TCP         1d
-kube-system   kube-dns     ClusterIP   10.0.0.10    &lt;none&gt;        53/UDP,53/TCP   1d
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get svc --all-namespaces
+NAMESPACE     NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>         AGE
+default       kubernetes   ClusterIP   <span style="color:#bd93f9">10</span>.0.0.1     &lt;none&gt;        <span style="color:#bd93f9">443</span>/TCP         1d
+kube-system   kube-dns     ClusterIP   <span style="color:#bd93f9">10</span>.0.0.10    &lt;none&gt;        <span style="color:#bd93f9">53</span>/UDP,53/TCP   1d</code></pre></div>
 <p>我们可以得到如下的一些 ipvs 代理规则：</p>
-
-<pre><code class="language-shell"> # ipvsadm -ln
-IP Virtual Server version 1.2.1 (size=4096)
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"> <span style="color:#6272a4"># ipvsadm -ln</span>
+IP Virtual Server version <span style="color:#bd93f9">1</span>.2.1 <span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">size</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">4096</span><span style="color:#ff79c6">)</span>
 Prot LocalAddress:Port Scheduler Flags
   -&gt; RemoteAddress:Port           Forward Weight ActiveConn InActConn
-TCP  10.0.0.1:443 rr persistent 10800
-  -&gt; 192.168.0.1:6443             Masq    1      1          0
-TCP  10.0.0.10:53 rr
-  -&gt; 172.17.0.2:53                Masq    1      0          0
-UDP  10.0.0.10:53 rr
-  -&gt; 172.17.0.2:53                Masq    1      0          0
-</code></pre>
-
+TCP  <span style="color:#bd93f9">10</span>.0.0.1:443 rr persistent <span style="color:#bd93f9">10800</span>
+  -&gt; <span style="color:#bd93f9">192</span>.168.0.1:6443             Masq    <span style="color:#bd93f9">1</span>      <span style="color:#bd93f9">1</span>          <span style="color:#bd93f9">0</span>
+TCP  <span style="color:#bd93f9">10</span>.0.0.10:53 rr
+  -&gt; <span style="color:#bd93f9">172</span>.17.0.2:53                Masq    <span style="color:#bd93f9">1</span>      <span style="color:#bd93f9">0</span>          <span style="color:#bd93f9">0</span>
+UDP  <span style="color:#bd93f9">10</span>.0.0.10:53 rr
+  -&gt; <span style="color:#bd93f9">172</span>.17.0.2:53                Masq    <span style="color:#bd93f9">1</span>      <span style="color:#bd93f9">0</span>          <span style="color:#bd93f9">0</span></code></pre></div>
 <h3 id="为什么-kube-proxy-无法启动-ipvs模式">为什么 kube-proxy 无法启动 ipvs模式</h3>
 
 <p>可以使用下面的一些方法来帮助我们解决这些问题：</p>
@@ -962,6 +908,8 @@ UDP  10.0.0.10:53 rr
             <a href="https://www.qikqiak.com/">阳明的博客</a>
             &nbsp;&bull;&nbsp;
             <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/archives/">文章归档</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
           
@@ -980,9 +928,9 @@ UDP  10.0.0.10:53 rr
 <script src="https://www.qikqiak.com/js/jquery-1.11.2.min.js"></script>
 <script src="https://www.qikqiak.com/js/bootstrap.min.js"></script>
 <script src="https://www.qikqiak.com/js/main.min.js"></script>
-<script src="https://www.qikqiak.com/js/highlight.min.js"></script>
-<script> hljs.initHighlightingOnLoad(); </script>
-<script src="https://www.qikqiak.com/js/prism.js?t=123"></script>
+
+
+
 
 <script src="https://www.qikqiak.com/js/reward.js"></script>
 

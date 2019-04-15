@@ -27,12 +27,9 @@
   <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
   <link rel="stylesheet" href="https://www.qikqiak.com/css/font-awesome.min.css" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/bootstrap.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=456" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=4567" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/pygment_highlights.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/highlight.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/prism.css?t=123" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/search.css" />
   
   <link rel="stylesheet" href="https://www.qikqiak.com/css/reward.css" />
@@ -98,7 +95,7 @@ if (!doNotTrack) {
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
                 
-                  <a href="https://www.qikqiak.com/page/archive/">Archive</a>
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
                 
                   <a href="https://www.qikqiak.com/tags">tags</a>
                 
@@ -327,224 +324,214 @@ autocomplete('#aa-search-input',
 <h3 id="安装-harbor">安装 Harbor</h3>
 
 <p>Harbor 支持多种安装方式，源码目录下面默认有一个安装脚本（make/install.sh），采用 docker-compose 的形式运行 Harbor 各个组件，和前面的课程一样，我们这里依然还是将 Harbor 安装到 Kubernetes 集群中，如果我们对 Harbor 的各个组件之间的运行关系非常熟悉，同样的，我们可以自己手动编写资源清单文件进行部署，不过 Harbor 源码目录中也为我们提供了生成这些资源清单的脚本文件了（make/kubernetes/k8s-prepare），我们只需要执行下面的命令即可为我们生成所需要用到的 YAML 文件了：</p>
-
-<pre><code class="language-shell">$ python make/kubernetes/k8s-prepare
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ python make/kubernetes/k8s-prepare</code></pre></div>
 <p>当然了如果上面的一些基本配置不能满足你的需求，你也可以做一些更高级的配置。你可以在<code>make/common/templates</code>目录下面找到所有的 Harbor 的配置模板，做相应的修改即可。</p>
 
 <p>不过我们这里给大家介绍另外一种简单的安装方法：Helm，Harbor 官方提供了对应的 Helm Chart 包，所以我们可以很容易安装。</p>
 
 <p>首先下载 Harbor Chart 包到要安装的集群上：</p>
-
-<pre><code class="language-shell">$ git clone https://github.com/goharbor/harbor-helm
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ git clone https://github.com/goharbor/harbor-helm</code></pre></div>
 <p>切换到我们需要安装的分支，比如我们这里使用 1.0.0分支：</p>
-
-<pre><code class="language-bash">$ cd harbor-helm
-$ git checkout 1.0.0
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ <span style="color:#8be9fd;font-style:italic">cd</span> harbor-helm
+$ git checkout <span style="color:#bd93f9">1</span>.0.0</code></pre></div>
 <p>安装 Helm Chart 包最重要的当然是<code>values.yaml</code>文件了，我们可以通过覆盖该文件中的属性来改变配置：</p>
-
-<pre><code class="language-yaml">expose:
-  # 设置暴露服务的方式。将类型设置为 ingress、clusterIP或nodePort并补充对应部分的信息。
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">expose:
+  <span style="color:#6272a4"># 设置暴露服务的方式。将类型设置为 ingress、clusterIP或nodePort并补充对应部分的信息。</span>
   type: ingress
   tls:
-    # 是否开启 tls，注意：如果类型是 ingress 并且tls被禁用，则在pull/push镜像时，则必须包含端口。详细查看文档：https://github.com/goharbor/harbor/issues/5291。
-    enabled: true
-    # 如果你想使用自己的 TLS 证书和私钥，请填写这个 secret 的名称，这个 secret 必须包含名为 tls.crt 和 tls.key 的证书和私钥文件，如果没有设置则会自动生成证书和私钥文件。
-    secretName: &quot;&quot;
-    # 默认 Notary 服务会使用上面相同的证书和私钥文件，如果你想用一个独立的则填充下面的字段，注意只有类型是 ingress 的时候才需要。
-    notarySecretName: &quot;&quot;
-    # common name 是用于生成证书的，当类型是 clusterIP 或者 nodePort 并且 secretName 为空的时候才需要
-    commonName: &quot;&quot;
+    <span style="color:#6272a4"># 是否开启 tls，注意：如果类型是 ingress 并且tls被禁用，则在pull/push镜像时，则必须包含端口。详细查看文档：https://github.com/goharbor/harbor/issues/5291。</span>
+    enabled: <span style="color:#ff79c6">true</span>
+    <span style="color:#6272a4"># 如果你想使用自己的 TLS 证书和私钥，请填写这个 secret 的名称，这个 secret 必须包含名为 tls.crt 和 tls.key 的证书和私钥文件，如果没有设置则会自动生成证书和私钥文件。</span>
+    secretName: <span style="color:#f1fa8c">&#34;&#34;</span>
+    <span style="color:#6272a4"># 默认 Notary 服务会使用上面相同的证书和私钥文件，如果你想用一个独立的则填充下面的字段，注意只有类型是 ingress 的时候才需要。</span>
+    notarySecretName: <span style="color:#f1fa8c">&#34;&#34;</span>
+    <span style="color:#6272a4"># common name 是用于生成证书的，当类型是 clusterIP 或者 nodePort 并且 secretName 为空的时候才需要</span>
+    commonName: <span style="color:#f1fa8c">&#34;&#34;</span>
   ingress:
     hosts:
       core: core.harbor.domain
       notary: notary.harbor.domain
     annotations:
-      ingress.kubernetes.io/ssl-redirect: &quot;true&quot;
-      nginx.ingress.kubernetes.io/ssl-redirect: &quot;true&quot;
-      ingress.kubernetes.io/proxy-body-size: &quot;0&quot;
-      nginx.ingress.kubernetes.io/proxy-body-size: &quot;0&quot;
+      ingress.kubernetes.io/ssl-redirect: <span style="color:#f1fa8c">&#34;true&#34;</span>
+      nginx.ingress.kubernetes.io/ssl-redirect: <span style="color:#f1fa8c">&#34;true&#34;</span>
+      ingress.kubernetes.io/proxy-body-size: <span style="color:#f1fa8c">&#34;0&#34;</span>
+      nginx.ingress.kubernetes.io/proxy-body-size: <span style="color:#f1fa8c">&#34;0&#34;</span>
   clusterIP:
-    # ClusterIP 服务的名称
+    <span style="color:#6272a4"># ClusterIP 服务的名称</span>
     name: harbor
     ports:
-      httpPort: 80
-      httpsPort: 443
-      # Notary 服务监听端口，只有当 notary.enabled 设置为 true 的时候有效
-      notaryPort: 4443
+      httpPort: <span style="color:#bd93f9">80</span>
+      httpsPort: <span style="color:#bd93f9">443</span>
+      <span style="color:#6272a4"># Notary 服务监听端口，只有当 notary.enabled 设置为 true 的时候有效</span>
+      notaryPort: <span style="color:#bd93f9">4443</span>
   nodePort:
-    # NodePort 服务名称
+    <span style="color:#6272a4"># NodePort 服务名称</span>
     name: harbor
     ports:
       http:
-        port: 80
-        nodePort: 30002
+        port: <span style="color:#bd93f9">80</span>
+        nodePort: <span style="color:#bd93f9">30002</span>
       https:
-        port: 443
-        nodePort: 30003
+        port: <span style="color:#bd93f9">443</span>
+        nodePort: <span style="color:#bd93f9">30003</span>
       notary:
-        port: 4443
-        nodePort: 30004
+        port: <span style="color:#bd93f9">4443</span>
+        nodePort: <span style="color:#bd93f9">30004</span>
 
-# Harbor 核心服务外部访问 URL。主要用于：
-# 1) 补全 portal 页面上面显示的 docker/helm 命令
-# 2) 补全返回给 docker/notary 客户端的 token 服务 URL
+<span style="color:#6272a4"># Harbor 核心服务外部访问 URL。主要用于：</span>
+<span style="color:#6272a4"># 1) 补全 portal 页面上面显示的 docker/helm 命令</span>
+<span style="color:#6272a4"># 2) 补全返回给 docker/notary 客户端的 token 服务 URL</span>
 
-# 格式：protocol://domain[:port]。
-# 1) 如果 expose.type=ingress，&quot;domain&quot;的值就是 expose.ingress.hosts.core 的值
-# 2) 如果 expose.type=clusterIP，&quot;domain&quot;的值就是 expose.clusterIP.name 的值
-# 3) 如果 expose.type=nodePort，&quot;domain&quot;的值就是 k8s 节点的 IP 地址
+<span style="color:#6272a4"># 格式：protocol://domain[:port]。</span>
+<span style="color:#6272a4"># 1) 如果 expose.type=ingress，&#34;domain&#34;的值就是 expose.ingress.hosts.core 的值</span>
+<span style="color:#6272a4"># 2) 如果 expose.type=clusterIP，&#34;domain&#34;的值就是 expose.clusterIP.name 的值</span>
+<span style="color:#6272a4"># 3) 如果 expose.type=nodePort，&#34;domain&#34;的值就是 k8s 节点的 IP 地址</span>
 
-# 如果在代理后面部署 Harbor，请将其设置为代理的 URL
+<span style="color:#6272a4"># 如果在代理后面部署 Harbor，请将其设置为代理的 URL</span>
 externalURL: https://core.harbor.domain
 
-# 默认情况下开启数据持久化，在k8s集群中需要动态的挂载卷默认需要一个StorageClass对象。
-# 如果你有已经存在可以使用的持久卷，需要在&quot;storageClass&quot;中指定你的 storageClass 或者设置 &quot;existingClaim&quot;。
-#
-# 对于存储 docker 镜像和 Helm charts 包，你也可以用 &quot;azure&quot;、&quot;gcs&quot;、&quot;s3&quot;、&quot;swift&quot; 或者 &quot;oss&quot;，直接在 &quot;imageChartStorage&quot; 区域设置即可
+<span style="color:#6272a4"># 默认情况下开启数据持久化，在k8s集群中需要动态的挂载卷默认需要一个StorageClass对象。</span>
+<span style="color:#6272a4"># 如果你有已经存在可以使用的持久卷，需要在&#34;storageClass&#34;中指定你的 storageClass 或者设置 &#34;existingClaim&#34;。</span>
+<span style="color:#6272a4">#</span>
+<span style="color:#6272a4"># 对于存储 docker 镜像和 Helm charts 包，你也可以用 &#34;azure&#34;、&#34;gcs&#34;、&#34;s3&#34;、&#34;swift&#34; 或者 &#34;oss&#34;，直接在 &#34;imageChartStorage&#34; 区域设置即可</span>
 persistence:
-  enabled: true
-  # 设置成&quot;keep&quot;避免在执行 helm 删除操作期间移除 PVC，留空则在 chart 被删除后删除 PVC
-  resourcePolicy: &quot;keep&quot;
+  enabled: <span style="color:#ff79c6">true</span>
+  <span style="color:#6272a4"># 设置成&#34;keep&#34;避免在执行 helm 删除操作期间移除 PVC，留空则在 chart 被删除后删除 PVC</span>
+  resourcePolicy: <span style="color:#f1fa8c">&#34;keep&#34;</span>
   persistentVolumeClaim:
     registry:
-      # 使用一个存在的 PVC(必须在绑定前先手动创建)
-      existingClaim: &quot;&quot;
-      # 指定&quot;storageClass&quot;，或者使用默认的 StorageClass 对象，设置成&quot;-&quot;禁用动态分配挂载卷
-      storageClass: &quot;&quot;
-      subPath: &quot;&quot;
+      <span style="color:#6272a4"># 使用一个存在的 PVC(必须在绑定前先手动创建)</span>
+      existingClaim: <span style="color:#f1fa8c">&#34;&#34;</span>
+      <span style="color:#6272a4"># 指定&#34;storageClass&#34;，或者使用默认的 StorageClass 对象，设置成&#34;-&#34;禁用动态分配挂载卷</span>
+      storageClass: <span style="color:#f1fa8c">&#34;&#34;</span>
+      subPath: <span style="color:#f1fa8c">&#34;&#34;</span>
       accessMode: ReadWriteOnce
       size: 5Gi
     chartmuseum:
-      existingClaim: &quot;&quot;
-      storageClass: &quot;&quot;
-      subPath: &quot;&quot;
+      existingClaim: <span style="color:#f1fa8c">&#34;&#34;</span>
+      storageClass: <span style="color:#f1fa8c">&#34;&#34;</span>
+      subPath: <span style="color:#f1fa8c">&#34;&#34;</span>
       accessMode: ReadWriteOnce
       size: 5Gi
     jobservice:
-      existingClaim: &quot;&quot;
-      storageClass: &quot;&quot;
-      subPath: &quot;&quot;
+      existingClaim: <span style="color:#f1fa8c">&#34;&#34;</span>
+      storageClass: <span style="color:#f1fa8c">&#34;&#34;</span>
+      subPath: <span style="color:#f1fa8c">&#34;&#34;</span>
       accessMode: ReadWriteOnce
       size: 1Gi
-    # 如果使用外部的数据库服务，下面的设置将会被忽略
+    <span style="color:#6272a4"># 如果使用外部的数据库服务，下面的设置将会被忽略</span>
     database:
-      existingClaim: &quot;&quot;
-      storageClass: &quot;&quot;
-      subPath: &quot;&quot;
+      existingClaim: <span style="color:#f1fa8c">&#34;&#34;</span>
+      storageClass: <span style="color:#f1fa8c">&#34;&#34;</span>
+      subPath: <span style="color:#f1fa8c">&#34;&#34;</span>
       accessMode: ReadWriteOnce
       size: 1Gi
-    # 如果使用外部的 Redis 服务，下面的设置将会被忽略
+    <span style="color:#6272a4"># 如果使用外部的 Redis 服务，下面的设置将会被忽略</span>
     redis:
-      existingClaim: &quot;&quot;
-      storageClass: &quot;&quot;
-      subPath: &quot;&quot;
+      existingClaim: <span style="color:#f1fa8c">&#34;&#34;</span>
+      storageClass: <span style="color:#f1fa8c">&#34;&#34;</span>
+      subPath: <span style="color:#f1fa8c">&#34;&#34;</span>
       accessMode: ReadWriteOnce
       size: 1Gi
-  # 定义使用什么存储后端来存储镜像和 charts 包，详细文档地址：https://github.com/docker/distribution/blob/master/docs/configuration.md#storage
+  <span style="color:#6272a4"># 定义使用什么存储后端来存储镜像和 charts 包，详细文档地址：https://github.com/docker/distribution/blob/master/docs/configuration.md#storage</span>
   imageChartStorage:
-    # 正对镜像和chart存储是否禁用跳转，对于一些不支持的后端(例如对于使用minio的`s3`存储)，需要禁用它。为了禁止跳转，只需要设置`disableredirect=true`即可，详细文档地址：https://github.com/docker/distribution/blob/master/docs/configuration.md#redirect
-    disableredirect: false
-    # 指定存储类型：&quot;filesystem&quot;, &quot;azure&quot;, &quot;gcs&quot;, &quot;s3&quot;, &quot;swift&quot;, &quot;oss&quot;，在相应的区域填上对应的信息。
-    # 如果你想使用 pv 则必须设置成&quot;filesystem&quot;类型
+    <span style="color:#6272a4"># 正对镜像和chart存储是否禁用跳转，对于一些不支持的后端(例如对于使用minio的`s3`存储)，需要禁用它。为了禁止跳转，只需要设置`disableredirect=true`即可，详细文档地址：https://github.com/docker/distribution/blob/master/docs/configuration.md#redirect</span>
+    disableredirect: <span style="color:#ff79c6">false</span>
+    <span style="color:#6272a4"># 指定存储类型：&#34;filesystem&#34;, &#34;azure&#34;, &#34;gcs&#34;, &#34;s3&#34;, &#34;swift&#34;, &#34;oss&#34;，在相应的区域填上对应的信息。</span>
+    <span style="color:#6272a4"># 如果你想使用 pv 则必须设置成&#34;filesystem&#34;类型</span>
     type: filesystem
     filesystem:
       rootdirectory: /storage
-      #maxthreads: 100
+      <span style="color:#6272a4">#maxthreads: 100</span>
     azure:
       accountname: accountname
       accountkey: base64encodedaccountkey
       container: containername
-      #realm: core.windows.net
+      <span style="color:#6272a4">#realm: core.windows.net</span>
     gcs:
       bucket: bucketname
-      # The base64 encoded json file which contains the key
+      <span style="color:#6272a4"># The base64 encoded json file which contains the key</span>
       encodedkey: base64-encoded-json-key-file
-      #rootdirectory: /gcs/object/name/prefix
-      #chunksize: &quot;5242880&quot;
+      <span style="color:#6272a4">#rootdirectory: /gcs/object/name/prefix</span>
+      <span style="color:#6272a4">#chunksize: &#34;5242880&#34;</span>
     s3:
-      region: us-west-1
+      region: us-west-<span style="color:#bd93f9">1</span>
       bucket: bucketname
-      #accesskey: awsaccesskey
-      #secretkey: awssecretkey
-      #regionendpoint: http://myobjects.local
-      #encrypt: false
-      #keyid: mykeyid
-      #secure: true
-      #v4auth: true
-      #chunksize: &quot;5242880&quot;
-      #rootdirectory: /s3/object/name/prefix
-      #storageclass: STANDARD
+      <span style="color:#6272a4">#accesskey: awsaccesskey</span>
+      <span style="color:#6272a4">#secretkey: awssecretkey</span>
+      <span style="color:#6272a4">#regionendpoint: http://myobjects.local</span>
+      <span style="color:#6272a4">#encrypt: false</span>
+      <span style="color:#6272a4">#keyid: mykeyid</span>
+      <span style="color:#6272a4">#secure: true</span>
+      <span style="color:#6272a4">#v4auth: true</span>
+      <span style="color:#6272a4">#chunksize: &#34;5242880&#34;</span>
+      <span style="color:#6272a4">#rootdirectory: /s3/object/name/prefix</span>
+      <span style="color:#6272a4">#storageclass: STANDARD</span>
     swift:
       authurl: https://storage.myprovider.com/v3/auth
       username: username
       password: password
       container: containername
-      #region: fr
-      #tenant: tenantname
-      #tenantid: tenantid
-      #domain: domainname
-      #domainid: domainid
-      #trustid: trustid
-      #insecureskipverify: false
-      #chunksize: 5M
-      #prefix:
-      #secretkey: secretkey
-      #accesskey: accesskey
-      #authversion: 3
-      #endpointtype: public
-      #tempurlcontainerkey: false
-      #tempurlmethods:
+      <span style="color:#6272a4">#region: fr</span>
+      <span style="color:#6272a4">#tenant: tenantname</span>
+      <span style="color:#6272a4">#tenantid: tenantid</span>
+      <span style="color:#6272a4">#domain: domainname</span>
+      <span style="color:#6272a4">#domainid: domainid</span>
+      <span style="color:#6272a4">#trustid: trustid</span>
+      <span style="color:#6272a4">#insecureskipverify: false</span>
+      <span style="color:#6272a4">#chunksize: 5M</span>
+      <span style="color:#6272a4">#prefix:</span>
+      <span style="color:#6272a4">#secretkey: secretkey</span>
+      <span style="color:#6272a4">#accesskey: accesskey</span>
+      <span style="color:#6272a4">#authversion: 3</span>
+      <span style="color:#6272a4">#endpointtype: public</span>
+      <span style="color:#6272a4">#tempurlcontainerkey: false</span>
+      <span style="color:#6272a4">#tempurlmethods:</span>
     oss:
       accesskeyid: accesskeyid
       accesskeysecret: accesskeysecret
       region: regionname
       bucket: bucketname
-      #endpoint: endpoint
-      #internal: false
-      #encrypt: false
-      #secure: true
-      #chunksize: 10M
-      #rootdirectory: rootdirectory
+      <span style="color:#6272a4">#endpoint: endpoint</span>
+      <span style="color:#6272a4">#internal: false</span>
+      <span style="color:#6272a4">#encrypt: false</span>
+      <span style="color:#6272a4">#secure: true</span>
+      <span style="color:#6272a4">#chunksize: 10M</span>
+      <span style="color:#6272a4">#rootdirectory: rootdirectory</span>
 
 imagePullPolicy: IfNotPresent
 
 logLevel: debug
-# Harbor admin 初始密码，Harbor 启动后通过 Portal 修改该密码
-harborAdminPassword: &quot;Harbor12345&quot;
-# 用于加密的一个 secret key，必须是一个16位的字符串
-secretKey: &quot;not-a-secure-key&quot;
+<span style="color:#6272a4"># Harbor admin 初始密码，Harbor 启动后通过 Portal 修改该密码</span>
+harborAdminPassword: <span style="color:#f1fa8c">&#34;Harbor12345&#34;</span>
+<span style="color:#6272a4"># 用于加密的一个 secret key，必须是一个16位的字符串</span>
+secretKey: <span style="color:#f1fa8c">&#34;not-a-secure-key&#34;</span>
 
-# 如果你通过&quot;ingress&quot;保留服务，则下面的Nginx不会被使用
+<span style="color:#6272a4"># 如果你通过&#34;ingress&#34;保留服务，则下面的Nginx不会被使用</span>
 nginx:
   image:
     repository: goharbor/nginx-photon
-    tag: v1.7.0
-  replicas: 1
-  # resources:
-  #  requests:
-  #    memory: 256Mi
-  #    cpu: 100m
+    tag: v1.<span style="color:#bd93f9">7.0</span>
+  replicas: <span style="color:#bd93f9">1</span>
+  <span style="color:#6272a4"># resources:</span>
+  <span style="color:#6272a4">#  requests:</span>
+  <span style="color:#6272a4">#    memory: 256Mi</span>
+  <span style="color:#6272a4">#    cpu: 100m</span>
   nodeSelector: {}
   tolerations: []
   affinity: {}
-  ## 额外的 Deployment 的一些 annotations
+  <span style="color:#6272a4">## 额外的 Deployment 的一些 annotations</span>
   podAnnotations: {}
 
 portal:
   image:
     repository: goharbor/harbor-portal
-    tag: v1.7.0
-  replicas: 1
-# resources:
-#  requests:
-#    memory: 256Mi
-#    cpu: 100m
+    tag: v1.<span style="color:#bd93f9">7.0</span>
+  replicas: <span style="color:#bd93f9">1</span>
+<span style="color:#6272a4"># resources:</span>
+<span style="color:#6272a4">#  requests:</span>
+<span style="color:#6272a4">#    memory: 256Mi</span>
+<span style="color:#6272a4">#    cpu: 100m</span>
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -553,12 +540,12 @@ portal:
 core:
   image:
     repository: goharbor/harbor-core
-    tag: v1.7.0
-  replicas: 1
-# resources:
-#  requests:
-#    memory: 256Mi
-#    cpu: 100m
+    tag: v1.<span style="color:#bd93f9">7.0</span>
+  replicas: <span style="color:#bd93f9">1</span>
+<span style="color:#6272a4"># resources:</span>
+<span style="color:#6272a4">#  requests:</span>
+<span style="color:#6272a4">#    memory: 256Mi</span>
+<span style="color:#6272a4">#    cpu: 100m</span>
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -567,12 +554,12 @@ core:
 adminserver:
   image:
     repository: goharbor/harbor-adminserver
-    tag: v1.7.0
-  replicas: 1
-  # resources:
-  #  requests:
-  #    memory: 256Mi
-  #    cpu: 100m
+    tag: v1.<span style="color:#bd93f9">7.0</span>
+  replicas: <span style="color:#bd93f9">1</span>
+  <span style="color:#6272a4"># resources:</span>
+  <span style="color:#6272a4">#  requests:</span>
+  <span style="color:#6272a4">#    memory: 256Mi</span>
+  <span style="color:#6272a4">#    cpu: 100m</span>
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -581,15 +568,15 @@ adminserver:
 jobservice:
   image:
     repository: goharbor/harbor-jobservice
-    tag: v1.7.0
-  replicas: 1
-  maxJobWorkers: 10
-  # jobs 的日志收集器：&quot;file&quot;, &quot;database&quot; or &quot;stdout&quot;
+    tag: v1.<span style="color:#bd93f9">7.0</span>
+  replicas: <span style="color:#bd93f9">1</span>
+  maxJobWorkers: <span style="color:#bd93f9">10</span>
+  <span style="color:#6272a4"># jobs 的日志收集器：&#34;file&#34;, &#34;database&#34; or &#34;stdout&#34;</span>
   jobLogger: file
-# resources:
-#   requests:
-#     memory: 256Mi
-#     cpu: 100m
+<span style="color:#6272a4"># resources:</span>
+<span style="color:#6272a4">#   requests:</span>
+<span style="color:#6272a4">#     memory: 256Mi</span>
+<span style="color:#6272a4">#     cpu: 100m</span>
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -599,294 +586,274 @@ registry:
   registry:
     image:
       repository: goharbor/registry-photon
-      tag: v2.6.2-v1.7.0
+      tag: v2.<span style="color:#bd93f9">6.2</span>-v1.<span style="color:#bd93f9">7.0</span>
   controller:
     image:
       repository: goharbor/harbor-registryctl
-      tag: v1.7.0
-  replicas: 1
+      tag: v1.<span style="color:#bd93f9">7.0</span>
+  replicas: <span style="color:#bd93f9">1</span>
   nodeSelector: {}
   tolerations: []
   affinity: {}
   podAnnotations: {}
 
 chartmuseum:
-  enabled: true
+  enabled: <span style="color:#ff79c6">true</span>
   image:
     repository: goharbor/chartmuseum-photon
-    tag: v0.7.1-v1.7.0
-  replicas: 1
-  # resources:
-  #  requests:
-  #    memory: 256Mi
-  #    cpu: 100m
+    tag: v0.<span style="color:#bd93f9">7.1</span>-v1.<span style="color:#bd93f9">7.0</span>
+  replicas: <span style="color:#bd93f9">1</span>
+  <span style="color:#6272a4"># resources:</span>
+  <span style="color:#6272a4">#  requests:</span>
+  <span style="color:#6272a4">#    memory: 256Mi</span>
+  <span style="color:#6272a4">#    cpu: 100m</span>
   nodeSelector: {}
   tolerations: []
   affinity: {}
   podAnnotations: {}
 
 clair:
-  enabled: true
+  enabled: <span style="color:#ff79c6">true</span>
   image:
     repository: goharbor/clair-photon
-    tag: v2.0.7-v1.7.0
-  replicas: 1
-  # 用于从 Internet 更新漏洞数据库的http(s)代理
+    tag: v2.<span style="color:#bd93f9">0.7</span>-v1.<span style="color:#bd93f9">7.0</span>
+  replicas: <span style="color:#bd93f9">1</span>
+  <span style="color:#6272a4"># 用于从 Internet 更新漏洞数据库的http(s)代理</span>
   httpProxy:
   httpsProxy:
-  # clair 更新程序的间隔，单位为小时，设置为0来禁用
-  updatersInterval: 12
-  # resources:
-  #  requests:
-  #    memory: 256Mi
-  #    cpu: 100m
+  <span style="color:#6272a4"># clair 更新程序的间隔，单位为小时，设置为0来禁用</span>
+  updatersInterval: <span style="color:#bd93f9">12</span>
+  <span style="color:#6272a4"># resources:</span>
+  <span style="color:#6272a4">#  requests:</span>
+  <span style="color:#6272a4">#    memory: 256Mi</span>
+  <span style="color:#6272a4">#    cpu: 100m</span>
   nodeSelector: {}
   tolerations: []
   affinity: {}
   podAnnotations: {}
 
 notary:
-  enabled: true
+  enabled: <span style="color:#ff79c6">true</span>
   server:
     image:
       repository: goharbor/notary-server-photon
-      tag: v0.6.1-v1.7.0
-    replicas: 1
-    # resources:
-    #  requests:
-    #    memory: 256Mi
-    #    cpu: 100m
+      tag: v0.<span style="color:#bd93f9">6.1</span>-v1.<span style="color:#bd93f9">7.0</span>
+    replicas: <span style="color:#bd93f9">1</span>
+    <span style="color:#6272a4"># resources:</span>
+    <span style="color:#6272a4">#  requests:</span>
+    <span style="color:#6272a4">#    memory: 256Mi</span>
+    <span style="color:#6272a4">#    cpu: 100m</span>
   signer:
     image:
       repository: goharbor/notary-signer-photon
-      tag: v0.6.1-v1.7.0
-    replicas: 1
-    # resources:
-    #  requests:
-    #    memory: 256Mi
-    #    cpu: 100m
+      tag: v0.<span style="color:#bd93f9">6.1</span>-v1.<span style="color:#bd93f9">7.0</span>
+    replicas: <span style="color:#bd93f9">1</span>
+    <span style="color:#6272a4"># resources:</span>
+    <span style="color:#6272a4">#  requests:</span>
+    <span style="color:#6272a4">#    memory: 256Mi</span>
+    <span style="color:#6272a4">#    cpu: 100m</span>
   nodeSelector: {}
   tolerations: []
   affinity: {}
   podAnnotations: {}
 
 database:
-  # 如果使用外部的数据库，则设置 type=external，然后填写 external 区域的一些连接信息
+  <span style="color:#6272a4"># 如果使用外部的数据库，则设置 type=external，然后填写 external 区域的一些连接信息</span>
   type: internal
   internal:
     image:
       repository: goharbor/harbor-db
-      tag: v1.7.0
-    # 内部的数据库的初始化超级用户的密码
-    password: &quot;changeit&quot;
-    # resources:
-    #  requests:
-    #    memory: 256Mi
-    #    cpu: 100m
+      tag: v1.<span style="color:#bd93f9">7.0</span>
+    <span style="color:#6272a4"># 内部的数据库的初始化超级用户的密码</span>
+    password: <span style="color:#f1fa8c">&#34;changeit&#34;</span>
+    <span style="color:#6272a4"># resources:</span>
+    <span style="color:#6272a4">#  requests:</span>
+    <span style="color:#6272a4">#    memory: 256Mi</span>
+    <span style="color:#6272a4">#    cpu: 100m</span>
     nodeSelector: {}
     tolerations: []
     affinity: {}
   external:
-    host: &quot;192.168.0.1&quot;
-    port: &quot;5432&quot;
-    username: &quot;user&quot;
-    password: &quot;password&quot;
-    coreDatabase: &quot;registry&quot;
-    clairDatabase: &quot;clair&quot;
-    notaryServerDatabase: &quot;notary_server&quot;
-    notarySignerDatabase: &quot;notary_signer&quot;
-    sslmode: &quot;disable&quot;
+    host: <span style="color:#f1fa8c">&#34;192.168.0.1&#34;</span>
+    port: <span style="color:#f1fa8c">&#34;5432&#34;</span>
+    username: <span style="color:#f1fa8c">&#34;user&#34;</span>
+    password: <span style="color:#f1fa8c">&#34;password&#34;</span>
+    coreDatabase: <span style="color:#f1fa8c">&#34;registry&#34;</span>
+    clairDatabase: <span style="color:#f1fa8c">&#34;clair&#34;</span>
+    notaryServerDatabase: <span style="color:#f1fa8c">&#34;notary_server&#34;</span>
+    notarySignerDatabase: <span style="color:#f1fa8c">&#34;notary_signer&#34;</span>
+    sslmode: <span style="color:#f1fa8c">&#34;disable&#34;</span>
   podAnnotations: {}
 
 redis:
-  # 如果使用外部的 Redis 服务，设置 type=external，然后补充 external 部分的连接信息。
+  <span style="color:#6272a4"># 如果使用外部的 Redis 服务，设置 type=external，然后补充 external 部分的连接信息。</span>
   type: internal
   internal:
     image:
       repository: goharbor/redis-photon
-      tag: v1.7.0
-    # resources:
-    #  requests:
-    #    memory: 256Mi
-    #    cpu: 100m
+      tag: v1.<span style="color:#bd93f9">7.0</span>
+    <span style="color:#6272a4"># resources:</span>
+    <span style="color:#6272a4">#  requests:</span>
+    <span style="color:#6272a4">#    memory: 256Mi</span>
+    <span style="color:#6272a4">#    cpu: 100m</span>
     nodeSelector: {}
     tolerations: []
     affinity: {}
   external:
-    host: &quot;192.168.0.2&quot;
-    port: &quot;6379&quot;
-    # coreDatabaseIndex 必须设置为0
-    coreDatabaseIndex: &quot;0&quot;
-    jobserviceDatabaseIndex: &quot;1&quot;
-    registryDatabaseIndex: &quot;2&quot;
-    chartmuseumDatabaseIndex: &quot;3&quot;
-    password: &quot;&quot;
-  podAnnotations: {}
-</code></pre>
-
+    host: <span style="color:#f1fa8c">&#34;192.168.0.2&#34;</span>
+    port: <span style="color:#f1fa8c">&#34;6379&#34;</span>
+    <span style="color:#6272a4"># coreDatabaseIndex 必须设置为0</span>
+    coreDatabaseIndex: <span style="color:#f1fa8c">&#34;0&#34;</span>
+    jobserviceDatabaseIndex: <span style="color:#f1fa8c">&#34;1&#34;</span>
+    registryDatabaseIndex: <span style="color:#f1fa8c">&#34;2&#34;</span>
+    chartmuseumDatabaseIndex: <span style="color:#f1fa8c">&#34;3&#34;</span>
+    password: <span style="color:#f1fa8c">&#34;&#34;</span>
+  podAnnotations: {}</code></pre></div>
 <p>有了上面的配置说明，则我们可以根据自己的需求来覆盖上面的值，比如我们这里新建一个 qikqiak-values.yaml 的文件，文件内容如下：</p>
-
-<pre><code class="language-yaml">expose:
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">expose:
   type: ingress
   tls:
-    enabled: true
+    enabled: <span style="color:#ff79c6">true</span>
   ingress:
     hosts:
       core: registry.qikqiak.com
       notary: notary.qikqiak.com
     annotations:
-      kubernetes.io/ingress.class: &quot;traefik&quot;
-      ingress.kubernetes.io/ssl-redirect: &quot;true&quot;
-      ingress.kubernetes.io/proxy-body-size: &quot;0&quot;
+      kubernetes.io/ingress.class: <span style="color:#f1fa8c">&#34;traefik&#34;</span>
+      ingress.kubernetes.io/ssl-redirect: <span style="color:#f1fa8c">&#34;true&#34;</span>
+      ingress.kubernetes.io/proxy-body-size: <span style="color:#f1fa8c">&#34;0&#34;</span>
 
 externalURL: https://registry.qikqiak.com
 
 persistence:
-  enabled: true
-  resourcePolicy: &quot;keep&quot;
+  enabled: <span style="color:#ff79c6">true</span>
+  resourcePolicy: <span style="color:#f1fa8c">&#34;keep&#34;</span>
   persistentVolumeClaim:
     registry:
-      storageClass: &quot;harbor-data&quot;
+      storageClass: <span style="color:#f1fa8c">&#34;harbor-data&#34;</span>
     chartmuseum:
-      storageClass: &quot;harbor-data&quot;
+      storageClass: <span style="color:#f1fa8c">&#34;harbor-data&#34;</span>
     jobservice:
-      storageClass: &quot;harbor-data&quot;
+      storageClass: <span style="color:#f1fa8c">&#34;harbor-data&#34;</span>
     database:
-      storageClass: &quot;harbor-data&quot;
+      storageClass: <span style="color:#f1fa8c">&#34;harbor-data&#34;</span>
     redis:
-      storageClass: &quot;harbor-data&quot;
-</code></pre>
-
+      storageClass: <span style="color:#f1fa8c">&#34;harbor-data&#34;</span></code></pre></div>
 <p>其中需要我们定制的部分很少，我们将域名替换成我们自己的，使用默认的 Ingress 方式暴露服务，其他需要我们手动配置的部分就是数据持久化的部分，我们需要提前为上面的这些服务创建好可用的 PVC 或者 StorageClass 对象，比如我们这里使用一个名为 harbor-data 的 StorageClass 资源对象，当然也可以根据我们实际的需求修改 accessMode 或者存储容量：(harbor-data-sc.yaml)</p>
-
-<pre><code class="language-yaml">apiVersion: storage.k8s.io/v1
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: harbor-data
-provisioner: fuseim.pri/ifs
-</code></pre>
-
+provisioner: fuseim.pri/ifs</code></pre></div>
 <p>先新建上面的 StorageClass 资源对象：</p>
-
-<pre><code class="language-shell">$ kubectl create -f harbor-data-sc.yaml
-storageclass.storage.k8s.io &quot;harbor-data&quot; created
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create -f harbor-data-sc.yaml
+storageclass.storage.k8s.io <span style="color:#f1fa8c">&#34;harbor-data&#34;</span> created</code></pre></div>
 <p>创建完成后，使用上面自定义的 values 文件安装：</p>
-
-<pre><code class="language-shell">$ helm install --name harbor -f qikqiak-values.yaml . --namespace kube-ops
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ helm install --name harbor -f qikqiak-values.yaml . --namespace kube-ops
 NAME:   harbor
-LAST DEPLOYED: Fri Feb 22 22:39:22 2019
+LAST DEPLOYED: Fri Feb <span style="color:#bd93f9">22</span> <span style="color:#bd93f9">22</span>:39:22 <span style="color:#bd93f9">2019</span>
 NAMESPACE: kube-ops
 STATUS: DEPLOYED
 
 RESOURCES:
-==&gt; v1/StatefulSet
+<span style="color:#ff79c6">==</span>&gt; v1/StatefulSet
 NAME                    DESIRED  CURRENT  AGE
-harbor-harbor-database  1        1        0s
-harbor-harbor-redis     1        1        0s
+harbor-harbor-database  <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>        0s
+harbor-harbor-redis     <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>        <span style="color:#8be9fd;font-style:italic">0s</span>
 
-==&gt; v1beta1/Ingress
+<span style="color:#ff79c6">==</span>&gt; v1beta1/Ingress
 NAME                   HOSTS                                    ADDRESS  PORTS  AGE
-harbor-harbor-ingress  registry.qikqiak.com,notary.qikqiak.com  80, 443  0s
+harbor-harbor-ingress  registry.qikqiak.com,notary.qikqiak.com  <span style="color:#bd93f9">80</span>, <span style="color:#bd93f9">443</span>  <span style="color:#8be9fd;font-style:italic">0s</span>
 
-==&gt; v1/Pod(related)
+<span style="color:#ff79c6">==</span>&gt; v1/Pod<span style="color:#ff79c6">(</span>related<span style="color:#ff79c6">)</span>
 NAME                                          READY  STATUS             RESTARTS  AGE
-harbor-harbor-adminserver-58c855568c-jnpvq    0/1    ContainerCreating  0         0s
-harbor-harbor-chartmuseum-58d6c9b898-4csmd    0/1    Pending            0         0s
-harbor-harbor-clair-5c7689585-hd2br           0/1    ContainerCreating  0         0s
-harbor-harbor-core-6f56879469-rbthd           0/1    ContainerCreating  0         0s
-harbor-harbor-jobservice-74d7795cdb-bhzdm     0/1    ContainerCreating  0         0s
-harbor-harbor-notary-server-69cdbdfb56-ggc49  0/1    Pending            0         0s
-harbor-harbor-notary-signer-8499dc4db7-f78cd  0/1    Pending            0         0s
-harbor-harbor-portal-55c45c558d-dmj48         0/1    Pending            0         0s
-harbor-harbor-registry-5569fcbf78-5grds       0/2    Pending            0         0s
-harbor-harbor-database-0                      0/1    Pending            0         0s
-harbor-harbor-redis-0                         0/1    Pending            0         0s
+harbor-harbor-adminserver-58c855568c-jnpvq    <span style="color:#bd93f9">0</span>/1    ContainerCreating  <span style="color:#bd93f9">0</span>         0s
+harbor-harbor-chartmuseum-58d6c9b898-4csmd    <span style="color:#bd93f9">0</span>/1    Pending            <span style="color:#bd93f9">0</span>         0s
+harbor-harbor-clair-5c7689585-hd2br           <span style="color:#bd93f9">0</span>/1    ContainerCreating  <span style="color:#bd93f9">0</span>         0s
+harbor-harbor-core-6f56879469-rbthd           <span style="color:#bd93f9">0</span>/1    ContainerCreating  <span style="color:#bd93f9">0</span>         0s
+harbor-harbor-jobservice-74d7795cdb-bhzdm     <span style="color:#bd93f9">0</span>/1    ContainerCreating  <span style="color:#bd93f9">0</span>         0s
+harbor-harbor-notary-server-69cdbdfb56-ggc49  <span style="color:#bd93f9">0</span>/1    Pending            <span style="color:#bd93f9">0</span>         0s
+harbor-harbor-notary-signer-8499dc4db7-f78cd  <span style="color:#bd93f9">0</span>/1    Pending            <span style="color:#bd93f9">0</span>         0s
+harbor-harbor-portal-55c45c558d-dmj48         <span style="color:#bd93f9">0</span>/1    Pending            <span style="color:#bd93f9">0</span>         0s
+harbor-harbor-registry-5569fcbf78-5grds       <span style="color:#bd93f9">0</span>/2    Pending            <span style="color:#bd93f9">0</span>         0s
+harbor-harbor-database-0                      <span style="color:#bd93f9">0</span>/1    Pending            <span style="color:#bd93f9">0</span>         0s
+harbor-harbor-redis-0                         <span style="color:#bd93f9">0</span>/1    Pending            <span style="color:#bd93f9">0</span>         <span style="color:#8be9fd;font-style:italic">0s</span>
 
-==&gt; v1/Secret
+<span style="color:#ff79c6">==</span>&gt; v1/Secret
 NAME                       TYPE               DATA  AGE
-harbor-harbor-adminserver  Opaque             4     1s
-harbor-harbor-chartmuseum  Opaque             1     1s
-harbor-harbor-core         Opaque             4     1s
-harbor-harbor-database     Opaque             1     1s
-harbor-harbor-ingress      kubernetes.io/tls  3     1s
-harbor-harbor-jobservice   Opaque             1     1s
-harbor-harbor-registry     Opaque             1     1s
+harbor-harbor-adminserver  Opaque             <span style="color:#bd93f9">4</span>     1s
+harbor-harbor-chartmuseum  Opaque             <span style="color:#bd93f9">1</span>     1s
+harbor-harbor-core         Opaque             <span style="color:#bd93f9">4</span>     1s
+harbor-harbor-database     Opaque             <span style="color:#bd93f9">1</span>     1s
+harbor-harbor-ingress      kubernetes.io/tls  <span style="color:#bd93f9">3</span>     1s
+harbor-harbor-jobservice   Opaque             <span style="color:#bd93f9">1</span>     1s
+harbor-harbor-registry     Opaque             <span style="color:#bd93f9">1</span>     <span style="color:#8be9fd;font-style:italic">1s</span>
 
-==&gt; v1/ConfigMap
+<span style="color:#ff79c6">==</span>&gt; v1/ConfigMap
 NAME                         DATA  AGE
-harbor-harbor-adminserver    39    1s
-harbor-harbor-chartmuseum    24    1s
-harbor-harbor-clair          1     1s
-harbor-harbor-core           1     1s
-harbor-harbor-jobservice     1     1s
-harbor-harbor-notary-server  5     1s
-harbor-harbor-registry       2     1s
+harbor-harbor-adminserver    <span style="color:#bd93f9">39</span>    1s
+harbor-harbor-chartmuseum    <span style="color:#bd93f9">24</span>    1s
+harbor-harbor-clair          <span style="color:#bd93f9">1</span>     1s
+harbor-harbor-core           <span style="color:#bd93f9">1</span>     1s
+harbor-harbor-jobservice     <span style="color:#bd93f9">1</span>     1s
+harbor-harbor-notary-server  <span style="color:#bd93f9">5</span>     1s
+harbor-harbor-registry       <span style="color:#bd93f9">2</span>     <span style="color:#8be9fd;font-style:italic">1s</span>
 
-==&gt; v1/PersistentVolumeClaim
+<span style="color:#ff79c6">==</span>&gt; v1/PersistentVolumeClaim
 NAME                       STATUS   VOLUME                                    CAPACITY  ACCESS MODES  STORAGECLASS  AGE
 harbor-harbor-chartmuseum  Pending  harbor-data                               1s
 harbor-harbor-jobservice   Bound    pvc-a8a35d0e-36af-11e9-bcd8-525400db4df7  1Gi  RWO  harbor-data  1s
-harbor-harbor-registry     Bound    pvc-a8a466e9-36af-11e9-bcd8-525400db4df7  5Gi  RWO  harbor-data  1s
+harbor-harbor-registry     Bound    pvc-a8a466e9-36af-11e9-bcd8-525400db4df7  5Gi  RWO  harbor-data  <span style="color:#8be9fd;font-style:italic">1s</span>
 
-==&gt; v1/Service
-NAME                         TYPE       CLUSTER-IP      EXTERNAL-IP  PORT(S)            AGE
-harbor-harbor-adminserver    ClusterIP  10.108.3.242    &lt;none&gt;       80/TCP             1s
-harbor-harbor-chartmuseum    ClusterIP  10.101.49.103   &lt;none&gt;       80/TCP             1s
-harbor-harbor-clair          ClusterIP  10.110.173.153  &lt;none&gt;       6060/TCP           1s
-harbor-harbor-core           ClusterIP  10.105.178.198  &lt;none&gt;       80/TCP             1s
-harbor-harbor-database       ClusterIP  10.102.101.155  &lt;none&gt;       5432/TCP           0s
-harbor-harbor-jobservice     ClusterIP  10.100.127.32   &lt;none&gt;       80/TCP             0s
-harbor-harbor-notary-server  ClusterIP  10.105.25.64    &lt;none&gt;       4443/TCP           0s
-harbor-harbor-notary-signer  ClusterIP  10.108.92.82    &lt;none&gt;       7899/TCP           0s
-harbor-harbor-portal         ClusterIP  10.103.111.161  &lt;none&gt;       80/TCP             0s
-harbor-harbor-redis          ClusterIP  10.107.205.3    &lt;none&gt;       6379/TCP           0s
-harbor-harbor-registry       ClusterIP  10.100.87.29    &lt;none&gt;       5000/TCP,8080/TCP  0s
+<span style="color:#ff79c6">==</span>&gt; v1/Service
+NAME                         TYPE       CLUSTER-IP      EXTERNAL-IP  PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>            AGE
+harbor-harbor-adminserver    ClusterIP  <span style="color:#bd93f9">10</span>.108.3.242    &lt;none&gt;       <span style="color:#bd93f9">80</span>/TCP             1s
+harbor-harbor-chartmuseum    ClusterIP  <span style="color:#bd93f9">10</span>.101.49.103   &lt;none&gt;       <span style="color:#bd93f9">80</span>/TCP             1s
+harbor-harbor-clair          ClusterIP  <span style="color:#bd93f9">10</span>.110.173.153  &lt;none&gt;       <span style="color:#bd93f9">6060</span>/TCP           1s
+harbor-harbor-core           ClusterIP  <span style="color:#bd93f9">10</span>.105.178.198  &lt;none&gt;       <span style="color:#bd93f9">80</span>/TCP             1s
+harbor-harbor-database       ClusterIP  <span style="color:#bd93f9">10</span>.102.101.155  &lt;none&gt;       <span style="color:#bd93f9">5432</span>/TCP           0s
+harbor-harbor-jobservice     ClusterIP  <span style="color:#bd93f9">10</span>.100.127.32   &lt;none&gt;       <span style="color:#bd93f9">80</span>/TCP             0s
+harbor-harbor-notary-server  ClusterIP  <span style="color:#bd93f9">10</span>.105.25.64    &lt;none&gt;       <span style="color:#bd93f9">4443</span>/TCP           0s
+harbor-harbor-notary-signer  ClusterIP  <span style="color:#bd93f9">10</span>.108.92.82    &lt;none&gt;       <span style="color:#bd93f9">7899</span>/TCP           0s
+harbor-harbor-portal         ClusterIP  <span style="color:#bd93f9">10</span>.103.111.161  &lt;none&gt;       <span style="color:#bd93f9">80</span>/TCP             0s
+harbor-harbor-redis          ClusterIP  <span style="color:#bd93f9">10</span>.107.205.3    &lt;none&gt;       <span style="color:#bd93f9">6379</span>/TCP           0s
+harbor-harbor-registry       ClusterIP  <span style="color:#bd93f9">10</span>.100.87.29    &lt;none&gt;       <span style="color:#bd93f9">5000</span>/TCP,8080/TCP  <span style="color:#8be9fd;font-style:italic">0s</span>
 
-==&gt; v1/Deployment
+<span style="color:#ff79c6">==</span>&gt; v1/Deployment
 NAME                         DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
-harbor-harbor-adminserver    1        1        1           0          0s
-harbor-harbor-chartmuseum    1        1        1           0          0s
-harbor-harbor-clair          1        1        1           0          0s
-harbor-harbor-core           1        1        1           0          0s
-harbor-harbor-jobservice     1        1        1           0          0s
-harbor-harbor-notary-server  1        1        1           0          0s
-harbor-harbor-notary-signer  1        1        1           0          0s
-harbor-harbor-portal         1        1        1           0          0s
-harbor-harbor-registry       1        0        0           0          0s
+harbor-harbor-adminserver    <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>           <span style="color:#bd93f9">0</span>          0s
+harbor-harbor-chartmuseum    <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>           <span style="color:#bd93f9">0</span>          0s
+harbor-harbor-clair          <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>           <span style="color:#bd93f9">0</span>          0s
+harbor-harbor-core           <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>           <span style="color:#bd93f9">0</span>          0s
+harbor-harbor-jobservice     <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>           <span style="color:#bd93f9">0</span>          0s
+harbor-harbor-notary-server  <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>           <span style="color:#bd93f9">0</span>          0s
+harbor-harbor-notary-signer  <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>           <span style="color:#bd93f9">0</span>          0s
+harbor-harbor-portal         <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>           <span style="color:#bd93f9">0</span>          0s
+harbor-harbor-registry       <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">0</span>        <span style="color:#bd93f9">0</span>           <span style="color:#bd93f9">0</span>          0s
 
 
 NOTES:
-Please wait for several minutes for Harbor deployment to complete.
+Please <span style="color:#8be9fd;font-style:italic">wait</span> <span style="color:#ff79c6">for</span> several minutes <span style="color:#ff79c6">for</span> Harbor deployment to complete.
 Then you should be able to visit the Harbor portal at https://registry.qikqiak.com.
-For more details, please visit https://github.com/goharbor/harbor.
-</code></pre>
-
+For more details, please visit https://github.com/goharbor/harbor.</code></pre></div>
 <p>上面是我们通过 Helm 安装所有涉及到的一些资源对象，稍微等一会儿，就可以安装成功了，查看对应的 Pod 状态：</p>
-
-<pre><code class="language-shell">$ kubectl get pods -n kube-ops
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-ops
 NAME                                           READY     STATUS    RESTARTS   AGE
-harbor-harbor-adminserver-58c855568c-7dqqb     1/1       Running   0          37m
-harbor-harbor-chartmuseum-58d6c9b898-4csmd     1/1       Running   0          49m
-harbor-harbor-clair-5c7689585-hd2br            1/1       Running   0          49m
-harbor-harbor-core-6f56879469-rbthd            1/1       Running   8          49m
-harbor-harbor-database-0                       1/1       Running   0          49m
-harbor-harbor-jobservice-74d7795cdb-bhzdm      1/1       Running   7          49m
-harbor-harbor-notary-server-69cdbdfb56-vklbt   1/1       Running   0          20m
-harbor-harbor-notary-signer-8499dc4db7-f78cd   1/1       Running   0          49m
-harbor-harbor-portal-55c45c558d-dmj48          1/1       Running   0          49m
-harbor-harbor-redis-0                          1/1       Running   0          49m
-harbor-harbor-registry-5569fcbf78-5grds        2/2       Running   0          49m
-</code></pre>
-
+harbor-harbor-adminserver-58c855568c-7dqqb     <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          37m
+harbor-harbor-chartmuseum-58d6c9b898-4csmd     <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          49m
+harbor-harbor-clair-5c7689585-hd2br            <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          49m
+harbor-harbor-core-6f56879469-rbthd            <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">8</span>          49m
+harbor-harbor-database-0                       <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          49m
+harbor-harbor-jobservice-74d7795cdb-bhzdm      <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">7</span>          49m
+harbor-harbor-notary-server-69cdbdfb56-vklbt   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          20m
+harbor-harbor-notary-signer-8499dc4db7-f78cd   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          49m
+harbor-harbor-portal-55c45c558d-dmj48          <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          49m
+harbor-harbor-redis-0                          <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          49m
+harbor-harbor-registry-5569fcbf78-5grds        <span style="color:#bd93f9">2</span>/2       Running   <span style="color:#bd93f9">0</span>          49m</code></pre></div>
 <p>现在都是<code>Running</code>状态了，都成功运行起来了，查看下对应的 Ingress 对象：</p>
-
-<pre><code class="language-shell">$ kubectl get ingress -n kube-ops
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get ingress -n kube-ops
 NAME                    HOSTS                                     ADDRESS   PORTS     AGE
-harbor-harbor-ingress   registry.qikqiak.com,notary.qikqiak.com             80, 443   50m
-</code></pre>
-
+harbor-harbor-ingress   registry.qikqiak.com,notary.qikqiak.com             <span style="color:#bd93f9">80</span>, <span style="color:#bd93f9">443</span>   50m</code></pre></div>
 <p>如果你有自己的真正的域名，则将上面的两个域名解析到你的任意一个 Ingress Controller 的 Pod 所在的节点即可，我们这里为了演示方便，还是自己在本地的<code>/etc/hosts</code>里面添加上<code>registry.qikqiak.com</code>和<code>notary.qikqiak.com</code>的映射。</p>
 
 <h3 id="harbor-portal">Harbor Portal</h3>
@@ -906,19 +873,15 @@ harbor-harbor-ingress   registry.qikqiak.com,notary.qikqiak.com             80, 
 <h3 id="docker-cli">docker cli</h3>
 
 <p>然后我们来测试下使用 docker cli 来进行 pull/push 镜像，由于上面我们安装的时候通过 Ingress 来暴露的 Harbor 的服务，而且强制使用了 https，所以如果我们要在终端中使用我们这里的私有仓库的话，就需要配置上相应的证书：</p>
-
-<pre><code class="language-shell">$ docker login registry.qikqiak.com
-Warning: failed to get default registry endpoint from daemon (Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?). Using system default: https://index.docker.io/v1/
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ docker login registry.qikqiak.com
+Warning: failed to get default registry endpoint from daemon <span style="color:#ff79c6">(</span>Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?<span style="color:#ff79c6">)</span>. Using system default: https://index.docker.io/v1/
 Username: admin
 Password:
-INFO[0007] Error logging in to v2 endpoint, trying next endpoint: Get https://registry.qikqiak.com/v2/: x509: certificate has expired or is not yet valid
-INFO[0007] Error logging in to v1 endpoint, trying next endpoint: Get https://registry.qikqiak.com/v1/users/: x509: certificate has expired or is not yet valid
-Get https://registry.qikqiak.com/v1/users/: x509: certificate has expired or is not yet valid
-</code></pre>
-
+INFO<span style="color:#ff79c6">[</span><span style="color:#bd93f9">0007</span><span style="color:#ff79c6">]</span> Error logging in to v2 endpoint, trying next endpoint: Get https://registry.qikqiak.com/v2/: x509: certificate has expired or is not yet valid
+INFO<span style="color:#ff79c6">[</span><span style="color:#bd93f9">0007</span><span style="color:#ff79c6">]</span> Error logging in to v1 endpoint, trying next endpoint: Get https://registry.qikqiak.com/v1/users/: x509: certificate has expired or is not yet valid
+Get https://registry.qikqiak.com/v1/users/: x509: certificate has expired or is not yet valid</code></pre></div>
 <p>这是因为我们没有提供证书文件，我们将使用到的<code>ca.crt</code>文件复制到<code>/etc/docker/certs.d/registry.qikqiak.com</code>目录下面，如果该目录不存在，则创建它。ca.crt 这个证书文件我们可以通过 Ingress 中使用的 Secret 资源对象来提供：</p>
-
-<pre><code class="language-shell">$ kubectl get secret harbor-harbor-ingress -n kube-ops -o yaml
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get secret harbor-harbor-ingress -n kube-ops -o yaml
 apiVersion: v1
 data:
   ca.crt: &lt;ca.crt&gt;
@@ -926,7 +889,7 @@ data:
   tls.key: &lt;tls.key&gt;
 kind: Secret
 metadata:
-  creationTimestamp: 2019-02-22T14:39:28Z
+  creationTimestamp: <span style="color:#bd93f9">2019</span>-02-22T14:39:28Z
   labels:
     app: harbor
     chart: harbor
@@ -934,56 +897,42 @@ metadata:
     release: harbor
   name: harbor-harbor-ingress
   namespace: kube-ops
-  resourceVersion: &quot;50400208&quot;
+  resourceVersion: <span style="color:#f1fa8c">&#34;50400208&#34;</span>
   selfLink: /api/v1/namespaces/kube-ops/secrets/harbor-harbor-ingress
   uid: a899c57a-36af-11e9-bcd8-525400db4df7
-type: kubernetes.io/tls
-</code></pre>
-
+type: kubernetes.io/tls</code></pre></div>
 <p>其中 data 区域中 ca.crt 对应的值就是我们需要证书，不过需要注意还需要做一个 base64 的解码，这样证书配置上以后就可以正常访问了。</p>
 
 <p>不过由于上面的方法较为繁琐，所以一般情况下面我们在使用 docker cli 的时候是在 docker 启动参数后面添加一个<code>--insecure-registry</code>参数来忽略证书的校验的，在 docker 启动配置文件<code>/usr/lib/systemd/system/docker.service</code>中修改<code>ExecStart</code>的启动参数：</p>
-
-<pre><code class="language-shell">ExecStart=/usr/bin/dockerd --insecure-registry registry.qikqiak.com
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#8be9fd;font-style:italic">ExecStart</span><span style="color:#ff79c6">=</span>/usr/bin/dockerd --insecure-registry registry.qikqiak.com</code></pre></div>
 <p>然后保存重启 docker，再使用 docker cli 就没有任何问题了：</p>
-
-<pre><code class="language-shell">$ docker login registry.qikqiak.com
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ docker login registry.qikqiak.com
 Username: admin
 Password:
-Login Succeeded
-</code></pre>
-
+Login Succeeded</code></pre></div>
 <p>比如我们本地现在有一个名为 busybox 的镜像，现在我们想要将该镜像推送到我们的私有仓库中去，应该怎样操作呢？首先我们需要给该镜像重新打一个 registry.qikqiak.com 的前缀，然后推送的时候就可以识别到推送到哪个镜像仓库：</p>
-
-<pre><code class="language-shell">$ docker tag busybox registry.qikqiak.com/library/busybox
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ docker tag busybox registry.qikqiak.com/library/busybox
 $ docker push registry.qikqiak.com/library/busybox
-The push refers to repository [registry.qikqiak.com/library/busybox]
+The push refers to repository <span style="color:#ff79c6">[</span>registry.qikqiak.com/library/busybox<span style="color:#ff79c6">]</span>
 adab5d09ba79: Pushed
-latest: digest: sha256:4415a904b1aca178c2450fd54928ab362825e863c0ad5452fd020e92f7a6a47e size: 527
-</code></pre>
-
+latest: digest: sha256:4415a904b1aca178c2450fd54928ab362825e863c0ad5452fd020e92f7a6a47e size: <span style="color:#bd93f9">527</span></code></pre></div>
 <p>推送完成后，我们同样可以在 Portal 页面上看到这个镜像的信息：</p>
 
 <p><img src="https://ws1.sinaimg.cn/large/006tKfTcgy1g0f9woj4otj318q0u0n1o.jpg" alt="Harbor image info" /></p>
 
 <p>镜像 push 成功，同样可以测试下 pull：</p>
-
-<pre><code class="language-shell">$ docker rmi registry.qikqiak.com/library/busybox
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ docker rmi registry.qikqiak.com/library/busybox
 Untagged: registry.qikqiak.com/library/busybox:latest
 Untagged: registry.qikqiak.com/library/busybox@sha256:4415a904b1aca178c2450fd54928ab362825e863c0ad5452fd020e92f7a6a47e
 
 $ docker pull registry.qikqiak.com/library/busybox:latest
 latest: Pulling from library/busybox
 Digest: sha256:4415a904b1aca178c2450fd54928ab362825e863c0ad5452fd020e92f7a6a47e
-Status: Downloaded newer image for registry.qikqiak.com/library/busybox:latest
+Status: Downloaded newer image <span style="color:#ff79c6">for</span> registry.qikqiak.com/library/busybox:latest
 
 $ docker images |grep busybox
-busybox                                latest              d8233ab899d4        7 days ago          1.2MB
-registry.qikqiak.com/library/busybox   latest              d8233ab899d4        7 days ago          1.2MB
-</code></pre>
-
+busybox                                latest              d8233ab899d4        <span style="color:#bd93f9">7</span> days ago          <span style="color:#bd93f9">1</span>.2MB
+registry.qikqiak.com/library/busybox   latest              d8233ab899d4        <span style="color:#bd93f9">7</span> days ago          <span style="color:#bd93f9">1</span>.2MB</code></pre></div>
 <p>到这里证明上面我们的私有 docker 仓库搭建成功了，大家可以尝试去创建一个私有的项目，然后创建一个新的用户，使用这个用户来进行 pull/push 镜像，Harbor 还具有其他的一些功能，比如镜像复制，大家可以自行测试，感受下 Harbor 和官方自带的 registry 仓库的差别。</p>
 
 <h3 id="推荐">推荐</h3>
@@ -1180,6 +1129,8 @@ registry.qikqiak.com/library/busybox   latest              d8233ab899d4        7
             <a href="https://www.qikqiak.com/">阳明的博客</a>
             &nbsp;&bull;&nbsp;
             <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/archives/">文章归档</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
           
@@ -1198,9 +1149,9 @@ registry.qikqiak.com/library/busybox   latest              d8233ab899d4        7
 <script src="https://www.qikqiak.com/js/jquery-1.11.2.min.js"></script>
 <script src="https://www.qikqiak.com/js/bootstrap.min.js"></script>
 <script src="https://www.qikqiak.com/js/main.min.js"></script>
-<script src="https://www.qikqiak.com/js/highlight.min.js"></script>
-<script> hljs.initHighlightingOnLoad(); </script>
-<script src="https://www.qikqiak.com/js/prism.js?t=123"></script>
+
+
+
 
 <script src="https://www.qikqiak.com/js/reward.js"></script>
 

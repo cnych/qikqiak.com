@@ -27,12 +27,9 @@
   <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
   <link rel="stylesheet" href="https://www.qikqiak.com/css/font-awesome.min.css" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/bootstrap.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=456" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=4567" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/pygment_highlights.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/highlight.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/prism.css?t=123" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/search.css" />
   
   <link rel="stylesheet" href="https://www.qikqiak.com/css/reward.css" />
@@ -98,7 +95,7 @@ if (!doNotTrack) {
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
                 
-                  <a href="https://www.qikqiak.com/page/archive/">Archive</a>
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
                 
                   <a href="https://www.qikqiak.com/tags">tags</a>
                 
@@ -355,8 +352,7 @@ autocomplete('#aa-search-input',
 <h3 id="数据库服务">数据库服务</h3>
 
 <p>首先部署 MySQL 服务，如果你系统中有一个可访问的 MySQL 服务的话就可以跳过这一步，我们这里在 Kubernetes 集群中部署一个简单的 MySQL 服务，对应的资源清单文件如下：(db.yaml)</p>
-
-<pre><code class="language-yaml">apiVersion: apps/v1beta1
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   name: mysql
@@ -371,10 +367,10 @@ spec:
     spec:
       containers:
       - name: mysql
-        image: mysql:5.7.14
+        image: mysql:<span style="color:#bd93f9">5.7</span>.<span style="color:#bd93f9">14</span>
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 3306
+        - containerPort: <span style="color:#bd93f9">3306</span>
           name: dbport
         env:
         - name: MYSQL_ROOT_PASSWORD
@@ -398,50 +394,38 @@ spec:
   ports:
   - name: mysqlport
     protocol: TCP
-    port: 3306
-    targetPort: dbport
-</code></pre>
-
+    port: <span style="color:#bd93f9">3306</span>
+    targetPort: dbport</code></pre></div>
 <p>通过环境变量添加了数据库 root 用户密码（不需要提前创建<code>wayne</code>数据库），不过需要注意的是我们这里并没有对数据进行持久化，如果需要的话一定要记得做数据的持久化，避免数据丢失。创建上面的资源对象：</p>
-
-<pre><code class="language-shell">$ kubec create -f db.yaml
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubec create -f db.yaml
 $ kubectl get pods -n kube-system
 NAME                                          READY     STATUS             RESTARTS   AGE
-mysql-6ffcf87ddc-7kkbk                        1/1       Running            0          1h
+mysql-6ffcf87ddc-7kkbk                        <span style="color:#bd93f9">1</span>/1       Running            <span style="color:#bd93f9">0</span>          1h
 ......
 $ kubectl get svc -n kube-system
-NAME                      TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                       AGE
-mysql                     ClusterIP   10.106.31.171    &lt;none&gt;        3306/TCP                      1h
-......
-</code></pre>
-
+NAME                      TYPE        CLUSTER-IP       EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>                       AGE
+mysql                     ClusterIP   <span style="color:#bd93f9">10</span>.106.31.171    &lt;none&gt;        <span style="color:#bd93f9">3306</span>/TCP                      1h
+......</code></pre></div>
 <p>部署成功后我们就可以在集群内部通过<code>mysql:3306</code>来访问 MySQL 服务了。</p>
 
 <h3 id="部署-wayne">部署 Wayne</h3>
 
 <p>直接 clone Wayne 的 git 代码：</p>
-
-<pre><code class="language-shell">$ git clone https://github.com/Qihoo360/wayne/
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ git clone https://github.com/Qihoo360/wayne/</code></pre></div>
 <p>其中 <code>hack/kubernetes</code> 目录下面就是我们需要部署的 Wayne 的资源清单文件：</p>
-
-<pre><code class="language-shell">$ ls -la hack/kubernetes
-total 24
-drwxr-xr-x  5 ych  staff  160 Nov 19 13:40 .
-drwxr-xr-x  5 ych  staff  160 Nov 19 11:33 ..
--rw-r--r--  1 ych  staff  339 Nov 19 11:33 configmap.yaml
--rw-r--r--  1 ych  staff  967 Nov 19 13:40 deployment.yaml
--rw-r--r--  1 ych  staff  229 Nov 19 11:33 service.yaml
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ ls -la hack/kubernetes
+total <span style="color:#bd93f9">24</span>
+drwxr-xr-x  <span style="color:#bd93f9">5</span> ych  staff  <span style="color:#bd93f9">160</span> Nov <span style="color:#bd93f9">19</span> <span style="color:#bd93f9">13</span>:40 .
+drwxr-xr-x  <span style="color:#bd93f9">5</span> ych  staff  <span style="color:#bd93f9">160</span> Nov <span style="color:#bd93f9">19</span> <span style="color:#bd93f9">11</span>:33 ..
+-rw-r--r--  <span style="color:#bd93f9">1</span> ych  staff  <span style="color:#bd93f9">339</span> Nov <span style="color:#bd93f9">19</span> <span style="color:#bd93f9">11</span>:33 configmap.yaml
+-rw-r--r--  <span style="color:#bd93f9">1</span> ych  staff  <span style="color:#bd93f9">967</span> Nov <span style="color:#bd93f9">19</span> <span style="color:#bd93f9">13</span>:40 deployment.yaml
+-rw-r--r--  <span style="color:#bd93f9">1</span> ych  staff  <span style="color:#bd93f9">229</span> Nov <span style="color:#bd93f9">19</span> <span style="color:#bd93f9">11</span>:33 service.yaml</code></pre></div>
 <blockquote>
 <p>我们这里将所有服务都部署到<code>kube-system</code>命名空间下面，所以将这里的资源清单中的<code>namespace</code>都统一改成<code>kube-system</code></p>
 </blockquote>
 
 <p>由于我们这里是使用上面集群中部署的 MySQL 服务，所以这里需要对 configmap.yaml 文件进行简单的配置，而 360 文档上面的 ConfigMap 是不完整的，需要使用源码里面的<code>app.conf</code>文件来进行创建，所以我们这里可以使用<code>--from-file</code>关键字来创建 ConfigMap 对象，首先配置下<code>app.conf</code>文件：</p>
-
-<pre><code>appname = wayne
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">appname = wayne
 httpport = 8080
 runmode = prod
 autorender = false
@@ -454,8 +438,8 @@ ShowSql = false
 ## if enable username and password login
 EnableDBLogin = true
 # token, generate jwt token
-RsaPrivateKey = &quot;./apikey/rsa-private.pem&quot;
-RsaPublicKey = &quot;./apikey/rsa-public.pem&quot;
+RsaPrivateKey = &#34;./apikey/rsa-private.pem&#34;
+RsaPublicKey = &#34;./apikey/rsa-public.pem&#34;
 # token end time. second
 TokenLifeTime=86400
 
@@ -470,11 +454,11 @@ DBName = wayne
 DBTns = tcp(mysql:3306)
 DBUser = root
 DBPasswd = rootPassw0rd
-DBLoc = &quot;Asia%2FShanghai&quot;
+DBLoc = &#34;Asia%2FShanghai&#34;
 DBConnTTL = 30
 
 # web shell auth
-appKey = &quot;860af247a91a19b2368d6425797921c6&quot;
+appKey = &#34;860af247a91a19b2368d6425797921c6&#34;
 
 # Set demo namespace and group id
 DemoGroupId = 1
@@ -483,8 +467,8 @@ DemoNamespaceId = 1
 # Sentry
 LogLevel = 7
 SentryEnable = false
-#SentryDSN = &quot;${SENTRY_DSN}&quot;
-#SentryLogLevel = &quot;${SENTRY_LOGLEVEL||4}&quot;
+#SentryDSN = &#34;${SENTRY_DSN}&#34;
+#SentryLogLevel = &#34;${SENTRY_LOGLEVEL||4}&#34;
 
 # Robin
 EnableRobin = false
@@ -494,16 +478,16 @@ EnableApiKeys = false
 
 # Bus
 BusEnable = false
-#BusRabbitMQURL = &quot;${MQ_URL||amqp://guest:guest@rabbitmq:5672}&quot;
+#BusRabbitMQURL = &#34;${MQ_URL||amqp://guest:guest@rabbitmq:5672}&#34;
 
 # other
 # 采用Canary/Production上线模式
-# 如果项目配置了metaData {&quot;mode&quot;:&quot;beta&quot;}，则跳转到beta域名
-#BetaUrl = &quot;${BETA_URL||https://beta.wayne.cloud}&quot;
-#AppUrl = &quot;${APP_URL||https://www.wayne.cloud}&quot;
+# 如果项目配置了metaData {&#34;mode&#34;:&#34;beta&#34;}，则跳转到beta域名
+#BetaUrl = &#34;${BETA_URL||https://beta.wayne.cloud}&#34;
+#AppUrl = &#34;${APP_URL||https://www.wayne.cloud}&#34;
 
 # oauth2
-#RedirectUrl = &quot;${REDIRECT_URL||https://www.wayne.cloud}&quot;
+#RedirectUrl = &#34;${REDIRECT_URL||https://www.wayne.cloud}&#34;
 
 [auth.qihoo]
 enabled = false
@@ -518,63 +502,49 @@ api_url = https://example.com/oauth2/v1/userinfo
 [auth.ldap]
 enabled = false
 ldap_url = ldap://127.0.0.1
-ldap_search_dn = &quot;cn=admin,dc=example,dc=com&quot;
+ldap_search_dn = &#34;cn=admin,dc=example,dc=com&#34;
 ldap_search_password = admin
-ldap_base_dn = &quot;dc=example,dc=com&quot;
+ldap_base_dn = &#34;dc=example,dc=com&#34;
 ldap_filter =
 ldap_uid = cn
 ldap_scope = 2
-ldap_connection_timeout = 30
-</code></pre>
-
+ldap_connection_timeout = 30</pre></div>
 <p>可以直接使用我这里上面的配置文件，和源码中的区别是<code>runmode</code>改成了<code>prod</code>模式，不然运行会出错，另外是配置了数据库相关的信息：</p>
-
-<pre><code>DBName = wayne
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">DBName = wayne
 DBTns = tcp(mysql:3306)
 DBUser = root
 DBPasswd = rootPassw0rd
-DBLoc = &quot;Asia%2FShanghai&quot;
-DBConnTTL = 30
-</code></pre>
-
+DBLoc = &#34;Asia%2FShanghai&#34;
+DBConnTTL = 30</pre></div>
 <p>将<code>DBTns</code>配置成你的 mysql 服务的地址，另外一个值得注意的是这里的<code>DBUser</code>必须使用<code>root</code>，否则第一次安装的时候不能同步数据库，配置好后，然后创建 ConfigMap 对象：</p>
-
-<pre><code class="language-shell">$ kubectl create configmap infra-wayne --namespace kube-system --from-file=app.conf
-configmap &quot;infra-wayne&quot; created
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create configmap infra-wayne --namespace kube-system --from-file<span style="color:#ff79c6">=</span>app.conf
+configmap <span style="color:#f1fa8c">&#34;infra-wayne&#34;</span> created</code></pre></div>
 <p>然后就可以部署另外两个资源对象了：</p>
-
-<pre><code class="language-shell">$ kubectl create -f deployment.yaml
-deployment.extensions &quot;infra-wayne&quot; created
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create -f deployment.yaml
+deployment.extensions <span style="color:#f1fa8c">&#34;infra-wayne&#34;</span> created
 $ kubectl create -f service.yaml
-service &quot;infra-wayne&quot; created
-</code></pre>
-
+service <span style="color:#f1fa8c">&#34;infra-wayne&#34;</span> created</code></pre></div>
 <p>创建完成后，可以查看下 Pod 的状态，如果没有错误信息，就证明部署成功了：</p>
-
-<pre><code class="language-shell">$ kubectl get pods -n kube-system -l app=infra-wayne
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-system -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>infra-wayne
 NAME                           READY     STATUS    RESTARTS   AGE
-infra-wayne-5c5d95cb5c-q6z25   1/1       Running   0          19m
+infra-wayne-5c5d95cb5c-q6z25   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          19m
 $ kubectl logs -f infra-wayne-5c5d95cb5c-q6z25 -n kube-system
-[ORM]2018/11/20 05:08:37 unsupport orm tag int
-[ORM]2018/11/20 05:08:37 unsupport orm tag bool
-[ORM]2018/11/20 05:08:37 unsupport orm tag int
-[ORM]2018/11/20 05:08:37 unsupport orm tag bool
-2018/11/20 05:08:39.395 [E] [db.go:53] Ping database: root:rootPassw0rd@tcp(mysql:3306)/ error: Error 1049: Unknown database 'wayne'
-2018/11/20 05:08:39.402 [D] [db.go:78] Initialize database connection: root:rootPassw0rd@tcp(mysql:3306)/
-create table `user`
+<span style="color:#ff79c6">[</span>ORM<span style="color:#ff79c6">]</span><span style="color:#bd93f9">2018</span>/11/20 <span style="color:#bd93f9">05</span>:08:37 unsupport orm tag int
+<span style="color:#ff79c6">[</span>ORM<span style="color:#ff79c6">]</span><span style="color:#bd93f9">2018</span>/11/20 <span style="color:#bd93f9">05</span>:08:37 unsupport orm tag bool
+<span style="color:#ff79c6">[</span>ORM<span style="color:#ff79c6">]</span><span style="color:#bd93f9">2018</span>/11/20 <span style="color:#bd93f9">05</span>:08:37 unsupport orm tag int
+<span style="color:#ff79c6">[</span>ORM<span style="color:#ff79c6">]</span><span style="color:#bd93f9">2018</span>/11/20 <span style="color:#bd93f9">05</span>:08:37 unsupport orm tag bool
+<span style="color:#bd93f9">2018</span>/11/20 <span style="color:#bd93f9">05</span>:08:39.395 <span style="color:#ff79c6">[</span>E<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">[</span>db.go:53<span style="color:#ff79c6">]</span> Ping database: root:rootPassw0rd@tcp<span style="color:#ff79c6">(</span>mysql:3306<span style="color:#ff79c6">)</span>/ error: Error <span style="color:#bd93f9">1049</span>: Unknown database <span style="color:#f1fa8c">&#39;wayne&#39;</span>
+<span style="color:#bd93f9">2018</span>/11/20 <span style="color:#bd93f9">05</span>:08:39.402 <span style="color:#ff79c6">[</span>D<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">[</span>db.go:78<span style="color:#ff79c6">]</span> Initialize database connection: root:rootPassw0rd@tcp<span style="color:#ff79c6">(</span>mysql:3306<span style="color:#ff79c6">)</span>/
+create table <span style="color:#f1fa8c">`</span>user<span style="color:#f1fa8c">`</span>
     -- --------------------------------------------------
-    --  Table Structure for `github.com/Qihoo360/wayne/src/backend/models.User`
+    --  Table Structure <span style="color:#ff79c6">for</span> <span style="color:#f1fa8c">`</span>github.com/Qihoo360/wayne/src/backend/models.User<span style="color:#f1fa8c">`</span>
     -- --------------------------------------------------
-    CREATE TABLE IF NOT EXISTS `user` (
-        `id` bigint AUTO_INCREMENT NOT NULL PRIMARY KEY,
+    CREATE TABLE IF NOT EXISTS <span style="color:#f1fa8c">`</span>user<span style="color:#f1fa8c">`</span> <span style="color:#ff79c6">(</span>
+        <span style="color:#f1fa8c">`</span>id<span style="color:#f1fa8c">`</span> bigint AUTO_INCREMENT NOT NULL PRIMARY KEY,
 ......
-$ kubectl get svc -n kube-system -l app=infra-wayne
-NAME          TYPE       CLUSTER-IP    EXTERNAL-IP   PORT(S)          AGE
-infra-wayne   NodePort   10.98.29.98   &lt;none&gt;        8080:31259/TCP   10h
-</code></pre>
-
+$ kubectl get svc -n kube-system -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>infra-wayne
+NAME          TYPE       CLUSTER-IP    EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>          AGE
+infra-wayne   NodePort   <span style="color:#bd93f9">10</span>.98.29.98   &lt;none&gt;        <span style="color:#bd93f9">8080</span>:31259/TCP   10h</code></pre></div>
 <p>然后我们就可以通过<code>31259</code>这个 NodePort 来访问 Wayne 了：</p>
 
 <p><img src="https://www.qikqiak.com/img/posts/wayne-dashboard.png" alt="wayne dashboard" /></p>
@@ -795,6 +765,8 @@ infra-wayne   NodePort   10.98.29.98   &lt;none&gt;        8080:31259/TCP   10h
             <a href="https://www.qikqiak.com/">阳明的博客</a>
             &nbsp;&bull;&nbsp;
             <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/archives/">文章归档</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
           
@@ -813,9 +785,9 @@ infra-wayne   NodePort   10.98.29.98   &lt;none&gt;        8080:31259/TCP   10h
 <script src="https://www.qikqiak.com/js/jquery-1.11.2.min.js"></script>
 <script src="https://www.qikqiak.com/js/bootstrap.min.js"></script>
 <script src="https://www.qikqiak.com/js/main.min.js"></script>
-<script src="https://www.qikqiak.com/js/highlight.min.js"></script>
-<script> hljs.initHighlightingOnLoad(); </script>
-<script src="https://www.qikqiak.com/js/prism.js?t=123"></script>
+
+
+
 
 <script src="https://www.qikqiak.com/js/reward.js"></script>
 

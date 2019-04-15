@@ -33,12 +33,9 @@
   <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
   <link rel="stylesheet" href="https://www.qikqiak.com/css/font-awesome.min.css" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/bootstrap.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=456" />
+  <link rel="stylesheet" href="https://www.qikqiak.com/css/main.css?t=4567" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/pygment_highlights.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/highlight.min.css" />
-  <link rel="stylesheet" href="https://www.qikqiak.com/css/prism.css?t=123" />
   <link rel="stylesheet" href="https://www.qikqiak.com/css/search.css" />
   
   <link rel="stylesheet" href="https://www.qikqiak.com/css/reward.css" />
@@ -104,7 +101,7 @@ if (!doNotTrack) {
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
                 
-                  <a href="https://www.qikqiak.com/page/archive/">Archive</a>
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
                 
                   <a href="https://www.qikqiak.com/tags">tags</a>
                 
@@ -306,43 +303,40 @@ autocomplete('#aa-search-input',
 <h2 id="转换">转换</h2>
 
 <p>核心代码很简单，就是将<code>PDF</code>文件读取出来，转换成<code>PdfFileReader</code>，然后就可以根据<code>PyPDF2</code>的API去获得每一个页面的二进制数据，拿到二进制数据过后，就能很方便的进行图片处理了，这里用<code>wand</code>包来进行图片处理。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#6272a4"># -*- coding: utf-8 -*-</span>
+<span style="color:#ff79c6">import</span> io
 
-<pre><code class="language-python"># -*- coding: utf-8 -*-
-import io
+<span style="color:#ff79c6">from</span> wand.image <span style="color:#ff79c6">import</span> Image
+<span style="color:#ff79c6">from</span> wand.color <span style="color:#ff79c6">import</span> Color
+<span style="color:#ff79c6">from</span> PyPDF2 <span style="color:#ff79c6">import</span> PdfFileReader, PdfFileWriter
 
-from wand.image import Image
-from wand.color import Color
-from PyPDF2 import PdfFileReader, PdfFileWriter
+memo <span style="color:#ff79c6">=</span> {}
 
-memo = {}
+<span style="color:#ff79c6">def</span> <span style="color:#50fa7b">getPdfReader</span>(filename):
+    reader <span style="color:#ff79c6">=</span> memo<span style="color:#ff79c6">.</span>get(filename, None)
+    <span style="color:#ff79c6">if</span> reader <span style="color:#ff79c6">is</span> None:
+        reader <span style="color:#ff79c6">=</span> PdfFileReader(filename, strict<span style="color:#ff79c6">=</span>False)
+        memo[filename] <span style="color:#ff79c6">=</span> reader
+    <span style="color:#ff79c6">return</span> reader
 
-def getPdfReader(filename):
-    reader = memo.get(filename, None)
-    if reader is None:
-        reader = PdfFileReader(filename, strict=False)
-        memo[filename] = reader
-    return reader
+<span style="color:#ff79c6">def</span> <span style="color:#50fa7b">_run_convert</span>(filename, page, res<span style="color:#ff79c6">=</span><span style="color:#bd93f9">120</span>):
+    idx <span style="color:#ff79c6">=</span> page <span style="color:#ff79c6">+</span> <span style="color:#bd93f9">1</span>
+    pdfile <span style="color:#ff79c6">=</span> getPdfReader(filename)
+    pageObj <span style="color:#ff79c6">=</span> pdfile<span style="color:#ff79c6">.</span>getPage(page)
+    dst_pdf <span style="color:#ff79c6">=</span> PdfFileWriter()
+    dst_pdf<span style="color:#ff79c6">.</span>addPage(pageObj)
 
-def _run_convert(filename, page, res=120):
-    idx = page + 1
-    pdfile = getPdfReader(filename)
-    pageObj = pdfile.getPage(page)
-    dst_pdf = PdfFileWriter()
-    dst_pdf.addPage(pageObj)
+    pdf_bytes <span style="color:#ff79c6">=</span> io<span style="color:#ff79c6">.</span>BytesIO()
+    dst_pdf<span style="color:#ff79c6">.</span>write(pdf_bytes)
+    pdf_bytes<span style="color:#ff79c6">.</span>seek(<span style="color:#bd93f9">0</span>)
 
-    pdf_bytes = io.BytesIO()
-    dst_pdf.write(pdf_bytes)
-    pdf_bytes.seek(0)
-
-    img = Image(file=pdf_bytes, resolution=res)
-    img.format = 'png'
-    img.compression_quality = 90
-    img.background_color = Color(&quot;white&quot;)
-    img_path = '%s%d.png' % (filename[:filename.rindex('.')], idx)
-    img.save(filename=img_path)
-    img.destroy()
-</code></pre>
-
+    img <span style="color:#ff79c6">=</span> Image(<span style="color:#8be9fd;font-style:italic">file</span><span style="color:#ff79c6">=</span>pdf_bytes, resolution<span style="color:#ff79c6">=</span>res)
+    img<span style="color:#ff79c6">.</span>format <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#39;png&#39;</span>
+    img<span style="color:#ff79c6">.</span>compression_quality <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">90</span>
+    img<span style="color:#ff79c6">.</span>background_color <span style="color:#ff79c6">=</span> Color(<span style="color:#f1fa8c">&#34;white&#34;</span>)
+    img_path <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#39;</span><span style="color:#f1fa8c">%s%d</span><span style="color:#f1fa8c">.png&#39;</span> <span style="color:#ff79c6">%</span> (filename[:filename<span style="color:#ff79c6">.</span>rindex(<span style="color:#f1fa8c">&#39;.&#39;</span>)], idx)
+    img<span style="color:#ff79c6">.</span>save(filename<span style="color:#ff79c6">=</span>img_path)
+    img<span style="color:#ff79c6">.</span>destroy()</code></pre></div>
 <blockquote>
 <p>需要注意的是一般PDF文件较大，如果一次性转换整个PDF文件需要小心内存溢出的问题，我们这里将第一次载入的整个PDF文件保存到内存，避免每次读取的时候都重新载入。</p>
 </blockquote>
@@ -432,9 +426,9 @@ def _run_convert(filename, page, res=120):
     
     <li><a href="https://www.qikqiak.com/post/django-url-function-usage/">django下url函数的用法</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/some-pits-of-memcached/">Memcached的一些坑!!!</a></li>
-    
     <li><a href="https://www.qikqiak.com/post/django-custom-tag-inclusion_tag/">django自定义标签之inclusion_tag的用法</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/some-pits-of-memcached/">Memcached的一些坑!!!</a></li>
     
 </ul>
 
@@ -545,6 +539,8 @@ def _run_convert(filename, page, res=120):
             <a href="https://www.qikqiak.com/">阳明的博客</a>
             &nbsp;&bull;&nbsp;
             <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/archives/">文章归档</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
             <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
           
@@ -563,9 +559,9 @@ def _run_convert(filename, page, res=120):
 <script src="https://www.qikqiak.com/js/jquery-1.11.2.min.js"></script>
 <script src="https://www.qikqiak.com/js/bootstrap.min.js"></script>
 <script src="https://www.qikqiak.com/js/main.min.js"></script>
-<script src="https://www.qikqiak.com/js/highlight.min.js"></script>
-<script> hljs.initHighlightingOnLoad(); </script>
-<script src="https://www.qikqiak.com/js/prism.js?t=123"></script>
+
+
+
 
 <script src="https://www.qikqiak.com/js/reward.js"></script>
 
