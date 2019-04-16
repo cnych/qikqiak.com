@@ -1,0 +1,23 @@
+<!-- Core JS -->
+{{- $jquery := resources.Get "js/jquery.min.js" -}}
+{{- $bootjs := resources.Get "js/bootstrap.min.js" -}}
+
+<!-- Main JS -->
+{{- $mainjs := resources.Get "js/main.js" -}}
+
+<!-- Custom asset js -->
+{{- $indexScratch := .Scratch -}}
+{{- $indexScratch.Add "jsassets" (slice $jquery $bootjs $mainjs) -}}
+{{ if .Site.Params.reward }}
+    {{- $rewardjs := resources.Get "js/reward.js" -}}
+    {{- $indexScratch.Add "jsassets" (slice $rewardjs) -}}
+{{ end }}
+{{- range .Site.Params.customJSAssets -}}
+    {{- $indexScratch.Add "jsassets" (slice (resources.Get .)) -}}
+{{- end -}}
+
+<!-- Bundle js -->
+{{- $appjs := $indexScratch.Get "jsassets" | resources.Concat "js/bundle.js" | resources.Minify | resources.Fingerprint -}}
+{{- .Scratch.Set "appjs" $appjs.RelPermalink -}}
+{{- .Scratch.Set "appjsintegrity" $appjs.Data.Integrity -}}
+
