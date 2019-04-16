@@ -31,7 +31,7 @@
   <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
   
 
-  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.8f029d1d24769fadfb8f578b07b1e67af2839e974519e4e273526fd912945ac5.css' integrity='sha256-jwKdHSR2n637j1eLB7HmevKDnpdFGeTic1Jv2RKUWsU='>
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.8db0ca8922d045902af41f7c49c511fb32ec40827c92aeff990760820f2a475c.css' integrity='sha256-jbDKiSLQRZAq9B98ScUR&#43;zLsQIJ8kq7/mQdggg8qR1w='>
 
   
     
@@ -314,6 +314,15 @@ autocomplete('#aa-search-input',
 
         
         
+        
+
+        
+        
+        
+
+        
+        
+
         <p>前面的课程中我们学习了<a href="https://www.qikqiak.com/k8s-book/docs/52.Prometheus%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8.html">用自定义的方式来对 Kubernetes 集群进行监控</a>，但是还是有一些缺陷，比如 Prometheus、AlertManager 这些组件服务本身的高可用，当然我们也完全可以用自定义的方式来实现这些需求，我们也知道 Prometheus 在代码上就已经对 Kubernetes 有了原生的支持，可以通过服务发现的形式来自动监控集群，因此我们可以使用另外一种更加高级的方式来部署 Prometheus：<code>Operator</code> 框架。</p>
 
 <h2 id="operator">Operator</h2>
@@ -337,7 +346,7 @@ autocomplete('#aa-search-input',
 
 <p>首先我们先来了解下<code>Prometheus-Operator</code>的架构图：</p>
 
-<p><img src="https://www.qikqiak.com/img/posts/prometheus-operator.png" alt="promtheus opeator" /></p>
+<figure><img src="https://www.qikqiak.com/img/posts/prometheus-operator.png" alt="promtheus opeator"><figcaption>promtheus opeator</figcaption></figure>
 
 <p>上图是<code>Prometheus-Operator</code>官方提供的架构图，其中<code>Operator</code>是最核心的部分，作为一个控制器，他会去创建<code>Prometheus</code>、<code>ServiceMonitor</code>、<code>AlertManager</code>以及<code>PrometheusRule</code>4个<code>CRD</code>资源对象，然后会一直监控并维持这4个资源对象的状态。</p>
 
@@ -418,7 +427,7 @@ prometheus-k8s          NodePort    <span style="color:#bd93f9">10</span>.107.10
 ......</code></pre></div>
 <p>更改完成后，我们就可以通过<a href="NodeIP:NodePort">NodeIP:NodePort</a>去访问上面的两个服务了，比如查看 prometheus 的 targets 页面：</p>
 
-<p><img src="https://www.qikqiak.com/img/posts/promethues-operator-targets.png" alt="promtheus operator targets" /></p>
+<figure><img src="https://www.qikqiak.com/img/posts/promethues-operator-targets.png" alt="promtheus operator targets"><figcaption>promtheus operator targets</figcaption></figure>
 
 <h2 id="配置">配置</h2>
 
@@ -477,7 +486,7 @@ NAME             TYPE        CLUSTER-IP       EXTERNAL-IP   PORT<span style="col
 kube-scheduler   ClusterIP   <span style="color:#bd93f9">10</span>.102.119.231   &lt;none&gt;        <span style="color:#bd93f9">10251</span>/TCP   18m</code></pre></div>
 <p>创建完成后，隔一小会儿后去 prometheus 查看 targets 下面 kube-scheduler 的状态：</p>
 
-<p><img src="https://www.qikqiak.com/img/posts/promethues-operator-kube-scheduler-error.png" alt="promethus kube-scheduler error" /></p>
+<figure><img src="https://www.qikqiak.com/img/posts/promethues-operator-kube-scheduler-error.png" alt="promethus kube-scheduler error"><figcaption>promethus kube-scheduler error</figcaption></figure>
 
 <p>我们可以看到现在已经发现了 target，但是抓取数据结果出错了，这个错误是因为我们集群是使用 kubeadm 搭建的，其中 kube-scheduler 默认是绑定在<code>127.0.0.1</code>上面的，而上面我们这个地方是想通过节点的 IP 去访问，所以访问被拒绝了，我们只要把 kube-scheduler 绑定的地址更改成<code>0.0.0.0</code>即可满足要求，由于 kube-scheduler 是以静态 Pod 的形式运行在集群中的，所以我们只需要更改静态 Pod 目录下面对应的 YAML 文件即可：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ ls /etc/kubernetes/manifests/
@@ -491,13 +500,13 @@ etcd.yaml  kube-apiserver.yaml  kube-controller-manager.yaml  kube-scheduler.yam
 - --address=<span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">0.0</span></code></pre></div>
 <p>修改完成后我们将该文件从当前文件夹中移除，隔一会儿再移回该目录，就可以自动更新了，然后再去看 prometheus 中 kube-scheduler 这个 target 是否已经正常了：</p>
 
-<p><img src="https://www.qikqiak.com/img/posts/promethues-operator-kube-scheduler.png" alt="prometheus-operator-kube-scheduler" /></p>
+<figure><img src="https://www.qikqiak.com/img/posts/promethues-operator-kube-scheduler.png" alt="prometheus-operator-kube-scheduler"><figcaption>prometheus-operator-kube-scheduler</figcaption></figure>
 
 <p>大家可以按照上面的方法尝试去修复下 kube-controller-manager 组件的监控。</p>
 
 <p>上面的监控数据配置完成后，现在我们可以去查看下 grafana 下面的 dashboard，同样使用上面的 NodePort 访问即可，第一次登录使用 admin:admin 登录即可，进入首页后，可以发现已经和我们的 Prometheus 数据源关联上了，正常来说可以看到一些监控图表了：</p>
 
-<p><img src="https://www.qikqiak.com/img/posts/promethues-operator-grafana.png" alt="prometheus-operator-grafana" /></p>
+<figure><img src="https://www.qikqiak.com/img/posts/promethues-operator-grafana.png" alt="prometheus-operator-grafana"><figcaption>prometheus-operator-grafana</figcaption></figure>
 
 <p>下节课我们再来和大家介绍怎样来完全自定义一个 ServiceMonitor 以及 AlertManager 相关的配置。</p>
 

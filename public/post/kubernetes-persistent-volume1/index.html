@@ -31,7 +31,7 @@
   <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
   
 
-  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.8f029d1d24769fadfb8f578b07b1e67af2839e974519e4e273526fd912945ac5.css' integrity='sha256-jwKdHSR2n637j1eLB7HmevKDnpdFGeTic1Jv2RKUWsU='>
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.8db0ca8922d045902af41f7c49c511fb32ec40827c92aeff990760820f2a475c.css' integrity='sha256-jbDKiSLQRZAq9B98ScUR&#43;zLsQIJ8kq7/mQdggg8qR1w='>
 
   
     
@@ -334,6 +334,15 @@ autocomplete('#aa-search-input',
 
         
         
+        
+
+        
+        
+        
+
+        
+        
+
         <p>前面我们和大家一起学习了一些基本的资源对象的使用方法，前面我们也和大家讲到了有状态的应用和对数据有持久化的应用，我们有通过 <code>hostPath</code> 或者 <code>emptyDir</code> 的方式来持久化我们的数据，但是显然我们还需要更加可靠的存储来保存应用的持久化数据，这样容器在重建后，依然可以使用之前的数据。但是显然存储资源和 CPU 资源以及内存资源有很大不同，为了屏蔽底层的技术实现细节，让用户更加方便的使用，<code>Kubernetes</code> 便引入了 <code>PV</code> 和 <code>PVC</code> 两个重要的资源对象来实现对存储的管理。</p>
 
 <h2 id="概念">概念</h2>
@@ -716,7 +725,7 @@ nfs-pvc      NodePort    <span style="color:#bd93f9">10</span>.98.246.155   &lt;
 ...</code></pre></div>
 <p>然后我们就可以通过任意节点的 IP:30769 端口来访问我们这里的 Nginx 服务了，但是这个时候我们来访问会出现<strong>403</strong>，这是为什么？我们再去看看 nfs 共享数据目录下面有没有数据呢？</p>
 
-<p><img src="https://www.qikqiak.com/img/posts/ngx403.png" alt="nginx 403" /></p>
+<figure><img src="https://www.qikqiak.com/img/posts/ngx403.png" alt="nginx 403"><figcaption>nginx 403</figcaption></figure>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ ls /data/k8s</code></pre></div>
 <p>我们发现并没有任何数据，这是因为我们把容器目录<strong>/user/share/nginx/html</strong>和挂载到了<strong>pvc2-nfs</strong>这个 PVC 上面，这个 PVC 就是对应着我们上面的 nfs 的共享数据目录的，该目录下面还没有任何数据，所以我们访问就出现了403，现在我们在<strong>/data/k8s</strong>这个目录下面新建一个 index.html 的文件：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;&lt;h1&gt;Hello Kubernetes~&lt;/h1&gt;&#34;</span> &gt;&gt; /data/k8s/index.html
@@ -724,7 +733,7 @@ $ ls /data/k8s/
 index.html</code></pre></div>
 <p>我们可以看到共享数据目录中已经有一个 index.html 的文件了，由于我们挂载了 pvc2-nfs 到上面的 nginx 容器中去，是不是这个时候容器目录<strong>/user/share/nginx/html</strong>下面也有<strong>index.html</strong>这个文件了啊？所以这个时候我们再来访问下服务，任一节点IP:30769：</p>
 
-<p><img src="https://www.qikqiak.com/img/posts/ngx200.png" alt="nginx 200" /></p>
+<figure><img src="https://www.qikqiak.com/img/posts/ngx200.png" alt="nginx 200"><figcaption>nginx 200</figcaption></figure>
 
 <p>现在是不是正常了啊，但是我们可以看到我们容器中的数据是直接放到共享数据目录根目录下面的，如果以后我们又有一个新的 nginx 容器也做了数据目录的挂载，是不是就会有冲突了啊，所以这个时候就不太好区分了，这个时候我们可以在 Pod 中使用一个新的属性：<code>subPath</code>，该属性可以来解决这个问题，我们只需要更改上面的 Pod 的 YAML 文件即可：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">...
