@@ -120,6 +120,7 @@
  * [webpack3入门到放肆视频教程](https://www.qikqiak.com/post/webpack3-get-started/)
 
 #### 其他
+ * [利用 Hugo Pipes 处理资源文件](https://www.qikqiak.com/post/hugo-pipes-process-assets)
  * [在 Hugo 文章中添加 Adsense 广告单元](https://www.qikqiak.com/post/add-adsense-in-hugo-article)
  * [并发模型](https://www.qikqiak.com/post/concurrency-model-compare/)
  * [好吧，海马学院正式上线了](https://www.qikqiak.com/post/haimaxy-online/)
