@@ -117,6 +117,7 @@ nopager: true
  * [好吧，海马学院正式上线了](https://www.qikqiak.com/post/haimaxy-online/)
 
 #### 其他
+ * [微博图床一键迁移到阿里云 OSS](https://www.qikqiak.com/post/sina-img-transfer-to-oss)
  * [如何在 Keynote 中插入高亮代码？](https://www.qikqiak.com/post/insert-code-on-keynote)
  * [利用 Hugo Pipes 处理资源文件](https://www.qikqiak.com/post/hugo-pipes-process-assets)
  * [在 Hugo 文章中添加 Adsense 广告单元](https://www.qikqiak.com/post/add-adsense-in-hugo-article)
