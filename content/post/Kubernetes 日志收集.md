@@ -5,7 +5,7 @@ tags: ["kubernetes", "ElasticSearch", "fluentd"]
 slug: kubernetes-logs-architecture
 keywords: ["kubernetes", "EFK", "ElasticSearch", "Kibana", "Fluentd", "架构"]
 gitcomment: true
-bigimg: [{src: "https://ws4.sinaimg.cn/large/006tNbRwgy1fymnxfds20j31am0tz77n.jpg", desc: "Maple leaves"}]
+bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/xlj4j.jpg", desc: "Maple leaves"}]
 category: "kubernetes"
 ---
 

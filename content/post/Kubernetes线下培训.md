@@ -9,7 +9,7 @@ gitcomment: true
 category: "kubernetes"
 ---
 
-[![k8s training](https://ws1.sinaimg.cn/large/006tKfTcgy1g178gkk1azj30jl08caf4.jpg)](/post/k8s-offline-training/)
+[![k8s training](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/7wz2en.jpg)](/post/k8s-offline-training/)
 
 Kubernetes 是谷歌开源的容器集群编排平台，是一个完备的分布式系统支撑平台，为容器化应用提供部署运行、资源调度、服务发现和动态伸缩等一系列完整功能，具有强大的故障发现和自我修复机制、服务滚动升级和在线扩容能力，可扩展资源自动调度机制以及多粒度的资源配额管理能力。
 
@@ -25,7 +25,7 @@ Kubernetes 是谷歌开源的容器集群编排平台，是一个完备的分布
 * 4. 学习如何结合 Kubernetes 实现 CI/CD 流水线等
 
 
-[![k8s training](https://ws1.sinaimg.cn/large/006tKfTcgy1g178hxj11tj30io33w7uv.jpg)](https://jinshuju.net/f/tQKU3u)
+[![k8s training](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/ks0AfX.jpg)](https://jinshuju.net/f/tQKU3u)
 
 报名链接：[https://jinshuju.net/f/tQKU3u](https://jinshuju.net/f/tQKU3u)
 

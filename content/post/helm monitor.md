@@ -8,7 +8,7 @@ slug: helm-monitor-plugin
 gitcomment: true
 category: "kubernetes"
 ---
-[![helm monitor](https://ws4.sinaimg.cn/large/006tNc79gy1fzf9qf4e2yj30z60toqa4.jpg)](/post/helm-monitor-plugin/)
+[![helm monitor](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kmnpRH.jpg)](/post/helm-monitor-plugin/)
 使用`Helm`可以很方便的部署 Kubernetes 应用，但是如果对于线上的应用部署或者更新后出现了问题，要及时回滚到之前的版本该如何去做呢？当然我们可以手动通过`kubectl rollout`去进行控制，但是难免需要手动去操作。今天给大家介绍一个 Helm 的插件 Helm monitro，通过监听 Prometheus 或 ElasticSearch 监控或者日志数据，在发生故障时自动回滚 release。
 
 <!--more-->
@@ -36,13 +36,13 @@ $ helm foo --help
 ```
 
 Helm 插件文件结构如下：
-![helm plugin](https://ws4.sinaimg.cn/large/006tNc79gy1fzf9bsy1c9j31gm0my7av.jpg)
+![helm plugin](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/bBOC6W.jpg)
 
 ### Helm monitor
 通过 Helm monitor 插件监控一个 release 示意图如下：
-![helm monitor](https://ws1.sinaimg.cn/large/006tNc79gy1fzf9dmdpfbj31fk0my17e.jpg)
+![helm monitor](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/WAQ87k.jpg)
 
-![helm monitor error](https://ws4.sinaimg.cn/large/006tNc79gy1fzf9eic4bhj31gk0mewse.jpg)
+![helm monitor error](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/xa6zM3.jpg)
 
 安装 Helm monitor 插件：
 ```shell

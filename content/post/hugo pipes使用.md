@@ -5,7 +5,7 @@ tags: ["Hugo", "Pipes", "webpack"]
 slug: hugo-pipes-process-assets
 keywords: ["Hugo", "Pipes", "压缩", "合并", "静态资源"]
 gitcomment: true
-bigimg: [{src: "https://ws2.sinaimg.cn/large/006tNc79gy1g25i5fyjmcj315q0rtwnd.jpg", desc: "https://unsplash.com/photos/C87vfR6C_aE"}]
+bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/3m6hw.jpg", desc: "https://unsplash.com/photos/C87vfR6C_aE"}]
 category: "hugo"
 ---
 

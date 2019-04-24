@@ -6,7 +6,7 @@ tags: ["kubernetes", "gitlab", "ci"]
 keywords: ["kubernetes", "gitlab", "ci", "CI/CD", "runner"]
 slug: gitlab-ci-k8s-cluster-feature
 gitcomment: true
-bigimg: [{src: "https://ws3.sinaimg.cn/large/006tKfTcgy1g1aj3z02c3j315o0rs120.jpg", desc: "STEP"}]
+bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/a28fp.jpg", desc: "STEP"}]
 category: "kubernetes"
 ---
 
@@ -27,7 +27,7 @@ $ git push -u origin master
 ```
 
 当我们把仓库推送到 Gitlab 以后，应该可以看到 Gitlab CI 开始执行构建任务了:
-![gitlab ci](https://ws2.sinaimg.cn/large/006tKfTcgy1g1929udcvuj31mg0owq5b.jpg)
+![gitlab ci](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/FLHIAa.jpg)
 
 此时 Runner Pod 所在的 namespace 下面也会出现两个新的 Pod：
 ```shell
@@ -43,7 +43,7 @@ runner-9rixsyft-project-2-concurrent-1t74t9    0/2       ContainerCreating   0  
 
 这两个新的 Pod 就是用来执行具体的 Job 任务的，这里同时出现两个证明第一步是并行执行的两个任务，从上面的 Pipeline 中也可以看到是 test 和 test2 这两个 Job。我们可以看到在执行 image_build 任务的时候出现了错误：
 
-![pipeline](https://ws2.sinaimg.cn/large/006tKfTcgy1g19369pzotj31m20emwg4.jpg)
+![pipeline](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/FPwuTu.jpg)
 
 我们可以点击查看这个 Job 失败详细信息：
 ```shell
@@ -57,7 +57,7 @@ ERROR: Job failed: command terminated with exit code 1
 <!--adsense-text-->
 定位到项目 -> 设置 -> CI/CD，展开`Environment variables`栏目，配置镜像仓库相关的参数值：
 
-![gitlab ci env](https://ws1.sinaimg.cn/large/006tKfTcgy1g19duem1bdj31jc0m6jvl.jpg)
+![gitlab ci env](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/NWlfR4.jpg)
 
 
 配置上后，我们在上面失败的 Job 任务上点击“重试”，在重试过后依然可以看到会出现下面的错误信息：
@@ -169,7 +169,7 @@ xxxxxxtoken值xxxx
 
 填写上面对应的值添加集群：
 
-![add k8s cluster](https://ws1.sinaimg.cn/large/006tKfTcgy1g1a6lrep5yj31160u0af9.jpg)
+![add k8s cluster](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/Xbc1i5.jpg)
 
 
 
@@ -474,21 +474,21 @@ $ git push origin master
 
 现在回到 Gitlab 中可以看到我们的项目触发了一个新的 Pipeline 的构建：
 
-![gitlab pipeline](https://ws4.sinaimg.cn/large/006tKfTcgy1g1ag8co9r3j31m80rewhh.jpg)
+![gitlab pipeline](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/M5aDxg.jpg)
 
 
 可以查看最后一个阶段（stage）是否正确，如果通过了，证明我们已经成功将应用程序部署到 Kubernetes 集群中了，一个成功的`review`阶段如下所示：
 
-![review success](https://ws3.sinaimg.cn/large/006tKfTcgy1g1ahimbwmwj315z0u0n6w.jpg)
+![review success](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/GZezTs.jpg)
 
 
 整个 Pipeline 构建成功后，我们可以在项目的环境菜单下面看到多了一个环境：
 
-![env](https://ws1.sinaimg.cn/large/006tKfTcgy1g1ahkx8gwuj31vm0fatap.jpg)
+![env](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/PTl4AS.jpg)
 
 如果我们点击`终止`，就会调用`.gitlab-ci.yml`中定义的钩子`on_stop: stop_review`，点击`View deployment`就可以看到这次我们的部署结果（前提是DNS解析已经完成）：
 
-![view deployment](https://ws3.sinaimg.cn/large/006tKfTcgy1g1ahq5v4qfj313i0hgtbl.jpg)
+![view deployment](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/OfDR1j.jpg)
 
 这就是关于 Gitlab CI 结合 Kubernetes 进行 CI/CD 的过程，具体详细的构建任务还需要结合我们自己的应用实际情况而定。下节课给大家介绍使用 Jenkins + Gitlab + Harbor + Helm + Kubernetes 来实现一个完整的 CI/CD 流水线作业。
 

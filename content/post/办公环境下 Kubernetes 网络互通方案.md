@@ -9,7 +9,7 @@ notoc: true
 category: "Kubernetes"
 ---
 
-[![office-env-k8s-network](https://ws4.sinaimg.cn/large/006tNc79gy1fz2fv5mfekj30p00an429.jpg)](/post/office-env-k8s-network/)
+[![office-env-k8s-network](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/HbjHRJ.jpg)](/post/office-env-k8s-network/)
 
 在 kubernetes 的网络模型中，基于官方默认的 CNI 网络插件 Flannel，这种 Overlay Network（覆盖网络）可以轻松的实现 pod 间网络的互通。当我们把基于 spring cloud 的微服务迁移到 k8s 中后，无须任何改动，微服务 pod 可以通过 Eureka 注册后可以互相轻松访问。除此之外，我们可以通过 ingress + ingress controller ，在每个节点上，把基于 http 80端口、https 443端口的用户请求流量引入到集群服务中。
 
@@ -53,7 +53,7 @@ ip route 10.244.0.0 255.255.255.0 10.60.20.30
 ip route 10.96.0.0  255.240.0.0   10.60.20.30
 ```
 
-![1547110223634](https://ws4.sinaimg.cn/large/006tNc79gy1fz1me3islaj30p60btq3a.jpg)
+![1547110223634](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kaRF99.jpg)
 
 ## DNS 解析配置
 以上步骤操作后，我们就可以在本地电脑通过访问 pod ip 和 service ip 去访问服务。但是在 k8s 中，由于 pod ip 随时都可能在变化，service ip 也不是开发、测试能轻松获取到的。我们希望内网 DNS 在解析 `*.cluster.local`，去`coreDNS`寻找解析结果。
@@ -361,7 +361,7 @@ spec:
   nslookup -q=A kube-dns.kube-system.svc.cluster.local  10.60.20.30
   ```
 
-  ![1547110223634](https://ws1.sinaimg.cn/large/006tNc79gy1fz1mewkatnj30nd03sdfv.jpg)
+  ![1547110223634](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/RekH1e.jpg)
 
 这里我们用轻量级的`dnsmasq`来作为内网 dns 配置案例，将来自内网的`*.cluster.local`解析请求，走 KubeDNS 10.60.20.30：
 ```
@@ -374,7 +374,7 @@ server=/cluster.local/10.60.20.30
 
 完成以上步骤后，我们办公网络与 kubernetes 网络互通的需求也就实现了，同时我们可以直接用 k8s service 的域名规则去访问到 k8s 中的服务。
 
-![](https://ws4.sinaimg.cn/large/006tNc79gy1fz1mfgwue3j30uy0hvjs2.jpg)
+![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/eSx1ei.jpg)
 
 ## 推广
 最后打个广告，给大家推荐一个本人精心打造的一个精品课程，现在限时优惠中：[从 Docker 到 Kubernetes 进阶](https://youdianzhishi.com/course/6n8xd6/)

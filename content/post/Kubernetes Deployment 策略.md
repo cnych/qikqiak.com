@@ -4,7 +4,7 @@ date: 2019-01-24
 tags: ["kubernetes", "deployment"]
 keywords: ["kubernetes", "deployment", "灰度", "蓝绿", "AB测试"]
 slug: k8s-deployment-strategies
-bigimg: [{src: "https://ws4.sinaimg.cn/large/006tNc79gy1fzhjyv30l1j30zk0ft7c0.jpg", desc: "部署策略"}]
+bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/cfhel.jpg", desc: "部署策略"}]
 gitcomment: true
 category: "kubernetes"
 ---
@@ -42,7 +42,7 @@ spec:
     type: Recreate
 ```
 
-![Recreate](https://ws2.sinaimg.cn/large/006tNc79gy1fzhkoyj17tj327g0igaed.jpg)
+![Recreate](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/RCXtdC.jpg)
 
 重新创建策略是一个虚拟部署，包括关闭版本A，然后在关闭版本A后部署版本B. 此技术意味着服务的停机时间取决于应用程序的关闭和启动持续时间。
 
@@ -239,11 +239,11 @@ $ kubectl delete all -l app=my-app
 
 滚动更新通过逐个替换实例来逐步部署新版本的应用，直到所有实例都被替换完成为止。它通常遵循以下过程：在负载均衡器后面使用版本 A 的实例池，然后部署版本 B 的一个实例，当服务准备好接收流量时(Readiness Probe 正常)，将该实例添加到实例池中，然后从实例池中删除一个版本 A 的实例并关闭，如下图所示：
 
-![ramped](https://ws3.sinaimg.cn/large/006tNc79gy1fzhmat6gvzj30xv0kzab4.jpg)
+![ramped](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/30iUcb.jpg)
 
 下图是滚动更新过程应用接收流量的示意图：
 
-![rolling-update requests](https://ws4.sinaimg.cn/large/006tNc79gy1fzhmld82wwj327c0ig78s.jpg)
+![rolling-update requests](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/OIhAqJ.jpg)
 
 下面是 Kubernetes 中通过 Deployment 来进行滚动更新的关键参数：
 
@@ -413,11 +413,11 @@ $ kubectl delete all -l app=my-app
 
 蓝/绿发布是版本2 与版本1 一起发布，然后流量切换到版本2，也称为红/黑部署。蓝/绿发布与滚动更新不同，版本2(`绿`) 与版本1(`蓝`)一起部署，在测试新版本满足要求后，然后更新更新 Kubernetes 中扮演负载均衡器角色的 Service 对象，通过替换 label selector 中的版本标签来将流量发送到新版本，如下图所示：
 
-![blug/green](https://ws2.sinaimg.cn/large/006tNc79gy1fzhnqugkj4j30xv0kzq3q.jpg)
+![blug/green](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/mEQW8i.jpg)
 
 下面是蓝绿发布策略下应用方法的示例图：
 
-![blue/green request](https://ws3.sinaimg.cn/large/006tNc79gy1fzhnsl61k8j327c0igdkk.jpg)
+![blue/green request](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/FxTxRP.jpg)
 
 在 Kubernetes 中，我们可以用两种方法来实现蓝绿发布，通过单个 Service 对象或者 Ingress 控制器来实现蓝绿发布，实际操作都是类似的，都是通过 label 标签去控制。
 
@@ -645,11 +645,11 @@ $ kubectl delete all -l app=my-app
 
 如果需要按照具体的百分比来进行金丝雀发布，需要尽可能的启动多的 Pod 副本，这样计算流量百分比的时候才方便，比如，如果你想将 1% 的流量发送到版本 B，那么我们就需要有一个运行版本 B 的 Pod 和 99 个运行版本 A 的 Pod，当然如果你对具体的控制策略不在意的话也就无所谓了，如果你需要更精确的控制策略，建议使用服务网格（如 Istio），它们可以更好地控制流量。
 
-![Canary](https://ws3.sinaimg.cn/large/006tNc79gy1fzhq9w17kyj30xv0apjsh.jpg)
+![Canary](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/RvcM4f.jpg)
 
 在下面的例子中，我们使用 Kubernetes 原生特性来实现一个穷人版的金丝雀发布，如果你想要对流量进行更加细粒度的控制，请使用豪华版本的 Istio。下面是金丝雀发布的应用请求示意图：
 
-![canary requests](https://ws3.sinaimg.cn/large/006tNc79gy1fzhqbmi66dj327i0ikq7h.jpg)
+![canary requests](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/OclNv8.jpg)
 
 接下来我们按照下面的步骤来验证金丝雀策略：
 
@@ -861,7 +861,7 @@ A/B 测试实际上是一种基于统计信息而非部署策略来制定业务�
 
 要使用这些细粒度的控制，仍然还是建议使用 Istio，可以根据权重或 HTTP 头等来动态请求路由控制流量转发。
 
-![ab test](https://ws4.sinaimg.cn/large/006tNc79gy1fzhrimnx3nj30ra0b13zb.jpg)
+![ab test](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/b4qVNZ.jpg)
 
 下面是使用 Istio 进行规则设置的示例，因为 Istio 还不太稳定，以下示例规则将来可能会更改：
 
@@ -877,7 +877,7 @@ route:
 
 关于在 Istio 中具体如何做 A/B 测试，我们这里就不再详细介绍了，我们在`istio-book`文档中有相关的介绍。
 
-![ab test request](https://ws1.sinaimg.cn/large/006tNc79gy1fzhrlxh573j327c0iigok.jpg)
+![ab test request](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/2lK8wZ.jpg)
 
 结论：
 

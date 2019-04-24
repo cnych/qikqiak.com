@@ -131,7 +131,7 @@ ingress.extensions "my-nginx" created
 <!--adsense-text-->
 上面资源创建成功后，然后我们可以将域名`ngdemo.qikqiak.com`解析到`nginx-ingress`所在的**边缘节点**中的任意一个，当然也可以在本地`/etc/hosts`中添加对应的隐射也可以，然后就可以通过域名进行访问了。
 
-![ngdemo](https://ws4.sinaimg.cn/large/006tNc79gy1g22gb9z2jqj31140loq5s.jpg)
+![ngdemo](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/wX2oLT.jpg)
 
 到这里就证明`nginx-ingress`安装成功了，除此之外，我们还可以利用`cert-manager`来进行 HTTPS 自动化，可以参考前面的文章：[Kubernetes Ingress 自动化 HTTPS](https://www.qikqiak.com/post/automatic-kubernetes-ingress-https-with-lets-encrypt)，`nginx-ingress`还有非常多的高级配置功能，大家可以直接查看文档：[https://kubernetes.github.io/ingress-nginx/](https://kubernetes.github.io/ingress-nginx/)。
 

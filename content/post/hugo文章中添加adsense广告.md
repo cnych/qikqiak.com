@@ -7,7 +7,7 @@ keywords: ["Hugo", "Adsense", "广告", "Google"]
 gitcomment: true
 category: "hugo"
 ---
-[![adsense hugo](https://ws3.sinaimg.cn/large/006tNc79gy1g23lrzdcj7j30zk0hsmx9.jpg)](/post/add-adsense-in-hugo-article/)
+[![adsense hugo](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/Lu3u0b.jpg)](/post/add-adsense-in-hugo-article/)
 
 之前在首页添加了 Google Adsense 信息流广告，文章详情页没有添加，而文章详情页是 Hugo 编译 markdown 文档过后的，我们可以通过主题下面的`layouts/_default/single.html`看到模板中是通`{{ .Content }}`进行渲染的，那么如果我们想要在文章中添加 Adsense 广告的话呢？应该怎样添加呢？
 

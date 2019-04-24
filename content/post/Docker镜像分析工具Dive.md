@@ -63,7 +63,7 @@ IMAGE               CREATED             CREATED BY                              
 ### 介绍
 接下来我们给大家介绍一个用来分析 docker 镜像层信息的一个工具：dive，地址：[https://github.com/wagoodman/dive](https://github.com/wagoodman/dive)，该工具主要用于探索 docker 镜像层内容以及发现减小 docker 镜像大小的方法。
 
-{{% video mp4="http://vdn.haimaxy.com/course/2019/1/3/dive.mp4" poster="https://ws3.sinaimg.cn/large/006tNc79gy1fyt9wm1k5cj30zk0llwss.jpg" %}}
+{{% video mp4="http://vdn.haimaxy.com/course/2019/1/3/dive.mp4" poster="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qbzfz.jpg" %}}
 
 要分析一个 docker 镜像，只需要在 dive 工具后面添加上镜像的 tag 即可：
 ```shell

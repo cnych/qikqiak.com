@@ -21,4 +21,4 @@ Kubernetes 是用于自动部署，扩展和管理容器化应用程序的开源
 * 横向缩放：使用简单的命令或 UI，或者根据 CPU 的使用情况自动调整应用程序副本数。
 * 服务发现和负载均衡：不需要修改您的应用程序来使用不熟悉的服务发现机制，Kubernetes 为容器提供了自己的 IP 地址和一组容器的单个 DNS 名称，并可以在它们之间进行负载均衡。
 
-[![kubernetes.io](https://ws3.sinaimg.cn/large/006tKfTcgy1g1o2gcoqs2j30u021fe81.jpg)](https://kubernetes.io/zh/)
+[![kubernetes.io](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/1zB8cS.jpg)](https://kubernetes.io/zh/)

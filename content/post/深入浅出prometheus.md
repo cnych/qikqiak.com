@@ -16,7 +16,7 @@ category: "kubernetes"
 ## 内容简介
 Prometheus 是由 SoundCloud 开源的监控系统，是 Google BorgMon 监控系统的开源版本。伴随着容器及`Kubernetes`技术的兴起，Prometheus 越来越受到大家的关注。
 
-![prometheus book](https://ws4.sinaimg.cn/large/006tKfTcgy1g1g79t3evxj30u011ktmw.jpg)
+![prometheus book](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/hdK2Su.jpg)
 
 本书系统讲解了 Prometheus 的原理、应用、源码和拓展，图文并茂、讲解全面。原理篇主要介绍了 Prometheus 的整体架构及与其他监控系统的对比和优势，让读者从整体上把握 Prometheus 的相关概念。应用篇从传统应用监控和 Kubernetes 监控两方面讲解 Prometheus 的安装、配置及优秀实践，着重介绍 Redis、MySQL server 等常用中间件监控，并结合 Kubernetes，详细讲解如何通过 Prometheus 监控容器集群，还对每个操作都进行了非常详尽的记录。源码与拓展篇从整体到局部详细剖析 Prometheus 的源码架构，并且结合实际生产环境二次定制 Prometheus 的部分功能，可加深读者对 Prometheus 的理解，也能很好地帮助读者提升 Prometheus 开发技能。
 

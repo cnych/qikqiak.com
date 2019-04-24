@@ -7,11 +7,11 @@ slug: prometheus-operator-advance
 keywords: ["kubernetes", "prometheus", "operator", "alertmanager", "prometheus-operator", "钉钉", "持久化", "自动发现"]
 gitcomment: true
 notoc: true
-bigimg: [{src: "https://ws2.sinaimg.cn/large/006tNbRwgy1fyddjjj4prj315o0rswi5.jpg", desc: ""}]
+bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/xb4u8.jpg", desc: ""}]
 category: "kubernetes"
 ---
 
-[![Prometheus Operator 高级配置](https://ws4.sinaimg.cn/large/006tNbRwgy1fydddpxwfrj30p00anwgd.jpg)](https://mp.weixin.qq.com/s/M47g8E3BHzb6IhLiI1P5oA)
+[![Prometheus Operator 高级配置](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/goc2kc.jpg)](https://mp.weixin.qq.com/s/M47g8E3BHzb6IhLiI1P5oA)
 [上节课我们一起学习了如何在 Prometheus Operator 下面自定义一个监控选项](https://www.qikqiak.com/post/prometheus-operator-monitor-etcd)，以及[自定义报警规则](https://www.qikqiak.com/post/prometheus-operator-custom-alert)的使用。那么我们还能够直接使用前面课程中的自动发现功能吗？如果在我们的 Kubernetes 集群中有了很多的 Service/Pod，那么我们都需要一个一个的去建立一个对应的 ServiceMonitor 对象来进行监控吗？这样岂不是又变得麻烦起来了？
 
 <!--more-->
@@ -123,7 +123,7 @@ prometheus.monitoring.coreos.com "k8s" configured
 
 隔一小会儿，可以前往 Prometheus 的 Dashboard 中查看配置是否生效：
 
-![config](https://ws1.sinaimg.cn/large/006tNbRwgy1fyd8c25rf2j31530u0dl5.jpg)
+![config](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/dA0ZT5.jpg)
 
 在 Prometheus Dashboard 的配置页面下面我们可以看到已经有了对应的的配置信息了，但是我们切换到 targets 页面下面却并没有发现对应的监控任务，查看 Prometheus 的 Pod 日志：
 ```shell
@@ -187,7 +187,7 @@ rules:
 
 更新上面的 ClusterRole 这个资源对象，然后重建下 Prometheus 的所有 Pod，正常就可以看到 targets 页面下面有 kubernetes-service-endpoints 这个监控任务了：
 
-![endpoints](https://ws2.sinaimg.cn/large/006tNbRwgy1fyd9q7pq78j31rg0ewtca.jpg)
+![endpoints](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/UioYnQ.jpg)
 
 我们这里自动监控了两个 Service，第一个就是我们之前创建的 Redis 的服务，我们在 Redis Service 中有两个特殊的 annotations：
 ```yaml

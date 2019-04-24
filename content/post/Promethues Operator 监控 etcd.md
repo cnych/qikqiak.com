@@ -152,7 +152,7 @@ spec:
 
 上面我们在 monitoring 命名空间下面创建了名为 etcd-k8s 的 ServiceMonitor 对象，基本属性和前面章节中的一致，匹配 kube-system 这个命名空间下面的具有 k8s-app=etcd 这个 label 标签的 Service，jobLabel 表示用于检索 job 任务名称的标签，和前面不太一样的地方是 endpoints 属性的写法，配置上访问 etcd 的相关证书，endpoints 属性下面可以配置很多抓取的参数，比如 relabel、proxyUrl，tlsConfig 表示用于配置抓取监控数据端点的 tls 认证，由于证书 serverName 和 etcd 中签发的可能不匹配，所以加上了 insecureSkipVerify=true
 
-![tlsConfig](https://ws4.sinaimg.cn/large/006tNbRwgy1fy9s4embvlj313a0fmdik.jpg)
+![tlsConfig](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/J4WVsu.jpg)
 
 > 关于 ServiceMonitor 属性的更多用法可以查看文档：[https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md](https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md) 了解更多
 
@@ -207,7 +207,7 @@ $ kubectl create -f prometheus-etcdService.yaml
 
 创建完成后，隔一会儿去 Prometheus 的 Dashboard 中查看 targets，便会有 etcd 的监控项了：
 
-![prometheus etcd](https://ws4.sinaimg.cn/large/006tNbRwgy1fy9smdbdgwj31y80autbj.jpg)
+![prometheus etcd](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/Zb6ErD.jpg)
 
 可以看到还是有一个明显的错误，和我们上节课监控 kube-scheduler 的错误比较类似于，因为我们这里的 etcd 的是监听在 127.0.0.1 这个 IP 上面的，所以访问会拒绝：
 ```shell
@@ -221,11 +221,11 @@ $ kubectl create -f prometheus-etcdService.yaml
 
 重启 etcd，生效后，查看 etcd 这个监控任务就正常了：
 
-![prometheus etcd](https://ws4.sinaimg.cn/large/006tNbRwgy1fy9st81y3tj31yc0a0gnq.jpg)
+![prometheus etcd](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/TpuNv9.jpg)
 
 数据采集到后，可以在 grafana 中导入编号为`3070`的 dashboard，获取到 etcd 的监控图表。
 
-![grafana etcd dashboard](https://ws3.sinaimg.cn/large/006tNbRwgy1fy9t1ewpc5j31uf0u00wj.jpg)
+![grafana etcd dashboard](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/aJEkls.jpg)
 
 ### 推荐
 最后打个广告，给大家推荐一个本人精心打造的一个精品课程，现在限时优惠中：[从 Docker 到 Kubernetes 进阶](https://youdianzhishi.com/course/6n8xd6/)

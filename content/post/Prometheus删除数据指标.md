@@ -5,7 +5,7 @@ tags: ["Prometheus"]
 slug: prometheus-delete-metrics
 keywords: ["Prometheus", "删除", "数据指标", "metrics"]
 gitcomment: true
-bigimg: [{src: "https://ws3.sinaimg.cn/large/006tNbRwgy1fynh878dk1j315o0rsjvw.jpg", desc: "kiss"}]
+bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/opd8s.jpg", desc: "kiss"}]
 category: "kubernetes"
 ---
 

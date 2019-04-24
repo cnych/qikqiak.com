@@ -8,7 +8,7 @@ gitcomment: true
 category: "kubernetes"
 ---
 
-[![cka](https://ws4.sinaimg.cn/large/006tNbRwgy1fyj6tn3pudj30p00dwjs0.jpg)](/post/k8s-cka-course/)
+[![cka](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kqPNDq.jpg)](/post/k8s-cka-course/)
 
 本系列课程参考 CKA (Certificted Kubernetes Administrator) 知识体系进行课程设计，并结合华为在 kubernetes 项目推广过程中的实践经验，理论+实践让用户快速掌握kubernetes的使用和维护技能。
 
@@ -23,7 +23,7 @@ category: "kubernetes"
 
 第二个系列《kubernetes管理员实训》主要面向 Kuberntes 的一般用户，内容以如何使用和维护 Kubernetes 为主，课程安排见下表。
 
-![cka course table](https://ws1.sinaimg.cn/large/006tNc79gy1fz786bavilj30kz0jvdpz.jpg)
+![cka course table](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/SRjagE.jpg)
 
 
 本系列课程参考 CKA (Certificted Kubernetes Administrator)* 知识体系进行课程设计，并结合华为在 kubernetes 项目推广过程中的实践经验，理论+实践让用户快速掌握kubernetes的使用和维护技能。

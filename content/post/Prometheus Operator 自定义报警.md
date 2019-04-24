@@ -5,7 +5,7 @@ tags: ["kubernetes", "prometheus", "operator", "alertmanager"]
 slug: prometheus-operator-custom-alert
 keywords: ["kubernetes", "prometheus", "operator", "alertmanager", "prometheus-operator", "钉钉"]
 gitcomment: true
-bigimg: [{src: "https://ws3.sinaimg.cn/large/006tNbRwgy1fyddbmv3d9j31dq0ryn8g.jpg", desc: ""}]
+bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/izvuk.jpg", desc: ""}]
 category: "kubernetes"
 ---
 
@@ -16,7 +16,7 @@ category: "kubernetes"
 ### 配置 PrometheusRule
 现在我们知道怎么自定义一个 ServiceMonitor 对象了，但是如果需要自定义一个报警规则的话呢？比如现在我们去查看 Prometheus Dashboard 的 Alert 页面下面就已经有一些报警规则了，还有一些是已经触发规则的了：
 
-![alerts](https://ws3.sinaimg.cn/large/006tNbRwgy1fyc4hf239zj313i0p6juv.jpg)
+![alerts](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/uqvBlx.jpg)
 
 但是这些报警信息是哪里来的呢？他们应该用怎样的方式通知我们呢？我们知道之前我们使用自定义的方式可以在 Prometheus 的配置文件之中指定 AlertManager 实例和 报警的 rules 文件，现在我们通过 Operator 部署的呢？我们可以在 Prometheus Dashboard 的 Config 页面下面查看关于 AlertManager 的配置：
 ```yaml
@@ -152,7 +152,7 @@ monitoring-etcd-rules.yaml            monitoring-prometheus-k8s-rules.yaml
 
 可以看到我们创建的 rule 文件已经被注入到了对应的 rulefiles 文件夹下面了，证明我们上面的设想是正确的。然后再去 Prometheus Dashboard 的 Alert 页面下面就可以查看到上面我们新建的报警规则了：
 
-![etcd cluster](https://ws2.sinaimg.cn/large/006tNbRwgy1fyc62d4gkzj31540doac1.jpg)
+![etcd cluster](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/ROM6lk.jpg)
 
 
 ### 配置报警
@@ -160,7 +160,7 @@ monitoring-etcd-rules.yaml            monitoring-prometheus-k8s-rules.yaml
 
 首先我们将 alertmanager-main 这个 Service 改为 NodePort 类型的 Service，修改完成后我们可以在页面上的 status 路径下面查看 AlertManager 的配置信息:
 
-![alertmanager config](https://ws4.sinaimg.cn/large/006tNbRwgy1fyc6dz3t5ij31aa0u0te0.jpg)
+![alertmanager config](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/zr2l90.jpg)
 
 
 这些配置信息实际上是来自于我们之前在`prometheus-operator/contrib/kube-prometheus/manifests`目录下面创建的 alertmanager-secret.yaml 文件：
@@ -237,15 +237,15 @@ secret "alertmanager-main" created
 
 我们添加了两个接收器，默认的通过邮箱进行发送，对于 CoreDNSDown 这个报警我们通过 webhook 来进行发送，这个 webhook 就是我们前面课程中定义的一个钉钉接收的 Server，上面的步骤创建完成后，很快我们就会收到一条钉钉消息：
 
-![钉钉](https://ws3.sinaimg.cn/large/006tNbRwgy1fyc7drk445j311c0mm7bo.jpg)
+![钉钉](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kWmR0b.jpg)
 
 同样邮箱中也会收到报警信息：
 
-![邮箱](https://ws1.sinaimg.cn/large/006tNbRwgy1fyc7j3k20vj30u00u4gpx.jpg)
+![邮箱](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/k8aVaD.jpg)
 
 我们再次查看 AlertManager 页面的 status 页面的配置信息可以看到已经变成上面我们的配置信息了：
 
-![alertmanager config](https://ws1.sinaimg.cn/large/006tNbRwgy1fyc7kvs27vj30vp0u017c.jpg)
+![alertmanager config](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/JDotma.jpg)
 
 
 AlertManager 配置也可以使用模板(.tmpl文件)，这些模板可以与 alertmanager.yaml 配置文件一起添加到 Secret 对象中，比如：

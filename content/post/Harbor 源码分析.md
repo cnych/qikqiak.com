@@ -8,7 +8,7 @@ gitcomment: true
 notoc: true
 category: "kubernetes"
 ---
-[![harbor](https://ws4.sinaimg.cn/large/006tKfTcgy1g0cz18sku5j321r0kz0ux.jpg)](/post/harbor-code-analysis/)
+[![harbor](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/Q2xt5X.jpg)](/post/harbor-code-analysis/)
 
 [Harbor](https://github.com/goharbor/harbor) 是一个`CNCF`基金会托管的开源的可信的云原生`docker registry`项目，可以用于存储、签名、扫描镜像内容，Harbor 通过添加一些常用的功能如安全性、身份权限管理等来扩展 docker registry 项目，此外还支持在 registry 之间复制镜像，还提供更加高级的安全功能，如用户管理、访问控制和活动审计等，在新版本中还添加了`Helm`仓库托管的支持。
 
@@ -32,7 +32,7 @@ category: "kubernetes"
 
 至此，整个登录过程完成，整个过程可以用下面的流程图来说明：
 
-![docker login](https://ws4.sinaimg.cn/large/006tKfTcgy1g0cwrqk1mqj310q0iuwgt.jpg)
+![docker login](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/cQZwq7.jpg)
 
 
 要完成上面的登录认证过程有两个关键点需要注意：怎样让 registry 服务知道服务认证地址？我们自己提供的认证服务生成的 token 为什么 registry 就能够识别？

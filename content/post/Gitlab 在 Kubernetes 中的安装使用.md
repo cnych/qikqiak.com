@@ -9,7 +9,7 @@ notoc: true
 category: "kubernetes"
 ---
 
-[![gitlab on k8s](https://ws4.sinaimg.cn/large/006tKfTcgy1g0uhrwm9ujj30hy0a6dir.jpg)](/post/gitlab-install-on-k8s/)
+[![gitlab on k8s](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/vTUWg8.jpg)](/post/gitlab-install-on-k8s/)
 
 `Gitlab`官方提供了 Helm 的方式在 Kubernetes 集群中来快速安装，但是在使用的过程中发现 Helm 提供的 Chart 包中有很多其他额外的配置，所以我们这里使用自定义的方式来安装，也就是自己来定义一些资源清单文件。
 
@@ -302,18 +302,18 @@ redis-8446f57bdf-4v62p                         1/1       Running   0          17
 
 可以看到都已经部署成功了，然后我们可以通过 Ingress 中定义的域名`git.qikqiak.com`(需要做 DNS 解析或者在本地 /etc/hosts 中添加映射)来访问 Portal：
 
-![gitlab portal](https://ws1.sinaimg.cn/large/006tKfTcgy1g0u81axrwlj318y0u0wj0.jpg)
+![gitlab portal](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/MlLWIV.jpg)
 
 ### 使用
 使用用户名 root，和部署的时候指定的超级用户密码`GITLAB_ROOT_PASSWORD=admin321`即可登录进入到首页：
 
-![gitlab homepage](https://ws3.sinaimg.cn/large/006tKfTcgy1g0u85rzqbfj311g0u0jx1.jpg)
+![gitlab homepage](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/Sh0Uzv.jpg)
 
 Gitlab 运行后，我们可以注册为新用户并创建一个项目，还可以做很多的其他系统设置，比如设置语言、设置应用风格样式等等。
 
 点击`Create a project`创建一个新的项目，和之前 Github 使用上没有多大的差别：
 
-![create gitlab project](https://ws1.sinaimg.cn/large/006tKfTcgy1g0u8gpdwqoj31h90u0483.jpg)
+![create gitlab project](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/4ZsdVb.jpg)
 
 创建完成后，我们可以添加本地用户的一个`SSH-KEY`，这样我们就可以通过 SSH 来拉取或者推送代码了。SSH 公钥通常包含在`~/.ssh/id_rsa.pub` 文件中，并以`ssh-rsa`开头。如果没有的话可以使用`ssh-keygen`命令来生成，`id_rsa.pub`里面的内容就是我们需要的 SSH 公钥，然后添加到 Gitlab 中。
 
@@ -342,7 +342,7 @@ spec:
 
 注意上面 ssh 对应的 nodePort 端口设置为 30022，这样就不会随机生成了，重新更新下 Deployment 和 Service，更新完成后，现在我们在项目上面 Clone 的时候使用 ssh 就会带上端口号了：
 
-![gitlab ssh](https://ws4.sinaimg.cn/large/006tKfTcgy1g0uecaybqfj31kg0kin17.jpg)
+![gitlab ssh](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/EmeNg0.jpg)
 
 现在就可以使用`Clone with SSH`的地址了，由于上面我们配置了 SSH 公钥，所以就可以直接访问上面的仓库了：
 ```shell
@@ -370,7 +370,7 @@ To ssh://git@git.qikqiak.com:30022/root/gitlab-demo.git
 
 然后刷新浏览器，就可以看到刚刚创建的 Git 仓库中多了一个 README.md 的文件：
 
-![git commit](https://ws4.sinaimg.cn/large/006tKfTcgy1g0uekpjdcfj31b10u0af1.jpg)
+![git commit](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/OejJDk.jpg)
 
 到这里就表明我们的 Gitlab 就成功部署到了 Kubernetes 集群当中了。
 

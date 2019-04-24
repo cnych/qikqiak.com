@@ -6,7 +6,7 @@ tags: ["kubernetes", "gitlab", "ci"]
 keywords: ["kubernetes", "gitlab", "ci", "runner"]
 slug: gitlab-runner-install-on-k8s
 gitcomment: true
-bigimg: [{src: "https://ws3.sinaimg.cn/large/006tKfTcgy1g18ciwz60yj315q0rtgpr.jpg", desc: "Copperopolis, Copperopolis, California, USA"}]
+bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/1tdd3.jpg", desc: "Copperopolis, Copperopolis, California, USA"}]
 category: "kubernetes"
 ---
 
@@ -97,7 +97,7 @@ To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
 
 前面的章节中我们已经成功安装了 Gitlab，在浏览器中打开`git.qikqiak.com`页面，然后登录后进入到管理页面`http://git.qikqiak.com/admin`，然后点击导航栏中的`Runner`，可以看到该页面中有两个总要的参数，一个是 URL，另外一个就是 Register Token，下面的步骤中需要用到这两个参数值。
 
-![gitlab runner](https://ws3.sinaimg.cn/large/006tKfTcgy1g188bykw2ij31lu0he0xf.jpg)
+![gitlab runner](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/HlX3xx.jpg)
 
 > 注意：不要随便泄露 Token
 
@@ -326,7 +326,7 @@ gitlab-ci-runner-1                             1/1       Running   0          3m
 
 可以看到已经成功运行了两个（具体取决于`StatefulSet`清单中的副本数) Runner 实例，然后切换到 Gitlab Admin 页面下面的 Runner 页面：
 
-![gitlab runner list](https://ws2.sinaimg.cn/large/006tKfTcgy1g189zhnqzbj31lc0u07bd.jpg)
+![gitlab runner list](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/IpKeRo.jpg)
 
 当然我们也可以根据需要更改 Runner 的一些配置，比如添加 tag 标签等。
 
@@ -335,7 +335,7 @@ gitlab-ci-runner-1                             1/1       Running   0          3m
 ## 推荐
 另外我们最近准备组织 [Kubernetes 线下3天闭门集训](/post/k8s-offline-training/) 活动，带您实现从 Docker 入门一步一步到 Kubernetes 进阶之路。
 
-[![k8s training](https://ws1.sinaimg.cn/large/006tKfTcgy1g178gkk1azj30jl08caf4.jpg)](/post/k8s-offline-training/)
+[![k8s training](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/ImCxlY.jpg)](/post/k8s-offline-training/)
 
 扫描下面的二维码(或微信搜索`k8s技术圈`)关注我们的微信公众帐号，在微信公众帐号中回复 **加群** 即可加入到我们的 kubernetes 讨论群里面共同学习。
 ![qrcode](https://www.qikqiak.com/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg)

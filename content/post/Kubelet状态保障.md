@@ -5,7 +5,7 @@ tags: ["kubernetes", "kubelet"]
 keywords: ["kubernetes", "kubelet", "状态", "同步", "apiserver"]
 slug: kubelet-sync-node-status
 gitcomment: true
-bigimg: [{src: "https://ws3.sinaimg.cn/large/006tKfTcgy1g1aj3z02c3j315o0rs120.jpg", desc: "STEP"}]
+bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/g1dt2.jpg", desc: "STEP"}]
 category: "kubernetes"
 draft: true
 ---

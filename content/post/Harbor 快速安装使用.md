@@ -6,7 +6,7 @@ tags: ["harbor", "docker", "kubernetes", "helm"]
 keywords: ["harbor", "docker", "kubernetes", "安装", "registry"]
 slug: harbor-quick-install
 gitcomment: true
-bigimg: [{src: "https://ws3.sinaimg.cn/large/006tKfTcgy1g0fazif7vkj31900u0x19.jpg", desc: "https://unsplash.com/photos/T-a8zcXigq4"}]
+bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/sdmk1.jpg", desc: "https://unsplash.com/photos/T-a8zcXigq4"}]
 category: "kubernetes"
 ---
 
@@ -584,16 +584,16 @@ harbor-harbor-ingress   registry.qikqiak.com,notary.qikqiak.com             80, 
 ### Harbor Portal
 添加完成后，在浏览器中输入`registry.qikqiak.com`就可以打开熟悉的 Harbor 的 Portal 界面了，当然我们配置的 Ingress 中会强制跳转到 https，所以如果你的浏览器有什么安全限制的话，需要信任我们这里 Ingress 对应的证书，证书文件可以通过查看 Secret 资源对象获取：
 
-![Harbor Portal](https://ws2.sinaimg.cn/large/006tKfTcgy1g0f8ojkpikj31dy0u0wi4.jpg)
+![Harbor Portal](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/RwE3Mp.jpg)
 
 然后输入用户名：admin，密码：Harbor12345（当然我们也可以通过 Helm 安装的时候自己覆盖 harborAdminPassword）即可登录进入 Portal 首页：
 
-![Harbor Portal Home](https://ws2.sinaimg.cn/large/006tKfTcgy1g0f8qo55p0j31d80u0q7t.jpg)
+![Harbor Portal Home](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/7Nh60z.jpg)
 
 
 我们可以看到有很多功能，默认情况下会有一个名叫`library`的项目，改项目默认是公开访问权限的，进入项目可以看到里面还有 Helm Chart 包的管理，可以手动在这里上传，也可以对改项目里面的镜像进行一些配置，比如是否开启自动扫描镜像功能：
 
-![Harbor project settings](https://ws1.sinaimg.cn/large/006tKfTcgy1g0f98e41i1j31230u0777.jpg)
+![Harbor project settings](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/OxyAsO.jpg)
 
 
 ### docker cli
@@ -658,7 +658,7 @@ latest: digest: sha256:4415a904b1aca178c2450fd54928ab362825e863c0ad5452fd020e92f
 
 推送完成后，我们同样可以在 Portal 页面上看到这个镜像的信息：
 
-![Harbor image info](https://ws1.sinaimg.cn/large/006tKfTcgy1g0f9woj4otj318q0u0n1o.jpg)
+![Harbor image info](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/OLt246.jpg)
 
 
 镜像 push 成功，同样可以测试下 pull：

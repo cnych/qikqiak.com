@@ -8,7 +8,7 @@ gitcomment: true
 category: "kubernetes"
 ---
 
-[![istio](https://ws3.sinaimg.cn/large/006tNc79gy1fze7hq88eoj30p00dw3z1.jpg)](/post/k8s-istio-course/)
+[![istio](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/BF9SiB.jpg)](/post/k8s-istio-course/)
 
 `Istio`，是一个由 Google，Lyft，IBM 联合开发的开源项目，是服务网格（Service Mesh）技术的一个标准化的开源实现，致力于解决应用的微服务化组件之间的连接控制与安全、流量管理与可观测性。Istio 是云原生领域在 Kubernetes 之后最受关注的项目，帮助容器技术实践者从基础设施层的“容器编排“进阶到应用层的“服务治理”。Istio 先天与 Kubernetes 无缝衔接，了解并使用 Istio 可以极大地提升研发和运维的工作效率。
 
@@ -25,7 +25,7 @@ category: "kubernetes"
 
 本系列课程是 Istio 入门实训课程，课程内容如下：
 
-![istio course table](https://ws2.sinaimg.cn/large/006tNc79gy1fze74h4cdlj31940u0qms.jpg)
+![istio course table](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/OhMR4y.jpg)
 
 
 ## 相关链接

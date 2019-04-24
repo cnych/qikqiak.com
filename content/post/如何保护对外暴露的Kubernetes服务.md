@@ -63,7 +63,7 @@ ingress.extensions "jenkins" configured
 
 更新完成后，现在我们去访问我们的 Jenkins 服务可以看到需要输入用户名和密码的提示信息了：
 
-![jenkins basic auth](https://ws2.sinaimg.cn/large/006tNc79gy1g213ot1nyjj314y0qy422.jpg)
+![jenkins basic auth](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/Nc7GvR.jpg)
 
 
 ## OAuth 认证
@@ -74,7 +74,7 @@ ingress.extensions "jenkins" configured
 
 然后登录 Github，在[https://github.com/settings/applications/new](https://github.com/settings/applications/new)添加一个新的`OAuth`应用程序：
 
-![register github app](https://ws4.sinaimg.cn/large/006tNc79gy1g21yei4dgej31600nmq64.jpg)
+![register github app](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/1LvSla.jpg)
 
 替换成你自己需要使用的域名，然后在回调 URL 上添加`/oauth2/callback`，点击注册后，记录下应用详细页面`Client ID`和`Client Secret`的值。然后还需要生成一个 cookie 密钥，当然如果我们系统中安装了 python 环境可以直接生成，没有的话用 Docker 容器运行当然也行：
 ```shell
@@ -200,11 +200,11 @@ EOF
 
 我们这里通过`cert-manager`来自动为服务添加 HTTPS ，添加了`kubernetes.io/tls-acme=true`这个注解，然后我们在浏览器中打开我们的 Jenkins 服务，正常就会跳转到 GitHub 登录页面了：
 
-![github oauth](https://ws2.sinaimg.cn/large/006tNc79gy1g21yeyk5m5j312x0u043z.jpg)
+![github oauth](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/voQyke.jpg)
 
 然后认证通过后就可以跳转到我们的 Jenkins 服务了：
 
-![jenkins](https://ws3.sinaimg.cn/large/006tNc79gy1g21yhlshzjj318x0u0tgq.jpg)
+![jenkins](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/wsnWEN.jpg)
 
 当然除了使用 GitHub 之外，还可以使用其他的 OAuth 认证服务，比如 Google，我们可以根据需要自行去添加即可。
 
