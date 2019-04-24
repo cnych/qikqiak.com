@@ -6,7 +6,7 @@ tags: ["django", "mysql"]
 keywords: ["django", "DateTimeField", "mysql"]
 slug: how-to-add-datetimefield-in-django-without-microsecond
 gitcomment: true
-bigimg: [{src: "https://ws1.sinaimg.cn/large/006tNc79gy1fznhi0eq88j31140rtjw0.jpg", desc: "C H A O S"}]
+bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/th4t4.jpg", desc: "C H A O S"}]
 category: "django"
 ---
 

@@ -5,7 +5,7 @@ tags: ["kubernetes", "traefik", "nginx", "ingress", "oauth"]
 keywords: ["kubernetes", "traefik", "nginx", "ingress", "oauth", "basic auth", "安全"]
 slug: how-to-protect-exposed-k8s-server
 gitcomment: true
-bigimg: [{src: "https://ws3.sinaimg.cn/large/006tNc79gy1g21yvqruqhj315o0rswgx.jpg", desc: "oauth"}]
+bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/j14tu.jpg", desc: "oauth"}]
 category: "kubernetes"
 ---
 

@@ -5,7 +5,7 @@ tags: ["kubernetes", "nginx", "ingress", "helm", "traefik"]
 keywords: ["kubernetes", "nginx", "ingress", "helm", "traefik"]
 slug: install-nginx-ingress
 gitcomment: true
-bigimg: [{src: "https://ws3.sinaimg.cn/large/006tNc79gy1g22gjislqfj315o0rs462.jpg", desc: "https://unsplash.com/photos/fvaoHivsHGE"}]
+bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/xxlj0.jpg", desc: "https://unsplash.com/photos/fvaoHivsHGE"}]
 category: "kubernetes"
 ---
 

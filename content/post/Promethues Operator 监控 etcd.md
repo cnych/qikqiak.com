@@ -5,7 +5,7 @@ tags: ["kubernetes", "prometheus", "operator", "etcd"]
 slug: prometheus-operator-monitor-etcd
 keywords: ["kubernetes", "prometheus", "operator", "etcd", "prometheus-operator"]
 gitcomment: true
-bigimg: [{src: "https://ws3.sinaimg.cn/large/006tNbRwgy1fyb176sxagj315o0rsn8g.jpg", desc: ""}]
+bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/jdu4o.jpg", desc: ""}]
 category: "kubernetes"
 ---
 

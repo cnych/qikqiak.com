@@ -5,7 +5,7 @@ tags: ["python", "metaclass"]
 keywords: ["python", "元类", "metaclass"]
 slug: what-is-metaclass-in-python
 gitcomment: true
-bigimg: [{src: "https://ws3.sinaimg.cn/large/006tKfTcgy1g0bnmuhzgkj30yu0rsn2p.jpg", desc: "what is metaclass in python?"}]
+bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/usrgs.jpg", desc: "what is metaclass in python?"}]
 category: "python"
 ---
 

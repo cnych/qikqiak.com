@@ -5,7 +5,7 @@ tags: ["kubernetes", "EFK", "Elasticsearch", "Fluentd", "Kibana"]
 keywords: ["kubernetes", "log", "EFK", "Elasticsearch", "Fluentd", "Kibana"]
 slug: install-efk-stack-on-k8s
 gitcomment: true
-bigimg: [{src: "https://ws3.sinaimg.cn/large/006tNc79gy1fz9oz0m3kcj30zc0bmdhd.jpg", desc: "EFK Stack"}]
+bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/vphcv.jpg", desc: "EFK Stack"}]
 category: "kubernetes"
 ---
 
