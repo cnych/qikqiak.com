@@ -5,6 +5,7 @@ tags: ["微博", "阿里云", "OSS", "图床"]
 keywords: ["微博", "阿里云", "OSS", "图床"]
 slug: sina-img-transfer-to-oss
 gitcomment: true
+bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/654ck.jpeg", desc: "sinaimgmover"}]
 category: "极客"
 ---
 
