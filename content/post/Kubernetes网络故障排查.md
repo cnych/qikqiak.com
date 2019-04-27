@@ -9,7 +9,7 @@ notoc: true
 category: "kubernetes"
 ---
 
-[![troubleshooting kubernetes](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/lbpr6.png)](/post/troubleshooting-k8s-network)
+[![troubleshooting kubernetes](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/lbpr6.png?x-oss-process=image/resize,w_800)](/post/troubleshooting-k8s-network)
 网络可以说是 Kubernetes 部署和使用过程中最容易出问题的了，最主要的是对网络技术非常熟悉的人员相对较少，和 Kubernetes 结合后能搞透彻网络这块的就更加稀少了，导致我们在部署使用过程中经常遇到一些网络问题。本文将重点关注网络，列出我们遇到的一些问题，包括解决和发现问题的简单方法，并就如何避免这些故障提供一些建议。
 
 <!--more-->
