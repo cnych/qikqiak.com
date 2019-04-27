@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>Kubernetes 网络故障常见排查方法-www.qikqiak.com|阳明的博客|Kubernetes|Docker|istio|Python|Golang|Cloud Native</title>
+  <meta property="og:title" content="Kubernetes 网络故障常见排查方法" />
+  <meta name="twitter:title" content="Kubernetes 网络故障常见排查方法" />
+
+  <meta name="description" content="
+网络可以说是 Kubernetes 部署和使用过程中最容易出问题的了，最主要的是对网络技术非常熟悉的人员相对较少，和 Kubernetes 结合后能搞透彻网络这块的就更加稀少了，导致我们在部署使用过程中经常遇到一些网络问题。本文将重点关注网络，列出我们遇到的一些问题，包括解决和发现问题的简单方法，并就如何避免这些故障提供一些建议。">
+  <meta property="og:description" content="
+网络可以说是 Kubernetes 部署和使用过程中最容易出问题的了，最主要的是对网络技术非常熟悉的人员相对较少，和 Kubernetes 结合后能搞透彻网络这块的就更加稀少了，导致我们在部署使用过程中经常遇到一些网络问题。本文将重点关注网络，列出我们遇到的一些问题，包括解决和发现问题的简单方法，并就如何避免这些故障提供一些建议。">
+  <meta name="twitter:description" content="
+网络可以说是 Kubernetes 部署和使用过程中最容易出问题的了，最主要的是对网络技术非常熟悉的人员相对较少，和 Kubernetes 结合后能搞透彻网络这块的就更加稀少了，导致我们在部署使用过程中经常遇到一些网络问题。本文将重点关注网络，列出我们遇到的一些问题，包括解决和发现问题的简单方法，并就如何避免这些故障提供一些建议。">
+  <meta name="author" content=""/>
+  <link href='https://www.qikqiak.com/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/troubleshooting-k8s-network/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的个人主页" />
+
+  <meta name="generator" content="Hugo 0.53" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/troubleshooting-k8s-network/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的个人主页">
+
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
+
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a4cfbddc97aac29b4539ae8497732cc269ac1cfa85e5e673da9eccb491700d8a.css' integrity='sha256-pM&#43;93JeqwptFOa6El3MswmmsHPqF5eZz2p7MtJFwDYo='>
+
+  
+    
+    <!--[if lt IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <![endif]-->
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, Netfilter, 网络, Linux, iptables, tcpdump, 防火墙">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/">阳明的个人主页</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="首页" href="https://www.qikqiak.com/">首页</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="Kubernetes" href="https://www.qikqiak.com/page/archive/">Kubernetes</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/ops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">项目</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">优点知识</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>Kubernetes 网络故障常见排查方法</h1>
+                
+                
+                  <span class="post-meta">
+  发表于 April 27, 2019
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+
+      <div>
+          
+          
+          <h5 id="tags" style="margin-top: 0px;">标签:
+            
+                <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+            
+                <a href="https://www.qikqiak.com/tags/iptables/">iptables</a> &nbsp;
+            
+                <a href="https://www.qikqiak.com/tags/netfilter/">Netfilter</a> &nbsp;
+            
+                <a href="https://www.qikqiak.com/tags/tcpdump/">tcpdump</a> &nbsp;
+            
+          </h5>
+          
+      </div>
+
+      <article role="main" class="blog-post" itemprop="articleBody" id="content">
+        
+
+        
+        
+        
+
+        
+        
+        
+
+        
+        
+
+        <p><a href="https://www.qikqiak.com/post/troubleshooting-k8s-network"><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/lbpr6.png" alt="troubleshooting kubernetes" /></a>
+网络可以说是 Kubernetes 部署和使用过程中最容易出问题的了，最主要的是对网络技术非常熟悉的人员相对较少，和 Kubernetes 结合后能搞透彻网络这块的就更加稀少了，导致我们在部署使用过程中经常遇到一些网络问题。本文将重点关注网络，列出我们遇到的一些问题，包括解决和发现问题的简单方法，并就如何避免这些故障提供一些建议。</p>
+
+<h2 id="流量转发和桥接">流量转发和桥接</h2>
+
+<p>Kubernetes 支持各种<a href="https://kubernetes.io/docs/concepts/cluster-administration/networking/">网络插件</a>，每个插件出现问题的方式都不尽相同。</p>
+
+<p>Kubernetes 的核心是依靠<a href="https://www.netfilter.org/">Netfilter</a>内核模块来设置低级别的集群IP负载均衡，这需要用到两个关键的模块：IP 转发和桥接（IP forward 和 bridge）。</p>
+
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/sz6k1.png" alt="图片来源: https://zh.wikipedia.org/wiki/File:Netfilter-packet-flow.svg"><figcaption>图片来源: https://zh.wikipedia.org/wiki/File:Netfilter-packet-flow.svg</figcaption></figure>
+
+<h3 id="ip-forward">IP forward</h3>
+
+<p>IP forward 是一种内核态设置，允许将一个接口的流量转发到另外一个接口，该配置是 Linux 内核将流量从容器路由到外部所必须的。</p>
+
+<h4 id="失败情况">失败情况</h4>
+
+<p>有时候该项设置可能会被安全团队运行的定期安全扫描给重置了，或者没有配置为重启后生效，在这种情况下，就会出现网络访问失败的情况。</p>
+
+<p>Pod 服务连接超时：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">* connect to <span style="color:#bd93f9">10</span>.100.225.223 port <span style="color:#bd93f9">5000</span> failed: Connection timed out
+* Failed to connect to <span style="color:#bd93f9">10</span>.100.225.223 port <span style="color:#bd93f9">5000</span>: Connection timed out
+* Closing connection <span style="color:#bd93f9">0</span>
+curl: <span style="color:#ff79c6">(</span><span style="color:#bd93f9">7</span><span style="color:#ff79c6">)</span> Failed to connect to <span style="color:#bd93f9">10</span>.100.225.223 port <span style="color:#bd93f9">5000</span>: Connection timed out</code></pre></div>
+<p><code>Tcpdump</code>可以显示发送了大量重复的<code>SYN</code>数据包，但没有收到<code>ACK</code>。</p>
+
+<h4 id="如何诊断">如何诊断</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># 检查 ipv4 forwarding 是否开启</span>
+sysctl net.ipv4.ip_forward
+<span style="color:#6272a4"># 0 意味着未开启</span>
+net.ipv4.ip_forward <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">0</span></code></pre></div>
+<h4 id="如何修复">如何修复</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># this will turn things back on a live server</span>
+sysctl -w net.ipv4.ip_forward<span style="color:#ff79c6">=</span><span style="color:#bd93f9">1</span>
+<span style="color:#6272a4"># on Centos this will make the setting apply after reboot</span>
+<span style="color:#8be9fd;font-style:italic">echo</span> net.ipv4.ip_forward<span style="color:#ff79c6">=</span><span style="color:#bd93f9">1</span> &gt;&gt; /etc/sysconf.d/10-ipv4-forwarding-on.conf
+
+<span style="color:#6272a4"># 验证并生效</span>
+sysctl -p</code></pre></div>
+<h3 id="桥接">桥接</h3>
+
+<p>bridge-netfilter 设置可以使 <a href="http://ebtables.netfilter.org/br_fw_ia/br_fw_ia.html#section4">iptables 规则可以在 Linux Bridges 上面工作</a>，就像 Docker 和 Kubernetes 设置的那样。</p>
+
+<p>此设置对于 Linux 内核进行宿主机和容器之间进行数据包的地址转换是必须的。</p>
+
+<h4 id="失败情况-1">失败情况</h4>
+
+<p>Pod 进行外部服务网络请求的情况下，将会出现目标主机不可达或者连接拒绝等错误（host unreachable 或 connection refused）。</p>
+
+<h4 id="如何诊断-1">如何诊断</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># 检查 bridge netfilter 是否开启</span>
+sysctl net.bridge.bridge-nf-call-iptables
+
+<span style="color:#6272a4"># 0 表示未开启</span>
+net.bridge.bridge-nf-call-iptables <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">0</span></code></pre></div>
+<h4 id="如何修复-1">如何修复</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># Note some distributions may have this compiled with kernel,</span>
+<span style="color:#6272a4"># check with cat /lib/modules/$(uname -r)/modules.builtin | grep netfilter</span>
+modprobe br_netfilter
+<span style="color:#6272a4"># 开启这个 iptables 设置</span>
+sysctl -w net.bridge.bridge-nf-call-iptables<span style="color:#ff79c6">=</span><span style="color:#bd93f9">1</span>
+<span style="color:#8be9fd;font-style:italic">echo</span> net.bridge.bridge-nf-call-iptables<span style="color:#ff79c6">=</span><span style="color:#bd93f9">1</span> &gt;&gt; /etc/sysconf.d/10-bridge-nf-call-iptables.conf
+sysctl -p</code></pre></div>
+<h2 id="防火墙规则">防火墙规则</h2>
+
+<p>Kubernetes 提供了各种网络插件来支持其集群功能，同时也对传统的基于 IP 和端口的应用程序提供了向后兼容的支持。</p>
+
+<p>最常见的 一种 Kubernetes 网络方案就是利用<code>VxLan</code> Overlay 网络，其中的 IP 数据包被封装在 UDP 中通过8472端口进行数据传输。</p>
+
+<h4 id="失败情况-2">失败情况</h4>
+
+<p>这种情况下会出现100%数据包丢失：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ ping <span style="color:#bd93f9">10</span>.244.1.4 
+PING <span style="color:#bd93f9">10</span>.244.1.4 <span style="color:#ff79c6">(</span><span style="color:#bd93f9">10</span>.244.1.4<span style="color:#ff79c6">)</span>: <span style="color:#bd93f9">56</span> data bytes
+^C--- <span style="color:#bd93f9">10</span>.244.1.4 ping statistics ---
+<span style="color:#bd93f9">5</span> packets transmitted, <span style="color:#bd93f9">0</span> packets received, <span style="color:#bd93f9">100</span>% packet loss</code></pre></div>
+<h4 id="如何诊断-2">如何诊断</h4>
+
+<p>最好的方式是使用相同的协议来传输数据，因为防火墙规则可能配置了特地的协议，比如可能会阻止 UDP 流量。</p>
+
+<p><code>iperf</code>是一个很好的验证工具：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#6272a4">#  在服务端执行</span>
+iperf -s -p <span style="color:#bd93f9">8472</span> -u
+<span style="color:#6272a4"># 在客户端执行</span>
+iperf -c <span style="color:#bd93f9">172</span>.28.128.103 -u -p <span style="color:#bd93f9">8472</span> -b 1K</code></pre></div>
+<h4 id="如何修复-2">如何修复</h4>
+
+<p>当然是更新防火墙规则来停止组织这些流量了，这里有一些常见的 iptables 使用建议可以参考：<a href="https://serverfault.com/questions/696182/debugging-iptables-and-common-firewall-pitfalls">https://serverfault.com/questions/696182/debugging-iptables-and-common-firewall-pitfalls</a></p>
+
+<h2 id="pod-cidr-冲突">Pod CIDR 冲突</h2>
+
+<p>Kubernetes 为容器和容器之间的通信建立了一层特殊的 Overlay 网络。使用隔离的 Pod 网络，容器可以获得唯一的 IP 并且可以避免集群上的端口冲突，我们可以<a href="https://kubernetes.io/docs/concepts/cluster-administration/networking/#kubernetes-model">点击这里查看更多关于 Kubernetes 网络模型的一些信息</a>。</p>
+
+<p>当 Pod 子网和主机网络出现冲突的情况下就会出现问题了。</p>
+
+<h4 id="失败情况-3">失败情况</h4>
+
+<p>Pod 和 Pod 之间通信会因为路由问题被中断：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ curl http://172.28.128.132:5000
+curl: <span style="color:#ff79c6">(</span><span style="color:#bd93f9">7</span><span style="color:#ff79c6">)</span> Failed to connect to <span style="color:#bd93f9">172</span>.28.128.132 port <span style="color:#bd93f9">5000</span>: No route to host</code></pre></div>
+<h4 id="如何诊断-3">如何诊断</h4>
+
+<p>首先查看分配的 Pod IP 地址：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -o wide
+NAME                       READY     STATUS    RESTARTS   AGE       IP               NODE
+netbox-2123814941-f7qfr    <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">4</span>          21h       <span style="color:#bd93f9">172</span>.28.27.2      <span style="color:#bd93f9">172</span>.28.128.103
+netbox-2123814941-ncp3q    <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">4</span>          21h       <span style="color:#bd93f9">172</span>.28.21.3      <span style="color:#bd93f9">172</span>.28.128.102
+testbox-2460950909-5wdr4   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">3</span>          21h       <span style="color:#bd93f9">172</span>.28.128.132   <span style="color:#bd93f9">172</span>.28.128.101</code></pre></div>
+<p>然后将主机 IP 范围与<code>apiserver</code>中指定的 kubernetes 子网进行比较：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ ip addr list
+<span style="color:#bd93f9">3</span>: eth1: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu <span style="color:#bd93f9">1500</span> qdisc pfifo_fast state UP group default qlen <span style="color:#bd93f9">1000</span>
+    link/ether <span style="color:#bd93f9">52</span>:54:00:2c:6c:50 brd ff:ff:ff:ff:ff:ff
+    inet <span style="color:#bd93f9">172</span>.28.128.103/24 brd <span style="color:#bd93f9">172</span>.28.128.255 scope global eth1
+       valid_lft forever preferred_lft forever
+    inet6 fe80::5054:ff:fe2c:6c50/64 scope link 
+       valid_lft forever preferred_lft forever</code></pre></div>
+<p>如果出现了同网段的 IP，则很大概率会出现冲突了。</p>
+
+<h4 id="如何修复-3">如何修复</h4>
+
+<p>仔细检查你的网络设置，确保你正在使用的网络、VLAN 或 VPC 之间不会有重叠。如果有冲突的，我们可以在 CNI 插件或 kubelet 的<code>pod-cidr</code>参数中指定 IP 地址范围，避免冲突。</p>
+
+<h2 id="故障排查工具">故障排查工具</h2>
+
+<p>下面是一些我们在排查上述问题时使用的一些非常有用的工具。</p>
+
+<h3 id="tcpdump">tcpdump</h3>
+
+<p><code>Tcpdump</code>是一个用来捕获网络流量的工具，可以帮助我们解决一些常见的网络问题，下面是一个使用 tcpdump 进行流量捕获的一个简单例子。</p>
+
+<p>我们进入一个容器来尝试去和其他的容器进行通信：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -ti testbox-2460950909-5wdr4 -- /bin/bash
+$ curl http://172.28.21.3:5000
+curl: <span style="color:#ff79c6">(</span><span style="color:#bd93f9">7</span><span style="color:#ff79c6">)</span> Failed to connect to <span style="color:#bd93f9">172</span>.28.21.3 port <span style="color:#bd93f9">5000</span>: No route to host</code></pre></div>
+<p>发现无法进行通信，然后在容器所在的主机，我们来捕获与容器目标 IP 有关的流量：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ tcpdump -i any host <span style="color:#bd93f9">172</span>.28.21.3
+tcpdump: verbose output suppressed, use -v or -vv <span style="color:#ff79c6">for</span> full protocol decode
+listening on any, link-type LINUX_SLL <span style="color:#ff79c6">(</span>Linux cooked<span style="color:#ff79c6">)</span>, capture size <span style="color:#bd93f9">262144</span> bytes
+<span style="color:#bd93f9">20</span>:15:59.903566 IP <span style="color:#bd93f9">172</span>.28.128.132.60358 &gt; <span style="color:#bd93f9">172</span>.28.21.3.5000: Flags <span style="color:#ff79c6">[</span>S<span style="color:#ff79c6">]</span>, seq <span style="color:#bd93f9">3042274422</span>, win <span style="color:#bd93f9">28200</span>, options <span style="color:#ff79c6">[</span>mss <span style="color:#bd93f9">1410</span>,sackOK,TS val <span style="color:#bd93f9">10056152</span> ecr <span style="color:#bd93f9">0</span>,nop,wscale <span style="color:#bd93f9">7</span><span style="color:#ff79c6">]</span>, length <span style="color:#bd93f9">0</span>
+<span style="color:#bd93f9">20</span>:15:59.903566 IP <span style="color:#bd93f9">172</span>.28.128.132.60358 &gt; <span style="color:#bd93f9">172</span>.28.21.3.5000: Flags <span style="color:#ff79c6">[</span>S<span style="color:#ff79c6">]</span>, seq <span style="color:#bd93f9">3042274422</span>, win <span style="color:#bd93f9">28200</span>, options <span style="color:#ff79c6">[</span>mss <span style="color:#bd93f9">1410</span>,sackOK,TS val <span style="color:#bd93f9">10056152</span> ecr <span style="color:#bd93f9">0</span>,nop,wscale <span style="color:#bd93f9">7</span><span style="color:#ff79c6">]</span>, length <span style="color:#bd93f9">0</span>
+<span style="color:#bd93f9">20</span>:15:59.905481 ARP, Request who-has <span style="color:#bd93f9">172</span>.28.21.3 tell <span style="color:#bd93f9">10</span>.244.27.0, length <span style="color:#bd93f9">28</span>
+<span style="color:#bd93f9">20</span>:16:00.907463 ARP, Request who-has <span style="color:#bd93f9">172</span>.28.21.3 tell <span style="color:#bd93f9">10</span>.244.27.0, length <span style="color:#bd93f9">28</span>
+<span style="color:#bd93f9">20</span>:16:01.909440 ARP, Request who-has <span style="color:#bd93f9">172</span>.28.21.3 tell <span style="color:#bd93f9">10</span>.244.27.0, length <span style="color:#bd93f9">28</span>
+<span style="color:#bd93f9">20</span>:16:02.911774 IP <span style="color:#bd93f9">172</span>.28.128.132.60358 &gt; <span style="color:#bd93f9">172</span>.28.21.3.5000: Flags <span style="color:#ff79c6">[</span>S<span style="color:#ff79c6">]</span>, seq <span style="color:#bd93f9">3042274422</span>, win <span style="color:#bd93f9">28200</span>, options <span style="color:#ff79c6">[</span>mss <span style="color:#bd93f9">1410</span>,sackOK,TS val <span style="color:#bd93f9">10059160</span> ecr <span style="color:#bd93f9">0</span>,nop,wscale <span style="color:#bd93f9">7</span><span style="color:#ff79c6">]</span>, length <span style="color:#bd93f9">0</span>
+<span style="color:#bd93f9">20</span>:16:02.911774 IP <span style="color:#bd93f9">172</span>.28.128.132.60358 &gt; <span style="color:#bd93f9">172</span>.28.21.3.5000: Flags <span style="color:#ff79c6">[</span>S<span style="color:#ff79c6">]</span>, seq <span style="color:#bd93f9">3042274422</span>, win <span style="color:#bd93f9">28200</span>, options <span style="color:#ff79c6">[</span>mss <span style="color:#bd93f9">1410</span>,sackOK,TS val <span style="color:#bd93f9">10059160</span> ecr <span style="color:#bd93f9">0</span>,nop,wscale <span style="color:#bd93f9">7</span><span style="color:#ff79c6">]</span>, length <span style="color:#bd93f9">0</span></code></pre></div>
+<p>我们可以看到由于线路出现了问题，所以内核无法将数据包路由到目标 IP。</p>
+
+<blockquote>
+<p>这里有一篇关于 tcpdump 的一些比较有用的介绍文章：<a href="http://bencane.com/2014/10/13/quick-and-practical-reference-for-tcpdump/">http://bencane.com/2014/10/13/quick-and-practical-reference-for-tcpdump/</a></p>
+</blockquote>
+
+<h3 id="netbox">Netbox</h3>
+
+<p>在一个镜像中内置一些网络工具包，对我们排查工作会非常有帮助，比如在下面的简单服务中我们添加一些常用的网络工具包：<code>iproute2 net-tools ethtool</code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-docker" data-lang="docker"><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> library/python:3.3</span>
+
+<span style="color:#ff79c6">RUN</span> apt-get update <span style="color:#ff79c6">&amp;&amp;</span> apt-get -y install iproute2 net-tools ethtool nano
+
+<span style="color:#ff79c6">CMD</span><span style="color:#f1fa8c"> [&#34;/usr/bin/python&#34;, &#34;-m&#34;, &#34;SimpleHTTPServer&#34;, &#34;5000&#34;]</span></code></pre></div>
+<p>这里是一个简单的 Deployment 的资源清单文件：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    run: netbox
+  name: netbox
+spec:
+  replicas: <span style="color:#bd93f9">2</span>
+  selector:
+    matchLabels:
+      run: netbox
+  template:
+    metadata:
+      labels:
+        run: netbox
+    spec:
+      nodeSelector:
+        type: other      
+      containers:
+      - image: quay.io/gravitational/netbox:latest
+        imagePullPolicy: Always
+        name: netbox
+      securityContext:
+        runAsUser: <span style="color:#bd93f9">0</span>
+      terminationGracePeriodSeconds: <span style="color:#bd93f9">30</span></code></pre></div>
+<p>参考链接：<a href="https://gravitational.com/blog/troubleshooting-kubernetes-networking/">https://gravitational.com/blog/troubleshooting-kubernetes-networking/</a>。</p>
+
+<h2 id="推广">推广</h2>
+
+<p>最后打个广告，给大家推荐一个本人精心打造的一个精品课程，现在限时优惠中：<a href="https://youdianzhishi.com/course/6n8xd6/">从 Docker 到 Kubernetes 进阶</a></p>
+
+<p><a href="https://youdianzhishi.com/course/6n8xd6/"><img src="http://sdn.haimaxy.com/covers/2018/4/21/c4082e0f09c746aa848279a2567cffed.png" alt="从 Docker 到 Kubernetes 进阶" /></a></p>
+
+<p>扫描下面的二维码(或微信搜索<code>k8s技术圈</code>)关注我们的微信公众帐号，在微信公众帐号中回复 <strong>加群</strong> 即可加入到我们的 kubernetes 讨论群里面共同学习。
+<img src="https://www.qikqiak.com/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg" alt="qrcode" /></p>
+
+        
+          <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+        
+        
+          <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+        
+      </article>
+
+      
+        
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/how-to-use-ipvs-in-kubernetes/">ipvs 基本介绍</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/install-nginx-ingress/">nginx-ingress 的安装使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/how-to-protect-exposed-k8s-server/">如何保护对外暴露的 Kubernetes 服务</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/complete-cicd-demonstrate-1/">基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(一)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/prometheus-book/">《深入浅出Prometheus》</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/gitlab-ci-k8s-cluster-feature/">Gitlab CI 与 Kubernetes 的结合</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/gitlab-runner-install-on-k8s/">在 Kubernetes 上安装 Gitlab CI Runner</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-offline-training/">Kubernetes 线下3天闭门集训</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/">在 Kubernetes 上安装 Gitlab</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/harbor-quick-install/">在 Kubernetes 在快速安装 Harbor</a></li>
+    
+</ul>
+
+      
+
+      
+      <ul class="pager blog-pager">
+        
+          <li class="previous">
+            <a href="https://www.qikqiak.com/post/sina-img-transfer-to-oss/" data-toggle="tooltip" data-placement="top" title="微博图床一键迁移到阿里云 OSS">&larr; 前一篇</a>
+          </li>
+        
+        
+      </ul>
+      
+
+      
+
+     
+
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2019
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的个人主页</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/archives/">文章归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.53</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+
+<script src='https://www.qikqiak.com/js/bundle.min.e9a661cbb9d1fc6bdfe60c959774b58baab7e60424854304fd736cd5ab6a9c4d.js' integrity='sha256-6aZhy7nR/Gvf5gyVl3S1i6q35gQkhUME/XNs1atqnE0='></script>
+
+
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+  </body>
+</html>
+

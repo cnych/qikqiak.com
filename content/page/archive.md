@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [Kubernetes 网络故障常见排查方法](https://www.qikqiak.com/post/troubleshooting-k8s-network)
  * [如何保护对外暴露的 Kubernetes 服务](https://www.qikqiak.com/post/how-to-protect-exposed-k8s-server)
  * [nginx ingress 的安装使用](https://www.qikqiak.com/post/install-nginx-ingress)
  * [基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(一)](https://www.qikqiak.com/post/complete-cicd-demonstrate-1)
