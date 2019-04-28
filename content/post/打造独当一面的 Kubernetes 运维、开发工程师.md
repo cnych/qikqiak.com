@@ -6,12 +6,13 @@ tags: ["kubernetes", "课程"]
 keywords: ["kubernetes", "课程", "优惠", "51"]
 slug: promotion-51
 landing: true
+weight: 1
 category: "kubernetes"
 ---
 
 [![kubernetes进阶课程](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/9mogk.png)](https://youdianzhishi.com/course/6n8xd6/)
-[![适合我学习吗？](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/okqs8.png)](/post/promotion-51)
 <!--more-->
+[![适合我学习吗？](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/okqs8.png)](/post/promotion-51)
 ![讲师随时答疑解惑](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kvgkl.png)
 ![授课方式](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/cwcuo.png)
 ![课程大纲](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/o8hxq.png)
