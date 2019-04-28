@@ -5,8 +5,7 @@ date: 2019-04-28
 tags: ["kubernetes", "课程"]
 keywords: ["kubernetes", "课程", "优惠", "51"]
 slug: promotion-51
-gitcomment: true
-notoc: true
+landing: true
 category: "kubernetes"
 ---
 
