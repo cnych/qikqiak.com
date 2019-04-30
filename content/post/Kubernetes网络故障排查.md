@@ -26,7 +26,7 @@ IP forward 是一种内核态设置，允许将一个接口的流量转发到另
 
 #### 失败情况
 有时候该项设置可能会被安全团队运行的定期安全扫描给重置了，或者没有配置为重启后生效，在这种情况下，就会出现网络访问失败的情况。
-
+<!--adsense-text-->
 Pod 服务连接超时：
 ```shell
 * connect to 10.100.225.223 port 5000 failed: Connection timed out
@@ -86,7 +86,7 @@ sysctl -p
 
 ## 防火墙规则
 Kubernetes 提供了各种网络插件来支持其集群功能，同时也对传统的基于 IP 和端口的应用程序提供了向后兼容的支持。
-
+<!--adsense-text-->
 最常见的 一种 Kubernetes 网络方案就是利用`VxLan` Overlay 网络，其中的 IP 数据包被封装在 UDP 中通过8472端口进行数据传输。
 
 #### 失败情况
@@ -156,7 +156,7 @@ $ ip addr list
 
 ### tcpdump
 `Tcpdump`是一个用来捕获网络流量的工具，可以帮助我们解决一些常见的网络问题，下面是一个使用 tcpdump 进行流量捕获的一个简单例子。
-
+<!--adsense-->
 我们进入一个容器来尝试去和其他的容器进行通信：
 ```shell
 kubectl exec -ti testbox-2460950909-5wdr4 -- /bin/bash
