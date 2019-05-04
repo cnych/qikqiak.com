@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(二)](https://www.qikqiak.com/post/complete-cicd-demonstrate-2)
  * [Helm Chart 模板开发技巧](https://www.qikqiak.com/post/helm-chart-tips-and-tricks)
  * [Kubernetes 网络故障常见排查方法](https://www.qikqiak.com/post/troubleshooting-k8s-network)
  * [如何保护对外暴露的 Kubernetes 服务](https://www.qikqiak.com/post/how-to-protect-exposed-k8s-server)
