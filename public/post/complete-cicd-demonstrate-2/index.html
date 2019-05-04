@@ -629,6 +629,45 @@ Done.</code></pre></div>
 <p>当然我们可以将需要更改的值都放入一个 YAML 之中来进行修改，我们这里通过<code>--set</code>来覆盖对应的值，这样整个 API 服务的完整 Jenkinsfile 文件如下所示：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-groovy" data-lang="groovy"><span style="color:#8be9fd">def</span> label <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;slave-${UUID.randomUUID().toString()}&#34;</span>
 
+<span style="color:#8be9fd">def</span> <span style="color:#50fa7b">helmLint</span><span style="color:#ff79c6">(</span>String chartDir<span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+    println <span style="color:#f1fa8c">&#34;校验 chart 模板&#34;</span>
+    sh <span style="color:#f1fa8c">&#34;helm lint ${chartDir}&#34;</span>
+<span style="color:#ff79c6">}</span>
+
+<span style="color:#8be9fd">def</span> <span style="color:#50fa7b">helmInit</span><span style="color:#ff79c6">()</span> <span style="color:#ff79c6">{</span>
+  println <span style="color:#f1fa8c">&#34;初始化 helm client&#34;</span>
+  sh <span style="color:#f1fa8c">&#34;helm init --client-only --stable-repo-url https://mirror.azure.cn/kubernetes/charts/&#34;</span>
+<span style="color:#ff79c6">}</span>
+
+<span style="color:#8be9fd">def</span> <span style="color:#50fa7b">helmRepo</span><span style="color:#ff79c6">(</span>Map args<span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+  println <span style="color:#f1fa8c">&#34;添加 course repo&#34;</span>
+  sh <span style="color:#f1fa8c">&#34;helm repo add --username ${args.username} --password ${args.password} course https://registry.qikqiak.com/chartrepo/course&#34;</span>
+
+  println <span style="color:#f1fa8c">&#34;更新 repo&#34;</span>
+  sh <span style="color:#f1fa8c">&#34;helm repo update&#34;</span>
+
+  println <span style="color:#f1fa8c">&#34;获取 Chart 包&#34;</span>
+  sh <span style="color:#f1fa8c">&#34;&#34;&#34;
+</span><span style="color:#f1fa8c">    helm fetch course/polling
+</span><span style="color:#f1fa8c">    tar -xzvf polling-0.1.0.tgz
+</span><span style="color:#f1fa8c">    &#34;&#34;&#34;</span>
+<span style="color:#ff79c6">}</span>
+
+<span style="color:#8be9fd">def</span> <span style="color:#50fa7b">helmDeploy</span><span style="color:#ff79c6">(</span>Map args<span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+    helmInit<span style="color:#ff79c6">()</span>
+    helmRepo<span style="color:#ff79c6">(</span>args<span style="color:#ff79c6">)</span>
+
+    <span style="color:#ff79c6">if</span> <span style="color:#ff79c6">(</span>args<span style="color:#ff79c6">.</span><span style="color:#50fa7b">dry_run</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+        println <span style="color:#f1fa8c">&#34;Debug 应用&#34;</span>
+        sh <span style="color:#f1fa8c">&#34;helm upgrade --dry-run --debug --install ${args.name} ${args.chartDir} --set persistence.persistentVolumeClaim.database.storageClass=database --set database.type=internal --set database.internal.database=polling --set database.internal.username=polling --set database.internal.password=polling321 --set api.image.repository=${args.image} --set api.image.tag=${args.tag} --set imagePullSecrets[0].name=myreg --namespace=${args.namespace}&#34;</span>
+    <span style="color:#ff79c6">}</span> <span style="color:#ff79c6">else</span> <span style="color:#ff79c6">{</span>
+        println <span style="color:#f1fa8c">&#34;部署应用&#34;</span>
+        sh <span style="color:#f1fa8c">&#34;helm upgrade --install ${args.name} ${args.chartDir} --set persistence.persistentVolumeClaim.database.storageClass=database --set database.type=internal --set database.internal.database=polling --set database.internal.username=polling --set database.internal.password=polling321 --set api.image.repository=${args.image} --set api.image.tag=${args.tag} --set imagePullSecrets[0].name=myreg --namespace=${args.namespace}&#34;</span>
+        echo <span style="color:#f1fa8c">&#34;应用 ${args.name} 部署成功. 可以使用 helm status ${args.name} 查看应用状态&#34;</span>
+    <span style="color:#ff79c6">}</span>
+<span style="color:#ff79c6">}</span>
+
+
 podTemplate<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">label:</span> label<span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">containers:</span> <span style="color:#ff79c6">[</span>
   containerTemplate<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">name:</span> <span style="color:#f1fa8c">&#39;maven&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">image:</span> <span style="color:#f1fa8c">&#39;maven:3.6-alpine&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">command:</span> <span style="color:#f1fa8c">&#39;cat&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">ttyEnabled:</span> <span style="color:#ff79c6">true</span><span style="color:#ff79c6">),</span>
   containerTemplate<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">name:</span> <span style="color:#f1fa8c">&#39;docker&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">image:</span> <span style="color:#f1fa8c">&#39;docker&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">command:</span> <span style="color:#f1fa8c">&#39;cat&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">ttyEnabled:</span> <span style="color:#ff79c6">true</span><span style="color:#ff79c6">),</span>
@@ -677,21 +716,24 @@ podTemplate<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-s
       <span style="color:#ff79c6">}</span>
     <span style="color:#ff79c6">}</span>
     stage<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;运行 Helm&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
-      container<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;helm&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
-        echo <span style="color:#f1fa8c">&#34;4.1 查看 Helm Release 列表&#34;</span>
-        sh <span style="color:#f1fa8c">&#34;helm list&#34;</span>
-        echo <span style="color:#f1fa8c">&#34;4.2 初始化helm client&#34;</span>
-        sh <span style="color:#f1fa8c">&#34;helm init --client-only --stable-repo-url https://mirror.azure.cn/kubernetes/charts/&#34;</span>
-        sh <span style="color:#f1fa8c">&#34;helm repo add --username ${DOCKER_HUB_USER} --password ${DOCKER_HUB_PASSWORD} course https://registry.qikqiak.com/chartrepo/course&#34;</span>
-        echo <span style="color:#f1fa8c">&#34;4.3 如果更新了chart包则需要更新repo&#34;</span>
-        sh <span style="color:#f1fa8c">&#34;helm repo update&#34;</span>
-        echo <span style="color:#f1fa8c">&#34;4.4 获取chart包&#34;</span>
-        sh <span style="color:#f1fa8c">&#34;helm fetch course/polling&#34;</span>
-        sh <span style="color:#f1fa8c">&#34;tar -xzvf polling-0.1.0.tgz&#34;</span>
-        echo <span style="color:#f1fa8c">&#34;4.5 更新 polling 应用&#34;</span>
-        sh <span style="color:#f1fa8c">&#34;&#34;&#34;
-</span><span style="color:#f1fa8c">          helm upgrade --install polling polling --set persistence.persistentVolumeClaim.database.storageClass=database --set database.type=internal --set database.internal.database=polling --set database.internal.username=polling --set database.internal.password=polling321 --set api.image.repository=${image} --set api.image.tag=${imageTag} --set imagePullSecrets[0].name=myreg --namespace course
-</span><span style="color:#f1fa8c">        &#34;&#34;&#34;</span>
+      withCredentials<span style="color:#ff79c6">([[</span>$class<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#39;UsernamePasswordMultiBinding&#39;</span><span style="color:#ff79c6">,</span>
+        <span style="color:#8be9fd;font-style:italic">credentialsId:</span> <span style="color:#f1fa8c">&#39;dockerhub&#39;</span><span style="color:#ff79c6">,</span>
+        <span style="color:#8be9fd;font-style:italic">usernameVariable:</span> <span style="color:#f1fa8c">&#39;DOCKER_HUB_USER&#39;</span><span style="color:#ff79c6">,</span>
+        <span style="color:#8be9fd;font-style:italic">passwordVariable:</span> <span style="color:#f1fa8c">&#39;DOCKER_HUB_PASSWORD&#39;</span><span style="color:#ff79c6">]])</span> <span style="color:#ff79c6">{</span>
+          container<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;helm&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+            echo <span style="color:#f1fa8c">&#34;4. [INFO] 开始 Helm 部署&#34;</span>
+            helmDeploy<span style="color:#ff79c6">(</span>
+                dry_run     <span style="color:#ff79c6">:</span> <span style="color:#ff79c6">false</span><span style="color:#ff79c6">,</span>
+                name        <span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;polling&#34;</span><span style="color:#ff79c6">,</span>
+                chartDir    <span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;polling&#34;</span><span style="color:#ff79c6">,</span>
+                namespace   <span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;course&#34;</span><span style="color:#ff79c6">,</span>
+                tag         <span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;${imageTag}&#34;</span><span style="color:#ff79c6">,</span>
+                image       <span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;${image}&#34;</span><span style="color:#ff79c6">,</span>
+                username    <span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;${DOCKER_HUB_USER}&#34;</span><span style="color:#ff79c6">,</span>
+                password    <span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;${DOCKER_HUB_PASSWORD}&#34;</span>
+            <span style="color:#ff79c6">)</span>
+            echo <span style="color:#f1fa8c">&#34;[INFO] Helm 部署应用成功...&#34;</span>
+          <span style="color:#ff79c6">}</span>
       <span style="color:#ff79c6">}</span>
     <span style="color:#ff79c6">}</span>
   <span style="color:#ff79c6">}</span>
@@ -802,9 +844,9 @@ podTemplate<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-s
     
     <li><a href="https://www.qikqiak.com/post/troubleshooting-k8s-network/">Kubernetes 网络故障常见排查方法</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/how-to-protect-exposed-k8s-server/">如何保护对外暴露的 Kubernetes 服务</a></li>
-    
     <li><a href="https://www.qikqiak.com/post/install-nginx-ingress/">nginx-ingress 的安装使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/how-to-protect-exposed-k8s-server/">如何保护对外暴露的 Kubernetes 服务</a></li>
     
 </ul>
 
