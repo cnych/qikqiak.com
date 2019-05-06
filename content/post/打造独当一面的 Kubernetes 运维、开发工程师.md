@@ -1,6 +1,6 @@
 ---
 title: 打造独当一面的 Kubernetes 运维、开发工程师
-subtitle: 《从 Docker 到 Kubernetes 进阶》课程五一节假日优惠活动
+subtitle: 《从 Docker 到 Kubernetes 进阶》课程限时优惠中...
 date: 2019-04-28
 tags: ["kubernetes", "课程"]
 keywords: ["kubernetes", "课程", "优惠", "51"]
