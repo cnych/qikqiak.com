@@ -15,7 +15,7 @@ category: "kubernetes"
 <!--more-->
 [![适合我学习吗？](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/0nm3b.png)](https://youdianzhishi.com/course/6n8xd6/)
 [![讲师随时答疑解惑](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kvgkl.png)](https://youdianzhishi.com/course/6n8xd6/)
-[![授课方式](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/cwcuo.png)](https://youdianzhishi.com/course/6n8xd6/)
+[![授课方式](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/k8s-teach-type.png)](https://youdianzhishi.com/course/6n8xd6/)
 [![课程大纲](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/o8hxq.png)](https://youdianzhishi.com/course/6n8xd6/)
 [![学员反馈](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/ietoa.png)](https://youdianzhishi.com/course/6n8xd6/)
 [![更多资源与交流](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/jel5z.png)](https://youdianzhishi.com/course/6n8xd6/)
