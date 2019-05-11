@@ -230,9 +230,4 @@ goapp-deploy-84bb6979c-mgg2r                             1/1       Running   0  
 最后我们还可以结合`CI/CD`，增加持续集成功能，做到我们更新代码后，自动更新我们的`kubernetes`应用，这部分我们后面再单独进行说明。
 
 
-最后不要忘记加微信好友哦~~~
-
-扫描下面的二维码(或微信搜索`k8s技术圈`)关注我们的微信公众帐号，在微信公众帐号中回复 **加群** 即可加入到我们的 kubernetes 讨论群里面共同学习。
-![qrcode](/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg)
-
-
+<!--adsense-self-->

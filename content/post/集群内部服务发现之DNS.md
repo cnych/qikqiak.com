@@ -262,8 +262,4 @@ Commercial support is available at
 
 到这里我们是不是就实现了在集群内部通过 Service 的域名形式进行互相通信了，大家下去试着看看访问不同 namespace 下面的服务呢？下节课我们来给大家讲解使用 ingress 来实现集群外部的服务发现功能。
 
-本文节选自视频教程[从 Docker 到 Kubernetes 进阶](https://www.haimaxy.com/course/6n8xd6/)
-[![docker-k8s](/img/posts/docker-k8s.png)](https://www.haimaxy.com/course/6n8xd6/)
-
-扫描下面的二维码(或微信搜索`k8s技术圈`)关注我们的微信公众帐号，在微信公众帐号中回复 **加群** 即可加入到我们的 kubernetes 讨论群里面共同学习。
-![qrcode](/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg)
+<!--adsense-self-->

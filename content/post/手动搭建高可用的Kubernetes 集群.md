@@ -2340,6 +2340,3 @@ $ systemctl restart docker
 [基于1.9版本手动搭建高可用Kubernetes集群的视频教程](https://www.haimaxy.com/course/pjrqxm/?utm_source=blog)，对视频感兴趣的同学可以观看视频：
 [![视频教程](/img/posts/k8s-install-pay-course.jpeg)](https://www.haimaxy.com/course/pjrqxm/?utm_source=blog)
 
-扫描下面的二维码(或微信搜索`k8s技术圈`)关注我们的微信公众帐号，在微信公众帐号中回复 **加群** 即可加入到我们的 kubernetes 讨论群里面共同学习。
-![qrcode](/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg)
-
