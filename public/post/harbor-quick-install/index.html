@@ -880,6 +880,21 @@ NAME                    HOSTS                                     ADDRESS   PORT
 harbor-harbor-ingress   registry.qikqiak.com,notary.qikqiak.com             <span style="color:#bd93f9">80</span>, <span style="color:#bd93f9">443</span>   50m</code></pre></div>
 <p>如果你有自己的真正的域名，则将上面的两个域名解析到你的任意一个 Ingress Controller 的 Pod 所在的节点即可，我们这里为了演示方便，还是自己在本地的<code>/etc/hosts</code>里面添加上<code>registry.qikqiak.com</code>和<code>notary.qikqiak.com</code>的映射。</p>
 
+<p>在第一次安装的时候比较顺畅，后面安装总是不成功，查看数据库的 Pod 日志出现<strong>database &ldquo;registry&rdquo; does not exist（）</strong>的错误信息，如果 registry 数据库没有自动创建，我们可以进入数据库 Pod 中手动创建：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># 1. 进入数据库 Pod</span>
+$ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -it harbor-harbor-database-0 -n kube-ops /bin/bash
+<span style="color:#6272a4"># 2. 连接数据库</span>
+root <span style="color:#ff79c6">[</span> / <span style="color:#ff79c6">]</span><span style="color:#6272a4"># psql --username postgres</span>
+psql <span style="color:#ff79c6">(</span><span style="color:#bd93f9">9</span>.6.10<span style="color:#ff79c6">)</span>
+Type <span style="color:#f1fa8c">&#34;help&#34;</span> <span style="color:#ff79c6">for</span> help.
+<span style="color:#6272a4"># 3. 创建 registry 数据库</span>
+<span style="color:#8be9fd;font-style:italic">postgres</span><span style="color:#ff79c6">=</span><span style="color:#6272a4"># CREATE DATABASE registry ENCODING &#39;UTF8&#39;;</span>
+CREATE DATABASE
+<span style="color:#8be9fd;font-style:italic">postgres</span><span style="color:#ff79c6">=</span><span style="color:#6272a4"># \c registry;</span>
+You are now connected to database <span style="color:#f1fa8c">&#34;registry&#34;</span> as user <span style="color:#f1fa8c">&#34;postgres&#34;</span>.
+<span style="color:#8be9fd;font-style:italic">registry</span><span style="color:#ff79c6">=</span><span style="color:#6272a4"># CREATE TABLE schema_migrations(version bigint not null primary key, dirty boolean not null);</span>
+CREATE TABLE
+registry-# <span style="color:#f1fa8c">\q</span>uit</code></pre></div>
 <h3 id="harbor-portal">Harbor Portal</h3>
 
 <p>添加完成后，在浏览器中输入<code>registry.qikqiak.com</code>就可以打开熟悉的 Harbor 的 Portal 界面了，当然我们配置的 Ingress 中会强制跳转到 https，所以如果你的浏览器有什么安全限制的话，需要信任我们这里 Ingress 对应的证书，证书文件可以通过查看 Secret 资源对象获取：</p>

@@ -579,6 +579,26 @@ harbor-harbor-ingress   registry.qikqiak.com,notary.qikqiak.com             80, 
 ```
 
 如果你有自己的真正的域名，则将上面的两个域名解析到你的任意一个 Ingress Controller 的 Pod 所在的节点即可，我们这里为了演示方便，还是自己在本地的`/etc/hosts`里面添加上`registry.qikqiak.com`和`notary.qikqiak.com`的映射。
+ 
+
+在第一次安装的时候比较顺畅，后面安装总是不成功，查看数据库的 Pod 日志出现**database "registry" does not exist（）**的错误信息，如果 registry 数据库没有自动创建，我们可以进入数据库 Pod 中手动创建：
+
+```shell
+# 1. 进入数据库 Pod
+$ kubectl exec -it harbor-harbor-database-0 -n kube-ops /bin/bash
+# 2. 连接数据库
+root [ / ]# psql --username postgres
+psql (9.6.10)
+Type "help" for help.
+# 3. 创建 registry 数据库
+postgres=# CREATE DATABASE registry ENCODING 'UTF8';
+CREATE DATABASE
+postgres=# \c registry;
+You are now connected to database "registry" as user "postgres".
+registry=# CREATE TABLE schema_migrations(version bigint not null primary key, dirty boolean not null);
+CREATE TABLE
+registry-# \quit
+```
 
 
 ### Harbor Portal
