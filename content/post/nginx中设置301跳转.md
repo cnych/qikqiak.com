@@ -33,3 +33,4 @@ server {
 ### 相关链接
 - [http://atulhost.com/301-redirect-in-nginx](http://atulhost.com/301-redirect-in-nginx)
 
+<!--adsense-self-->

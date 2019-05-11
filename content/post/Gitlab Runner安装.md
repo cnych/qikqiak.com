@@ -332,11 +332,5 @@ gitlab-ci-runner-1                             1/1       Running   0          3m
 
 参考链接: https://edenmal.moe/post/2017/GitLab-Kubernetes-Running-CI-Runners-in-Kubernetes/
 
-## 推荐
-另外我们最近准备组织 [Kubernetes 线下3天闭门集训](/post/k8s-offline-training/) 活动，带您实现从 Docker 入门一步一步到 Kubernetes 进阶之路。
-
-[![k8s training](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/ImCxlY.jpg)](/post/k8s-offline-training/)
-
-扫描下面的二维码(或微信搜索`k8s技术圈`)关注我们的微信公众帐号，在微信公众帐号中回复 **加群** 即可加入到我们的 kubernetes 讨论群里面共同学习。
-![qrcode](https://www.qikqiak.com/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg)
+<!--adsense-self-->
 

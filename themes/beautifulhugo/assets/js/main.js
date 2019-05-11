@@ -135,4 +135,23 @@ var main = {
 
 // 2fc73a3a967e97599c9763d05e564189
 
+// Parallax background
+$(window).resize(parallaxBackground);
+$(window).scroll(parallaxBackground);
+var $image = $('.post-image-image');
+function parallaxBackground() {
+    var scrollTotal = $(window).scrollTop();
+    if (scrollTotal < 0 || scrollTotal > 1500) {
+        return;
+    }
+    var opacity = 1 - Math.max(scrollTotal / 300, 0);
+    opacity = opacity > 0.3 ? opacity : 0.3;
+    $image.css('opacity', opacity);
+    scrollTotal = Math.floor(scrollTotal / 2);
+    $('.post .article-image .post-image-image').css({
+        transform: 'translate3d(0,' + scrollTotal + 'px,0)'
+    });
+}
+
+
 document.addEventListener('DOMContentLoaded', main.init);

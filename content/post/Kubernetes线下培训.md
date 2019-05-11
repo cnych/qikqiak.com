@@ -7,6 +7,7 @@ keywords: ["kubernetes", "培训", "课程", "线下"]
 slug: k8s-offline-training
 gitcomment: true
 category: "kubernetes"
+draft: true
 ---
 
 [![k8s training](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/7wz2en.jpg)](/post/k8s-offline-training/)

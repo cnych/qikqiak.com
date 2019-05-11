@@ -10,11 +10,11 @@ category: "kubernetes"
 draft: true
 ---
 
-1. Kubelet 会定期更新状态到 apiserver，通过参数`--node-status-update-frequency`指定上报频率，默认是10s上报一次
+1. kubelet 会定期更新状态到 apiserver，通过参数`--node-status-update-frequency`指定上报频率，默认是10s上报一次
 2. kube-controller-manager 会每隔`--node-monitor-period`时间去检查 kubelet 的状态，默认是5s。
-3. 当 node 失联一段时间后，kubernetes判定node为notready状态，通过`--node-monitor-grace-period`配置，默认40s
-4. 当node失联一段时间后，kubernetes判定node为unhealthy，通过`--node-startup-grace-period`配置，默认1m0s
-5. 当node失联一段时间后，kubernetes开始删除原node上的pod，通过`--pod-eviction-timeout`配置，默认5m0s
+3. 当 node 失联一段时间后，kubernetes 判定 node 为 notready 状态，通过`--node-monitor-grace-period`配置，默认40s
+4. 当 node 失联一段时间后，kubernetes 判定 node 为 unhealthy，通过`--node-startup-grace-period`配置，默认1m0s
+5. 当 node 失联一段时间后，kubernetes 开始删除原 node 上的 pod，通过`--pod-eviction-timeout`配置，默认5m0s
 3. 如果状态在`--node-monitor-grace-period`内更新了，kube-controller-manager 会考虑 Kubelet 的健康状态，默认时间是40s。
 
 > kube-controller-manager 和 kubelet 是异步工作的，这意味着延迟可能包括任何的网络延迟、apiserver 的延迟、etcd 延迟，一个节点上的负载引起的延迟等等。因此，如果`--node-status-update-frequency`设置为5s，那么当etcd无法将数据提交到仲裁节点时，它可能会在6-7s内出现在etcd中，甚至更长时间。

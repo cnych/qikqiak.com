@@ -39,5 +39,4 @@ category: "kubernetes"
 当然如果你想从0到1的去学习 Kubernetes，那么也可以关注下我们推出的 Kubernetes 进阶课程，扫描下方小程序码即可前往试看学习。
 ![Kubernetes视频课程](/img/posts/k8s-video.jpeg)
 
-扫描下面的二维码(或微信搜索`k8s技术圈`)关注我们的微信公众帐号，在微信公众帐号中回复 **加群** 即可加入到我们的 kubernetes 讨论群里面共同学习。
-![qrcode](/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg)
+<!--adsense-self-->

@@ -126,6 +126,4 @@ own="qikqiak"
 
 在实际应用中，如果你的应用有获取 POD 的基本信息的需求，一般我们就可以利用`Downward API`来获取基本信息，然后编写一个启动脚本或者利用`initContainer`将 POD 的信息注入到我们容器中去，然后在我们自己的应用中就可以正常的处理相关逻辑了。
 
-扫描下面的二维码(或微信搜索`k8s技术圈`)关注我们的微信公众帐号，在微信公众帐号中回复 **加群** 即可加入到我们的 kubernetes 讨论群里面共同学习。
-![qrcode](/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg)
-
+<!--adsense-self-->

@@ -61,3 +61,6 @@ function light() {
 然后执行`light js func.js`命令即可。
 
 参考资料：[https://gist.github.com/jimbojsb/1630790](https://gist.github.com/jimbojsb/1630790)
+
+
+<!--adsense-self-->

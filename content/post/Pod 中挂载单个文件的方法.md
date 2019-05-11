@@ -169,6 +169,4 @@ func doBindSubPath(mounter Interface, subpath Subpath, kubeletPid int) (hostPath
 欢迎大家加入我们的知识星球：`Kubernetes`👻👻👻。
 ![知识星球](/img/xq.png)
 
-扫描下面的二维码(或微信搜索`k8s技术圈`)关注我们的微信公众帐号，在微信公众帐号中回复 **加群** 即可加入到我们的 kubernetes 讨论群里面共同学习。
-![qrcode](/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg)
-
+<!--adsense-self-->

@@ -590,12 +590,5 @@ func IncreasePullCount(name string) (err error) {
 除了上面的一些主要功能之外，Harbor 还有很多高级可能，感兴趣的同学可以下载 Harbor 的源码自行研究，当我们对源码比较熟悉之后，对于我们搭建 Harbor 显然是非常有帮助的，下节课给大家介绍怎样在 Kubernetes 集群中来搭建 Harbor。
 
 
-### 推荐
-给大家推荐一个本人精心打造的一个精品课程，现在限时优惠中：[从 Docker 到 Kubernetes 进阶](https://youdianzhishi.com/course/6n8xd6/)
-[![从 Docker 到 Kubernetes 进阶](http://sdn.haimaxy.com/covers/2018/4/21/c4082e0f09c746aa848279a2567cffed.png)](https://youdianzhishi.com/course/6n8xd6/)
-
-扫描下面的二维码(或微信搜索`k8s技术圈`)关注我们的微信公众帐号，在微信公众帐号中回复 **加群** 即可加入到我们的 kubernetes 讨论群里面共同学习。
-![qrcode](/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg)
-
-
+<!--adsense-self-->
 

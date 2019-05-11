@@ -229,3 +229,4 @@ var index = client.initIndex('qikqiak-blog');
 * [https://www.npmjs.com/package/hugo-algolia](https://www.npmjs.com/package/hugo-algolia)
 
 
+<!--adsense-self-->
