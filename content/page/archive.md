@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [Kubelet 状态更新机制](https://www.qikqiak.com/post/kubelet-sync-node-status)
  * [Groovy 简明教程](https://www.qikqiak.com/post/groovy-simple-tutorial)
  * [基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(二)](https://www.qikqiak.com/post/complete-cicd-demonstrate-2)
  * [Helm Chart 模板开发技巧](https://www.qikqiak.com/post/helm-chart-tips-and-tricks)

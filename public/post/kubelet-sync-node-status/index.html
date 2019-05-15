@@ -6,24 +6,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
 
-  <title>Django 中STATIC_ROOT 与STATICFILES_DIRS的区别-www.qikqiak.com|阳明的博客|Kubernetes|Docker|istio|Python|Golang|Cloud Native</title>
-  <meta property="og:title" content="Django 中STATIC_ROOT 与STATICFILES_DIRS的区别" />
-  <meta name="twitter:title" content="Django 中STATIC_ROOT 与STATICFILES_DIRS的区别" />
+  <title>Kubelet 状态更新机制-www.qikqiak.com|阳明的博客|Kubernetes|Docker|istio|Python|Golang|Cloud Native</title>
+  <meta property="og:title" content="Kubelet 状态更新机制" />
+  <meta name="twitter:title" content="Kubelet 状态更新机制" />
 
-  <meta name="description" content="在做Django项目的时候，经常会遇到静态文件访问的问题，在本地开发的时候可以正常的访问静态文件，部署到服务器上后就出现各种幺蛾子了，我猜你一定也遇到过吧？之前在settings.py配置文件中对STATIC_ROOT与STATICFILES_DIRS两个配置项不是特别理解，总感觉都差不多，在线上就把STATIC_ROOT替换成STATICFILES_DIRS了，虽然可以解决问题，但是却没有知其所以然。">
-  <meta property="og:description" content="在做Django项目的时候，经常会遇到静态文件访问的问题，在本地开发的时候可以正常的访问静态文件，部署到服务器上后就出现各种幺蛾子了，我猜你一定也遇到过吧？之前在settings.py配置文件中对STATIC_ROOT与STATICFILES_DIRS两个配置项不是特别理解，总感觉都差不多，在线上就把STATIC_ROOT替换成STATICFILES_DIRS了，虽然可以解决问题，但是却没有知其所以然。">
-  <meta name="twitter:description" content="在做Django项目的时候，经常会遇到静态文件访问的问题，在本地开发的时候可以正常的访问静态文件，部署到服务器上后就出现各种幺蛾子了，我猜你一定也遇到过吧？之前在settings.py配置文件中对STATIC_ROOT与STATICFILES_DIRS两个配置项不是特别理解，总感觉都差不多，在线上就把STATIC_ROOT替换成STATICFILES_DIRS了，虽然可以解决问题，但是却没有知其所 …">
+  <meta name="description" content="当 Kubernetes 中 Node 节点出现状态异常的情况下，节点上的 Pod 会被重新调度到其他节点上去，但是有的时候我们会发现节点 Down 掉以后，Pod 并不会立即触发重新调度，这实际上就是和 Kubelet 的状态更新机制密切相关的，Kubernetes 提供了一些参数配置来触发重新调度到嗯时间，下面我们来分析下 Kubelet 状态更新的基本流程。">
+  <meta property="og:description" content="当 Kubernetes 中 Node 节点出现状态异常的情况下，节点上的 Pod 会被重新调度到其他节点上去，但是有的时候我们会发现节点 Down 掉以后，Pod 并不会立即触发重新调度，这实际上就是和 Kubelet 的状态更新机制密切相关的，Kubernetes 提供了一些参数配置来触发重新调度到嗯时间，下面我们来分析下 Kubelet 状态更新的基本流程。">
+  <meta name="twitter:description" content="当 Kubernetes 中 Node 节点出现状态异常的情况下，节点上的 Pod 会被重新调度到其他节点上去，但是有的时候我们会发现节点 Down 掉以后，Pod 并不会立即触发重新调度，这实际上就是和 Kubelet 的状态更新机制密切相关的，Kubernetes 提供了一些参数配置来触发重新调度到嗯时间，下面我们来分析下 Kubelet 状态更新的基本流程。">
   <meta name="author" content=""/>
   <link href='https://www.qikqiak.com/img/favicon.ico' rel='icon' type='image/x-icon'/>
   <meta property="og:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
   <meta name="twitter:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
   <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://www.qikqiak.com/post/django-staticroot-staticfilesdirs-function/" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/kubelet-sync-node-status/" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="阳明的博客" />
 
   <meta name="generator" content="Hugo 0.53" />
-  <link rel="canonical" href="https://www.qikqiak.com/post/django-staticroot-staticfilesdirs-function/" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/kubelet-sync-node-status/" />
   <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
   
@@ -43,7 +43,7 @@
     <![endif]-->
 <meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
 <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-<meta name="keywords" content="">
+<meta name="keywords" content="kubernetes, kubelet, 状态, 同步, apiserver">
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -220,7 +220,7 @@ autocomplete('#aa-search-input',
 
 
   
-    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://www.qikqiak.com/img/posts/18888531_442371539465605_1833253399559143424_n.jpg" data-img-desc-1="乌镇水乡@杭州 JUNE 1,2017"></div>
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1557870496-fa8f75b9dd78.jpeg" data-img-desc-1="https://unsplash.com/photos/_DocR2F7HIs"></div>
   
 
   <header class="header-section has-img">
@@ -231,12 +231,12 @@ autocomplete('#aa-search-input',
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
-                <h1>Django 中STATIC_ROOT 与STATICFILES_DIRS的区别</h1>
+                <h1>Kubelet 状态更新机制</h1>
                   
                   
                     <span class="post-meta">
   
-    发表于 November 1, 2017
+    发表于 May 15, 2019
   
   
 </span>
@@ -256,12 +256,12 @@ autocomplete('#aa-search-input',
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
             <div class="post-heading">
-              <h1>Django 中STATIC_ROOT 与STATICFILES_DIRS的区别</h1>
+              <h1>Kubelet 状态更新机制</h1>
                 
                 
                   <span class="post-meta">
   
-    发表于 November 1, 2017
+    发表于 May 15, 2019
   
   
 </span>
@@ -290,9 +290,9 @@ autocomplete('#aa-search-input',
             
             <h5 id="tags" style="margin-top: 30px;">标签:
               
-                  <a href="https://www.qikqiak.com/tags/python/">python</a> &nbsp;
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
               
-                  <a href="https://www.qikqiak.com/tags/django/">django</a> &nbsp;
+                  <a href="https://www.qikqiak.com/tags/kubelet/">kubelet</a> &nbsp;
               
             </h5>
             
@@ -315,37 +315,194 @@ autocomplete('#aa-search-input',
           
           
 
-          <p>在做<code>Django</code>项目的时候，经常会遇到静态文件访问的问题，在本地开发的时候可以正常的访问静态文件，部署到服务器上后就出现各种幺蛾子了，我猜你一定也遇到过吧？之前在<code>settings.py</code>配置文件中对<code>STATIC_ROOT</code>与<code>STATICFILES_DIRS</code>两个配置项不是特别理解，总感觉都差不多，在线上就把<code>STATIC_ROOT</code>替换成<code>STATICFILES_DIRS</code>了，虽然可以解决问题，但是却没有知其所以然。</p>
+          <p>当 Kubernetes 中 Node 节点出现状态异常的情况下，节点上的 Pod 会被重新调度到其他节点上去，但是有的时候我们会发现节点 Down 掉以后，Pod 并不会立即触发重新调度，这实际上就是和 Kubelet 的状态更新机制密切相关的，Kubernetes 提供了一些参数配置来触发重新调度到嗯时间，下面我们来分析下 Kubelet 状态更新的基本流程。</p>
 
-<h2 id="static-root">STATIC_ROOT</h2>
+<ol>
+<li>kubelet 自身会定期更新状态到 apiserver，通过参数<code>--node-status-update-frequency</code>指定上报频率，默认是 10s 上报一次。</li>
+<li>kube-controller-manager 会每隔<code>--node-monitor-period</code>时间去检查 kubelet 的状态，默认是 5s。</li>
+<li>当 node 失联一段时间后，kubernetes 判定 node 为 <code>notready</code> 状态，这段时长通过<code>--node-monitor-grace-period</code>参数配置，默认 40s。</li>
+<li>当 node 失联一段时间后，kubernetes 判定 node 为 <code>unhealthy</code> 状态，这段时长通过<code>--node-startup-grace-period</code>参数配置，默认 1m0s。</li>
+<li>当 node 失联一段时间后，kubernetes 开始删除原 node 上的 pod，这段时长是通过<code>--pod-eviction-timeout</code>参数配置，默认 5m0s。</li>
+</ol>
 
-<p><code>STATIC_ROOT</code>是<strong>Django 1.3</strong>新增的特性，该目录下面的文件会被当成静态文件进行处理。与<code>STATIC_ROOT</code>搭配使用的还有<code>STATIC_URL</code>，一般默认用<code>/static/</code>，用于指定静态目录的URL。其实<code>STATIC_ROOT</code>是用来方便部署<code>Django App</code>的。我们在写<code>Django App</code>的时候，经常会有一些和该App 相关的静态文件，虽然我认为的最佳实践方式是将静态文件放在统一的目录，但是毕竟<code>Django</code>是支持这种操作的，所以在1.3版本以前，部署的时候就比较麻烦了。</p>
+<blockquote>
+<p>kube-controller-manager 和 kubelet 是异步工作的，这意味着延迟可能包括任何的网络延迟、apiserver 的延迟、etcd 延迟，一个节点上的负载引起的延迟等等。因此，如果<code>--node-status-update-frequency</code>设置为5s，那么实际上 etcd 中的数据变化会需要 6-7s，甚至更长时间。</p>
+</blockquote>
 
-<ul>
-<li><p>第一种方法是使用<code>django.views.static.serve</code>来处理文件。在App的<code>urls.py</code>里面加上一条路由：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">url(<span style="color:#f1fa8c">r</span><span style="color:#f1fa8c">&#34;^(?/static/P&lt;path&gt;.*)$&#34;</span>, <span style="color:#f1fa8c">&#34;django.views.static.serve&#34;</span>, {<span style="color:#f1fa8c">&#34;document_root&#34;</span> : <span style="color:#f1fa8c">&#34;/path/to/project/app/static/&#34;</span>})</code></pre></div>
-<p>但是这样的话线上的静态文件就都通过<code>Django</code>来进行处理了，这样速度太慢了，毕竟处理静态文件不是<code>Django</code>的特长。</p></li>
+<p>Kubelet在更新状态失败时，会进行<code>nodeStatusUpdateRetry</code>次重试，默认为 5 次。</p>
 
-<li><p>处理静态文件什么在行？<code>Nginx</code>再加上<code>CDN</code>呗，所以现在就可以将每个App 里面的静态文件复制到一个统一的文件夹里面，然后在<code>nginx</code>中将<code>/static/</code>映射到该目录就行。但是这样是不是特别麻烦啊，每次上线都得把每个App 下面的静态文件复制一遍。</p></li>
-</ul>
+<p>Kubelet 会在函数<code>tryUpdateNodeStatus</code>中尝试进行状态更新。Kubelet 使用了 Golang 中的<code>http.Client()</code>方法，但是没有指定超时时间，因此，如果 API Server 过载时，当建立 TCP 连接时可能会出现一些故障。</p>
 
-<p>为了解决上面的问题，1.3版本以后便提供了一个新的方法自动地将所有静态文件放在一起。在开发阶段不必费心去做映射。在部署到生产环境的时候，只需要配置<code>nginx</code>把<code>/static/</code>映射到<code>STATIC_ROOT</code>配置的目录，然后运行<code>python manage.py collectstatic</code>，自动地就会把各个App 下面的静态文件给复制到<code>STATIC_ROOT</code>。由于复制过来的文件会覆盖掉原来的文件，所以一定不要在<code>STATIC_ROOT</code>目录下面放置我们自己的静态文件。</p>
+<p>因此，在<code>nodeStatusUpdateRetry</code> * <code>--node-status-update-frequency</code>时间后才会更新一次节点状态。</p>
 
-<h2 id="staticfiles-dirs">STATICFILES_DIRS</h2>
+<p>同时，Kubernetes 的 controller manager 将尝试每<code>--node-monitor-period</code>时间周期内检查<code>nodeStatusUpdateRetry</code>次。在<code>--node-monitor-grace-period</code>之后，会认为节点 unhealthy，然后会在<code>--pod-eviction-timeout</code>后删除 Pod。</p>
 
-<p>从名字可以看出<code>STATICFILES_DIRS</code>指定了一个工程里面哪个目录存放了与这个工程相关的静态文件，这是一个列表。上面的<code>collectstatic</code>命令也会将该列表下面的静态文件收集到<code>STATIC_ROOT</code>目录下面去的，所以<code>STATICFILES_DIRS</code>下面是不能包含<code>STATIC_ROOT</code>这个路径的，对吧？</p>
+<p>kube proxy 有一个 watcher API，一旦 Pod 被驱逐了，kube proxy 将会通知更新节点的 iptables 规则，将 Pod 从 Service 的 Endpoints 中移除，这样就不会访问到来自故障节点的 Pod 了。</p>
 
-<h2 id="最佳实践">最佳实践</h2>
+<h2 id="配置">配置</h2>
 
-<p>所以最佳的配置方式是将所有的App 下面的静态文件统一放置到一个目录下面，然后将该目录设置为<code>STATICFILES_DIRS</code>，<code>STATIC_ROOT</code>则设置为另外的目录。如下：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">STATIC_URL <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#39;/static/&#39;</span>
-<span style="color:#6272a4"># 开发阶段放置项目自己的静态文件</span>
-STATICFILES_DIRS <span style="color:#ff79c6">=</span> (
-    os<span style="color:#ff79c6">.</span>path<span style="color:#ff79c6">.</span>join(BASE_DIR, <span style="color:#f1fa8c">&#39;staticfiles&#39;</span>),
-)
-<span style="color:#6272a4"># 执行collectstatic命令后会将项目中的静态文件收集到该目录下面来（所以不应该在该目录下面放置自己的一些静态文件，因为会覆盖掉）</span>
-STATIC_ROOT <span style="color:#ff79c6">=</span> os<span style="color:#ff79c6">.</span>path<span style="color:#ff79c6">.</span>join(BASE_DIR, <span style="color:#f1fa8c">&#39;static&#39;</span>)</code></pre></div>
-<p>在开发阶段，<code>Django</code>把/static 映射到<code>django.contrib.staticfiles</code>这个App。<code>staticfiles</code>自动地从<code>STATICFILES_DIRS</code>、<code>STATIC_ROOT</code>以及各个App的static子目录里面搜索静态文件。一旦布署到开发环境上，<code>settings.py</code>不需要重新编写，只要在<code>Nginx</code>的配置文件里面写好映射，/static将会被<code>Nginx</code>处理。<code>django.contrib.staticfiles</code>虽然仍然存在，但因为不会接收到以<code>/static/</code>开始的路径，所以将不会产生作用。不必担心<code>Django</code>会使用处理速度变慢。另外，当<code>settings.DEBUG is False</code>的时候，<code>staticfiles</code>将自动关闭。</p>
+<p>对于这些参数的配置，需要根据不通的集群规模场景来进行配置。</p>
+
+<h3 id="社区默认的配置">社区默认的配置</h3>
+
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>值</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>&ndash;node-status-update-frequency</td>
+<td>10s</td>
+</tr>
+
+<tr>
+<td>&ndash;node-monitor-period</td>
+<td>5s</td>
+</tr>
+
+<tr>
+<td>&ndash;node-monitor-grace-period</td>
+<td>40s</td>
+</tr>
+
+<tr>
+<td>&ndash;pod-eviction-timeout</td>
+<td>5m</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="快速更新和快速响应">快速更新和快速响应</h3>
+
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>值</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>&ndash;node-status-update-frequency</td>
+<td>4s</td>
+</tr>
+
+<tr>
+<td>&ndash;node-monitor-period</td>
+<td>2s</td>
+</tr>
+
+<tr>
+<td>&ndash;node-monitor-grace-period</td>
+<td>20s</td>
+</tr>
+
+<tr>
+<td>&ndash;pod-eviction-timeout</td>
+<td>30s</td>
+</tr>
+</tbody>
+</table>
+
+<p>在这种情况下，Pod 将在 50s 被驱逐，因为该节点在 20s 后被视为Down掉了，<code>--pod-eviction-timeout</code>在 30s 之后发生，但是，这种情况会给 etcd 产生很大的开销，因为每个节点都会尝试每 2s 更新一次状态。</p>
+
+<p>如果环境有1000个节点，那么每分钟将有15000次节点更新操作，这可能需要大型 etcd 容器甚至是 etcd 的专用节点。</p>
+
+<blockquote>
+<p>如果我们计算尝试次数，则除法将给出5，但实际上每次尝试的 nodeStatusUpdateRetry 尝试将从3到5。 由于所有组件的延迟，尝试总次数将在15到25之间变化。</p>
+</blockquote>
+
+<h3 id="中等更新和平均响应">中等更新和平均响应</h3>
+
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>值</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>&ndash;node-status-update-frequency</td>
+<td>20s</td>
+</tr>
+
+<tr>
+<td>&ndash;node-monitor-period</td>
+<td>5s</td>
+</tr>
+
+<tr>
+<td>&ndash;node-monitor-grace-period</td>
+<td>2m</td>
+</tr>
+
+<tr>
+<td>&ndash;pod-eviction-timeout</td>
+<td>1m</td>
+</tr>
+</tbody>
+</table>
+
+<p>这种场景下会 20s 更新一次 node 状态，controller manager 认为 node 状态不正常之前，会有 2m*<sup>60</sup>&frasl;<sub>20</sub>*5=30 次的 node 状态更新，Node 状态为 down 之后 1m，就会触发驱逐操作。</p>
+
+<p>如果有 1000 个节点，1分钟之内就会有 60s/20s*1000=3000 次的节点状态更新操作。</p>
+
+<blockquote>
+<p>实际上，将有4到6个节点更新尝试。 尝试总次数从20到30不等。</p>
+</blockquote>
+
+<h3 id="低更新和慢响应">低更新和慢响应</h3>
+
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>值</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>&ndash;node-status-update-frequency</td>
+<td>1m</td>
+</tr>
+
+<tr>
+<td>&ndash;node-monitor-period</td>
+<td>5s</td>
+</tr>
+
+<tr>
+<td>&ndash;node-monitor-grace-period</td>
+<td>5m</td>
+</tr>
+
+<tr>
+<td>&ndash;pod-eviction-timeout</td>
+<td>1m</td>
+</tr>
+</tbody>
+</table>
+
+<p>Kubelet 将会 1m 更新一次节点的状态，在认为不健康之后会有 5m/1m*5=25 次重试更新的机会。Node为不健康的时候，1m 之后 pod开始被驱逐。</p>
+
+<blockquote>
+<p>实际上，将有3到5次尝试。 尝试总次数从15到25不等。</p>
+</blockquote>
+
+<p>可以有不同的组合，例如快速更新和慢反应以满足特定情况。</p>
+
+<p>原文链接: <a href="https://github.com/kubernetes-sigs/kubespray/blob/master/docs/kubernetes-reliability.md">https://github.com/kubernetes-sigs/kubespray/blob/master/docs/kubernetes-reliability.md</a></p>
+
+<p><a href="https://www.qikqiak.com/post/promotion-51" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/9mogk.png" alt="kubernetes进阶课程"></a></p>
+
 
           <h2>微信公众号</h2>
 <p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
@@ -409,25 +566,25 @@ STATIC_ROOT <span style="color:#ff79c6">=</span> os<span style="color:#ff79c6">.
 <h3>相关文章</h3>
 <ul style="margin-bottom: 25px;">
     
-    <li><a href="https://www.qikqiak.com/post/django-decorator-usage/">Python装饰器简介</a></li>
+    <li><a href="https://www.qikqiak.com/post/complete-cicd-demonstrate-2/">基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(二)</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/python-process-csv-file/">用python处理csv文件</a></li>
+    <li><a href="https://www.qikqiak.com/post/helm-chart-tips-and-tricks/">Helm Chart 模板开发技巧</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/custom-django-admin-actions/">自定义django admin后台的action</a></li>
+    <li><a href="https://www.qikqiak.com/post/promotion-51/">打造独当一面的 Kubernetes 运维、开发工程师</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/django-url-function-usage/">django下url函数的用法</a></li>
+    <li><a href="https://www.qikqiak.com/post/troubleshooting-k8s-network/">Kubernetes 网络故障常见排查方法</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/django-i18n/">django国际化问题</a></li>
+    <li><a href="https://www.qikqiak.com/post/how-to-protect-exposed-k8s-server/">如何保护对外暴露的 Kubernetes 服务</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/django-custom-tag-inclusion_tag/">django自定义标签之inclusion_tag的用法</a></li>
+    <li><a href="https://www.qikqiak.com/post/install-nginx-ingress/">nginx-ingress 的安装使用</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/some-pits-of-memcached/">Memcached的一些坑!!!</a></li>
+    <li><a href="https://www.qikqiak.com/post/complete-cicd-demonstrate-1/">基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(一)</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/awk-base-compute/">用awk做基本运算</a></li>
+    <li><a href="https://www.qikqiak.com/post/prometheus-book/">《深入浅出Prometheus》</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/nginx-301-redirect/">Nginx中如何设置301跳转</a></li>
+    <li><a href="https://www.qikqiak.com/post/gitlab-ci-k8s-cluster-feature/">Gitlab CI 与 Kubernetes 的结合</a></li>
     
-    <li><a href="https://www.qikqiak.com/page/kubernetes.io/">Kubernetes</a></li>
+    <li><a href="https://www.qikqiak.com/post/gitlab-runner-install-on-k8s/">在 Kubernetes 上安装 Gitlab CI Runner</a></li>
     
 </ul>
 
@@ -437,12 +594,12 @@ STATIC_ROOT <span style="color:#ff79c6">=</span> os<span style="color:#ff79c6">.
         <ul class="pager blog-pager">
           
             <li class="previous">
-              <a href="https://www.qikqiak.com/post/python-convert-pdf-images/" data-toggle="tooltip" data-placement="top" title="利用Python 优雅的将PDF 转换成图片">&larr; 前一篇</a>
+              <a href="https://www.qikqiak.com/post/groovy-simple-tutorial/" data-toggle="tooltip" data-placement="top" title="Groovy 简明教程">&larr; 前一篇</a>
             </li>
           
           
             <li class="next">
-              <a href="https://www.qikqiak.com/post/make-https-blog/" data-toggle="tooltip" data-placement="top" title="给博客加上HTTPS">后一篇 &rarr;</a>
+              <a href="https://www.qikqiak.com/post/promotion-51/" data-toggle="tooltip" data-placement="top" title="打造独当一面的 Kubernetes 运维、开发工程师">后一篇 &rarr;</a>
             </li>
           
         </ul>
@@ -460,9 +617,9 @@ STATIC_ROOT <span style="color:#ff79c6">=</span> os<span style="color:#ff79c6">.
         owner: 'cnych',
         admin: ['cnych'],
         labels: ['gitment'],
-        title: 'Django 中STATIC_ROOT 与STATICFILES_DIRS的区别',
+        title: 'Kubelet 状态更新机制',
         createIssueManually: true,
-        id: 'django-staticroot-staticfilesdirs-function',      
+        id: 'kubelet-sync-node-status',      
         distractionFreeMode: true  
     });
     gitalk.render('gitalk-container');
