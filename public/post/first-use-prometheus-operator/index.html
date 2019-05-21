@@ -365,12 +365,16 @@ autocomplete('#aa-search-input',
 <h2 id="安装">安装</h2>
 
 <p>我们这里直接通过 Prometheus-Operator 的源码来进行安装，当然也可以用 Helm 来进行一键安装，我们采用源码安装可以去了解更多的实现细节。首页将源码 Clone 下来：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ git clone https://github.com/coreos/prometheus-operator
-$ <span style="color:#8be9fd;font-style:italic">cd</span> contrib/kube-prometheus/manifests/
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ git clone https://github.com/coreos/kube-prometheus.git
+$ <span style="color:#8be9fd;font-style:italic">cd</span> manifests
 $ ls
 00namespace-namespace.yaml                                         node-exporter-clusterRole.yaml
 0prometheus-operator-0alertmanagerCustomResourceDefinition.yaml    node-exporter-daemonset.yaml
 ......</code></pre></div>
+<blockquote>
+<p>最新的版本官方将资源<a href="https://github.com/coreos/prometheus-operator/tree/master/contrib/kube-prometheus">https://github.com/coreos/prometheus-operator/tree/master/contrib/kube-prometheus</a>迁移到了独立的 git 仓库中：<a href="https://github.com/coreos/kube-prometheus.git">https://github.com/coreos/kube-prometheus.git</a></p>
+</blockquote>
+
 <p>进入到 manifests 目录下面，这个目录下面包含我们所有的资源清单文件，我们需要对其中的文件 prometheus-serviceMonitorKubelet.yaml 进行简单的修改，因为默认情况下，这个 ServiceMonitor 是关联的 kubelet 的10250端口去采集的节点数据，而我们前面说过为了安全，这个 metrics 数据已经迁移到10255这个只读端口上面去了，我们只需要将文件中的<code>https-metrics</code>更改成<code>http-metrics</code>即可，这个在 Prometheus-Operator 对节点端点同步的代码中有相关定义，感兴趣的可以<a href="https://github.com/coreos/prometheus-operator/blob/7a8bc75512e39a984f46b2788b5fa9bf64999571/pkg/prometheus/operator.go#L400">点此查看完整代码</a>：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">Subsets: []v1.EndpointSubset{
     {
