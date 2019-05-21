@@ -323,6 +323,12 @@ Jenkins 安装完成了，接下来我们不用急着就去使用，我们要了
 另外一些同学在配置了后运行 Slave Pod 的时候出现了权限问题，如果出现了权限不足的问题，在 Slave Pod 配置的地方点击下面的高级，添加上对应的 ServiceAccount 即可：
 ![kubernetes plugin config5](/img/posts/jenkins-k8s-config5.png)
 
+还有一些同学在配置完成后发现启动 Jenkins Slave Pod 的时候，出现 Slave Pod 连接不上，然后尝试100次连接之后销毁 Pod，然后会再创建一个 Slave Pod 继续尝试连接，无限循环，类似于下面的信息：
+![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/slave-pod-reconnect-100-times.png)
+
+如果出现这种情况的话就需要将 Slave Pod 中的运行命令和参数两个值给清空掉
+![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/clean-slave-pod-cmd-args.png)
+
 到这里我们的 Kubernetes Plugin 插件就算配置完成了。
 
 
