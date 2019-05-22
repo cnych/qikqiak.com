@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [Metrics Server 安装](https://www.qikqiak.com/post/install-metrics-server)
  * [使用 kubeadm 更新 kubernetes 集群](https://www.qikqiak.com/post/use-kubeadm-upgrade-k8s/)
  * [Kubelet 状态更新机制](https://www.qikqiak.com/post/kubelet-sync-node-status)
  * [Groovy 简明教程](https://www.qikqiak.com/post/groovy-simple-tutorial)
