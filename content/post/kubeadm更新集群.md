@@ -285,4 +285,24 @@ ydzs-node2    Ready     <none>    64d       v1.11.0
 
 到这里我们的集群就升级成功了，我们可以用同样的方法将集群升级到 v1.12.x、v1.13.x、v1.14.x 版本，而且升级过程中是不会影响到现有业务的。
 
+更新集群后遇到一个问题是，其中一个节点上的 Pod 的 IP 没有使用 cni0 网桥的网段，而是使用的 docker0 的网段，比较奇怪，我们使用的 CNI 模式，而且查看了 Flannel 的相关配置参数都没有问题的，重新将虚拟网络设备重置了，然后重启该节点的 Pod 后:
+```shell
+$ ifconfig cni0 down
+$ ip link delete cni0
+$ ifconfig flannel.1 down
+$ ip link delete flannel.1
+$ rm -rf /var/lib/cni/
+```
+
+更奇怪的是 cni0 网桥死活创建不出来了，最后是重新使用 kubeadm reset 了，重新加入集群才解决这个问题：
+```shell
+$ kubeadm reset
+# 使用下面命令获取加入节点的命令
+$ kubeadm token create --print-join-command
+I0523 23:28:11.496418   18560 feature_gate.go:230] feature gates: &{map[]}
+kubeadm join 10.151.30.11:6443 --token r7ilky.ppyy90a4ernkq7pj --discovery-token-ca-cert-hash sha256:e605d6877e7cfaebef38c8f3d4649204e189d0d02b23f997e4e65f17bebe3fa7
+```
+
+重新执行上面的 join 命令，重新加入节点后恢复正常。
+
 <!--adsense-self-->
