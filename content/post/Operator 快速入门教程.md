@@ -621,3 +621,5 @@ Operator SDK 为我们创建了一个快速启动的代码和相关配置，如�
 * [CLI reference](https://github.com/operator-framework/operator-sdk/blob/master/doc/sdk-cli-reference.md)
 * [User Guide](https://github.com/operator-framework/operator-sdk/blob/master/doc/user-guide.md)
 * [Developing Kubernetes Operator is now easy with Operator Framework](https://devops.college/developing-kubernetes-operator-is-now-easy-with-operator-framework-d3194a7428ff)
+
+<!--adsense-self-->
