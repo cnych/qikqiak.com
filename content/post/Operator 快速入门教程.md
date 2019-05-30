@@ -10,7 +10,7 @@ bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-155
 category: "kubernetes"
 ---
 
-在 Kubernetes 的监控方案中我们经常会使用到一个[Promethues Operator](https://devops.college/prometheus-operator-how-to-monitor-an-external-service-3cb6ac8d5acb)的项目，该项目可以让我们更加方便的去使用 Prometheus，而不需要直接去使用最原始的一些资源对象，比如 Pod、Deployment，随着 Prometheus Operator 项目的成功，CoreOS 公司开源了一个比较厉害的工具：[Operator Framework](https://github.com/operator-framework)，该工具可以让开发人员更加容易的开发 Operator 应用。
+在 Kubernetes 的监控方案中我们经常会使用到一个[Promethues Operator](/tags/operator/)的项目，该项目可以让我们更加方便的去使用 Prometheus，而不需要直接去使用最原始的一些资源对象，比如 Pod、Deployment，随着 Prometheus Operator 项目的成功，CoreOS 公司开源了一个比较厉害的工具：[Operator Framework](https://github.com/operator-framework)，该工具可以让开发人员更加容易的开发 Operator 应用。
 
 在本篇文章中我们会为大家介绍一个简单示例来演示如何使用 Operator Framework 框架来开发一个 Operator 应用。
 
