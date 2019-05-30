@@ -533,7 +533,7 @@ $ kubectl create -f deploy/role.yaml
 $ kubectl create -f deploy/role_binding.yaml
 ```
 
-权限相关声明已经玩CN，接下来安装 CRD 和 Operator：
+权限相关声明已经完成，接下来安装 CRD 和 Operator：
 ```shell
 # Setup the CRD
 $ kubectl apply -f deploy/crds/app_v1_appservice_crd.yaml
