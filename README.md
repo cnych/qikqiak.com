@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [深入理解 Kubernetes Admission Webhook](https://www.qikqiak.com/post/k8s-admission-webhook/)
  * [Kubernetes Operator 快速入门教程](https://www.qikqiak.com/post/k8s-operator-101)
  * [Metrics Server 安装](https://www.qikqiak.com/post/install-metrics-server)
  * [使用 kubeadm 更新 kubernetes 集群](https://www.qikqiak.com/post/use-kubeadm-upgrade-k8s/)
