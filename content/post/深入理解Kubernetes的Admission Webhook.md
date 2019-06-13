@@ -57,6 +57,80 @@ admissionregistration.k8s.io/v1beta1
 ### 编写 webhook
 满足了前面的先决条件后，接下来我们就来实现一个 webhook 示例，通过监听两个不同的 HTTP 路径（validate 和 mutate）作为 validating 和 mutating webhook。
 
-todo...
+这个 webhook 的完整代码可以在 Github 上获取：[https://github.com/banzaicloud/admission-webhook-example]，我们将根据这个 repo 为基础来 fork 一份代码进行更改。这个 webhook 是一个简单的带 TLS 认证的 HTTP 服务，用 Deployment 方式部署在我们的集群中。
 
+代码中主要的逻辑在两个文件中：`main.go`和`webhook.go`，`main.go`文件包含创建 HTTP 服务的代码，而`webhook.go`包含 validates 和 mutates 的 webhook 逻辑，大部分代码都比较简单，首先查看`main.go`文件，查看如何使用标准 golang 包来启动 HTTP 服务，以及如何从命令行标志中[读取 TLS 配置](https://github.com/banzaicloud/admission-webhook-example/blob/blog/main.go#L21)的证书：
+
+```golang
+flag.StringVar(&parameters.certFile, "tlsCertFile", "/etc/webhook/certs/cert.pem", "File containing the x509 Certificate for HTTPS.")
+flag.StringVar(&parameters.keyFile, "tlsKeyFile", "/etc/webhook/certs/key.pem", "File containing the x509 private key to --tlsCertFile.")
+```
+
+然后一个比较重要的是 serve 函数，用来处理传入的 mutate 函数和 validating 的 HTTP 请求。该函数从请求中反序列化 AdmissionReview，执行一些基本的内容校验，根据 URL 路径调用相应的 mutate 和 validate 函数，然后序列化 AdmissionReview 响应。
+```golang
+func (whsvr *WebhookServer) serve(w http.ResponseWriter, r *http.Request) {
+	var body []byte
+	if r.Body != nil {
+		if data, err := ioutil.ReadAll(r.Body); err == nil {
+			body = data
+		}
+	}
+	if len(body) == 0 {
+		glog.Error("empty body")
+		http.Error(w, "empty body", http.StatusBadRequest)
+		return
+	}
+
+	// verify the content type is accurate
+	contentType := r.Header.Get("Content-Type")
+	if contentType != "application/json" {
+		glog.Errorf("Content-Type=%s, expect application/json", contentType)
+		http.Error(w, "invalid Content-Type, expect `application/json`", http.StatusUnsupportedMediaType)
+		return
+	}
+
+	var admissionResponse *v1beta1.AdmissionResponse
+	ar := v1beta1.AdmissionReview{}
+	if _, _, err := deserializer.Decode(body, nil, &ar); err != nil {
+		glog.Errorf("Can't decode body: %v", err)
+		admissionResponse = &v1beta1.AdmissionResponse{
+			Result: &metav1.Status{
+				Message: err.Error(),
+			},
+		}
+	} else {
+		fmt.Println(r.URL.Path)
+		if r.URL.Path == "/mutate" {
+			admissionResponse = whsvr.mutate(&ar)
+		} else if r.URL.Path == "/validate" {
+			admissionResponse = whsvr.validate(&ar)
+		}
+	}
+
+	admissionReview := v1beta1.AdmissionReview{}
+	if admissionResponse != nil {
+		admissionReview.Response = admissionResponse
+		if ar.Request != nil {
+			admissionReview.Response.UID = ar.Request.UID
+		}
+	}
+
+	resp, err := json.Marshal(admissionReview)
+	if err != nil {
+		glog.Errorf("Can't encode response: %v", err)
+		http.Error(w, fmt.Sprintf("could not encode response: %v", err), http.StatusInternalServerError)
+	}
+	glog.Infof("Ready to write reponse ...")
+	if _, err := w.Write(resp); err != nil {
+		glog.Errorf("Can't write response: %v", err)
+		http.Error(w, fmt.Sprintf("could not write response: %v", err), http.StatusInternalServerError)
+	}
+}
+```
+
+主要的准入逻辑是 validate 和 mutate 函数，
+
+主要的准入逻辑是验证和变异函数。 验证检查是否需要许可：我们不想验证kube-system和kube-public命名空间中的资源，如果有明确告诉我们忽略它的注释，则不想验证资源（admission-webhook） -example.banzaicloud.com/validate设置为false）。 如果需要验证，则根据资源类型从请求中解组服务或部署资源，并将标签与其对应项进行比较。 如果缺少某些标签，则响应中的“允许”设置为false。 如果验证失败，则会在响应中写入失败原因，最终用户在尝试创建资源时会收到失败。
+
+mutate的代码非常相似，但不是仅仅比较标签并在响应中放置Allowed，而是创建一个补丁，将缺失的标签添加到资源中，并将not_available设置为其值。
 <!--adsense-self-->

@@ -305,6 +305,25 @@ autocomplete('#aa-search-input',
         <article role="main" class="blog-post" itemprop="articleBody" id="content">
           
             
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#准入控制器">准入控制器</a>
+<ul>
+<li><a href="#admission-webhook-是什么">admission webhook 是什么?</a></li>
+</ul></li>
+<li><a href="#创建配置一个-admission-webhook">创建配置一个 Admission Webhook</a>
+<ul>
+<li><a href="#先决条件">先决条件</a></li>
+<li><a href="#编写-webhook">编写 webhook</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</nav>
+</aside>
+
           
   
           
@@ -369,10 +388,77 @@ admissionregistration.k8s.io/v1beta1</code></pre></div>
 
 <p>满足了前面的先决条件后，接下来我们就来实现一个 webhook 示例，通过监听两个不同的 HTTP 路径（validate 和 mutate）作为 validating 和 mutating webhook。</p>
 
-<p>todo&hellip;</p>
+<p>这个 webhook 的完整代码可以在 Github 上获取：[<a href="https://github.com/banzaicloud/admission-webhook-example]，我们将根据这个">https://github.com/banzaicloud/admission-webhook-example]，我们将根据这个</a> repo 为基础来 fork 一份代码进行更改。这个 webhook 是一个简单的带 TLS 认证的 HTTP 服务，用 Deployment 方式部署在我们的集群中。</p>
 
+<p>代码中主要的逻辑在两个文件中：<code>main.go</code>和<code>webhook.go</code>，<code>main.go</code>文件包含创建 HTTP 服务的代码，而<code>webhook.go</code>包含 validates 和 mutates 的 webhook 逻辑，大部分代码都比较简单，首先查看<code>main.go</code>文件，查看如何使用标准 golang 包来启动 HTTP 服务，以及如何从命令行标志中<a href="https://github.com/banzaicloud/admission-webhook-example/blob/blog/main.go#L21">读取 TLS 配置</a>的证书：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang">flag.<span style="color:#50fa7b">StringVar</span>(<span style="color:#ff79c6">&amp;</span>parameters.certFile, <span style="color:#f1fa8c">&#34;tlsCertFile&#34;</span>, <span style="color:#f1fa8c">&#34;/etc/webhook/certs/cert.pem&#34;</span>, <span style="color:#f1fa8c">&#34;File containing the x509 Certificate for HTTPS.&#34;</span>)
+flag.<span style="color:#50fa7b">StringVar</span>(<span style="color:#ff79c6">&amp;</span>parameters.keyFile, <span style="color:#f1fa8c">&#34;tlsKeyFile&#34;</span>, <span style="color:#f1fa8c">&#34;/etc/webhook/certs/key.pem&#34;</span>, <span style="color:#f1fa8c">&#34;File containing the x509 private key to --tlsCertFile.&#34;</span>)</code></pre></div>
+<p>然后一个比较重要的是 serve 函数，用来处理传入的 mutate 函数和 validating 的 HTTP 请求。该函数从请求中反序列化 AdmissionReview，执行一些基本的内容校验，根据 URL 路径调用相应的 mutate 和 validate 函数，然后序列化 AdmissionReview 响应。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#8be9fd;font-style:italic">func</span> (whsvr <span style="color:#ff79c6">*</span>WebhookServer) <span style="color:#50fa7b">serve</span>(w http.ResponseWriter, r <span style="color:#ff79c6">*</span>http.Request) {
+	<span style="color:#8be9fd;font-style:italic">var</span> body []<span style="color:#8be9fd">byte</span>
+	<span style="color:#ff79c6">if</span> r.Body <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+		<span style="color:#ff79c6">if</span> data, err <span style="color:#ff79c6">:=</span> ioutil.<span style="color:#50fa7b">ReadAll</span>(r.Body); err <span style="color:#ff79c6">==</span> <span style="color:#ff79c6">nil</span> {
+			body = data
+		}
+	}
+	<span style="color:#ff79c6">if</span> <span style="color:#8be9fd;font-style:italic">len</span>(body) <span style="color:#ff79c6">==</span> <span style="color:#bd93f9">0</span> {
+		glog.<span style="color:#50fa7b">Error</span>(<span style="color:#f1fa8c">&#34;empty body&#34;</span>)
+		http.<span style="color:#50fa7b">Error</span>(w, <span style="color:#f1fa8c">&#34;empty body&#34;</span>, http.StatusBadRequest)
+		<span style="color:#ff79c6">return</span>
+	}
+
+	<span style="color:#6272a4">// verify the content type is accurate
+</span><span style="color:#6272a4"></span>	contentType <span style="color:#ff79c6">:=</span> r.Header.<span style="color:#50fa7b">Get</span>(<span style="color:#f1fa8c">&#34;Content-Type&#34;</span>)
+	<span style="color:#ff79c6">if</span> contentType <span style="color:#ff79c6">!=</span> <span style="color:#f1fa8c">&#34;application/json&#34;</span> {
+		glog.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;Content-Type=%s, expect application/json&#34;</span>, contentType)
+		http.<span style="color:#50fa7b">Error</span>(w, <span style="color:#f1fa8c">&#34;invalid Content-Type, expect `application/json`&#34;</span>, http.StatusUnsupportedMediaType)
+		<span style="color:#ff79c6">return</span>
+	}
+
+	<span style="color:#8be9fd;font-style:italic">var</span> admissionResponse <span style="color:#ff79c6">*</span>v1beta1.AdmissionResponse
+	ar <span style="color:#ff79c6">:=</span> v1beta1.AdmissionReview{}
+	<span style="color:#ff79c6">if</span> _, _, err <span style="color:#ff79c6">:=</span> deserializer.<span style="color:#50fa7b">Decode</span>(body, <span style="color:#ff79c6">nil</span>, <span style="color:#ff79c6">&amp;</span>ar); err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+		glog.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;Can&#39;t decode body: %v&#34;</span>, err)
+		admissionResponse = <span style="color:#ff79c6">&amp;</span>v1beta1.AdmissionResponse{
+			Result: <span style="color:#ff79c6">&amp;</span>metav1.Status{
+				Message: err.<span style="color:#50fa7b">Error</span>(),
+			},
+		}
+	} <span style="color:#ff79c6">else</span> {
+		fmt.<span style="color:#50fa7b">Println</span>(r.URL.Path)
+		<span style="color:#ff79c6">if</span> r.URL.Path <span style="color:#ff79c6">==</span> <span style="color:#f1fa8c">&#34;/mutate&#34;</span> {
+			admissionResponse = whsvr.<span style="color:#50fa7b">mutate</span>(<span style="color:#ff79c6">&amp;</span>ar)
+		} <span style="color:#ff79c6">else</span> <span style="color:#ff79c6">if</span> r.URL.Path <span style="color:#ff79c6">==</span> <span style="color:#f1fa8c">&#34;/validate&#34;</span> {
+			admissionResponse = whsvr.<span style="color:#50fa7b">validate</span>(<span style="color:#ff79c6">&amp;</span>ar)
+		}
+	}
+
+	admissionReview <span style="color:#ff79c6">:=</span> v1beta1.AdmissionReview{}
+	<span style="color:#ff79c6">if</span> admissionResponse <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+		admissionReview.Response = admissionResponse
+		<span style="color:#ff79c6">if</span> ar.Request <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+			admissionReview.Response.UID = ar.Request.UID
+		}
+	}
+
+	resp, err <span style="color:#ff79c6">:=</span> json.<span style="color:#50fa7b">Marshal</span>(admissionReview)
+	<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+		glog.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;Can&#39;t encode response: %v&#34;</span>, err)
+		http.<span style="color:#50fa7b">Error</span>(w, fmt.<span style="color:#50fa7b">Sprintf</span>(<span style="color:#f1fa8c">&#34;could not encode response: %v&#34;</span>, err), http.StatusInternalServerError)
+	}
+	glog.<span style="color:#50fa7b">Infof</span>(<span style="color:#f1fa8c">&#34;Ready to write reponse ...&#34;</span>)
+	<span style="color:#ff79c6">if</span> _, err <span style="color:#ff79c6">:=</span> w.<span style="color:#50fa7b">Write</span>(resp); err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+		glog.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;Can&#39;t write response: %v&#34;</span>, err)
+		http.<span style="color:#50fa7b">Error</span>(w, fmt.<span style="color:#50fa7b">Sprintf</span>(<span style="color:#f1fa8c">&#34;could not write response: %v&#34;</span>, err), http.StatusInternalServerError)
+	}
+}</code></pre></div>
+<p>主要的准入逻辑是 validate 和 mutate 函数，</p>
+
+<p>主要的准入逻辑是验证和变异函数。 验证检查是否需要许可：我们不想验证kube-system和kube-public命名空间中的资源，如果有明确告诉我们忽略它的注释，则不想验证资源（admission-webhook） -example.banzaicloud.com/validate设置为false）。 如果需要验证，则根据资源类型从请求中解组服务或部署资源，并将标签与其对应项进行比较。 如果缺少某些标签，则响应中的“允许”设置为false。 如果验证失败，则会在响应中写入失败原因，最终用户在尝试创建资源时会收到失败。</p>
+
+<p>mutate的代码非常相似，但不是仅仅比较标签并在响应中放置Allowed，而是创建一个补丁，将缺失的标签添加到资源中，并将not_available设置为其值。
 <p><a href="https://www.qikqiak.com/post/promotion-51" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/9mogk.png" alt="kubernetes进阶课程"></a></p>
-
+</p>
 
           <h2>微信公众号</h2>
 <p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
@@ -469,7 +555,7 @@ admissionregistration.k8s.io/v1beta1</code></pre></div>
           
           
             <li class="next">
-              <a href="https://www.qikqiak.com/post/promotion-51/" data-toggle="tooltip" data-placement="top" title="打造独当一面的 Kubernetes 运维、开发工程师">后一篇 &rarr;</a>
+              <a href="https://www.qikqiak.com/post/use-casc-run-jenkins/" data-toggle="tooltip" data-placement="top" title="使用 Configuration-As-Code 运行 Jenkins">后一篇 &rarr;</a>
             </li>
           
         </ul>
