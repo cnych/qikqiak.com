@@ -133,4 +133,7 @@ func (whsvr *WebhookServer) serve(w http.ResponseWriter, r *http.Request) {
 主要的准入逻辑是验证和变异函数。 验证检查是否需要许可：我们不想验证kube-system和kube-public命名空间中的资源，如果有明确告诉我们忽略它的注释，则不想验证资源（admission-webhook） -example.banzaicloud.com/validate设置为false）。 如果需要验证，则根据资源类型从请求中解组服务或部署资源，并将标签与其对应项进行比较。 如果缺少某些标签，则响应中的“允许”设置为false。 如果验证失败，则会在响应中写入失败原因，最终用户在尝试创建资源时会收到失败。
 
 mutate的代码非常相似，但不是仅仅比较标签并在响应中放置Allowed，而是创建一个补丁，将缺失的标签添加到资源中，并将not_available设置为其值。
+
+> TODO......
+
 <!--adsense-self-->
