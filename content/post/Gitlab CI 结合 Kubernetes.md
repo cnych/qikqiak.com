@@ -142,6 +142,7 @@ subjects:
     name: gitlab
     namespace: gitlab
 roleRef:
+  apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: cluster-admin
 ```
