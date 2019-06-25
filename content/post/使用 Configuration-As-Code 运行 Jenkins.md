@@ -98,6 +98,8 @@ rootPassword      <xxxxxx>
 ## 配置信息
 `JcasC`插件提供了许多配置设置，允许我们配置`Jenkins`的各种组件，我们这里主要来配置构建示例 Java 应用程序的基本配置，`Jcasc`插件官网文档：[https://github.com/jenkinsci/configuration-as-code-plugin](https://github.com/jenkinsci/configuration-as-code-plugin) 中也提供了很多其他配置的示例，有需要的可以前往查看。
 
+<!--adsense-text-->
+
 我们这里需要的是在启动后配置一下 Jenkins 组件：
 
 * 一组 Jenkins 插件，运行创建声明式 Pipeline，从 Github 仓库检出源代码，使用 Maven 进行构建
