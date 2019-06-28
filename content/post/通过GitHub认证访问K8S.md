@@ -47,7 +47,7 @@ bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-156
 
 ![k8s 认证流程](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/k8s-auth-process.png)
 
-1. 用户通过访问 dex-k8s-authenticator 应用进行登录请求（dex-login.qikqiak.com）
+1. 用户通过访问 dex-k8s-authenticator 应用进行登录请求（login-k8s.qikqiak.com）
 2. dex-k8s-authenticator 应用跳转请求到 Dex（dex-k8s.qikqiak.com）
 3. Dex 跳转到 GitHub 授权页面
 4. GitHub 将响应信息回传给 Dex
@@ -73,7 +73,7 @@ bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-156
 
 要注意回调 URL 后面需要加上`callback`，将生成的`Client ID`和`Client secret`记录下来。
 
-最后一定要记住需要对上面的两个 URL：dex-login.qikqiak.com 和 dex-k8s.qikqiak.com 做 DNS 解析，由于 Dex 和 dex-k8s-authenticator 两个应用我们都安装在 kubernetes 集群中，所以直接解析到 Ingress Controller 所在的节点即可。
+最后一定要记住需要对上面的两个 URL：login-k8s.qikqiak.com 和 dex-k8s.qikqiak.com 做 DNS 解析，由于 Dex 和 dex-k8s-authenticator 两个应用我们都安装在 kubernetes 集群中，所以直接解析到 Ingress Controller 所在的节点即可。
 
 ### 安装 Dex 和 dex-k8s-authenticator
 为了连接 Dex 应用，我们需要配置上 kubernetes 证书和私钥信息，我这里是通过 [kubeadm](/tags/kubeadm/) 搭建的集群，所以直接在 master 节点上直接获取即可：
