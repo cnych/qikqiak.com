@@ -11,7 +11,7 @@ bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-156
 
 我们知道可以[通过 RBAC 为操作 kubectl 的用户或组来进行权限控制]((/post/use-rbac-in-k8s/))，但是我们往往是通过 [kubernetes](/tags/kubernetes/) 集群的超级管理员手动为这些用户进行分配的，并没有一个开箱即用的 kubectl 身份验证工具。
 
-现在参加 [kubernetes](/tags/kubernetes/) 进阶课程的学生比较多，其中可能有一部分学生暂时还没有一套可用的集群环境，那么我们就可以为这部分学生授权访问我们的集群，但是如果这么多学生都手动去给他们创建身份认证必然非常麻烦。
+现在参加 [kubernetes 进阶课程](https://youdianzhishi.com/course/6n8xd6/)的学生比较多，其中可能有一部分学生暂时还没有一套可用的集群环境，那么我们就可以为这部分学生授权访问我们的集群，但是如果这么多学生都手动去给他们创建身份认证必然非常麻烦。
 
 那么我们可以用什么办法来可以很方便的为用户进行授权访问 [kubernetes](/tags/kubernetes/) 集群呢？
 
