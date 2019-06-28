@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [通过 GitHub OAuth 和 Dex 访问 Kubernetes 集群](https://www.qikqiak.com/post/k8s-auth-via-oidc/)
  * [使用 Configuration-As-Code 运行 Jenkins](https://www.qikqiak.com/post/use-casc-run-jenkins/)
  * [深入理解 Kubernetes Admission Webhook](https://www.qikqiak.com/post/k8s-admission-webhook/)
  * [Kubernetes Operator 快速入门教程](https://www.qikqiak.com/post/k8s-operator-101)
