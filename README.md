@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [使用Elasticsearch Operator快速部署Elasticsearch集群](https://www.qikqiak.com/post/elastic-cloud-on-k8s/)
  * [通过 GitHub OAuth 和 Dex 访问 Kubernetes 集群](https://www.qikqiak.com/post/k8s-auth-via-oidc/)
  * [使用 Configuration-As-Code 运行 Jenkins](https://www.qikqiak.com/post/use-casc-run-jenkins/)
  * [深入理解 Kubernetes Admission Webhook](https://www.qikqiak.com/post/k8s-admission-webhook/)

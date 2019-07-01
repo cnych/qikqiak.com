@@ -1,0 +1,62 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name:  cerebro
+  namespace: elastic-system
+  labels:
+    app: cerebro
+spec:
+  template:
+    metadata:
+      labels:
+        app: cerebro
+    spec:
+      containers:
+      - image: lmenezes/cerebro:0.8.3
+        name: cerebro
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "128M"    
+        ports:
+        - containerPort:  9000
+      
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name:  cerebro
+  namespace: elastic-system
+  labels:
+    app: cerebro
+spec:
+  selector:
+    app: cerebro
+  ports:
+  - name: web
+    port: 9000
+    targetPort: 9000
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: cerebro
+  namespace: elastic-system
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    kubernetes.io/tls-acme: "true"
+spec:
+  tls:
+  - hosts:
+    - es.qikqiak.com
+    secretName: cerebro-tls
+  rules:
+  - host: es.qikqiak.com
+    http:
+      paths:
+      - backend:
+          serviceName: cerebro
+          servicePort: 5601
+        path: /

@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>使用Elasticsearch Operator快速部署Elasticsearch集群-www.qikqiak.com|阳明的博客|Kubernetes|Docker|istio|Python|Golang|Cloud Native</title>
+  <meta property="og:title" content="使用Elasticsearch Operator快速部署Elasticsearch集群" />
+  <meta name="twitter:title" content="使用Elasticsearch Operator快速部署Elasticsearch集群" />
+
+  <meta name="description" content="随着 kubernetes 的快速发展，很多应用都在往 kubernetes 上面迁移，现阶段对于无状态应用的迁移是非常容易做到的，但是对于有状态应用的迁移还是有一定门槛的，主要是有状态应用的运行方式各有不同，比如 MySQL、MongoDB、Redis 这些应用运行的方式方法都不太相同，特别是对于线上环境需要高可用的集群模式的时候，则差别就更大了，这就导致了无状态应用向 Kubernetes 的迁移必然进度会很慢。现在比较好的解决方案就是针对有状态应用开发对应的 Operator 应用，比如 prometheus-operator、etcd-operator 等等，关于 Operator 的开发，可以查看前面的一篇入门文章：Kubernetes Operator 快速入门教程 以了解更多信息。
+
+同样的，对于 Elasticsearch 应用，现在官方也推出了基于 Kubernetes Operator 的应用：Elastic Cloud on Kubernetes (ECK)，用户可使用该产品在 Kubernetes 上配置、管理和运行 Elasticsearch 集群。">
+  <meta property="og:description" content="随着 kubernetes 的快速发展，很多应用都在往 kubernetes 上面迁移，现阶段对于无状态应用的迁移是非常容易做到的，但是对于有状态应用的迁移还是有一定门槛的，主要是有状态应用的运行方式各有不同，比如 MySQL、MongoDB、Redis 这些应用运行的方式方法都不太相同，特别是对于线上环境需要高可用的集群模式的时候，则差别就更大了，这就导致了无状态应用向 Kubernetes 的迁移必然进度会很慢。现在比较好的解决方案就是针对有状态应用开发对应的 Operator 应用，比如 prometheus-operator、etcd-operator 等等，关于 Operator 的开发，可以查看前面的一篇入门文章：Kubernetes Operator 快速入门教程 以了解更多信息。
+
+同样的，对于 Elasticsearch 应用，现在官方也推出了基于 Kubernetes Operator 的应用：Elastic Cloud on Kubernetes (ECK)，用户可使用该产品在 Kubernetes 上配置、管理和运行 Elasticsearch 集群。">
+  <meta name="twitter:description" content="随着 kubernetes 的快速发展，很多应用都在往 kubernetes 上面迁移，现阶段对于无状态应用的迁移是非常容易做到的，但是对于有状态应用的迁移还是有一定门槛的，主要是有状态应用的运行方式各有不同，比如 MySQL、MongoDB、Redis 这些应用运行的方式方法都不太相同，特别是对于线上环境需要高可用的集群模式的时候，则差别就更大了，这就导致了无状态应用向 Kubernetes 的 …">
+  <meta name="author" content=""/>
+  <link href='https://www.qikqiak.com/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/elastic-cloud-on-k8s/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.53" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/elastic-cloud-on-k8s/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
+
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.1c43a0f855c443c6ed43a2d4d266361d9f4215cc5018360540697aa08b894e55.css' integrity='sha256-HEOg&#43;FXEQ8btQ6LU0mY2HZ9CFcxQGDYFQGl6oIuJTlU='>
+
+  
+    
+    <!--[if lt IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <![endif]-->
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, operator, elasticsearch, kibana, 集群, volume">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/">阳明的博客</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="首页" href="https://www.qikqiak.com/">首页</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="Kubernetes" href="https://www.qikqiak.com/page/archive/">Kubernetes</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/ops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">项目</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">优点知识</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1561900073-f07fcec69cc2.jpeg" data-img-desc-1="https://unsplash.com/photos/snbf9h8rjCw"></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>使用Elasticsearch Operator快速部署Elasticsearch集群</h1>
+                  
+                  
+                    <span class="post-meta">
+  
+    发表于 July 1, 2019
+  
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>使用Elasticsearch Operator快速部署Elasticsearch集群</h1>
+                
+                
+                  <span class="post-meta">
+  
+    发表于 July 1, 2019
+  
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/operator/">operator</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/elasticsearch/">elasticsearch</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/kibana/">kibana</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#elastic-cloud-on-kubernetes">Elastic Cloud on Kubernetes</a></li>
+<li><a href="#安装-eck">安装 ECK</a></li>
+<li><a href="#更新集群">更新集群</a></li>
+<li><a href="#持久化">持久化</a></li>
+</ul></li>
+</ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>随着 <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> 的快速发展，很多应用都在往 <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> 上面迁移，现阶段对于无状态应用的迁移是非常容易做到的，但是对于有状态应用的迁移还是有一定门槛的，主要是有状态应用的运行方式各有不同，比如 MySQL、MongoDB、Redis 这些应用运行的方式方法都不太相同，特别是对于线上环境需要高可用的集群模式的时候，则差别就更大了，这就导致了无状态应用向 Kubernetes 的迁移必然进度会很慢。现在比较好的解决方案就是针对有状态应用开发对应的 <a href="https://www.qikqiak.com/tags/operator/">Operator</a> 应用，比如 prometheus-operator、etcd-operator 等等，关于 Operator 的开发，可以查看前面的一篇入门文章：<a href="https://www.qikqiak.com/post/k8s-operator-101/">Kubernetes Operator 快速入门教程</a> 以了解更多信息。</p>
+
+<p>同样的，对于 Elasticsearch 应用，现在官方也推出了基于 Kubernetes Operator 的应用：Elastic Cloud on Kubernetes (ECK)，用户可使用该产品在 Kubernetes 上配置、管理和运行 Elasticsearch 集群。</p>
+
+<h2 id="elastic-cloud-on-kubernetes">Elastic Cloud on Kubernetes</h2>
+
+<p><code>Elastic Cloud on Kubernetes(ECK)</code>是一个 Elasticsearch Operator，但远不止于此。
+ECK 使用 Kubernetes Operator 模式构建而成，需要安装在您的 Kubernetes 集群内，其功能绝不仅限于简化 Kubernetes 上 Elasticsearch 和 Kibana 的部署工作这一项任务。ECK 专注于简化所有后期运行工作，例如：</p>
+
+<ul>
+<li>管理和监测多个集群</li>
+<li>轻松升级至新的版本</li>
+<li>扩大或缩小集群容量</li>
+<li>更改集群配置</li>
+<li>动态调整本地存储的规模（包括 Elastic Local Volume（一款本地存储驱动器））</li>
+<li>备份</li>
+</ul>
+
+<p>ECK 不仅能自动完成所有运行和集群管理任务，还专注于简化在 Kubernetes 上使用 Elasticsearch 的完整体验。ECK 的愿景是为 Kubernetes 上的 Elastic 产品和解决方案提供 SaaS 般的体验。
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5376999672787220"
+     data-ad-slot="9165834656"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+在 ECK 上启动的所有 Elasticsearch 集群都默认受到保护，这意味着在最初创建的那一刻便已启用加密并受到默认强密码的保护。</p>
+
+<blockquote>
+<p>从 6.8 和 7.1 版本开始，Elasticsearch 核心安全功能（TLS 加密、基于角色的访问控制，以及文件和原生身份验证）会免费提供。</p>
+</blockquote>
+
+<p>通过 ECK 部署的所有集群都包括强大的基础（免费）级功能，例如可实现密集存储的冻结索引、Kibana Spaces、Canvas、Elastic Maps，等等。您甚至可以使用 Elastic Logs 和 Elastic Infrastructure 应用监测 Kubernetes 日志和基础设施。您可以获得在 Kubernetes 上使用 Elastic Stack 完整功能的体验。</p>
+
+<p>ECK 内构建了 Elastic Local Volume，这是一个适用于 Kubernetes 的集成式存储驱动器。ECK 中还融入了很多最佳实践，例如在缩小规模之前对节点进行 drain 操作，在扩大规模的时候对分片进行再平衡，等等。从确保在配置变动过程中不会丢失数据，到确保在规模调整过程中实现零中断。</p>
+
+<h2 id="安装-eck">安装 ECK</h2>
+
+<p>当然前提是你要有一个已经可运行的 <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> 集群（1.11版本以上），最好确保你的每个节点上至少有4GB内存可以使用，因为我们知道 Elasticsearch 是比较消耗资源的。</p>
+
+<p>首先在集群中安装 ECK 对应的 Operator 资源对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f https://download.elastic.co/downloads/eck/0.8.1/all-in-one.yaml</code></pre></div>
+<p>安装成功后，会自动创建一个 elastic-system 的 namespace 以及一个 operator 的 Pod：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n elastic-system
+NAME                             READY   STATUS    RESTARTS   AGE
+elastic-operator-0               <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">1</span>          15h</code></pre></div>
+<p>这个时候会安装上若干个 CRD 对象，当然这些 CRD 资源的控制器就在上面的 elastic-operator-0 这个 Pod 中：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get crd  | grep elastic
+apmservers.apm.k8s.elastic.co                     <span style="color:#bd93f9">2019</span>-06-30T08:12:41Z
+clusterlicenses.elasticsearch.k8s.elastic.co      <span style="color:#bd93f9">2019</span>-06-30T08:12:41Z
+elasticsearches.elasticsearch.k8s.elastic.co      <span style="color:#bd93f9">2019</span>-06-30T08:12:41Z
+enterpriselicenses.elasticsearch.k8s.elastic.co   <span style="color:#bd93f9">2019</span>-06-30T08:12:41Z
+kibanas.kibana.k8s.elastic.co                     <span style="color:#bd93f9">2019</span>-06-30T08:12:41Z
+remoteclusters.elasticsearch.k8s.elastic.co       <span style="color:#bd93f9">2019</span>-06-30T08:12:41Z
+trustrelationships.elasticsearch.k8s.elastic.co   <span style="color:#bd93f9">2019</span>-06-30T08:12:41Z
+users.elasticsearch.k8s.elastic.co                <span style="color:#bd93f9">2019</span>-06-30T08:12:41Z</code></pre></div>
+<p>然后我们可以利用 CRD 对象来创建一个非常简单的单个 Elasticsearch 集群：(elastic.yaml)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: elasticsearch.k8s.elastic.co/v1alpha1
+kind: Elasticsearch
+metadata:
+  name: elastic
+  namespace: elastic-system
+spec:
+  version: <span style="color:#bd93f9">7.2</span>.<span style="color:#bd93f9">0</span>
+  nodes:
+  - nodeCount: <span style="color:#bd93f9">1</span>
+    config:
+      node.master: <span style="color:#ff79c6">true</span>
+      node.data: <span style="color:#ff79c6">true</span>
+      node.ingest: <span style="color:#ff79c6">true</span></code></pre></div>
+<p>声明了要创建一个 7.2.0 版本的单节点的 Elasticsearch 资源对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create -f elastic.yaml</code></pre></div>
+<p>但是执行上面的命令会出现超时的情况：<code>Error from server (Timeout): error when creating &quot;STDIN&quot;: Timeout: request did not complete within requested timeout 30s</code>，创建不成功。这主要是因为 ECK 添加了一个 validation webhook 的 Admission，我们可以临时将这个对象删除：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># 先备份一下</span>
+$ kubectl get ValidatingWebhookConfiguration -o yaml &gt; ValidatingWebhookConfiguration.yaml
+<span style="color:#6272a4"># 删除 ValdiationWebhook</span>
+$ kubectl delete ValidatingWebhookConfiguration validating-webhook-configuration</code></pre></div>
+<p>然后重新执行上面的创建命令即可成功。创建成功后需要等一小会儿待镜像拉取成功，然后就可以看到一个前缀为<code>elastic</code>的 Pod 运行成功：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ get pods -n elastic-system
+NAME                             READY   STATUS    RESTARTS   AGE
+elastic-es-h4xns977f5            <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          3h10m
+elastic-operator-0               <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">1</span>          15h</code></pre></div>
+<p>同样可以查看自定义的<code>Elasticsearch</code>这个 CRD 资源对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get elasticsearch -n elastic-system
+NAME      HEALTH   NODES   VERSION   PHASE         AGE
+elastic   green    <span style="color:#bd93f9">1</span>       <span style="color:#bd93f9">7</span>.2.0     Operational   3h10m</code></pre></div>
+<p>我们可以看到集群的相关信息。</p>
+
+<p>同样，也可以用 CRD 对象 Kibana 来部署 kibana 应用：(kibana.yaml)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: kibana.k8s.elastic.co/v1alpha1
+kind: Kibana
+metadata:
+  name: kibana
+  namespace: elastic-system
+spec:
+  version: <span style="color:#bd93f9">7.2</span>.<span style="color:#bd93f9">0</span>
+  nodeCount: <span style="color:#bd93f9">1</span>
+  elasticsearchRef:
+    name: elastic</code></pre></div>
+<p>注意属性<code>spec.elasticsearchRef.name</code>的值为上面我们创建的 Elasticsearch 对象的 name：<code>elastic</code>。直接添加这个资源对象即可：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create -f kibana.yaml
+$ kubectl get pods -n elastic-system
+NAME                             READY   STATUS    RESTARTS   AGE
+elastic-es-h4xns977f5            <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          3h15m
+elastic-operator-0               <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">1</span>          15h
+kibana-kibana-79479c64bc-zpdr7   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          162m
+$ kubectl get svc -n elastic-system
+NAME                      TYPE        CLUSTER-IP       EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>    AGE
+elastic-es                ClusterIP   <span style="color:#bd93f9">10</span>.98.117.110    &lt;none&gt;        <span style="color:#bd93f9">9200</span>/TCP   3h17m
+elastic-es-discovery      ClusterIP   None             &lt;none&gt;        <span style="color:#bd93f9">9300</span>/TCP   3h17m
+elastic-webhook-service   ClusterIP   <span style="color:#bd93f9">10</span>.106.65.101    &lt;none&gt;        <span style="color:#bd93f9">443</span>/TCP    15h
+kibana-kibana             ClusterIP   <span style="color:#bd93f9">10</span>.107.3.36      &lt;none&gt;        <span style="color:#bd93f9">5601</span>/TCP   3h16m</code></pre></div>
+<p>最后我们可以去访问 kibana 来验证我们的集群，比如我们可以再添加一个 Ingress 对象：(ingress.yaml)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: kibana
+  namespace: elastic-system
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  rules:
+  - host: kibana.qikqiak.com
+    http:
+      paths:
+      - backend:
+          serviceName: kibana-kibana
+          servicePort: <span style="color:#bd93f9">5601</span>
+        path: /</code></pre></div>
+<p>创建上面的 Ingress 对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create -f ingress.yaml
+$ kubectl get ingress -n elastic-system
+NAME      HOSTS                ADDRESS   PORTS     AGE
+kibana    kibana.qikqiak.com             <span style="color:#bd93f9">80</span>        82m</code></pre></div>
+<blockquote>
+<p>将上面的域名做好 DNS 解析或者 hosts 映射。</p>
+</blockquote>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5376999672787220"
+     data-ad-slot="9165834656"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+
+<p>然后我们需要获取访问 kibana 的用户名和密码，用户名默认是<code>elastic</code>，可以通过如下方式获取访问密码：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ <span style="color:#8be9fd;font-style:italic">PASSWORD</span><span style="color:#ff79c6">=</span><span style="color:#ff79c6">$(</span>kubectl get secret elastic-elastic-user -n elastic-system -o<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">jsonpath</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;{.data.elastic}&#39;</span> | base64 --decode<span style="color:#ff79c6">)</span>
+$ <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#8be9fd;font-style:italic">$PASSWORD</span>
+...这是访问密码..</code></pre></div>
+<p>接下来在浏览器中打开上面的<code>kibana.qikqiak.com</code>地址，正常就会跳转到登录页面了：
+<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kibana-login.png" alt="kibana login" /></p>
+
+<p>使用上面的用户名和密码登录即可进入 kibana dashboard 页面：
+<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kibana-dashboard.png" alt="kibana dashboard" /></p>
+
+<h2 id="更新集群">更新集群</h2>
+
+<p>上面我们部署的 Elasticsearch 集群是一个单节点的，我们可以直接修改 Elasticsearch 的资源清单文件来修改集群配置。ECK 会确保我们在现有集群上进行修改不会中断应用。</p>
+
+<p>比如，我们将集群升级到2个节点，只需要设置<code>spec.nodes[0].nodeCount=2</code>即可：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: elasticsearch.k8s.elastic.co/v1alpha1
+kind: Elasticsearch
+metadata:
+  name: elastic
+  namespace: elastic-system
+spec:
+  version: <span style="color:#bd93f9">7.2</span>.<span style="color:#bd93f9">0</span>
+  nodes:
+  - nodeCount: <span style="color:#bd93f9">2</span>
+    config:
+      node.master: <span style="color:#ff79c6">true</span>
+      node.data: <span style="color:#ff79c6">true</span>
+      node.ingest: <span style="color:#ff79c6">true</span></code></pre></div>
+<p>直接更新集群信息即可：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f elastic.yaml
+$ kubectl get pods -n elastic-system
+NAME                             READY   STATUS    RESTARTS   AGE
+elastic-es-7pz8pv5ztj            <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          7m56s
+elastic-es-h4xns977f5            <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          3h36m
+elastic-operator-0               <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">1</span>          15h
+kibana-kibana-79479c64bc-zpdr7   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          3h3m
+$ kubectl get elasticsearch -n elastic-system
+NAME      HEALTH   NODES   VERSION   PHASE         AGE
+elastic   green    <span style="color:#bd93f9">2</span>       <span style="color:#bd93f9">7</span>.2.0     Operational   3h37m</code></pre></div>
+<p>可以看到 elastic 这个 Elasticsearch 资源的状态是<code>green</code>，两个节点。</p>
+
+<h2 id="持久化">持久化</h2>
+
+<p>上面我们部署的集群默认是使用的<code>emptyDir volume</code>，我们知道<code>emptyDir</code>和 Pod 的生命周期是一致的，Pod 重建后数据肯定就没有了，在生产环境中肯定是不行的。</p>
+
+<p>我们可以在集群中使用 PV/PVC 来进行持久化，同样，在上面的 Elasticsearch 资源对象中添加存储相关数据：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: elasticsearch.k8s.elastic.co/v1alpha1
+kind: Elasticsearch
+metadata:
+  name: elastic
+  namespace: elastic-system
+spec:
+  version: <span style="color:#bd93f9">7.2</span>.<span style="color:#bd93f9">0</span>
+  nodes:
+  - nodeCount: <span style="color:#bd93f9">2</span>
+    config:
+      node.master: <span style="color:#ff79c6">true</span>
+      node.data: <span style="color:#ff79c6">true</span>
+      node.ingest: <span style="color:#ff79c6">true</span>
+    volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+        <span style="color:#6272a4">#storageClassName: standard # 可以指定可用的storage class</span></code></pre></div>
+<p>为了能够获得磁盘的最佳性能，ECK 支持每个节点使用 local volume，关于在 ECK 中使用 local volume 的方法可以查看下面几篇资料：</p>
+
+<ul>
+<li><a href="https://kubernetes.io/docs/concepts/storage/storage-classes">persistent volumes storage classes</a></li>
+<li><a href="https://github.com/elastic/cloud-on-k8s/tree/master/local-volume">elastic local volume dynamic provisioner to setup dynamic local volumes based on LVM.</a></li>
+<li><a href="https://github.com/kubernetes-sigs/sig-storage-local-static-provisioner">kubernetes-sigs local volume static provisioner to setup static local volumes.</a></li>
+</ul>
+
+<p>关于定制 Elasticsearch 资源对象的一些方法，我们可以直接去查看 ECK 的 git 仓库中的介绍即可，当然我们也可以直接在集群中通过<code>describe</code>命令去获取 Elastisearch CRD 的资源声明：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl describe crd elasticsearch</code></pre></div>
+<p>项目地址：<a href="https://github.com/elastic/cloud-on-k8s/">https://github.com/elastic/cloud-on-k8s/</a>
+<p><a href="https://www.qikqiak.com/post/promotion-51" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/9mogk.png" alt="kubernetes进阶课程"></a></p>
+</p>
+
+          <h2>微信公众号</h2>
+<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
+<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-operator-101/">Kubernetes Operator 快速入门教程</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/prometheus-operator-advance/">Prometheus Operator 高级配置</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/prometheus-operator-custom-alert/">Prometheus Operator 自定义报警</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/prometheus-operator-monitor-etcd/">Prometheus Operator 监控 etcd 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/first-use-prometheus-operator/">Prometheus Operator 初体验</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/helm-monitor-plugin/">Helm monitor 插件(附视频)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/pod-mount-single-file/">Pod 中挂载单个文件的方法</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/socketio-multiple-nodes-in-kubernetes/">kubernetes 下实现socket.io 的集群模式</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/manual-install-high-available-kubernetes-cluster/">手动搭建高可用的kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-auth-via-oidc/">通过 GitHub OAuth 和 Dex 访问 Kubernetes 集群</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/k8s-auth-via-oidc/" data-toggle="tooltip" data-placement="top" title="通过 GitHub OAuth 和 Dex 访问 Kubernetes 集群">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/promotion-51/" data-toggle="tooltip" data-placement="top" title="打造独当一面的 Kubernetes 运维、开发工程师">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '使用Elasticsearch Operator快速部署Elasticsearch集群',
+        createIssueManually: true,
+        id: 'elastic-cloud-on-k8s',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2019
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/archives/">文章归档</a>
+            &nbsp;&bull;&nbsp;
+            
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.53</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+
+<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+
+
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+
+  </body>
+</html>
+
