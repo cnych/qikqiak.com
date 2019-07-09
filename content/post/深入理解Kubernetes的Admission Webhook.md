@@ -24,6 +24,8 @@ category: "kubernetes"
 <!--adsense-text-->
 由于上面的控制器的限制，我们就需要用到**“动态”**的概念了，而不是和 apiserver 耦合在一起，`Admission webhooks`和`initializers`就通过一种动态配置方法解决了这个限制问题。对于这两个功能，`initializers`属于比较新的功能，而且平时用得非常少，还是一个`alpha`特性，所以更多的我们会来了解下`Admission webhooks`的使用方法。
 
+> 在新版本(1.14+) kubernetes 集群中已经移除了对`initializers`的支持，所以可以不用考虑这种方式。
+
 ### admission webhook 是什么?
 在 Kubernetes apiserver 中包含两个特殊的准入控制器：`MutatingAdmissionWebhook`和`ValidatingAdmissionWebhook`。这两个控制器将发送准入请求到外部的 HTTP 回调服务并接收一个准入响应。如果启用了这两个准入控制器，Kubernetes 管理员可以在集群中创建和配置一个 admission webhook。
 
@@ -47,7 +49,33 @@ category: "kubernetes"
 ### 先决条件
 一个 Kubernetes 当然是必须的，你可以通过[二进制](/post/manual-install-high-available-kubernetes-cluster/)或者 [Kubeadm 来快速搭建集群](/post/use-kubeadm-install-kubernetes-1.10/)，或者使用云服务厂商托管的集群都可以。（1.9版本以上）
 
-然后确保在 apiserver 中启用了`MutatingAdmissionWebhook`和`ValidatingAdmissionWebhook`这两个控制器，通过运行下面的命令检查集群中是否启用了准入注册 API：
+然后确保在 apiserver 中启用了`MutatingAdmissionWebhook`和`ValidatingAdmissionWebhook`这两个控制器，由于我这里集群使用的是 kubeadm 搭建的，可以通过查看 apiserver Pod 的配置：
+```shell
+$ kubectl get pods kube-apiserver-ydzs-master -n kube-system -o yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    component: kube-apiserver
+    tier: control-plane
+  name: kube-apiserver-ydzs-master
+  namespace: kube-system
+......
+spec:
+  containers:
+  - command:
+    - kube-apiserver
+    - --advertise-address=10.151.30.11
+    - --allow-privileged=true
+    - --authorization-mode=Node,RBAC
+    - --client-ca-file=/etc/kubernetes/pki/ca.crt
+    - --enable-admission-plugins=NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook
+......
+```
+
+上面的`enable-admission-plugins`参数中带上了`MutatingAdmissionWebhook`和`ValidatingAdmissionWebhook`两个准入控制插件，如果没有的，需要添加上这两个参数，然后重启 apiserver。
+
+然后通过运行下面的命令检查集群中是否启用了准入注册 API：
 ```shell
 $ kubectl api-versions |grep admission
 
@@ -378,7 +406,7 @@ service "admission-webhook-example-svc" created
 ```yaml
 clientConfig:
   service:
-	name: admission-webhook-example-webhook-svc
+	name: admission-webhook-example-svc
 	namespace: default
 	path: "/validate"
   caBundle: ${CA_BUNDLE}
