@@ -146,7 +146,3 @@
  * [用awk做基本运算](https://www.qikqiak.com/post/awk-base-compute/)
  * [Nginx中如何设置301跳转](https://www.qikqiak.com/post/nginx-301-redirect/)
 
-
-## 博客Demo：
-![demo](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/u570n.jpg)
-
