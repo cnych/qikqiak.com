@@ -101,6 +101,9 @@ nopager: true
  * [Kubernetes Deployment滚动升级](https://www.qikqiak.com/post/kubernetes-rollout-update/)
  * [Kubernetes使用Prometheus搭建监控平台](https://www.qikqiak.com/post/kubernetes-monitor-prometheus-grafana/)
 
+#### Golang
+ * [Go Modules 基本使用](https://www.qikqiak.com/post/go-modules-usage/)
+
 #### Python
  * [深入理解 Python 元类](https://www.qikqiak.com/post/what-is-metaclass-in-python)
  * [在 Django 中如何添加没有微秒的 DateTimeField 属性](https://www.qikqiak.com/post/how-to-add-datetimefield-in-django-without-microsecond)
