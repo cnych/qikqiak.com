@@ -358,6 +358,9 @@ kubectl get pods
 ![command](/img/posts/jenkins-demo1-config3.jpeg)
 
 
+> 注意：如果在执行`kubectl apply`这一步的时候出现类似于`Failed to download OpenAPI (unknown), falling back to swagger error: error validating: "k8s.yaml": error validating data: unknown; if you choose to ignore these errors, trun validation off with --validate=false`这样的错误，这是因为我使用的镜像`cnych/jenkins:jnlp`里面内置的`kubectl`工具是 v1.10.0 版本的，如果你的 kubernetes 集群版本较高，就会出现这种情况，要解决这个问题也很简单，可以基于我这个镜像重新制作一个镜像，把 kubectl 工具用正确的版本覆盖掉即可，[点击查看我原始的 Dockerfile 文件](https://github.com/cnych/kubernetes-learning/blob/master/jenkins/jenkins-slave.Dockerfile)。 
+
+
 现在我们直接在页面点击做成的 Build now 触发构建即可，然后观察 Kubernetes 集群中 Pod 的变化
 ```shell
 $ kubectl get pods -n kube-ops

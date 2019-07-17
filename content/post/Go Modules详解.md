@@ -192,7 +192,7 @@ stardust@v1.0.0
 比如现在我们发现之前模块中的 Hello 函数有 bug，所以我们需要修复并发布一个新的版本：
 ```go
 func Hello(name string) string{
-	return fmt.Sprintf("Hello, %s!!!", name), nil
+	return fmt.Sprintf("Hello, %s!!!", name)
 }
 ```
 
