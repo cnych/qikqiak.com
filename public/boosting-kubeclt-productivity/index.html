@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>提高 kubectl 生产力[译]-www.qikqiak.com|阳明的博客|Kubernetes|Docker|istio|Python|Golang|Cloud Native</title>
+  <meta property="og:title" content="提高 kubectl 生产力[译]" />
+  <meta name="twitter:title" content="提高 kubectl 生产力[译]" />
+
+  <meta name="description" content="我们知道在使用 Kubernetes 的过程中，kubectl 工具可能是最常用的工具了（可能还没有之一），所以当我们花费大量的时间在使用 kubectl 上面的时候，那么我们就非常有必要去了解下如何高效的使用它了。
+
+本文包含一系列提示和技巧，可以让你更加高效的使用 kubectl，同时还可以加深你对 Kubernetes 各方面工作原理的理解。">
+  <meta property="og:description" content="我们知道在使用 Kubernetes 的过程中，kubectl 工具可能是最常用的工具了（可能还没有之一），所以当我们花费大量的时间在使用 kubectl 上面的时候，那么我们就非常有必要去了解下如何高效的使用它了。
+
+本文包含一系列提示和技巧，可以让你更加高效的使用 kubectl，同时还可以加深你对 Kubernetes 各方面工作原理的理解。">
+  <meta name="twitter:description" content="我们知道在使用 Kubernetes 的过程中，kubectl 工具可能是最常用的工具了（可能还没有之一），所以当我们花费大量的时间在使用 kubectl 上面的时候，那么我们就非常有必要去了解下如何高效的使用它了。
+
+本文包含一系列提示和技巧，可以让你更加高效的使用 kubectl，同时还可以加深你对 Kubernetes 各方面工作原理的理解。">
+  <meta name="author" content=""/>
+  <link href='https://www.qikqiak.com/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/boosting-kubeclt-productivity/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.53" />
+  <link rel="canonical" href="https://www.qikqiak.com/boosting-kubeclt-productivity/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
+
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.1c43a0f855c443c6ed43a2d4d266361d9f4215cc5018360540697aa08b894e55.css' integrity='sha256-HEOg&#43;FXEQ8btQ6LU0mY2HZ9CFcxQGDYFQGl6oIuJTlU='>
+
+  
+    
+    <!--[if lt IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <![endif]-->
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, docker, kubectl, 效率">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/">阳明的博客</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="首页" href="https://www.qikqiak.com/">首页</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/ops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://www.qikqiak.com/img/posts/photo-1495855720902-bb60e936d7ca.jpeg" data-img-desc-1="moonlit"></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="page-heading">
+                <h1>提高 kubectl 生产力[译]</h1>
+                  
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="page-heading">
+              <h1>提高 kubectl 生产力[译]</h1>
+                
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/kubectl/">kubectl</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>我们知道在使用 Kubernetes 的过程中，kubectl 工具可能是最常用的工具了（可能还没有之一），所以当我们花费大量的时间在使用 kubectl 上面的时候，那么我们就非常有必要去了解下如何高效的使用它了。</p>
+
+<p>本文包含一系列提示和技巧，可以让你更加高效的使用 kubectl，同时还可以加深你对 Kubernetes 各方面工作原理的理解。</p>
+
+<h2 id="什么是-kubectl">什么是 kubectl?</h2>
+
+<p>在学习如何更高效地使用 kubectl 之前，我们应该去了解下 kubectl 是什么已经它是如何工作的。</p>
+
+<p>从用户角度来说，kubectl 就是控制 Kubernetes 的驾驶舱，它允许你执行所有可能的 Kubernetes 操作；从技术角度来看，kubectl 就是 Kubernetes API 的一个客户端而已。</p>
+
+<p>Kubernetes API 是一个 HTTP REST API 服务，该 API 服务才是 Kubernetes 的真正的用户接口，Kubernetes 通过该 API 进行实际的控制。这也就意味着每个 Kubernetes 的操作都会通过 API 端点暴露出去，当然也就可以通过对这些 API 端口进行 HTTP 请求来执行相应的操作。</p>
+
+<p>所以，kubectl 最主要的工作就是执行 Kubernetes API 的 HTTP 请求：</p>
+
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubernetes-kubectl.svg" alt="kubernetes kubectl"><figcaption>kubernetes kubectl</figcaption></figure>
+
+<blockquote>
+<p>Kubernetes 是一个完全以资源为中的系统，Kubernetes 维护资源的内部状态，所有 Kubernetes 的操作都是对这些资源的 <a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#resource-operations">CRUD 操作</a>，你可以通过操作这些资源来完全控制 Kubernetes（Kubernetes 会根据当前的资源状态来确定需要做什么）。</p>
+</blockquote>
+
+<p>比如下面的例子。</p>
+
+<p>假如现在我们想要创建一个 ReplicaSet 的资源，然后创建一个名为 replicaset.yaml 的资源文件来定义 ReplicaSet，然后运行下面的命令：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create -f replicaset.yaml</code></pre></div>
+<p>这个命令执行后会在 Kubernetes 中创建一个 ReplicaSet 的资源，但是这幕后发生了什么呢？</p>
+
+<p>Kubernetes 具有创建 ReplicaSet 的操作，并且和其他 Kubernetes 操作一样的，也是通过 API 端点暴露出来的，上面的操作会通过指定的 API 端口进行如下的操作：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">POST /apis/apps/v1/namespaces/<span style="color:#ff79c6">{</span>namespace<span style="color:#ff79c6">}</span>/replicasets</code></pre></div>
+<blockquote>
+<p>我们可以在 <a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15">API 文档</a>中找到所有 Kubernetes 操作的 API Endpoint（包括<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#create-replicaset-v1-apps">上面的端点</a>），要向 Endpoint 发起实际的请求，我们需要将 APIServer 的 URL 添加到 API 文档中列出的 Endpoint 路径中。</p>
+</blockquote>
+
+<p>所以，当我们执行上面的命令时，kubectl 会向上面的 API Endpoint 发起一个 HTTP POST 请求，ReplicaSet 的定义（replicaset.yaml 文件中的内容）通过请求的 body 进行传递。这就是 kubectl 与 Kubernetes 集群交互的命令如何工作的。</p>
+
+<blockquote>
+<p>我们也完全可以使用 curl 等工具手动的向 Kubernetes API 发起 HTTP 请求，kubectl 只是让我们更加容易地使用 Kubernetes API 了。</p>
+</blockquote>
+
+<p>这些是 kubectl 的最基础的知识点，但是每个 kubectl 操作者还有很多 Kubernetes API 的知识点需要了解，所以我们这里再简要介绍一下 Kubernetes 的内部结构。</p>
+
+<h3 id="kubernetes-内部结构">Kubernetes 内部结构</h3>
+
+<p>Kubernetes 由一组独立的组件组成，这些组件在集群的节点上作为单独的进行运行，有些组件在 Master 节点上运行，有一些组件在 Node 节点上运行，每个组件都有一些特定的功能。</p>
+
+<p>Master 节点上最主要的组件有下面几个：</p>
+
+<ul>
+<li><strong>etcd</strong>: 存储后端，整个集群的资源信息都存在 etcd 里面</li>
+<li><strong>kube-apiserver</strong>: 提供给整个集群的 API 服务，是唯一一个直接和 etcd 进行交互的组件</li>
+<li><strong>kube-controller-manager</strong>: 控制器，主要是确保资源状态符合期望值</li>
+<li><strong>kube-scheduler</strong>: 调度器，将 Pod 调度到工作节点</li>
+</ul>
+
+<p>Node 节点上最重要的组件：</p>
+
+<ul>
+<li><strong>kubelet</strong>: 管理工作节点上的容器</li>
+</ul>
+
+<p>为了了解这些组件之间是如何协同工作的，我们再来看下上面的例子，假如我们执行了上面的<code>kubectl create -f replicaset.yaml</code>命令，kubectl 对创建 ReplicaSet 的 API Endpoint 发起了一个 HTTP POST 请求，这个时候我们的集群有什么变化呢？看下面的演示：</p>
+
+<p><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-post-rs1.svg" alt="" /></p>
+
+<div class="slideshow-js overflow-hidden"><ul class="pl0 list slider-js flex ok" style="width: 5152px;"><li class="mv3" style="width: 736px;"><img src="https://www.qikqiak.com/a/0cffba4361482ae758d9ec4f20c2ca68.svg" alt="Following kubectl create -f replicaset.yaml, the API server saves your ReplicaSet resource definition in the storage backend."><div class="bt b-solid bw2 b--black-70 relative mt0"><div class="bg-black-10 br1 pa1 dib mt2 absolute bottom-1 left-0"><span class="b black-60">1</span><span class="f7 black-50">/7</span></div></div><div class="navigation-js flex items-start justify-between bg-evian ph2"><div class="w-20">&nbsp;</div><div class="f5 lh-copy black-90 w-60 center"><p class="lh-copy measure-wide f5">Following <code class="code f5 lh-copy bg-near-white br2 pv1 ph2 fs-normal">kubectl create -f replicaset.yaml</code>, the API server saves your ReplicaSet resource definition in the storage backend.</p></div><div class="f6 b black-50 pv3 pointer w-20 tr"><span class="ttu">Next</span>
+    <svg viewBox="0 0 10 16" xmlns="http://www.w3.org/2000/svg" class="pagination-icon ml2">
+      <polyline fill="none" vectoreffect="non-scaling-stroke" points="2,2 8,8 2,14"></polyline>
+    </svg></div></div></li><li class="mv3" style="width: 736px;"><img src="https://www.qikqiak.com/a/a730629c8feff44bc3f72370041cddbb.svg" alt="This triggers the ReplicaSet controller in the controller manager, who watches for creations, updates, and deletions of ReplicaSet resources."><div class="bt b-solid bw2 b--black-70 relative mt0"><div class="bg-black-10 br1 pa1 dib mt2 absolute bottom-1 left-0"><span class="b black-60">2</span><span class="f7 black-50">/7</span></div></div><div class="navigation-js flex items-start justify-between bg-evian ph2"><div class="f6 b black-50 pv3 pointer w-20"><svg viewBox="0 0 10 16" xmlns="http://www.w3.org/2000/svg" class="pagination-icon mr2">
+      <polyline fill="none" vectoreffect="non-scaling-stroke" points="8,2 2,8 8,14"></polyline>
+    </svg>
+    <span class="ttu">Previous</span></div><div class="f5 lh-copy black-90 w-60 center"><p class="lh-copy measure-wide f5">This triggers the ReplicaSet controller in the controller manager, who watches for creations, updates, and deletions of ReplicaSet resources.</p></div><div class="f6 b black-50 pv3 pointer w-20 tr"><span class="ttu">Next</span>
+    <svg viewBox="0 0 10 16" xmlns="http://www.w3.org/2000/svg" class="pagination-icon ml2">
+      <polyline fill="none" vectoreffect="non-scaling-stroke" points="2,2 8,8 2,14"></polyline>
+    </svg></div></div></li><li class="mv3" style="width: 736px;"><img src="https://www.qikqiak.com/a/e7d414fb2d11977c16f9a7eeeecc1f9a.svg" alt="The ReplicaSet controller creates a Pod definition for each replica of the ReplicaSet (according to the Pod template in the ReplicaSet definition) and saves them in the storage backend."><div class="bt b-solid bw2 b--black-70 relative mt0"><div class="bg-black-10 br1 pa1 dib mt2 absolute bottom-1 left-0"><span class="b black-60">3</span><span class="f7 black-50">/7</span></div></div><div class="navigation-js flex items-start justify-between bg-evian ph2"><div class="f6 b black-50 pv3 pointer w-20"><svg viewBox="0 0 10 16" xmlns="http://www.w3.org/2000/svg" class="pagination-icon mr2">
+      <polyline fill="none" vectoreffect="non-scaling-stroke" points="8,2 2,8 8,14"></polyline>
+    </svg>
+    <span class="ttu">Previous</span></div><div class="f5 lh-copy black-90 w-60 center"><p class="lh-copy measure-wide f5">The ReplicaSet controller creates a Pod definition for each replica of the ReplicaSet (according to the Pod template in the ReplicaSet definition) and saves them in the storage backend.</p></div><div class="f6 b black-50 pv3 pointer w-20 tr"><span class="ttu">Next</span>
+    <svg viewBox="0 0 10 16" xmlns="http://www.w3.org/2000/svg" class="pagination-icon ml2">
+      <polyline fill="none" vectoreffect="non-scaling-stroke" points="2,2 8,8 2,14"></polyline>
+    </svg></div></div></li><li class="mv3" style="width: 736px;"><img src="https://www.qikqiak.com/a/ae4d94277e65bd68dde0b4670062d353.svg" alt="This triggers the scheduler who watches for Pods that have not yet been assigned to a worker node."><div class="bt b-solid bw2 b--black-70 relative mt0"><div class="bg-black-10 br1 pa1 dib mt2 absolute bottom-1 left-0"><span class="b black-60">4</span><span class="f7 black-50">/7</span></div></div><div class="navigation-js flex items-start justify-between bg-evian ph2"><div class="f6 b black-50 pv3 pointer w-20"><svg viewBox="0 0 10 16" xmlns="http://www.w3.org/2000/svg" class="pagination-icon mr2">
+      <polyline fill="none" vectoreffect="non-scaling-stroke" points="8,2 2,8 8,14"></polyline>
+    </svg>
+    <span class="ttu">Previous</span></div><div class="f5 lh-copy black-90 w-60 center"><p class="lh-copy measure-wide f5">This triggers the scheduler who watches for Pods that have not yet been assigned to a worker node.</p></div><div class="f6 b black-50 pv3 pointer w-20 tr"><span class="ttu">Next</span>
+    <svg viewBox="0 0 10 16" xmlns="http://www.w3.org/2000/svg" class="pagination-icon ml2">
+      <polyline fill="none" vectoreffect="non-scaling-stroke" points="2,2 8,8 2,14"></polyline>
+    </svg></div></div></li><li class="mv3" style="width: 736px;"><img src="https://www.qikqiak.com/a/0f49ed708a0c49b7e0c12c3b35ef2eb8.svg" alt="The scheduler chooses a suitable worker node for each Pod and adds this information to the Pod definitions in the storage backend."><div class="bt b-solid bw2 b--black-70 relative mt0"><div class="bg-black-10 br1 pa1 dib mt2 absolute bottom-1 left-0"><span class="b black-60">5</span><span class="f7 black-50">/7</span></div></div><div class="navigation-js flex items-start justify-between bg-evian ph2"><div class="f6 b black-50 pv3 pointer w-20"><svg viewBox="0 0 10 16" xmlns="http://www.w3.org/2000/svg" class="pagination-icon mr2">
+      <polyline fill="none" vectoreffect="non-scaling-stroke" points="8,2 2,8 8,14"></polyline>
+    </svg>
+    <span class="ttu">Previous</span></div><div class="f5 lh-copy black-90 w-60 center"><p class="lh-copy measure-wide f5">The scheduler chooses a suitable worker node for each Pod and adds this information to the Pod definitions in the storage backend.</p></div><div class="f6 b black-50 pv3 pointer w-20 tr"><span class="ttu">Next</span>
+    <svg viewBox="0 0 10 16" xmlns="http://www.w3.org/2000/svg" class="pagination-icon ml2">
+      <polyline fill="none" vectoreffect="non-scaling-stroke" points="2,2 8,8 2,14"></polyline>
+    </svg></div></div></li><li class="mv3" style="width: 736px;"><img src="https://www.qikqiak.com/a/e9965641d8d90d678a146114f49de435.svg" alt="This triggers the kubelet on the worker node that the Pods have been scheduled to, who watches for Pods that have been scheduled to its worker node."><div class="bt b-solid bw2 b--black-70 relative mt0"><div class="bg-black-10 br1 pa1 dib mt2 absolute bottom-1 left-0"><span class="b black-60">6</span><span class="f7 black-50">/7</span></div></div><div class="navigation-js flex items-start justify-between bg-evian ph2"><div class="f6 b black-50 pv3 pointer w-20"><svg viewBox="0 0 10 16" xmlns="http://www.w3.org/2000/svg" class="pagination-icon mr2">
+      <polyline fill="none" vectoreffect="non-scaling-stroke" points="8,2 2,8 8,14"></polyline>
+    </svg>
+    <span class="ttu">Previous</span></div><div class="f5 lh-copy black-90 w-60 center"><p class="lh-copy measure-wide f5">This triggers the kubelet on the worker node that the Pods have been scheduled to, who watches for Pods that have been scheduled to its worker node.</p></div><div class="f6 b black-50 pv3 pointer w-20 tr"><span class="ttu">Next</span>
+    <svg viewBox="0 0 10 16" xmlns="http://www.w3.org/2000/svg" class="pagination-icon ml2">
+      <polyline fill="none" vectoreffect="non-scaling-stroke" points="2,2 8,8 2,14"></polyline>
+    </svg></div></div></li><li class="mv3" style="width: 736px;"><img src="https://www.qikqiak.com/a/1234604774236d22ae766a33b7a7e755.svg" alt="The kubelet reads the Pod definitions from the storage backend and instructs the container runtime (Docker, for example) to run the containers on the worker node."><div class="bt b-solid bw2 b--black-70 relative mt0"><div class="bg-black-10 br1 pa1 dib mt2 absolute bottom-1 left-0"><span class="b black-60">7</span><span class="f7 black-50">/7</span></div></div><div class="navigation-js flex items-start justify-between bg-evian ph2"><div class="f6 b black-50 pv3 pointer w-20"><svg viewBox="0 0 10 16" xmlns="http://www.w3.org/2000/svg" class="pagination-icon mr2">
+      <polyline fill="none" vectoreffect="non-scaling-stroke" points="8,2 2,8 8,14"></polyline>
+    </svg>
+    <span class="ttu">Previous</span></div><div class="f5 lh-copy black-90 w-60 center"><p class="lh-copy measure-wide f5">The kubelet reads the Pod definitions from the storage backend and instructs the container runtime (Docker, for example) to run the containers on the worker node.</p></div><div class="w-20">&nbsp;</div></div></li></ul>
+</div>
+
+          <h2>微信公众号</h2>
+<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
+<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/use-kubeadm-upgrade-k8s/">使用 kubeadm 更新 kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/manual-install-high-available-kubernetes-cluster/">手动搭建高可用的kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-auth-via-oidc/">通过 GitHub OAuth 和 Dex 访问 Kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/">在 Kubernetes 上安装 Gitlab</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/harbor-quick-install/">在 Kubernetes 在快速安装 Harbor</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/harbor-code-analysis/">Harbor 源码浅析</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/dockerfile-best-practice/">Dockerfile 最佳实践</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/pod-init-container/">初始化容器</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/write-kubernets-golang-service-step-by-step/">手摸手教你写 Kubernetes 的 golang 服务</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/install-docker-registry-harbor-in-kubernetes/">在kubernetes 集群上搭建docker 私有仓库Harbor</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+          
+        </ul>
+        
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '提高 kubectl 生产力[译]',
+        createIssueManually: true,
+        id: 'boosting-kubeclt-productivity',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2019
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">文章归档</a>
+            &nbsp;&bull;&nbsp;
+            
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.53</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+
+<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+
+
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+
+  </body>
+</html>
+
