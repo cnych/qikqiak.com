@@ -323,7 +323,10 @@ autocomplete('#aa-search-input',
 <li><a href="#zsh">Zsh</a></li>
 </ul></li>
 <li><a href="#2-快速查找资源">2. 快速查找资源</a></li>
-<li><a href="#参考文档">参考文档</a></li>
+<li><a href="#3-使用自定义列格式化输出">3. 使用自定义列格式化输出</a>
+<ul>
+<li><a href="#jsonpath-表达式">JSONPath 表达式</a></li>
+</ul></li>
 </ul></li>
 </ul>
 </nav>
@@ -656,13 +659,77 @@ $ yum install bash-completion</code></pre></div>
 compinit</code></pre></div>
 <h2 id="2-快速查找资源">2. 快速查找资源</h2>
 
-<p>todo</p>
+<p>我们在使用 YAML 文件创建资源时，需要知道这些资源的一些字段和含义，一个比较有效的方法就是去 API 文档中查看这些资源对象的完整规范定义。</p>
 
-<h2 id="参考文档">参考文档</h2>
+<p>但是如果每次要查找某些内容的时候都切换到浏览器去查询也是很麻烦的一件事情，所以，kubectl 为我们提供了一个 <code>kubectl explain</code> 命令，可以在终端中直接打印出来所有资源的规范定义。<code>kubectl explain</code>命令的用法如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl explain resource<span style="color:#ff79c6">[</span>.field<span style="color:#ff79c6">]</span>...</code></pre></div>
+<p>该命令可以输出请求的资源或者属性的一些规范信息，通过该命令显示的信息和 API 文档中的信息是相同的，参考下面使用示例：</p>
+
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-explain-action.svg" alt="kubectl explain command action"><figcaption>kubectl explain command action</figcaption></figure>
+
+<p>默认情况下，<code>kubectl explain</code>命令只会显示属性的一级数据，我们可以使用<code>--recursive</code>参数来显示整个属性的数据：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl explain deployment.spec --recursive</code></pre></div>
+<p>该命令会将 deployment.spec 属性下面所有的规范都打印出来。</p>
+
+<p>如果你不太确定可以使用<code>kubectl explain</code>的资源名，可以使用下面的命令来获取所有资源名称：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl api-resources</code></pre></div>
+<p>该命令会线上资源名称的复数形式（比如显示 deployments 而不是 deployment），还会显示一个资源的简写（比如 deploy），不过不用担心，我们可以用任意一个名称来结合<code>kubectl explain</code>命令使用的：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl explain deployments.spec
+<span style="color:#6272a4"># 或者</span>
+$ kubectl explain deployment.spec
+<span style="color:#6272a4"># 或者</span>
+$ kubectl explain deploy.spec</code></pre></div>
+<h2 id="3-使用自定义列格式化输出">3. 使用自定义列格式化输出</h2>
+
+<p><code>kubectl get</code>命令（读取集群资源）的默认输出格式如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods
+NAME                                      READY   STATUS    RESTARTS   AGE
+nginx-app-76b6449498-86b55                <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          23d
+nginx-app-76b6449498-nlnkj                <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          23d
+opdemo-64db96d575-5mhgg                   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">2</span>          23d</code></pre></div>
+<p>上面的输出结果是一种比较友好的格式，但是它包含的信息比较有限，比如上面只显示了 Pod 资源中的一些信息（与完整资源定义相比）。</p>
+
+<p>所以这个时候就有<a href="https://kubernetes.io/docs/reference/kubectl/overview/#custom-columns">自定义输出格式</a>的用武之地了，它允许我们自由定义要显示的列和数据，可以选择要在输出中显示为单独列的资源的任何字段。</p>
+
+<p><strong>自定义列输出</strong>的用法如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">-o custom-columns<span style="color:#ff79c6">=</span>&lt;header&gt;:&lt;jsonpath&gt;<span style="color:#ff79c6">[</span>,&lt;header&gt;:&lt;jsonpath&gt;<span style="color:#ff79c6">]</span>...</code></pre></div>
+<p>需要将每个输出列定义为<code>&lt;header&gt;:&lt;jsonpath&gt;</code>这样的键值对：</p>
 
 <ul>
-<li><a href="https://learnk8s.io/blog/kubectl-productivity/">Boosting your kubectl productivity</a></li>
+<li><code>&lt;header&gt;</code>是列的名称，可以选择任何想要显示的内容。</li>
+<li><code>&lt;jsonpath&gt;</code>是一个选择资源属性的表达式。</li>
 </ul>
+
+<p>我们来看一个简单的例子：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -o custom-columns<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;NAME:metadata.name&#39;</span>
+NAME
+nginx-app-76b6449498-86b55
+nginx-app-76b6449498-nlnkj
+opdemo-64db96d575-5mhgg</code></pre></div>
+<p>我们可以看到上面的命令输出了一个包含所有 Pod 名称的列。选择 Pod 名称的表达式是<code>metadata.name</code>，这是因为 Pod 的名称被定义在 Pod 资源的 metadata 字段下面的 name 字段中（我们可以在 API 文档或者使用<code>kubectl explain pod.metadata.name</code>命令来查看）。</p>
+
+<p>现在假如我们要在输出结果中添加另外一列数据，比如显示每个 Pod 正在运行的节点，这时我们只需要向自定义列的选项中添加合适的列规范数据即可：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -o custom-columns<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;NAME:metadata.name,NODE:spec.nodeName&#39;</span>
+NAME                                      NODE
+nginx-app-76b6449498-86b55                ydzs-node2
+nginx-app-76b6449498-nlnkj                ydzs-node1
+opdemo-64db96d575-5mhgg                   ydzs-node2</code></pre></div>
+<p>节点名称的表达式是<code>spec.nodeName</code>，这是因为已调度 Pod 的节点信息被保存在了 Pod 的<code>spec.nodeName</code>字段中（可以通过<code>kubectl explain pod.spec.nodeName</code>查看）。</p>
+
+<blockquote>
+<p>注意，Kubernetes 资源字段是<strong>区分大小写</strong>的。</p>
+</blockquote>
+
+<p>我们可以通过这种方式将资源的任何字段设置为输出列的数据，只需要去查看资源规范并使用我们需要的任何字段即可！</p>
+
+<p>但首先，我们还是来仔细来看看这些字段的选择表达式吧！</p>
+
+<h3 id="jsonpath-表达式">JSONPath 表达式</h3>
+
+<p>todo</p>
+
+<p>原文链接：<a href="https://learnk8s.io/blog/kubectl-productivity/">https://learnk8s.io/blog/kubectl-productivity/</a></p>
 
 <p><a href="https://www.qikqiak.com/post/promotion-51" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/9mogk.png" alt="kubernetes进阶课程"></a></p>
 

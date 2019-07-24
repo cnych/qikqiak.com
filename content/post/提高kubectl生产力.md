@@ -208,11 +208,96 @@ compinit
 ```
 
 ## 2. 快速查找资源
+我们在使用 YAML 文件创建资源时，需要知道这些资源的一些字段和含义，一个比较有效的方法就是去 API 文档中查看这些资源对象的完整规范定义。
+
+但是如果每次要查找某些内容的时候都切换到浏览器去查询也是很麻烦的一件事情，所以，kubectl 为我们提供了一个 `kubectl explain` 命令，可以在终端中直接打印出来所有资源的规范定义。`kubectl explain`命令的用法如下所示：
+```shell
+$ kubectl explain resource[.field]...
+```
+
+该命令可以输出请求的资源或者属性的一些规范信息，通过该命令显示的信息和 API 文档中的信息是相同的，参考下面使用示例：
+
+![kubectl explain command action](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-explain-action.svg)
+
+默认情况下，`kubectl explain`命令只会显示属性的一级数据，我们可以使用`--recursive`参数来显示整个属性的数据：
+```shell
+$ kubectl explain deployment.spec --recursive
+```
+
+该命令会将 deployment.spec 属性下面所有的规范都打印出来。
+
+如果你不太确定可以使用`kubectl explain`的资源名，可以使用下面的命令来获取所有资源名称：
+```shell
+$ kubectl api-resources
+```
+
+该命令会线上资源名称的复数形式（比如显示 deployments 而不是 deployment），还会显示一个资源的简写（比如 deploy），不过不用担心，我们可以用任意一个名称来结合`kubectl explain`命令使用的：
+```shell
+$ kubectl explain deployments.spec
+# 或者
+$ kubectl explain deployment.spec
+# 或者
+$ kubectl explain deploy.spec
+```
+
+## 3. 使用自定义列格式化输出
+`kubectl get`命令（读取集群资源）的默认输出格式如下：
+```shell
+$ kubectl get pods
+NAME                                      READY   STATUS    RESTARTS   AGE
+nginx-app-76b6449498-86b55                1/1     Running   0          23d
+nginx-app-76b6449498-nlnkj                1/1     Running   0          23d
+opdemo-64db96d575-5mhgg                   1/1     Running   2          23d
+```
+
+上面的输出结果是一种比较友好的格式，但是它包含的信息比较有限，比如上面只显示了 Pod 资源中的一些信息（与完整资源定义相比）。
+
+所以这个时候就有[自定义输出格式](https://kubernetes.io/docs/reference/kubectl/overview/#custom-columns)的用武之地了，它允许我们自由定义要显示的列和数据，可以选择要在输出中显示为单独列的资源的任何字段。
+
+**自定义列输出**的用法如下：
+```shell
+-o custom-columns=<header>:<jsonpath>[,<header>:<jsonpath>]...
+```
+
+需要将每个输出列定义为`<header>:<jsonpath>`这样的键值对：
+
+* `<header>`是列的名称，可以选择任何想要显示的内容。
+* `<jsonpath>`是一个选择资源属性的表达式。
+
+我们来看一个简单的例子：
+```shell
+$ kubectl get pods -o custom-columns='NAME:metadata.name'
+NAME
+nginx-app-76b6449498-86b55
+nginx-app-76b6449498-nlnkj
+opdemo-64db96d575-5mhgg
+```
+
+我们可以看到上面的命令输出了一个包含所有 Pod 名称的列。选择 Pod 名称的表达式是`metadata.name`，这是因为 Pod 的名称被定义在 Pod 资源的 metadata 字段下面的 name 字段中（我们可以在 API 文档或者使用`kubectl explain pod.metadata.name`命令来查看）。
+
+现在假如我们要在输出结果中添加另外一列数据，比如显示每个 Pod 正在运行的节点，这时我们只需要向自定义列的选项中添加合适的列规范数据即可：
+```shell
+$ kubectl get pods \
+  -o custom-columns='NAME:metadata.name,NODE:spec.nodeName'
+NAME                                      NODE
+nginx-app-76b6449498-86b55                ydzs-node2
+nginx-app-76b6449498-nlnkj                ydzs-node1
+opdemo-64db96d575-5mhgg                   ydzs-node2
+```
+
+节点名称的表达式是`spec.nodeName`，这是因为已调度 Pod 的节点信息被保存在了 Pod 的`spec.nodeName`字段中（可以通过`kubectl explain pod.spec.nodeName`查看）。
+
+> 注意，Kubernetes 资源字段是**区分大小写**的。
+
+我们可以通过这种方式将资源的任何字段设置为输出列的数据，只需要去查看资源规范并使用我们需要的任何字段即可！
+
+但首先，我们还是来仔细来看看这些字段的选择表达式吧！
+
+### JSONPath 表达式
 
 todo
 
-## 参考文档
 
-* [Boosting your kubectl productivity](https://learnk8s.io/blog/kubectl-productivity/)
+原文链接：[https://learnk8s.io/blog/kubectl-productivity/](https://learnk8s.io/blog/kubectl-productivity/)
 
 <!--adsense-self-->
