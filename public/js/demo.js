@@ -28,7 +28,7 @@ function setupSlideshow(root) {
     slides.forEach(function(slide, index, items) {
         var leftNav = document.createElement("div");
         leftNav.classList.add('left-nav');
-        leftNav.innerHTML = "<svg viewBox='0 0 10 16' xmlns='http:\/\/www.w3.org/2000/svg' class='pagination-icon mr2'><polyline fill='none' vectorEffect='non-scaling-stroke' points='8,2 2,8 8,14'></polyline></svg><span class='ttu'> Previous</span>";
+        leftNav.innerHTML = "<svg viewBox='0 0 10 16' xmlns='http:\/\/www.w3.org/2000/svg' class='pagination-icon mr2'><polyline fill='none' vectorEffect='non-scaling-stroke' points='8,2 2,8 8,14'></polyline></svg><span class='ttu'> Prev</span>";
         leftNav.onclick = function() {
             return root.scrollLeft -= width;
         };
