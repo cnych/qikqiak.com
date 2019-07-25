@@ -295,8 +295,53 @@ opdemo-64db96d575-5mhgg                   ydzs-node2
 
 ### JSONPath 表达式
 
-todo
+选择资源字段的表达式是基于 [JSONPath](https://goessner.net/articles/JsonPath/index.html) 的。
 
+JSONPATH 是一种从 JSON 文件中提取数据的一种语言（类似于 XPath for XML）。选择单个字段只是 SJONPath 的最基本的用法，它还有很多其他的功能，比如列表选择器、过滤器等。
+
+但是我们在使用`kubectl explain`命令的时候只支持部分 JSONPath 功能，下面我们用一些简单的示例来介绍下这些支持的功能：
+```shell
+# 选择一个列表的说有元素
+$ kubectl get pods -o custom-columns='DATA:spec.containers[*].image'
+
+# 选择一个列表的指定元素
+$ kubectl get pods -o custom-columns='DATA:spec.containers[0].image'
+
+# 选择和一个过滤表达式匹配的列表元素
+$ kubectl get pods -o custom-columns='DATA:spec.containers[?(@.image!="nginx")].image'
+
+# 选择特定位置下的所有字段（无论名称是什么）
+$ kubectl get pods -o custom-columns='DATA:metadata.*'
+
+# 选择具有特定名称的所有字段（无论其位置如何）
+$ kubectl get pods -o custom-columns='DATA:..image'
+```
+
+另外一个非常重要的操作符是`[]`，Kubernetes 的资源很多字段都是列表，改操作符可以让我们选择这些列表中的一些元素，它通常与通配符`[*]`一起使用来选择列表中的所有元素。
+
+### 示例演示
+使用自定义列输出格式的结果是多种多样的，因为我们可以在输出中显示资源的任何字段或者字段的组合，下面是一些示例演示，当然也可以根据自己的实际需求就自行实践。
+
+> 提示：如果你经常使用某一个命令，那么我们可以为这个命令创建一个 shell alias 别名，可以提高效率。
+
+#### 显示 Pod 的所有容器镜像
+下面的命令显示 default 命名空间下面的每个 Pod 的所有容器镜像的名称：
+
+```shell
+$ kubectl get pods \
+  -o custom-columns='NAME:metadata.name,IMAGES:spec.containers[*].image'
+NAME                       IMAGES
+engine-544b6b6467-22qr6    rabbitmq:3.7.8-management,nginx
+engine-544b6b6467-lw5t8    rabbitmq:3.7.8-management,nginx
+engine-544b6b6467-tvgmg    rabbitmq:3.7.8-management,nginx
+web-ui-6db964458-8pdw4     wordpress
+```
+
+> 由于一个 Pod 可能包含多个容器，这种情况下，每个 Pod 的容器镜像会在同一列中用逗号隔开显示。
+
+#### 显示节点的可用区域
+
+> todo
 
 原文链接：[https://learnk8s.io/blog/kubectl-productivity/](https://learnk8s.io/blog/kubectl-productivity/)
 
