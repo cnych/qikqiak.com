@@ -341,6 +341,95 @@ web-ui-6db964458-8pdw4     wordpress
 
 #### 显示节点的可用区域
 
+```shell
+$ kubectl get nodes \
+  -o custom-columns='NAME:metadata.name,ZONE:metadata.labels.failure-domain\.beta\.kubernetes\.io/zone'
+NAME                          ZONE
+ip-10-0-118-34.ec2.internal   us-east-1b
+ip-10-0-36-80.ec2.internal    us-east-1a
+ip-10-0-80-67.ec2.internal    us-east-1b
+```
+
+如果你的 Kubernetes 集群部署在公有云上面（比如 AWS、Azure 或 GCP），那么上面的命令就非常有用了，它可以用来显示每个节点所在的可用区。
+
+每个节点的可用区都可以通过标签`failure-domain.beta.kubernetes.io/zone`来获得，集群在公有云上面运行的话，会自动创建该标签的，并将其值设置为节点的可用区名称。
+
+Label 标签不是 Kubernetes 资源规范的一部分，所以无法在 API 文档中找到上面的标签，不过我们可以将节点信息输出为 YAML 或者 JSON 格式，这样就可以看到标签信息了：
+```shell
+$ kubectl get nodes -o yaml
+# 或者
+$ kubectl get nodes -o json
+```
+
+这种方法除了用来查看资源规范之外，这也是用来发现资源更多信息的一种很好的方式。
+
+## 4.轻松切换集群和命名空间
+
+当 kubectl 向 APIServer 发起请求的时候，会读取系统上的 kubeconfig 文件，首先会加载`KUBECONFIG`这个环境变量指向的文件，如果没有的话则会去加载`~/.kube/config`文件，去获取需要访问的连接相关参数发起请求。
+
+但是当有**多个集群**需要管理的时候，kubeconfig 文件中就需要配置多个集群的相关参数，所以需要有一种方法来告诉 kubectl 我们希望它去连接到哪个集群。
+
+在集群中可以设置多个 **[namespace](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/) (命名空间)**，kubectl 也会通过 kubeconfig 文件来确定请求哪个 namespace，所以，同样也需要一种方法来告诉 kubectl 去连接哪些命名空间。
+
+接下来我们来给大家演示如何实现上面的功能。
+
+> 我们可以在`KUBECONFIG`环境变量中列出多个 kubeconfig 文件，在这种情况下，所有这些文件会在执行时合并成一个有效的配置文件，当然你还可以使用 kubectl 命令的`--kubeconfig`参数来覆盖默认的 kubeconfig 文件，可以参考[官方文档](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/)相关说明。
+
+
+### Kubeconfig 文件
+我们先来看看 kubeconfig 文件包含了哪些内容：
+
+![kubeconfig file content](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-kubeconfig-content.svg)
+
+从上图我们可以看出 kubeconfig 文件由一组 Context（上下文）组成，一个 Context 包含以下3个元素：
+
+* 集群：Kubernetes 集群的 APIServer 的 URL 地址
+* 用户：集群某个特定用户的身份验证凭据
+* 命名空间：连接到集群时使用的命名空间
+
+> 大多数用户在 kubeconfig 文件中经常使用集群的单个 Context，但是每个集群也有可能有多个 Context，对应的用户或者 namespace 有所不同，但是这好像不是很常见，所以通常在集群和上下文之间是一对一的映射。
+
+在任何时间，kubeconfig 文件中的一个 Context 被设置为当前使用的 Context 上下文（通过 kubeconfig 文件中的专有字段指定）：
+
+![kubectl kubeconfig current context](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-kubeconfig-current-context.svg)
+
+当 kubectl 读取 kubeconfig 文件时，它总是会使用当前 Context 中的信息，所以，上面图片中的例子，kubectl 会连接到 HARE 集群。所以，要切换到另外一个集群，我们只需要更改 kubeconfig 文件中的当前上下文 Context 即可：
+
+![kubectl kubeconfig change current context](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-kubeconfig-change-current-context.svg)
+
+比如上图中，kubectl 现在会连接到 Fox 集群了。
+
+如果要切换到同一个集群中的另外一个命名空间，那么我们可以更改当前上下文中的命名空间属性的值：
+
+![kubectl kubeconfig change namespace](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-kubeconfig-change-namespace.svg)
+
+在上图中，kubectl 现在将会使用 Fox 集群中的 Prod 命名空间（而不是之前设置的 Test 这个命名空间）。
+
+> 注意，kubectl 还提供了`--cluster`、`--user`、`--namespace`和`--context`选项，允许你覆盖单个的元素和当前的上下文本身，详细说明可以查看 `kubectl options`命令。
+
+理论上，我们当然可以通过手动去编辑 kubeconfig 文件来达到切换的目的，但是这样也的确有些麻烦，下面我们将介绍一些允许我们自动来执行更改的一些工具。
+
+### kubectx
+[kubectx](https://github.com/ahmetb/kubectx/) 是一个用于在集群和命名空间切换的非常流行的工作。
+
+该工具提供了`kubectx`和`kubens`命令，运行更改当前上下文和命名空间。
+
+> 如果每个集群只有一个上下文，更改当前上下文也就意味着更改集群了。
+
+下面是上述命令的演示示例：
+
+![kubectl kubectx action](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-kubectx-action.gif)
+
+> 当然底层原理还是一样的，这些命令都是去编辑 kubeconfig 文件而已。
+
+安装 kubectx 非常简单，只需要安装其 [GitHub 页面上的安装说明](https://github.com/ahmetb/kubectx/#installation)操作即可。
+
+kubectx 和 kubens 命令都提供了命令补全脚本，这样我们就不需要完全输入目标信息就可以自动补全上下文和命名空间信息了，当然也可以在 [GitHub 页面上找到相关配置](https://github.com/ahmetb/kubectx/#installation)的说明。
+
+kubectx 的另外一个非常有用的功能是**[交互模式](https://github.com/ahmetb/kubectx/#interactive-mode)**，该模式需要和**[fzf](https://github.com/junegunn/fzf)**工具结合使用，需要单独安装该工具（安装 fzf 会自动启用 kubectx 交互模式），交互模式允许我们通过交互式模糊搜索界面（fzf 提供）来选择目标上下文或者命名空间。
+
+### shell 别名
+
 > todo
 
 原文链接：[https://learnk8s.io/blog/kubectl-productivity/](https://learnk8s.io/blog/kubectl-productivity/)
