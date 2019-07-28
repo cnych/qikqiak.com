@@ -492,7 +492,7 @@ kubectl 允许安装类似于原生命令的一样被调用的插件，比如，
 下面是一个插件示例，可以通过调用`kubectl hello`来打印一句话：
 ![kubectl plugin hello](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-plugin-hello.svg)
 
-> kubectl 的插件机是验证遵循 [Git 的插件机制](https://adamcod.es/2013/07/12/how-to-create-git-plugin.html)的。
+> kubectl 的插件机是严格遵循 [Git 的插件机制](https://adamcod.es/2013/07/12/how-to-create-git-plugin.html)的。
 
 接下来我们将介绍如何安装插件和在什么地方可以找到已有的插件以及如何创建自己的插件。
 
@@ -511,8 +511,85 @@ $ kubectl plugin list
 如果你有多个具有相同名称的插件或者有不可执行的插件，该命令都会出现一些警告信息。
 
 ### 使用 krew 查找和安装插件
+kubectl 插件可以像软件包一样共享和重用，但是在哪里可以找到其他人共享的插件呢？
 
-> todo
+[krew](https://github.com/GoogleContainerTools/krew)项目就旨在为共享、搜索、安装和管理 kubectl 插件提供统一的解决方案，该项目将自己称为**kubectl 插件的包管理器**（krew 的名字灵感也是来源于 [brew](https://brew.sh/)）。
+
+krew 围绕 kubectl 插件[索引](https://github.com/GoogleContainerTools/krew-index)为中心，可以从中选择和安装，下图是 krew 使用的一个示例：
+![krew in action](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-krew-demo.svg)
+
+事实上，krew 本身也是一个 kubectl 插件，所以安装 krew 本质上就像安装其他 kubectl 插件一样，我们可以在 [GitHub 页面](https://github.com/GoogleContainerTools/krew/#installation)上找到 krew 的详细安装说明。
+
+下面是几个最重要的 krew 命令：
+```shell
+# 搜索 krew 索引 (带一个可选的搜索 query 参数)
+$ kubectl krew search [<query>]
+# 显示一个插件的相关信息
+$ kubectl krew info <plugin>
+# 安装插件
+$ kubectl krew install <plugin>
+# Upgrade all plugins to the newest versions
+$ kubectl krew upgrade
+# 列出 krew 安装的所有插件krew
+$ kubectl krew list
+# 卸载一个插件
+$ kubectl krew remove <plugin>
+```
+
+需要注意的使用使用 krew 安装插件也并不会妨碍我们用传统的方式去安装插件，我们仍然还是可以通过其他方式去安装或者自己创建插件。
+
+> 不过需要注意的是`kubectl krew list`命令只会列出使用 krew 安装的插件，而`kubectl plugin list`命令会列出所有的插件，包括 krew 安装的和其他方式安装的插件。
+
+### 在其他地方查找插件
+krew 还是一个非常年轻的项目，目前 krew index 中只有大约 30 多个插件，如果你找不到合适的插件，可以在其他地方去查找，比如在 GitHub 上面搜索。
+
+建议可以在 GitHub 上面查看 [kubectl-plugins 主题](https://github.com/topics/kubectl-plugins)，会发现有几十个可用的插件值得一试的。
+
+### 创建自己的插件
+当然，我们可以[创建自己的 kubectl 插件](https://kubernetes.io/docs/tasks/extend-kubectl/kubectl-plugins/#writing-kubectl-plugins)，只需要创建一个可执行文件，执行想要的操作，为其命名为 kubectl-x 的形式，然后安装上面的方法来安装即可。
+
+可执行的文件可以是任何类型的，比如 Bash 脚本、编译好的 Go 程序、Python 脚本等都是可以的，唯一的要求就是在你操作的系统里面可以直接执行。
+
+下面我们来创建一个简单的插件示例，在前面的一节中，我们通过 kubectl 命令列出了每个 Pod 的容器镜像，我们可以轻松地将该命令转换为可以调用的插件，例如 kubectl img。
+
+创建一个名为 kubectl-img 的文件，内容如下：
+```shell
+#!/bin/bash
+kubectl get pods -o custom-columns='NAME:metadata.name,IMAGES:spec.containers[*].image'
+```
+
+然后执行以下命令使文件变成可执行：
+```shell
+$ chmod +x kubectl-img
+```
+
+然后将 kubectl-img 文件移动到 PATH 中任意一个目录，然后我们就可以使用 kubectl img 命令了：
+```shell
+$ kubectl plugin list
+The following compatible plugins are available:
+
+/Users/ych/devs/workspace/yidianzhishi/kubernetes/bin/kubectl-img
+$ kubectl img
+NAME                                      IMAGES
+cm-test-pod                               busybox
+nfs-client-provisioner-6985f88c47-pd6mr   quay.io/external_storage/nfs-client-provisioner:latest
+nginx                                     nginx:1.7.9
+nginx-app-76b6449498-86b55                nginx:1.7.9
+nginx-app-76b6449498-nlnkj                nginx:1.7.9
+opdemo-64db96d575-5mhgg                   cnych/opdemo
+```
+
+> 如上所示，kubectl 插件可以使用任何编程语言或者脚本来实现的，如果使用 shell 脚本，则可以在插件中轻松调用 kubectl，当然我们也可以使用实际编程语言来编写更复杂的插件，例如，使用 [Kubernetes 客户端库](https://kubernetes.io/docs/reference/using-api/client-libraries/)，如果使用 Go 语言，还可以使用 [cli-runtime](https://github.com/kubernetes/cli-runtime) 库，它是专门用于编写 kubectl 插件的。
+
+### 分享你的插件
+如果你认为你的插件可能对其他人也有用，那么可以随时在 GitHub 上面分享，最好添加到 kubectl-plugins 主题中，这样可以方便别的用户找到。
+
+你还可以请求将你的插件添加到 krew index 中去，可以在 [krew 的 GitHub 仓库](https://github.com/GoogleContainerTools/krew/blob/master/docs/DEVELOPER_GUIDE.md)上面找到有关如何执行该操作的说明。
+
+### 命令提示
+目录，插件机制还不支持命令提示功能，所以我们需要完全输入插件的名称和插件的参数下可以使用。
+
+不过不用担心，在 kubectl GitHub 仓库中有一个是 open feature request，所以，该功能应该很快就会被支持了。
 
 原文链接：[https://learnk8s.io/blog/kubectl-productivity/](https://learnk8s.io/blog/kubectl-productivity/)
 
