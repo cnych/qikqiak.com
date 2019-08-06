@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [基于 Drone 的 CI/CD（二）](https://www.qikqiak.com/post/drone-with-k8s-2/)
  * [基于 Drone 的 CI/CD（一）](https://www.qikqiak.com/post/drone-with-k8s-1/)
  * [提高 kubectl 使用生产力](https://www.qikqiak.com/post/boosting-kubeclt-productivity/)
  * [使用Elasticsearch Operator快速部署Elasticsearch集群](https://www.qikqiak.com/post/elastic-cloud-on-k8s/)

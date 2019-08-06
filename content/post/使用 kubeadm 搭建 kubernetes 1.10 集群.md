@@ -122,6 +122,7 @@ gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
         https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
 EOF
 ```
+
 当然了，上面的`yum`源也是需要科学上网的，如果不能科学上网的话，我们可以使用阿里云的源进行安装：
 ```shell
 cat <<EOF > /etc/yum.repos.d/kubernetes.repo

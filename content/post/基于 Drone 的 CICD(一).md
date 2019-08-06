@@ -9,6 +9,7 @@ gitcomment: true
 bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1564760055775-d63b17a55c44.jpeg", desc: "https://unsplash.com/photos/j4ocWYAP_cs"}]
 category: "kubernetes"
 ---
+
 我们知道 CI/CD 是 devops 中最重要的环节，特别是对于现在的云原生应用，CI/CD 更是不可或缺的部分，对于 CI/CD 工具有很多优秀的开源工具，比如前面我们介绍的[Jenkins](/tags/jenkins/)以及[gitlab ci](/post/gitlab-runner-install-on-k8s/)都是非常流行常用的 CI/CD 工具，但是这两个工具整体使用来说有点陈旧和笨重，本文将为大家介绍一个比较热门的轻量级 CI/CD 开源工具：[Drone](https://drone.io/)，介绍如何将 Drone 和 Kubernetes 进行结合使用。
 
 <!--more-->
@@ -182,6 +183,6 @@ drone-drone-server-6f66b47dc-69qmf   1/1     Running   0          96s
 
 ![drone project settings](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/drone-project-settings.png)
 
-到这里我们就通过 Helm 成功安装了 Drone，下一篇文章再和大家探讨如何使用 Drone 的 Pipeline 来进行 CI/CD。
+到这里我们就通过 Helm 成功安装了 Drone，下一篇文章再和大家探讨[如何使用 Drone 的 Pipeline 来进行 CI/CD](/post/drone-with-k8s-2/)。
 
 <!--adsense-self-->
