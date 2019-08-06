@@ -141,10 +141,13 @@ $ yum makecache fast && yum install -y kubelet kubeadm kubectl
 ```
 正常情况我们可以都能顺利安装完成上面的文件。
 
-> **注意：**由于阿里云的源将依赖进行了更改，如果你需要安装 1.10.0 版本的集群的话，需要使用下面的命令，一定要先安装 kubeadm：
+> **注意：**由于阿里云的源将依赖进行了更改，如果你需要安装 1.10.0 版本的集群的话，需要使用下面的命令分别安装：
 
 ```shell
-$ yum makecache fast && yum install -y kubeadm-1.10.0-0 kubectl-1.10.0-0 kubelet-1.10.0-0
+$ yum makecache fast 
+$ yum install -y kubelet-1.10.0-0
+$ yum install -y kubectl-1.10.0-0
+$ yum install -y kubeadm-1.10.0-0
 ```
 
 ## 配置 kubelet
