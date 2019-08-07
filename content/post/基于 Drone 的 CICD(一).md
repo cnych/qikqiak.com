@@ -16,6 +16,15 @@ category: "kubernetes"
 
 本篇文章是 Drone 系列文章中的第一篇文章，需要有一定的 Kubernetes 基础知识，我们将通过 Helm 在 Kubernetes 集群上面安装 Drone，如果你已经有运行在 K8S 集群上面的 Drone 应用，则可以忽略本文内容。
 
+## 环境
+本次 Drone 系列文章使用到的应用相关版本如下：（不保证其他版本一定兼容）
+
+* Drone：1.2 
+* Kubectl 和 Kubernetes：v1.14.2
+* Helm CLI 和 Tiller: v2.14.1
+* Docker: 18.09.1
+* Golang: 1.11.4
+
 ## Drone
 Drone 是用 Go 语言编写的基于 Docker 构建的开源轻量级 CI/CD 工具，可以通过 SaaS 服务和自托管服务两种方式使用，Drone 使用简单的 YAML 配置文件来定义和执行 Docker 容器中定义的 Pipeline，Drone 由两个部分组成：
 
