@@ -1,6 +1,6 @@
 ---
-title: 基于 Jenkins 的 CI/CD(二)
-subtitle: Jenkins Pipeline 部署 Kubernetes 应用
+title: Jenkins Pipeline 部署 Kubernetes 应用(二)
+subtitle: 基于 Jenkins 的 CI/CD
 date: 2018-07-29
 tags: ["kubernetes", "jenkins", "slave", "CI", "CD", "github", "pipeline"]
 keywords: ["kubernetes", "jenkins", "slave", "CI", "CD", "pipeline"]

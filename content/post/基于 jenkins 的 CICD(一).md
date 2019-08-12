@@ -1,6 +1,6 @@
 ---
-title: 基于 Jenkins 的 CI/CD(一)
-subtitle: 基于 kubernetes 的动态 jenkins slave
+title: 基于 kubernetes 的动态 jenkins slave
+subtitle: 基于 Jenkins 的 CI/CD(一)
 date: 2018-07-28
 tags: ["kubernetes", "jenkins", "slave", "CI", "CD", "gitlab"]
 keywords: ["kubernetes", "jenkins", "slave", "CI", "CD", "gitlab", "动态"]

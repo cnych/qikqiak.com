@@ -1,6 +1,6 @@
 ---
-title: 基于 Drone 的 CI/CD（三）
-subtitle: Drone 结合 Helm 部署 Kubernetes 应用
+title: Drone 结合 Helm 部署 Kubernetes 应用
+subtitle: 基于 Drone 的 CI/CD（三）
 date: 2019-08-07
 tags: ["kubernetes", "drone", "CI", "CD", "github", "helm"]
 keywords: ["kubernetes", "drone", "CI", "CD", "github", "动态", "helm"]

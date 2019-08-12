@@ -1,6 +1,6 @@
 ---
-title: 基于 Drone 的 CI/CD（二）
-subtitle: 使用 Drone Pipeline 构建 Docker 镜像
+title: 使用 Drone Pipeline 构建 Docker 镜像
+subtitle: 基于 Drone 的 CI/CD（二）
 date: 2019-08-06
 tags: ["kubernetes", "drone", "CI", "CD", "github", "helm"]
 keywords: ["kubernetes", "drone", "CI", "CD", "github", "动态", "helm"]

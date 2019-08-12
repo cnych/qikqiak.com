@@ -1,6 +1,6 @@
 ---
-title: 基于 Jenkins 的 CI/CD(三)
-subtitle: Jenkins Blue Ocean 的使用
+title: Jenkins Blue Ocean 的使用
+subtitle: 基于 Jenkins 的 CI/CD(三)
 date: 2018-08-02
 tags: ["kubernetes", "jenkins", "blueocean", "CI", "CD", "github", "pipeline"]
 keywords: ["kubernetes", "jenkins", "blueocean", "CI", "CD", "pipeline"]
