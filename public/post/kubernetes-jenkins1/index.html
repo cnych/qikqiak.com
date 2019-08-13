@@ -398,14 +398,6 @@ spec:
         - name: jenkinshome
           subPath: jenkins2
           mountPath: /var/jenkins_home
-        env:
-        - name: LIMITS_MEMORY
-          valueFrom:
-            resourceFieldRef:
-              resource: limits.memory
-              divisor: 1Mi
-        - name: JAVA_OPTS
-          value: -Xmx$(LIMITS_MEMORY)m -XshowSettings:vm -Dhudson.slaves.NodeProvisioner.initialDelay=<span style="color:#bd93f9">0</span> -Dhudson.slaves.NodeProvisioner.MARGIN=<span style="color:#bd93f9">50</span> -Dhudson.slaves.NodeProvisioner.MARGIN0=<span style="color:#bd93f9">0.85</span> -Duser.timezone=Asia/Shanghai
       securityContext:
         fsGroup: <span style="color:#bd93f9">1000</span>
       volumes:
@@ -597,7 +589,7 @@ jenkins2-7f5494cd44-smn2r   <span style="color:#bd93f9">1</span>/1       Running
 
 <p>接下来我们就需要来配置 Jenkins，让他能够动态的生成 Slave 的 Pod。</p>
 
-<p><strong>第1步.</strong> 我们需要安装<strong>kubernetes plugin</strong>， 点击 Manage Jenkins -&gt; Manage Plugins -&gt; Available -&gt; Kubernetes plugin 勾选安装即可。
+<p><strong>第1步.</strong> 我们需要安装<strong>kubernetes plugin (新版本就叫 Kubernetes)</strong>， 点击 Manage Jenkins -&gt; Manage Plugins -&gt; Available -&gt; Kubernetes plugin 勾选安装即可。
 <img src="https://www.qikqiak.com/img/posts/setup-jenkins-k8s-plugin.png" alt="kubernetes plugin" /></p>
 
 <p><strong>第2步.</strong> 安装完毕后，点击 Manage Jenkins —&gt; Configure System —&gt; (拖到最下方)Add a new cloud —&gt; 选择 Kubernetes，然后填写 Kubernetes 和 Jenkins 配置信息。
@@ -612,8 +604,14 @@ jenkins2-7f5494cd44-smn2r   <span style="color:#bd93f9">1</span>/1       Running
 <p><strong>第3步.</strong> 配置 Pod Template，其实就是配置 Jenkins Slave 运行的 Pod 模板，命名空间我们同样是用 kube-ops，Labels 这里也非常重要，对于后面执行 Job 的时候需要用到该值，然后我们这里使用的是 cnych/jenkins:jnlp 这个镜像，这个镜像是在官方的 jnlp 镜像基础上定制的，加入了 kubectl 等一些实用的工具。
 <img src="https://www.qikqiak.com/img/posts/jenkins-k8s-config2.png" alt="kubernetes plugin config2" /></p>
 
-<p>另外需要注意我们这里需要在下面挂载两个主机目录，一个是 /var/run/docker.sock，该文件是用于 Pod 中的容器能够共享宿主机的 Docker，这就是大家说的 docker in docker 的方式，Docker 二进制文件我们已经打包到上面的镜像中了，另外一个目录下 /root/.kube 目录，我们将这个目录挂载到容器的 /home/jenkins/.kube 目录下面这是为了让我们能够在 Pod 的容器中能够使用 kubectl 工具来访问我们的 Kubernetes 集群，方便我们后面在 Slave Pod 部署 Kubernetes 应用。
-<img src="https://www.qikqiak.com/img/posts/jenkins-k8s-config3.png" alt="kubernetes plugin config3" /></p>
+<blockquote>
+<p>注意：由于新版本的 Kubernetes 插件变化较多，如果你使用的 Jenkins 版本在 2.176.x 版本以上，注意将上面的镜像替换成<code>cnych/jenkins:jnlp6</code>，否则使用会报错，配置如下图所示：
+<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/jenkins-slave-new.png" alt="kubernetes slave image config" /></p>
+</blockquote>
+
+<p>另外需要注意我们这里需要在下面挂载两个主机目录，一个是<code>/var/run/docker.sock</code>，该文件是用于 Pod 中的容器能够共享宿主机的 Docker，这就是大家说的 docker in docker 的方式，Docker 二进制文件我们已经打包到上面的镜像中了，另外一个目录下<code>/root/.kube</code>目录，我们将这个目录挂载到容器的 /root/.kube 目录下面这是为了让我们能够在 Pod 的容器中能够使用 kubectl 工具来访问我们的 Kubernetes 集群，方便我们后面在 Slave Pod 部署 Kubernetes 应用。</p>
+
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/jenkins-slave-volume.png" alt="kubernetes plugin config3"><figcaption>kubernetes plugin config3</figcaption></figure>
 
 <p>另外还有几个参数需要注意，如下图中的<strong>Time in minutes to retain slave when idle</strong>，这个参数表示的意思是当处于空闲状态的时候保留 Slave Pod 多长时间，这个参数最好我们保存默认就行了，如果你设置过大的话，Job 任务执行完成后，对应的 Slave Pod 就不会立即被销毁删除。
 <img src="https://www.qikqiak.com/img/posts/jenkins-k8s-config4.png" alt="kubernetes plugin config4" /></p>
