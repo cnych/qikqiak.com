@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [在现有 Kubernetes 集群上安装 KubeSphere](https://www.qikqiak.com/post/install-kubesphere-on-k8s/)
  * [基于 Drone 的 CI/CD（三）](https://www.qikqiak.com/post/drone-with-k8s-3/)
  * [基于 Drone 的 CI/CD（二）](https://www.qikqiak.com/post/drone-with-k8s-2/)
  * [基于 Drone 的 CI/CD（一）](https://www.qikqiak.com/post/drone-with-k8s-1/)
