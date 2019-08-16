@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [使用 Kustomize 配置 Kubernetes 应用](https://www.qikqiak.com/post/kustomize-101/)
  * [在现有 Kubernetes 集群上安装 KubeSphere](https://www.qikqiak.com/post/install-kubesphere-on-k8s/)
  * [基于 Drone 的 CI/CD（三）](https://www.qikqiak.com/post/drone-with-k8s-3/)
  * [基于 Drone 的 CI/CD（二）](https://www.qikqiak.com/post/drone-with-k8s-2/)

@@ -2,8 +2,8 @@
 title: 基于 kubernetes 的动态 jenkins slave
 subtitle: 基于 Jenkins 的 CI/CD(一)
 date: 2018-07-28
-tags: ["kubernetes", "jenkins", "slave", "CI", "CD", "gitlab"]
-keywords: ["kubernetes", "jenkins", "slave", "CI", "CD", "gitlab", "动态"]
+tags: ["kubernetes", "devops", "jenkins", "slave", "CI", "CD", "gitlab"]
+keywords: ["kubernetes", "devops", "jenkins", "slave", "CI", "CD", "gitlab", "动态"]
 slug: kubernetes-jenkins1
 gitcomment: true
 bigimg: [{src: "/img/posts/photo-1532154984646-37dc46508066.jpeg", desc: "Rainbow after the Hailstorm"}]

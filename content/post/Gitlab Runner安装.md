@@ -2,8 +2,8 @@
 title: 在 Kubernetes 上安装 Gitlab CI Runner
 subtitle: Gitlab CI 基本概念以及 Runner 的安装
 date: 2019-03-19
-tags: ["kubernetes", "gitlab", "ci"]
-keywords: ["kubernetes", "gitlab", "ci", "runner"]
+tags: ["kubernetes", "devops", "gitlab", "ci"]
+keywords: ["kubernetes", "devops", "gitlab", "ci", "runner"]
 slug: gitlab-runner-install-on-k8s
 gitcomment: true
 bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/1tdd3.jpg", desc: "Copperopolis, Copperopolis, California, USA"}]

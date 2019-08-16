@@ -2,8 +2,8 @@
 title: 使用 Kubernetes Helm 安装 Drone
 subtitle: 基于 Drone 的 CI/CD（一）
 date: 2019-08-05
-tags: ["kubernetes", "drone", "CI", "CD", "github", "helm"]
-keywords: ["kubernetes", "drone", "CI", "CD", "github", "动态", "helm"]
+tags: ["kubernetes", "devops", "drone", "CI", "CD", "github", "helm"]
+keywords: ["kubernetes", "devops", "drone", "CI", "CD", "github", "动态", "helm"]
 slug: drone-with-k8s-1
 gitcomment: true
 bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1564760055775-d63b17a55c44.jpeg", desc: "https://unsplash.com/photos/j4ocWYAP_cs"}]

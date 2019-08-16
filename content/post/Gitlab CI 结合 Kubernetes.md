@@ -2,8 +2,8 @@
 title: Gitlab CI 与 Kubernetes 的结合
 subtitle: 基于 Gitlab CI 和 Kubernetes 的 CI/CD
 date: 2019-03-21
-tags: ["kubernetes", "gitlab", "ci"]
-keywords: ["kubernetes", "gitlab", "ci", "CI/CD", "runner"]
+tags: ["kubernetes", "devops", "gitlab", "ci"]
+keywords: ["kubernetes", "devops", "gitlab", "ci", "CI/CD", "runner"]
 slug: gitlab-ci-k8s-cluster-feature
 gitcomment: true
 bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/a28fp.jpg", desc: "STEP"}]

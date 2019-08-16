@@ -2,8 +2,8 @@
 title: Jenkins Blue Ocean 的使用
 subtitle: 基于 Jenkins 的 CI/CD(三)
 date: 2018-08-02
-tags: ["kubernetes", "jenkins", "blueocean", "CI", "CD", "github", "pipeline"]
-keywords: ["kubernetes", "jenkins", "blueocean", "CI", "CD", "pipeline"]
+tags: ["kubernetes", "devops", "jenkins", "blueocean", "CI", "CD", "github", "pipeline"]
+keywords: ["kubernetes", "devops", "jenkins", "blueocean", "CI", "CD", "pipeline"]
 slug: kubernetes-jenkins3
 gitcomment: true
 bigimg: [{src: "/img/posts/photo-1533151027763-09535debae4a.jpeg", desc: "Durdle Door Holiday Park"}]

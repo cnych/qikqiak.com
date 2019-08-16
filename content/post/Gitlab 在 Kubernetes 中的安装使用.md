@@ -1,8 +1,8 @@
 ---
 title: 在 Kubernetes 上安装 Gitlab
 date: 2019-03-07
-tags: ["gitlab", "docker", "kubernetes", "redis"]
-keywords: ["helm", "docker", "kubernetes", "安装", "redis", "gitlab", "postgresql"]
+tags: ["gitlab", "devops", "docker", "kubernetes", "redis"]
+keywords: ["helm", "devops", "docker", "kubernetes", "安装", "redis", "gitlab", "postgresql"]
 slug: gitlab-install-on-k8s
 gitcomment: true
 notoc: true

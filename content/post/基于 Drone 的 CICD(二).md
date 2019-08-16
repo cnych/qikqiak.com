@@ -2,8 +2,8 @@
 title: 使用 Drone Pipeline 构建 Docker 镜像
 subtitle: 基于 Drone 的 CI/CD（二）
 date: 2019-08-06
-tags: ["kubernetes", "drone", "CI", "CD", "github", "helm"]
-keywords: ["kubernetes", "drone", "CI", "CD", "github", "动态", "helm"]
+tags: ["kubernetes", "devops", "drone", "CI", "CD", "github", "helm"]
+keywords: ["kubernetes", "devops", "drone", "CI", "CD", "github", "动态", "helm"]
 slug: drone-with-k8s-2
 gitcomment: true
 bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1565010505255-cd05a670b436.jpeg", desc: "Drone Shot of a bridge over a river"}]

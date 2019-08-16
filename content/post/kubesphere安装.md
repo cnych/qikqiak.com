@@ -1,7 +1,7 @@
 ---
 title: 在现有 Kubernetes 集群上安装 KubeSphere
 date: 2019-08-13
-tags: ["kubernetes", "KubeSphere", "istio"]
+tags: ["kubernetes", "devops", "KubeSphere", "istio"]
 keywords: ["kubernetes", "drone", "CI", "CD", "github", "动态", "helm"]
 slug: install-kubesphere-on-k8s
 gitcomment: true
