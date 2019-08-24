@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>使用 GitHub Actions 自动化构建 Golang 应用-www.qikqiak.com|阳明的博客|Kubernetes|Docker|istio|Python|Golang|Cloud Native</title>
+  <meta property="og:title" content="使用 GitHub Actions 自动化构建 Golang 应用" />
+  <meta name="twitter:title" content="使用 GitHub Actions 自动化构建 Golang 应用" />
+
+  <meta name="description" content="GitHub 前一段时间推出了自家的自动化构建工具：GitHub Actions，不过目前还没有开放注册，只能通过申请等待官方审核。我第一时间就提交了申请，现在已经审核通过了，所以第一时间体验了GitHub Actions的功能，总体感受是 Travis CI 之类的工具应该现在在墙角瑟瑟发抖吧😄？
+
+GitHub Actions允许构建一个完整的 CI/CD Pipeline，与 GitHub 生态系统深度集成，而无需使用 Travis CI 或者 Circle CI 等第三方服务，对于开源项目都是可以免费使用的。如果你也想尽快使用的话，可以通过链接 https://github.com/features/actions/signup 去申请权限。
+
+">
+  <meta property="og:description" content="GitHub 前一段时间推出了自家的自动化构建工具：GitHub Actions，不过目前还没有开放注册，只能通过申请等待官方审核。我第一时间就提交了申请，现在已经审核通过了，所以第一时间体验了GitHub Actions的功能，总体感受是 Travis CI 之类的工具应该现在在墙角瑟瑟发抖吧😄？
+
+GitHub Actions允许构建一个完整的 CI/CD Pipeline，与 GitHub 生态系统深度集成，而无需使用 Travis CI 或者 Circle CI 等第三方服务，对于开源项目都是可以免费使用的。如果你也想尽快使用的话，可以通过链接 https://github.com/features/actions/signup 去申请权限。
+
+">
+  <meta name="twitter:description" content="GitHub 前一段时间推出了自家的自动化构建工具：GitHub Actions，不过目前还没有开放注册，只能通过申请等待官方审核。我第一时间就提交了申请，现在已经审核通过了，所以第一时间体验了GitHub Actions的功能，总体感受是 Travis CI 之类的工具应该现在在墙角瑟瑟发抖吧😄？
+
+GitHub Actions允许构建一个完整的 CI/CD Pipeline，与 GitHub  …">
+  <meta name="author" content=""/>
+  <link href='https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/favicon.png' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/use-github-actions-build-go-app/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.53" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/use-github-actions-build-go-app/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
+
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.d236889182ad0dba3ea8cf427c8c43c658a4b0d39ab889ff934e277a03537814.css' integrity='sha256-0jaIkYKtDbo&#43;qM9CfIxDxliksNOauIn/k04negNTeBQ='>
+
+  
+    
+    <!--[if lt IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <![endif]-->
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="CI, CD, github, GitHub Actions, golang, pipeline">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/">阳明的博客</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="首页" href="https://www.qikqiak.com/">首页</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/ops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1566568216493-71bf7995310a.jpeg" data-img-desc-1="https://unsplash.com/photos/MUbcybuo7aY"></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>使用 GitHub Actions 自动化构建 Golang 应用</h1>
+                  
+                  
+                    <span class="post-meta">
+  
+    发表于 August 24, 2019
+  
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>使用 GitHub Actions 自动化构建 Golang 应用</h1>
+                
+                
+                  <span class="post-meta">
+  
+    发表于 August 24, 2019
+  
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/ci/">CI</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/cd/">CD</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/github/">github</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/golang/">golang</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/pipeline/">pipeline</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#golang-项目">Golang 项目</a></li>
+<li><a href="#github-actions-pipeline">GitHub Actions Pipeline</a>
+<ul>
+<li><a href="#main-workflow">main workflow</a></li>
+<li><a href="#release-workflow">release workflow</a></li>
+</ul></li>
+<li><a href="#总结">总结</a></li>
+<li><a href="#参考文档">参考文档</a></li>
+</ul></li>
+</ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>GitHub 前一段时间推出了自家的自动化构建工具：<a href="https://github.com/features/actions">GitHub Actions</a>，不过目前还没有开放注册，只能通过申请等待官方审核。我第一时间就提交了申请，现在已经审核通过了，所以第一时间体验了<code>GitHub Actions</code>的功能，总体感受是 Travis CI 之类的工具应该现在在墙角<code>瑟瑟发抖</code>吧😄？</p>
+
+<p><code>GitHub Actions</code>允许构建一个完整的 CI/CD Pipeline，与 GitHub 生态系统深度集成，而无需使用 Travis CI 或者 Circle CI 等第三方服务，对于开源项目都是可以免费使用的。如果你也想尽快使用的话，可以通过链接 <a href="https://github.com/features/actions/signup">https://github.com/features/actions/signup</a> 去申请权限。</p>
+
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/github-actions.png" alt="github actions"><figcaption>github actions</figcaption></figure>
+
+<h2 id="golang-项目">Golang 项目</h2>
+
+<p>为了演示<code>GitHub Actions</code>的功能，我们这里来构建一个最简单的&rdquo;Hello world&rdquo;的 Golang 程序，其中就包含一个基本的 Pipeline，每次<code>Pull Request</code>或者推送代码到 master 分支的时候就会触发该 Pipeline 的自动构建，进行代码的 lint 操作、运行单元测试并使用 <a href="https://codecov.io/">Codecov</a> 生成代码覆盖率报告。</p>
+
+<p>当在仓库上创建一个新的<code>tag</code>的时候，Pipeline 会使用 <a href="https://goreleaser.com/">GoReleaser</a> 工具发布一个新的 GitHub 版本。</p>
+
+<blockquote>
+<p>GoReleaser 是一个 Golang 项目的自动化发布工具，可以简化构建、发布流程，为所有流程提供了一些自定义的选项。</p>
+</blockquote>
+
+<p>在 GitHub 上新建一个名为 <a href="https://github.com/cnych/go-github-actions">go-github-actions</a>的仓库，在项目根目录下面创建一个 main.go 文件，内容如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#ff79c6">package</span> main
+
+<span style="color:#ff79c6">import</span> (
+	<span style="color:#f1fa8c">&#34;fmt&#34;</span>
+
+	<span style="color:#f1fa8c">&#34;github.com/cnych/go-github-actions/hello&#34;</span>
+)
+
+<span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">main</span>() {
+	fmt.<span style="color:#50fa7b">Println</span>(hello.<span style="color:#50fa7b">Greet</span>())
+}</code></pre></div>
+<p>可以看到我们调用了 hello 这个 package 下面的 Greet 函数，所以需要在根目录下面新建一个名为 hello 的 package，在 package 下面新建一个 hellog.go 的文件，内容如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#ff79c6">package</span> hello
+
+<span style="color:#6272a4">// Greet... Greet GitHub Actions
+</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">Greet</span>() <span style="color:#8be9fd">string</span> {
+	<span style="color:#ff79c6">return</span> <span style="color:#f1fa8c">&#34;Hello GitHub Actions&#34;</span>
+}</code></pre></div>
+<p>在项目根目录下面初始化 go modules：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ go mod init github.com/cnych/go-github-actions
+go: creating new go.mod: module github.com/cnych/go-github-actions</code></pre></div>
+<p>然后在 hello 这个 package 下面创建一个单元测试的文件（hello_test.go），内容如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#ff79c6">package</span> hello
+
+<span style="color:#ff79c6">import</span> <span style="color:#f1fa8c">&#34;testing&#34;</span>
+
+<span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">TestGreet</span>(t <span style="color:#ff79c6">*</span>testing.T) {
+	result <span style="color:#ff79c6">:=</span> <span style="color:#50fa7b">Greet</span>()
+	<span style="color:#ff79c6">if</span> result <span style="color:#ff79c6">!=</span> <span style="color:#f1fa8c">&#34;Hello GitHub Actions&#34;</span> {
+		t.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;Greet() = %s; Expected Hello GitHub actions&#34;</span>, result)
+	}
+
+}</code></pre></div>
+<p>在根目录下面执行单元测试：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang">$ <span style="color:#ff79c6">go</span> test .<span style="color:#ff79c6">/</span>hello
+ok  	github.com<span style="color:#ff79c6">/</span>cnych<span style="color:#ff79c6">/</span><span style="color:#ff79c6">go</span><span style="color:#ff79c6">-</span>github<span style="color:#ff79c6">-</span>actions<span style="color:#ff79c6">/</span>hello	<span style="color:#bd93f9">0.007</span>s
+$ <span style="color:#ff79c6">go</span> run main.<span style="color:#ff79c6">go</span>
+Hello GitHub Actions</code></pre></div>
+<p>最终的代码结构如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ tree .
+.
+├── README.md
+├── go.mod
+├── hello
+│   ├── hello.go
+│   └── hello_test.go
+└── main.go
+
+<span style="color:#bd93f9">1</span> directory, <span style="color:#bd93f9">5</span> files</code></pre></div>
+<p>最后不要忘记把代码推送到 GitHub 上面去。
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5376999672787220"
+     data-ad-slot="9165834656"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</p>
+
+<h2 id="github-actions-pipeline">GitHub Actions Pipeline</h2>
+
+<p>当我们把代码推送到 GitHub 上去过后，在页面上可以看到 Actions 的入口（前提是已经开通了）：</p>
+
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/github-actions-config.jpg" alt="github actions config"><figcaption>github actions config</figcaption></figure>
+
+<p>在页面中可以看到 Actions 为我们提供了很多内置的 workflow，比如 golang、Rust、Python、Node 等等，我们这里来自己编写 workflow，点击右上角的<code>Set up a workflow yourself</code>，跳转到 Pipeline 的编写页面：</p>
+
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/github-actions-custom.png" alt="github actions pipeline custom"><figcaption>github actions pipeline custom</figcaption></figure>
+
+<p>可以通过属性<code>on</code>来控制 workflow 被触发构建的条件，比如当代码推送到<code>master</code>和<code>release</code>分支的时候触发构建：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">on:
+  push:
+    branches:
+    - master
+    - release/*</code></pre></div>
+<p>当只有<code>pull_request</code>被合并到<code>master</code>分支的时候：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">on:
+  pull_request:
+    branches:
+    - master</code></pre></div>
+<p>除此之外，还可以通过定时任务来进行触发，比如星期一到星期五的每天2点构建任务呢：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">on:
+  schedule:
+  - cron: <span style="color:#bd93f9">0</span> <span style="color:#bd93f9">2</span> * * <span style="color:#bd93f9">1</span>-<span style="color:#bd93f9">5</span></code></pre></div>
+<p>GitHub Actions Workflow 的完整语法可以在文档 <a href="https://help.github.com/articles/workflow-syntax-for-github-actions">https://help.github.com/articles/workflow-syntax-for-github-actions</a> 中查看到。</p>
+
+<p>另外一个比较重要的是<code>action</code>，actions 是可重复使用的工作单元，可由任何人在 GitHub 上构建和分发，我们可以在 GitHub marketplace 中找打各种各样的操作，通过指定包含 action 和 想使用的 ref 来进行操作：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">- name: &lt; display name for action <span style="color:#f1fa8c">&gt;
+</span><span style="color:#f1fa8c">  uses: {owner}/{repo}@ref
+</span><span style="color:#f1fa8c">  with:
+</span><span style="color:#f1fa8c">      &lt;map of inputs&gt;</span></code></pre></div>
+<p>通过查看 GitHub Actions 为我们生成的默认的 workflow 脚本，我们就可以看出 workflow 是满足某些条件或事件的时候的一组任务（job）和步骤（step）：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">name: CI
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v1
+    - name: Run a one-line script
+      run: echo Hello, world!
+    - name: Run a multi-line script
+      run: <span style="color:#f1fa8c">|
+</span><span style="color:#f1fa8c">        echo Add other actions to build,
+</span><span style="color:#f1fa8c">        echo test, and deploy your project.</span></code></pre></div>
+<p>在一个项目中还可以有多个 workflow，每个 workflow 都响应一组不同的事件。</p>
+
+<h3 id="main-workflow">main workflow</h3>
+
+<p>在我们这里的示例中，我们将会定义两个 workflow，推送代码到 master 分支或者创建 PR 的时候将触发 Build 的 workflow，当创建了一个新的 tag 的时候，会触发 Release 的 workflow，该工作流会发布一个新的应用版本。</p>
+
+<p>每个 workflow 由一个或多个 Job 组成，我们的 Build Workflow 包含3个 Job（Lint、Build 和 Test），而 Release Workflow 只包含一个 Release 的 Job。</p>
+
+<p>每个 Job 都由多个 Step 组成，比如，“单元测试”的 Job 就包含获取代码、运行测试和生产代码覆盖率报告的几个步骤。</p>
+
+<p>Workflow 会被定义在代码仓库根目录下面的<code>.github/workflows</code>目录中的 YAML 文件中，该目录下面的每个文件就代表了不同的工作流。</p>
+
+<p>下面是我们定义的 Build Workflow：（main.yaml）</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">name: Build and Test
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: <span style="color:#bd93f9">1.12</span>
+
+      - name: Check out code
+        uses: actions/checkout@v1
+
+      - name: Lint Go Code
+        run: <span style="color:#f1fa8c">|
+</span><span style="color:#f1fa8c">          export PATH=$PATH:$(go env GOPATH)/bin # temporary fix. See https://github.com/actions/setup-go/issues/14
+</span><span style="color:#f1fa8c">          go get -u golang.org/x/lint/golint 
+</span><span style="color:#f1fa8c">          make lint</span>
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: <span style="color:#bd93f9">1.12</span>
+
+      - name: Check out code
+        uses: actions/checkout@v1
+
+      - name: Run Unit tests.
+        run: make test-coverage
+
+      - name: Upload Coverage report to CodeCov
+        uses: codecov/codecov-action@v1.<span style="color:#bd93f9">0.0</span>
+        with:
+          token: ${{secrets.CODECOV_TOKEN}}
+          file: ./coverage.txt
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest 
+    needs: [lint, test]
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: <span style="color:#bd93f9">1.12</span>
+
+      - name: Check out code
+        uses: actions/checkout@v1
+
+      - name: Build
+        run: make build</code></pre></div>
+<p>我们首先定义了 workflow 的名称和触发规则，我们希望代码推送到 master 分支或者执行一个 PR 的时候触发，所以定义的触发器规则如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">on:
+  push:
+    branches:
+      - master
+  pull_request:</code></pre></div>
+<p>然后在整个 workflow 中包含了3个 Job：Lint、Test 和 Build，Lint 的 Job 定义如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">lint:
+  name: Lint
+  runs-on: ubuntu-latest
+  steps:
+  - name: Set up Go
+    uses: actions/setup-go@v1
+    with:
+      go-version: <span style="color:#bd93f9">1.12</span>
+
+  - name: Check out code
+    uses: actions/checkout@v1
+
+  - name: Lint Go Code
+    run: <span style="color:#f1fa8c">|
+</span><span style="color:#f1fa8c">      export PATH=$PATH:$(go env GOPATH)/bin # temporary fix. See https://github.com/actions/setup-go/issues/14
+</span><span style="color:#f1fa8c">      go get -u golang.org/x/lint/golint 
+</span><span style="color:#f1fa8c">      make lint</span></code></pre></div>
+<p>这里我们指定了我们希望这个 Job 任务在 ubuntu 机器上运行（<code>runs-on</code>关键字）。Actions 现在支持 Linux、Mac、Windows 和 Docker 环境，在以后，也可以将自己的机器来作为 runners 运行，类似与 GitLab CI Runner。然后定义了该 Job 任务的执行步骤：</p>
+
+<p>首先是安装 Golang 环境，GitHub 已经提供了这样的一个 action，所以我们直接使用即可：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">- name: Set up Go
+  uses: actions/setup-go@v1
+  with:
+    go-version: <span style="color:#bd93f9">1.12</span></code></pre></div>
+<blockquote>
+<p>可以在 GitHub marketplace 上面找到 action 的具体使用方法：<a href="https://github.com/marketplace/actions/setup-go-for-use-with-actions">https://github.com/marketplace/actions/setup-go-for-use-with-actions</a>。</p>
+</blockquote>
+
+<p>其实这里的步骤声明语法很明确了，<code>with</code>关键字允许我们指定 action 所需的参数，这里<code>setup-go</code>这个 action 允许我们指定要使用的 go 版本，由于我们上面的例子中使用了 go modules，所以我们这里指定使用的是<code>1.12</code>版本（大于1.11即可），然后下一个步骤就是获取源代码，同样这里还是直接使用内置的一个 action：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">- name: Check out code
+  uses: actions/checkout@v1</code></pre></div>
+<p>然后我们安装和运行<code>golint</code>工具：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">- name: Lint Go Code
+  run: <span style="color:#f1fa8c">|
+</span><span style="color:#f1fa8c">    export PATH=$PATH:$(go env GOPATH)/bin
+</span><span style="color:#f1fa8c">    go get -u golang.org/x/lint/golint 
+</span><span style="color:#f1fa8c">    make lint</span></code></pre></div>
+<p>这样 Lint 这个 Job 任务就定义完成了，其余的 Job 也非常类似，比如我们再来看下 Test 这个 Job 任务，定义如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">test:
+  name: Test
+  runs-on: ubuntu-latest
+  steps:
+  - name: Set up Go
+    uses: actions/setup-go@v1
+    with:
+      go-version: <span style="color:#bd93f9">1.12</span>
+
+  - name: Check out code
+    uses: actions/checkout@v1
+
+  - name: Run Unit tests.
+    run: make test-coverage
+
+  - name: Upload Coverage report to CodeCov
+    uses: codecov/codecov-action@v1.<span style="color:#bd93f9">0.0</span>
+    with:
+      token: ${{secrets.CODECOV_TOKEN}}
+      file: ./coverage.txt</code></pre></div>
+<p>这里的定义唯一不同的是上传代码测试覆盖率使用的 action 是一个第三方的，当然这个 action 也在 marketplace 上面可以找到：<a href="https://github.com/marketplace/actions/codecov">https://github.com/marketplace/actions/codecov</a>，我们会将测试的代码覆盖率上传到 <a href="https://www.codecov.io/">CodeCov</a>。这里我们需要使用 GitHub 的<code>secrets</code>来存储操作 CodeCov 所需要的<code>Codecov Token</code>，在 CodeCov 网站上通过 GitHub 用户授权登录，然后启用上面的[go-github-actions]项目，就可以获得<code>Codecov Token</code>的值，然后在 GitHub 项目 settings -&gt; Secrets 下面添加，Name 为<code>CODECOV_TOKEN</code>，Value 就是刚刚获取的<code>Codecov Token</code>的值。这样我们就完成了 Test 这个 Job 任务的操作声明。</p>
+
+<blockquote>
+<p>我们可以使用任何语言创建自己的 actions（只需要包含一个 Dockerfile 文件），如果你喜欢使用 Typescript 的话还可以直接使用官方提供的 action 开发工具包：<a href="https://github.com/actions/toolkit">https://github.com/actions/toolkit</a>。</p>
+</blockquote>
+
+<p>这样我们就完成了第一个 workflow😄，不过需要注意的是我们这里所有的操作都是通过 make 命令执行的，所以我们还需要在项目根目录中添加一个 Makefile 文件，内容如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">PROJECT_NAME :<span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;github.com/cnych/go-github-actions&#34;</span>
+PKG :<span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#ff79c6">$(</span>PROJECT_NAME<span style="color:#ff79c6">)</span><span style="color:#f1fa8c">&#34;</span>
+PKG_LIST :<span style="color:#ff79c6">=</span> <span style="color:#ff79c6">$(</span>shell go list <span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">PKG</span><span style="color:#f1fa8c">}</span>/... | grep -v /vendor/<span style="color:#ff79c6">)</span>
+GO_FILES :<span style="color:#ff79c6">=</span> <span style="color:#ff79c6">$(</span>shell find . -name <span style="color:#f1fa8c">&#39;*.go&#39;</span> | grep -v /vendor/ | grep -v _test.go<span style="color:#ff79c6">)</span>
+
+.PHONY: all dep lint vet <span style="color:#8be9fd;font-style:italic">test</span> test-coverage build clean
+
+all: build
+
+dep: <span style="color:#6272a4">## Get the dependencies</span>
+	@go mod download
+
+lint: <span style="color:#6272a4">## Lint Golang files</span>
+	@golint -set_exit_status <span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">PKG_LIST</span><span style="color:#f1fa8c">}</span>
+
+vet: <span style="color:#6272a4">## Run go vet</span>
+	@go vet <span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">PKG_LIST</span><span style="color:#f1fa8c">}</span>
+
+test: <span style="color:#6272a4">## Run unittests</span>
+	@go <span style="color:#8be9fd;font-style:italic">test</span> -short <span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">PKG_LIST</span><span style="color:#f1fa8c">}</span>
+
+test-coverage: <span style="color:#6272a4">## Run tests with coverage</span>
+	@go <span style="color:#8be9fd;font-style:italic">test</span> -short -coverprofile cover.out -covermode<span style="color:#ff79c6">=</span>atomic <span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">PKG_LIST</span><span style="color:#f1fa8c">}</span>
+	@cat cover.out &gt;&gt; coverage.txt
+
+build: dep <span style="color:#6272a4">## Build the binary file</span>
+	@go build -i -o build/main <span style="color:#ff79c6">$(</span>PKG<span style="color:#ff79c6">)</span>
+
+clean: <span style="color:#6272a4">## Remove previous build</span>
+	@rm -f ./build
+
+help: <span style="color:#6272a4">## Display this help screen</span>
+	@grep -h -E <span style="color:#f1fa8c">&#39;^[a-zA-Z_-]+:.*?## .*$$&#39;</span> <span style="color:#ff79c6">$(</span>MAKEFILE_LIST<span style="color:#ff79c6">)</span> | awk <span style="color:#f1fa8c">&#39;BEGIN {FS = &#34;:.*?## &#34;}; {printf &#34;\033[36m%-30s\033[0m %s\n&#34;, $$1, $$2}&#39;</span></code></pre></div>
+<p>接下来我们创建一个新的分支改一点代码然后在 Actions 中查看下 PR 的 workflow：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ git checkout -b actions-demo
+Switched to a new branch <span style="color:#f1fa8c">&#39;actions-demo&#39;</span></code></pre></div>
+<p>然后修改 hello 这个 package 下面的 Greet 函数：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#6272a4">// Greet ... Greet GitHub Actions
+</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">Greet</span>() <span style="color:#8be9fd">string</span> {
+  <span style="color:#ff79c6">return</span> <span style="color:#f1fa8c">&#34;Hello GitHub Actions. qikqiak.com is awesome&#34;</span>
+}</code></pre></div>
+<p>当然同样也要修改下 hello_test.go 中的测试代码：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">TestGreet</span>(t <span style="color:#ff79c6">*</span>testing.T) {
+  result <span style="color:#ff79c6">:=</span> <span style="color:#50fa7b">Greet</span>()
+  <span style="color:#ff79c6">if</span> result <span style="color:#ff79c6">!=</span> <span style="color:#f1fa8c">&#34;Hello GitHub Actions. qikqiak.com is awesome&#34;</span> {
+	t.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;Greet() = %s; Expected Hello GitHub Actions. qikqiak.com is awesome&#34;</span>, result)
+  }
+
+}</code></pre></div>
+<p>要记住上面定义的 workflow 文件同样要添加到项目根目录<code>.github/workflows/main.yml</code>文件中，现在推送这个分支然后创建一个 Pull Request 到 master 分支，上面我们定义的工作流就会立刻被触发构建了。而且在 workflow 还未执行完成通过的时候，是不能进行 merge 操作的。
+<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/github-actions-pr.png" alt="github actions pr check" /></p>
+
+<p>当任务执行完成后就可以进行 Merge 操作了：
+<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/github-actions-pr-pass.png" alt="github actions pr pass" /></p>
+
+<p>上面在 workflow 中我们还和 CodeCov 进行了集成，所以我们可以看到 PR 的状态检查和 Coverage 代码覆盖报告：
+<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/github-actions-codev-report.png" alt="github actions codecov report" /></p>
+
+<h3 id="release-workflow">release workflow</h3>
+
+<p>上面我们定义了构建测试的 workflow，接下来我们来定义我们的发布 workflow，使用方法都是类似的，上面我们也提到过每个 workflow 都是一个独立的文件，我们这里创建一个文件<code>.github/workflows/release.yml</code>，内容如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">name: Release
+on:
+  create:
+    tags:
+    - v*
+
+jobs:
+  release:
+    name: Release on GitHub
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v1
+
+    - name: Validates GO releaser config
+      uses: docker://goreleaser/goreleaser:latest
+      with:
+        args: check
+
+    - name: Create release on GitHub
+      uses: docker://goreleaser/goreleaser:latest
+      with:
+        args: release
+      env:
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}</code></pre></div>
+<p>这个 workflow 中我们定义了只在创建新的 tag 时才触发任务，然后只定义了一个 release 的 Job。</p>
+
+<p>上面我们定义的 Job 任务中先获取项目代码，然后使用 <a href="https://goreleaser.com/">GoReleaser</a> 官方 Docker 镜像来构建任务。当使用 docker 容器的时候，可以定义容器的<code>args</code>和<code>entrypoint</code>，我们这里分别使用<code>args</code>定义了<code>check</code>和<code>release</code>两个参数。</p>
+
+<p>另外还指定了<code>GoReleaser</code>所需的<code>GITHUB_TOKEN</code>这个环境变量，这样可以在 GitHub 上来发布我们的应用版本，不过需要注意的是，<code>secrets.GITHUB_TOKEN</code>这个变量的值是由 Actions 平台自动注入的，所以不需要我们单独手动去添加了，这样就方便很多了。</p>
+
+<p>然后我们创建一个新的 tag 并推送到代码仓库中去：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ git tag v0.1.0
+$ git push --tags
+Counting objects: <span style="color:#bd93f9">5</span>, <span style="color:#ff79c6">done</span>.
+Writing objects: <span style="color:#bd93f9">100</span>% <span style="color:#ff79c6">(</span><span style="color:#bd93f9">5</span>/5<span style="color:#ff79c6">)</span>, <span style="color:#bd93f9">799</span> bytes | <span style="color:#bd93f9">0</span> bytes/s, <span style="color:#ff79c6">done</span>.
+Total <span style="color:#bd93f9">5</span> <span style="color:#ff79c6">(</span>delta <span style="color:#bd93f9">0</span><span style="color:#ff79c6">)</span>, reused <span style="color:#bd93f9">0</span> <span style="color:#ff79c6">(</span>delta <span style="color:#bd93f9">0</span><span style="color:#ff79c6">)</span>
+To git@github.com:cnych/go-github-actions.git
+ * <span style="color:#ff79c6">[</span>new tag<span style="color:#ff79c6">]</span>         v0.1.0 -&gt; v0.1.0</code></pre></div>
+<p>如果一切正常就会立刻触发任务构建，Job 任务构建完成后会在 GitHub 上面创建一个新的版本，其中包含由<code>GoReleaser</code>工具自动生成的应用包和 Changelog。</p>
+
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/github-actions-release.png" alt="github actions release"><figcaption>github actions release</figcaption></figure>
+
+<p>到这里我们就完成了第一个 GitHub Actions 的 Pipeline😄，这是一个非常基础的例子，但是对于我们了解 GitHub Actions 的工作方式是一个很好的案例。</p>
+
+<h2 id="总结">总结</h2>
+
+<p>对于大部分托管在 GitHub 上的开源项目，GitHub Actions 应该足够了，对于更高级的用法，比如手动批准和参数化构建这些企业项目会经常使用的功能目前还不支持，不过 GitHub Actions 现在还处于测试阶段，或许不久的将来就会支持这些功能了，对于 Jenkins、GitLab CI 这些在企业中非常受欢迎的工具来说影响或许不大，但是对于一些依赖 GitHub 的第三方 CI/CD 工具影响就很大了，比如 Travis CI 或者 Circle CI 之类的，因为对于托管在 GitHub 上面的项目来说 GitHub Actions 已经足够优秀了，更重要的是属于内置的功能，所以前面说 Travis CI 现在在某个墙角瑟瑟发抖🤣不是没有道理的。</p>
+
+<h2 id="参考文档">参考文档</h2>
+
+<ul>
+<li><a href="https://github.com/features/actions">Features • GitHub Actions</a></li>
+<li><a href="https://help.github.com/en/articles/workflow-syntax-for-github-actions">Workflow syntax for GitHub Actions
+</a></li>
+<li><a href="https://dev.to/brpaz/building-a-basic-ci-cd-pipeline-for-a-golang-application-using-github-actions-icj">Building a basic CI/CD pipeline for a Golang application using GitHub Actions</a></li>
+</ul>
+
+<p><a href="https://www.qikqiak.com/post/promotion-51" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/9mogk.png" alt="kubernetes进阶课程"></a></p>
+
+
+          <h2>微信公众号</h2>
+<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
+<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-jenkins3/">Jenkins Blue Ocean 的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-jenkins2/">Jenkins Pipeline 部署 Kubernetes 应用(二)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-3/">Drone 结合 Helm 部署 Kubernetes 应用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-2/">使用 Drone Pipeline 构建 Docker 镜像</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-1/">使用 Kubernetes Helm 安装 Drone</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-jenkins1/">基于 kubernetes 的动态 jenkins slave</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/install-kubesphere-on-k8s/">在现有 Kubernetes 集群上安装 KubeSphere</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/go-modules-usage/">Go Modules 基本使用（视频）</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-auth-via-oidc/">通过 GitHub OAuth 和 Dex 访问 Kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/groovy-simple-tutorial/">Groovy 简明教程</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/kustomize-101/" data-toggle="tooltip" data-placement="top" title="使用 Kustomize 配置 Kubernetes 应用">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/promotion-51/" data-toggle="tooltip" data-placement="top" title="打造独当一面的 Kubernetes 运维、开发工程师">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '使用 GitHub Actions 自动化构建 Golang 应用',
+        createIssueManually: true,
+        id: 'use-github-actions-build-go-app',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2019
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">文章归档</a>
+            &nbsp;&bull;&nbsp;
+            
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.53</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+
+<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+
+
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+
+  </body>
+</html>
+

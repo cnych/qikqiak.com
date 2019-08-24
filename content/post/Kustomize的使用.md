@@ -36,7 +36,7 @@ $ brew install kustomize
 
 这些文件我们**永远**不会直接访问，我们将在它们上面添加一些自定义的配置来创建新的资源定义。
 
-> 你可以在任何时间点使用`kubectl apply -f ./k8s/base/`命令来构建基础模板（比如，用于 dev 环境）。
+> 你可以在任何时间点使用`kubectl apply -f ./k8s/base/`命令来构建基础模板。
 
 下面例子中，我们将使用 Service 和 Deployment 资源对象为例进行说明。下面定义两个资源清单文件：
 service.yaml 定义如下:
@@ -676,7 +676,6 @@ $ kustomize build k8s/overlays/prod | kubectl apply -f -
 Kustomize 中还有很多其他高级用法，比如 mixins 和继承或者允许为每一个创建的对象定义一个名称、标签或者 namespace 等等，你可以在官方的 [Kustomize GitHub 代码仓库](https://github.com/kubernetes-sigs/kustomize)中查看高级示例和文档。
 
 <!--adsense-self-->
-
 
 ## 参考文档
 * [Kustomize GitHub](https://github.com/kubernetes-sigs/kustomize)
