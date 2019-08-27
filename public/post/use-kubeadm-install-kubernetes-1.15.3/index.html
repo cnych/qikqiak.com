@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>使用 kubeadm 搭建 v1.15.3 版本 Kubernetes 集群-www.qikqiak.com|阳明的博客|Kubernetes|Docker|istio|Python|Golang|Cloud Native</title>
+  <meta property="og:title" content="使用 kubeadm 搭建 v1.15.3 版本 Kubernetes 集群" />
+  <meta name="twitter:title" content="使用 kubeadm 搭建 v1.15.3 版本 Kubernetes 集群" />
+
+  <meta name="description" content="以前文章和视频中都是使用的 Kubeadm 搭建的 Kubernetes 集群，但是版本比较低了（1.10.0版本），近期有不少反馈让更新下版本，本文将通过 Kubeadm 来搭建最新版本的 Kubernetes 1.15.3 集群，其实和以前搭建的方式方法基本一致，我们这里准备使用 calico 网络插件以及 ipvs 模式的 kube-proxy。">
+  <meta property="og:description" content="以前文章和视频中都是使用的 Kubeadm 搭建的 Kubernetes 集群，但是版本比较低了（1.10.0版本），近期有不少反馈让更新下版本，本文将通过 Kubeadm 来搭建最新版本的 Kubernetes 1.15.3 集群，其实和以前搭建的方式方法基本一致，我们这里准备使用 calico 网络插件以及 ipvs 模式的 kube-proxy。">
+  <meta name="twitter:description" content="以前文章和视频中都是使用的 Kubeadm 搭建的 Kubernetes 集群，但是版本比较低了（1.10.0版本），近期有不少反馈让更新下版本，本文将通过 Kubeadm 来搭建最新版本的 Kubernetes 1.15.3 集群，其实和以前搭建的方式方法基本一致，我们这里准备使用 calico 网络插件以及 ipvs 模式的 kube-proxy。">
+  <meta name="author" content=""/>
+  <link href='https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/favicon.png' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/use-kubeadm-install-kubernetes-1.15.3/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.53" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/use-kubeadm-install-kubernetes-1.15.3/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
+
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.d236889182ad0dba3ea8cf427c8c43c658a4b0d39ab889ff934e277a03537814.css' integrity='sha256-0jaIkYKtDbo&#43;qM9CfIxDxliksNOauIn/k04negNTeBQ='>
+
+  
+    
+    <!--[if lt IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <![endif]-->
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubeadm, kubernetes, coredns, ipvs, calico">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/">阳明的博客</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="首页" href="https://www.qikqiak.com/">首页</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/ops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1566807355181-4a22b3cfd335.jpeg" data-img-desc-1="https://unsplash.com/photos/nfxD5dWy1wk"></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>使用 kubeadm 搭建 v1.15.3 版本 Kubernetes 集群</h1>
+                  
+                  
+                    <span class="post-meta">
+  
+    发表于 August 27, 2019
+  
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>使用 kubeadm 搭建 v1.15.3 版本 Kubernetes 集群</h1>
+                
+                
+                  <span class="post-meta">
+  
+    发表于 August 27, 2019
+  
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubeadm/">kubeadm</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/coredns/">coredns</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/ipvs/">ipvs</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/calico/">calico</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#环境准备">环境准备</a></li>
+<li><a href="#初始化集群">初始化集群</a></li>
+<li><a href="#添加节点">添加节点</a></li>
+<li><a href="#安装-dashboard">安装 Dashboard</a></li>
+</ul></li>
+</ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>以前文章和视频中都是<a href="https://www.qikqiak.com/use-kubeadm-install-kubernetes-1.10/">使用的 Kubeadm 搭建的 Kubernetes 集群</a>，但是版本比较低了（1.10.0版本），近期有不少反馈让更新下版本，本文将通过 Kubeadm 来搭建最新版本的 Kubernetes 1.15.3 集群，其实和以前搭建的方式方法基本一致，我们这里准备使用 calico 网络插件以及 ipvs 模式的 kube-proxy。</p>
+
+<h2 id="环境准备">环境准备</h2>
+
+<p>3个节点，都是 Centos 7.6 系统，内核版本：3.10.0-957.12.2.el7.x86_64，在每个节点上添加 hosts 信息：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ cat /etc/hosts
+<span style="color:#bd93f9">10</span>.151.30.11 ydzs-master
+<span style="color:#bd93f9">10</span>.151.30.22 ydzs-node1
+<span style="color:#bd93f9">10</span>.151.30.23 ydzs-node2</code></pre></div>
+<p>禁用防火墙：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ systemctl stop firewalld
+$ systemctl disable firewalld</code></pre></div>
+<p>禁用SELINUX：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ setenforce <span style="color:#bd93f9">0</span>
+$ cat /etc/selinux/config
+<span style="color:#8be9fd;font-style:italic">SELINUX</span><span style="color:#ff79c6">=</span>disabled</code></pre></div>
+<p>创建<code>/etc/sysctl.d/k8s.conf</code>文件，添加如下内容：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">net.bridge.bridge-nf-call-ip6tables <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">1</span>
+net.bridge.bridge-nf-call-iptables <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">1</span>
+net.ipv4.ip_forward <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">1</span></code></pre></div>
+<p>执行如下命令使修改生效：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ modprobe br_netfilter
+$ sysctl -p /etc/sysctl.d/k8s.conf</code></pre></div>
+<p>安装 ipvs</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ cat &gt; /etc/sysconfig/modules/ipvs.modules <span style="color:#f1fa8c">&lt;&lt;EOF
+</span><span style="color:#f1fa8c">#!/bin/bash
+</span><span style="color:#f1fa8c">modprobe -- ip_vs
+</span><span style="color:#f1fa8c">modprobe -- ip_vs_rr
+</span><span style="color:#f1fa8c">modprobe -- ip_vs_wrr
+</span><span style="color:#f1fa8c">modprobe -- ip_vs_sh
+</span><span style="color:#f1fa8c">modprobe -- nf_conntrack_ipv4
+</span><span style="color:#f1fa8c">EOF</span>
+$ chmod <span style="color:#bd93f9">755</span> /etc/sysconfig/modules/ipvs.modules <span style="color:#ff79c6">&amp;&amp;</span> bash /etc/sysconfig/modules/ipvs.modules <span style="color:#ff79c6">&amp;&amp;</span> lsmod | grep -e ip_vs -e nf_conntrack_ipv4</code></pre></div>
+<p>上面脚本创建了的<code>/etc/sysconfig/modules/ipvs.modules</code>文件，保证在节点重启后能自动加载所需模块。使用<code>lsmod | grep -e ip_vs -e nf_conntrack_ipv4</code>命令查看是否已经正确加载所需的内核模块。</p>
+
+<p>接下来还需要确保各个节点上已经安装了 ipset 软件包：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ yum install ipset</code></pre></div>
+<p>为了便于查看 ipvs 的代理规则，最好安装一下管理工具 ipvsadm：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ yum install ipvsadm</code></pre></div>
+<p>同步服务器时间</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ yum install chrony -y
+$ systemctl <span style="color:#8be9fd;font-style:italic">enable</span> chronyd
+$ systemctl start chronyd
+$ chronyc sources
+<span style="color:#bd93f9">210</span> Number of <span style="color:#8be9fd;font-style:italic">sources</span> <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">4</span>
+MS Name/IP address         Stratum Poll Reach LastRx Last <span style="color:#8be9fd;font-style:italic">sample</span>
+<span style="color:#ff79c6">===============================================================================</span>
+^+ sv1.ggsrv.de                  <span style="color:#bd93f9">2</span>   <span style="color:#bd93f9">6</span>    <span style="color:#bd93f9">17</span>    <span style="color:#bd93f9">32</span>   -823us<span style="color:#ff79c6">[</span>-1128us<span style="color:#ff79c6">]</span> +/-   98ms
+^- montreal.ca.logiplex.net      <span style="color:#bd93f9">2</span>   <span style="color:#bd93f9">6</span>    <span style="color:#bd93f9">17</span>    <span style="color:#bd93f9">32</span>    -17ms<span style="color:#ff79c6">[</span>  -17ms<span style="color:#ff79c6">]</span> +/-  179ms
+^- ntp6.flashdance.cx            <span style="color:#bd93f9">2</span>   <span style="color:#bd93f9">6</span>    <span style="color:#bd93f9">17</span>    <span style="color:#bd93f9">32</span>    -32ms<span style="color:#ff79c6">[</span>  -32ms<span style="color:#ff79c6">]</span> +/-  161ms
+^* <span style="color:#bd93f9">119</span>.28.183.184                <span style="color:#bd93f9">2</span>   <span style="color:#bd93f9">6</span>    <span style="color:#bd93f9">33</span>    <span style="color:#bd93f9">32</span>   +661us<span style="color:#ff79c6">[</span> +357us<span style="color:#ff79c6">]</span> +/-   38ms
+$ date
+Tue Aug <span style="color:#bd93f9">27</span> <span style="color:#bd93f9">09</span>:28:41 CST <span style="color:#bd93f9">2019</span></code></pre></div>
+<p>关闭 swap 分区：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ swapoff -a</code></pre></div>
+<p>修改<code>/etc/fstab</code>文件，注释掉 SWAP 的自动挂载，使用<code>free -m</code>确认 swap 已经关闭。swappiness 参数调整，修改<code>/etc/sysctl.d/k8s.conf</code>添加下面一行：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">vm.swappiness<span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span></code></pre></div>
+<p>执行<code>sysctl -p /etc/sysctl.d/k8s.conf</code>使修改生效。</p>
+
+<p>接下来可以安装 Docker</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ yum install -y yum-utils <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  device-mapper-persistent-data <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  lvm2
+$ yum-config-manager <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    --add-repo <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    https://download.docker.com/linux/centos/docker-ce.repo
+$ yum list docker-ce --showduplicates | sort -r
+ * updates: mirrors.tuna.tsinghua.edu.cn
+Loading mirror speeds from cached hostfile
+Loaded plugins: fastestmirror, langpacks
+Installed Packages
+ * extras: mirrors.tuna.tsinghua.edu.cn
+ * epel: mirrors.yun-idc.com
+docker-ce.x86_64            <span style="color:#bd93f9">3</span>:19.03.1-3.el7                     docker-ce-stable
+docker-ce.x86_64            <span style="color:#bd93f9">3</span>:19.03.0-3.el7                     docker-ce-stable
+docker-ce.x86_64            <span style="color:#bd93f9">3</span>:18.09.8-3.el7                     docker-ce-stable
+......
+docker-ce.x86_64            <span style="color:#bd93f9">18</span>.03.1.ce-1.el7.centos             docker-ce-stable
+docker-ce.x86_64            <span style="color:#bd93f9">18</span>.03.0.ce-1.el7.centos             docker-ce-stable
+......
+ * base: mirror.lzu.edu.cn
+Available Packages</code></pre></div>
+<p>可以选择安装一个版本，比如我们这里安装最新版本：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ yum install docker-ce-19.03.1-3.el7</code></pre></div>
+<p>配置 Docker 镜像加速器</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ vi /etc/docker/daemon.json
+<span style="color:#ff79c6">{</span>
+  <span style="color:#f1fa8c">&#34;exec-opts&#34;</span>: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;native.cgroupdriver=systemd&#34;</span><span style="color:#ff79c6">]</span>,
+  <span style="color:#f1fa8c">&#34;registry-mirrors&#34;</span> : <span style="color:#ff79c6">[</span>
+    <span style="color:#f1fa8c">&#34;https://ot2k4d59.mirror.aliyuncs.com/&#34;</span>
+  <span style="color:#ff79c6">]</span>
+<span style="color:#ff79c6">}</span></code></pre></div>
+<p>启动 Docker</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">$ systemctl start docker
+$ systemctl enable docker</pre></div>
+<p>在确保 Docker 安装完成后，上面的相关环境配置也完成了，现在我们就可以来安装 Kubeadm 了，我们这里是通过指定yum 源的方式来进行安装的：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">cat <span style="color:#f1fa8c">&lt;&lt;EOF &gt; /etc/yum.repos.d/kubernetes.repo
+</span><span style="color:#f1fa8c">[kubernetes]
+</span><span style="color:#f1fa8c">name=Kubernetes
+</span><span style="color:#f1fa8c">baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+</span><span style="color:#f1fa8c">enabled=1
+</span><span style="color:#f1fa8c">gpgcheck=1
+</span><span style="color:#f1fa8c">repo_gpgcheck=1
+</span><span style="color:#f1fa8c">gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+</span><span style="color:#f1fa8c">        https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+</span><span style="color:#f1fa8c">EOF</span></code></pre></div>
+<p>当然了，上面的 yum 源是需要科学上网的，如果不能科学上网的话，我们可以使用阿里云的源进行安装：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">cat <span style="color:#f1fa8c">&lt;&lt;EOF &gt; /etc/yum.repos.d/kubernetes.repo
+</span><span style="color:#f1fa8c">[kubernetes]
+</span><span style="color:#f1fa8c">name=Kubernetes
+</span><span style="color:#f1fa8c">baseurl=http://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64
+</span><span style="color:#f1fa8c">enabled=1
+</span><span style="color:#f1fa8c">gpgcheck=0
+</span><span style="color:#f1fa8c">repo_gpgcheck=0
+</span><span style="color:#f1fa8c">gpgkey=http://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg
+</span><span style="color:#f1fa8c">        http://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
+</span><span style="color:#f1fa8c">EOF</span></code></pre></div>
+<p>然后安装 kubeadm、kubelet、kubectl：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ yum install -y kubelet kubeadm kubectl --disableexcludes<span style="color:#ff79c6">=</span>kubernetes
+$ kubeadm version
+kubeadm version: &amp;version.Info<span style="color:#ff79c6">{</span>Major:<span style="color:#f1fa8c">&#34;1&#34;</span>, Minor:<span style="color:#f1fa8c">&#34;15&#34;</span>, GitVersion:<span style="color:#f1fa8c">&#34;v1.15.3&#34;</span>, GitCommit:<span style="color:#f1fa8c">&#34;2d3c76f9091b6bec110a5e63777c332469e0cba2&#34;</span>, GitTreeState:<span style="color:#f1fa8c">&#34;clean&#34;</span>, BuildDate:<span style="color:#f1fa8c">&#34;2019-08-19T11:11:18Z&#34;</span>, GoVersion:<span style="color:#f1fa8c">&#34;go1.12.9&#34;</span>, Compiler:<span style="color:#f1fa8c">&#34;gc&#34;</span>, Platform:<span style="color:#f1fa8c">&#34;linux/amd64&#34;</span><span style="color:#ff79c6">}</span></code></pre></div>
+<p>可以看到我们这里安装的是 v1.15.3 版本，然后将 kubelet 设置成开机启动：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ systemctl <span style="color:#8be9fd;font-style:italic">enable</span> kubelet.service</code></pre></div>
+<blockquote>
+<p>到这里为止上面所有的操作都需要在所有节点执行配置。</p>
+</blockquote>
+
+<h2 id="初始化集群">初始化集群</h2>
+
+<p>然后接下来在 master 节点配置 kubeadm 初始化文件，可以通过如下命令导出默认的初始化配置：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubeadm config print init-defaults &gt; kubeadm.yaml</code></pre></div>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5376999672787220"
+     data-ad-slot="9165834656"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+
+<p>然后根据我们自己的需求修改配置，比如修改 imageRepository 的值，kube-proxy 的模式为 ipvs，另外需要注意的是我们这里是准备安装 calico 网络插件的，需要将 networking.podSubnet 设置为<code>192.168.0.0/16</code>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: kubeadm.k8s.io/v1beta2
+bootstrapTokens:
+- groups:
+  - system:bootstrappers:kubeadm:default-node-token
+  token: abcdef.0123456789abcdef
+  ttl: 24h0m0s
+  usages:
+  - signing
+  - authentication
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: <span style="color:#bd93f9">10.151</span>.<span style="color:#bd93f9">30.11</span>  <span style="color:#6272a4"># apiserver 节点内网IP</span>
+  bindPort: <span style="color:#bd93f9">6443</span>
+nodeRegistration:
+  criSocket: /var/run/dockershim.sock
+  name: ydzs-master
+  taints:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+---
+apiServer:
+  timeoutForControlPlane: 4m0s
+apiVersion: kubeadm.k8s.io/v1beta2
+certificatesDir: /etc/kubernetes/pki
+clusterName: kubernetes
+controllerManager: {}
+dns:
+  type: CoreDNS  <span style="color:#6272a4"># dns类型</span>
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+imageRepository: gcr.azk8s.cn/google_containers
+kind: ClusterConfiguration
+kubernetesVersion: v1.<span style="color:#bd93f9">15.3</span>  <span style="color:#6272a4"># k8s版本</span>
+networking:
+  dnsDomain: cluster.local
+  podSubnet: <span style="color:#bd93f9">192.168</span>.<span style="color:#bd93f9">0.0</span>/<span style="color:#bd93f9">16</span>
+  serviceSubnet: <span style="color:#bd93f9">10.96</span>.<span style="color:#bd93f9">0.0</span>/<span style="color:#bd93f9">12</span>
+scheduler: {}
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+mode: ipvs  <span style="color:#6272a4"># kube-proxy 模式</span></code></pre></div>
+<p>然后使用上面的配置文件进行初始化：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubeadm init --config kubeadm.yaml
+<span style="color:#ff79c6">[</span>init<span style="color:#ff79c6">]</span> Using Kubernetes version: v1.15.3
+<span style="color:#ff79c6">[</span>preflight<span style="color:#ff79c6">]</span> Running pre-flight checks
+	<span style="color:#ff79c6">[</span>WARNING SystemVerification<span style="color:#ff79c6">]</span>: this Docker version is not on the list of validated versions: <span style="color:#bd93f9">19</span>.03.1. Latest validated version: <span style="color:#bd93f9">18</span>.09
+<span style="color:#ff79c6">[</span>preflight<span style="color:#ff79c6">]</span> Pulling images required <span style="color:#ff79c6">for</span> setting up a Kubernetes cluster
+<span style="color:#ff79c6">[</span>preflight<span style="color:#ff79c6">]</span> This might take a minute or two, depending on the speed of your internet connection
+<span style="color:#ff79c6">[</span>preflight<span style="color:#ff79c6">]</span> You can also perform this action in beforehand using <span style="color:#f1fa8c">&#39;kubeadm config images pull&#39;</span>
+<span style="color:#ff79c6">[</span>kubelet-start<span style="color:#ff79c6">]</span> Writing kubelet environment file with flags to file <span style="color:#f1fa8c">&#34;/var/lib/kubelet/kubeadm-flags.env&#34;</span>
+<span style="color:#ff79c6">[</span>kubelet-start<span style="color:#ff79c6">]</span> Writing kubelet configuration to file <span style="color:#f1fa8c">&#34;/var/lib/kubelet/config.yaml&#34;</span>
+<span style="color:#ff79c6">[</span>kubelet-start<span style="color:#ff79c6">]</span> Activating the kubelet service
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Using certificateDir folder <span style="color:#f1fa8c">&#34;/etc/kubernetes/pki&#34;</span>
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Generating <span style="color:#f1fa8c">&#34;etcd/ca&#34;</span> certificate and key
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Generating <span style="color:#f1fa8c">&#34;etcd/server&#34;</span> certificate and key
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> etcd/server serving cert is signed <span style="color:#ff79c6">for</span> DNS names <span style="color:#ff79c6">[</span>ydzs-master localhost<span style="color:#ff79c6">]</span> and IPs <span style="color:#ff79c6">[</span><span style="color:#bd93f9">10</span>.151.30.11 <span style="color:#bd93f9">127</span>.0.0.1 ::1<span style="color:#ff79c6">]</span>
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Generating <span style="color:#f1fa8c">&#34;etcd/peer&#34;</span> certificate and key
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> etcd/peer serving cert is signed <span style="color:#ff79c6">for</span> DNS names <span style="color:#ff79c6">[</span>ydzs-master localhost<span style="color:#ff79c6">]</span> and IPs <span style="color:#ff79c6">[</span><span style="color:#bd93f9">10</span>.151.30.11 <span style="color:#bd93f9">127</span>.0.0.1 ::1<span style="color:#ff79c6">]</span>
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Generating <span style="color:#f1fa8c">&#34;apiserver-etcd-client&#34;</span> certificate and key
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Generating <span style="color:#f1fa8c">&#34;etcd/healthcheck-client&#34;</span> certificate and key
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Generating <span style="color:#f1fa8c">&#34;ca&#34;</span> certificate and key
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Generating <span style="color:#f1fa8c">&#34;apiserver&#34;</span> certificate and key
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> apiserver serving cert is signed <span style="color:#ff79c6">for</span> DNS names <span style="color:#ff79c6">[</span>ydzs-master kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local<span style="color:#ff79c6">]</span> and IPs <span style="color:#ff79c6">[</span><span style="color:#bd93f9">10</span>.96.0.1 <span style="color:#bd93f9">10</span>.151.30.11<span style="color:#ff79c6">]</span>
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Generating <span style="color:#f1fa8c">&#34;apiserver-kubelet-client&#34;</span> certificate and key
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Generating <span style="color:#f1fa8c">&#34;front-proxy-ca&#34;</span> certificate and key
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Generating <span style="color:#f1fa8c">&#34;front-proxy-client&#34;</span> certificate and key
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Generating <span style="color:#f1fa8c">&#34;sa&#34;</span> key and public key
+<span style="color:#ff79c6">[</span>kubeconfig<span style="color:#ff79c6">]</span> Using kubeconfig folder <span style="color:#f1fa8c">&#34;/etc/kubernetes&#34;</span>
+<span style="color:#ff79c6">[</span>kubeconfig<span style="color:#ff79c6">]</span> Writing <span style="color:#f1fa8c">&#34;admin.conf&#34;</span> kubeconfig file
+<span style="color:#ff79c6">[</span>kubeconfig<span style="color:#ff79c6">]</span> Writing <span style="color:#f1fa8c">&#34;kubelet.conf&#34;</span> kubeconfig file
+<span style="color:#ff79c6">[</span>kubeconfig<span style="color:#ff79c6">]</span> Writing <span style="color:#f1fa8c">&#34;controller-manager.conf&#34;</span> kubeconfig file
+<span style="color:#ff79c6">[</span>kubeconfig<span style="color:#ff79c6">]</span> Writing <span style="color:#f1fa8c">&#34;scheduler.conf&#34;</span> kubeconfig file
+<span style="color:#ff79c6">[</span>control-plane<span style="color:#ff79c6">]</span> Using manifest folder <span style="color:#f1fa8c">&#34;/etc/kubernetes/manifests&#34;</span>
+<span style="color:#ff79c6">[</span>control-plane<span style="color:#ff79c6">]</span> Creating static Pod manifest <span style="color:#ff79c6">for</span> <span style="color:#f1fa8c">&#34;kube-apiserver&#34;</span>
+<span style="color:#ff79c6">[</span>control-plane<span style="color:#ff79c6">]</span> Creating static Pod manifest <span style="color:#ff79c6">for</span> <span style="color:#f1fa8c">&#34;kube-controller-manager&#34;</span>
+<span style="color:#ff79c6">[</span>control-plane<span style="color:#ff79c6">]</span> Creating static Pod manifest <span style="color:#ff79c6">for</span> <span style="color:#f1fa8c">&#34;kube-scheduler&#34;</span>
+<span style="color:#ff79c6">[</span>etcd<span style="color:#ff79c6">]</span> Creating static Pod manifest <span style="color:#ff79c6">for</span> <span style="color:#8be9fd;font-style:italic">local</span> etcd in <span style="color:#f1fa8c">&#34;/etc/kubernetes/manifests&#34;</span>
+<span style="color:#ff79c6">[</span>wait-control-plane<span style="color:#ff79c6">]</span> Waiting <span style="color:#ff79c6">for</span> the kubelet to boot up the control plane as static Pods from directory <span style="color:#f1fa8c">&#34;/etc/kubernetes/manifests&#34;</span>. This can take up to 4m0s
+<span style="color:#ff79c6">[</span>kubelet-check<span style="color:#ff79c6">]</span> Initial timeout of 40s passed.
+<span style="color:#ff79c6">[</span>apiclient<span style="color:#ff79c6">]</span> All control plane components are healthy after <span style="color:#bd93f9">42</span>.012149 seconds
+<span style="color:#ff79c6">[</span>upload-config<span style="color:#ff79c6">]</span> Storing the configuration used in ConfigMap <span style="color:#f1fa8c">&#34;kubeadm-config&#34;</span> in the <span style="color:#f1fa8c">&#34;kube-system&#34;</span> Namespace
+<span style="color:#ff79c6">[</span>kubelet<span style="color:#ff79c6">]</span> Creating a ConfigMap <span style="color:#f1fa8c">&#34;kubelet-config-1.15&#34;</span> in namespace kube-system with the configuration <span style="color:#ff79c6">for</span> the kubelets in the cluster
+<span style="color:#ff79c6">[</span>upload-certs<span style="color:#ff79c6">]</span> Skipping phase. Please see --upload-certs
+<span style="color:#ff79c6">[</span>mark-control-plane<span style="color:#ff79c6">]</span> Marking the node ydzs-master as control-plane by adding the label <span style="color:#f1fa8c">&#34;node-role.kubernetes.io/master=&#39;&#39;&#34;</span>
+<span style="color:#ff79c6">[</span>mark-control-plane<span style="color:#ff79c6">]</span> Marking the node ydzs-master as control-plane by adding the taints <span style="color:#ff79c6">[</span>node-role.kubernetes.io/master:NoSchedule<span style="color:#ff79c6">]</span>
+<span style="color:#ff79c6">[</span>bootstrap-token<span style="color:#ff79c6">]</span> Using token: abcdef.0123456789abcdef
+<span style="color:#ff79c6">[</span>bootstrap-token<span style="color:#ff79c6">]</span> Configuring bootstrap tokens, cluster-info ConfigMap, RBAC Roles
+<span style="color:#ff79c6">[</span>bootstrap-token<span style="color:#ff79c6">]</span> configured RBAC rules to allow Node Bootstrap tokens to post CSRs in order <span style="color:#ff79c6">for</span> nodes to get long term certificate credentials
+<span style="color:#ff79c6">[</span>bootstrap-token<span style="color:#ff79c6">]</span> configured RBAC rules to allow the csrapprover controller automatically approve CSRs from a Node Bootstrap Token
+<span style="color:#ff79c6">[</span>bootstrap-token<span style="color:#ff79c6">]</span> configured RBAC rules to allow certificate rotation <span style="color:#ff79c6">for</span> all node client certificates in the cluster
+<span style="color:#ff79c6">[</span>bootstrap-token<span style="color:#ff79c6">]</span> Creating the <span style="color:#f1fa8c">&#34;cluster-info&#34;</span> ConfigMap in the <span style="color:#f1fa8c">&#34;kube-public&#34;</span> namespace
+<span style="color:#ff79c6">[</span>addons<span style="color:#ff79c6">]</span> Applied essential addon: CoreDNS
+<span style="color:#ff79c6">[</span>addons<span style="color:#ff79c6">]</span> Applied essential addon: kube-proxy
+
+Your Kubernetes control-plane has initialized successfully!
+
+To start using your cluster, you need to run the following as a regular user:
+
+  mkdir -p <span style="color:#8be9fd;font-style:italic">$HOME</span>/.kube
+  sudo cp -i /etc/kubernetes/admin.conf <span style="color:#8be9fd;font-style:italic">$HOME</span>/.kube/config
+  sudo chown <span style="color:#ff79c6">$(</span>id -u<span style="color:#ff79c6">)</span>:<span style="color:#ff79c6">$(</span>id -g<span style="color:#ff79c6">)</span> <span style="color:#8be9fd;font-style:italic">$HOME</span>/.kube/config
+
+You should now deploy a pod network to the cluster.
+Run <span style="color:#f1fa8c">&#34;kubectl apply -f [podnetwork].yaml&#34;</span> with one of the options listed at:
+  https://kubernetes.io/docs/concepts/cluster-administration/addons/
+
+Then you can join any number of worker nodes by running the following on each as root:
+
+kubeadm join <span style="color:#bd93f9">10</span>.151.30.11:6443 --token abcdef.0123456789abcdef <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    --discovery-token-ca-cert-hash sha256:deb5158b39948a4592ff48512047ea6e45b288c248872724a28f15008962178b</code></pre></div>
+<blockquote>
+<p>可以看到最新验证的 docker 版本是18.09，虽然是一个 warning，所以最好还是安装18.09版本的 docker。</p>
+</blockquote>
+
+<p>拷贝 kubeconfig 文件</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ mkdir -p <span style="color:#8be9fd;font-style:italic">$HOME</span>/.kube
+$ sudo cp -i /etc/kubernetes/admin.conf <span style="color:#8be9fd;font-style:italic">$HOME</span>/.kube/config
+$ sudo chown <span style="color:#ff79c6">$(</span>id -u<span style="color:#ff79c6">)</span>:<span style="color:#ff79c6">$(</span>id -g<span style="color:#ff79c6">)</span> <span style="color:#8be9fd;font-style:italic">$HOME</span>/.kube/config</code></pre></div>
+<h2 id="添加节点">添加节点</h2>
+
+<p>记住初始化集群上面的配置和操作要提前做好，将 master 节点上面的 $HOME/.kube/config 文件拷贝到 node 节点对应的文件中，安装 kubeadm、kubelet、kubectl，然后执行上面初始化完成后提示的 join 命令即可：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubeadm join <span style="color:#bd93f9">10</span>.151.30.11:6443 --token abcdef.0123456789abcdef <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    --discovery-token-ca-cert-hash sha256:deb5158b39948a4592ff48512047ea6e45b288c248872724a28f15008962178b
+<span style="color:#ff79c6">[</span>preflight<span style="color:#ff79c6">]</span> Reading configuration from the cluster...
+<span style="color:#ff79c6">[</span>preflight<span style="color:#ff79c6">]</span> FYI: You can look at this config file with <span style="color:#f1fa8c">&#39;kubectl -n kube-system get cm kubeadm-config -oyaml&#39;</span>
+<span style="color:#ff79c6">[</span>kubelet-start<span style="color:#ff79c6">]</span> Downloading configuration <span style="color:#ff79c6">for</span> the kubelet from the <span style="color:#f1fa8c">&#34;kubelet-config-1.15&#34;</span> ConfigMap in the kube-system namespace
+<span style="color:#ff79c6">[</span>kubelet-start<span style="color:#ff79c6">]</span> Writing kubelet configuration to file <span style="color:#f1fa8c">&#34;/var/lib/kubelet/config.yaml&#34;</span>
+<span style="color:#ff79c6">[</span>kubelet-start<span style="color:#ff79c6">]</span> Writing kubelet environment file with flags to file <span style="color:#f1fa8c">&#34;/var/lib/kubelet/kubeadm-flags.env&#34;</span>
+<span style="color:#ff79c6">[</span>kubelet-start<span style="color:#ff79c6">]</span> Activating the kubelet service
+<span style="color:#ff79c6">[</span>kubelet-start<span style="color:#ff79c6">]</span> Waiting <span style="color:#ff79c6">for</span> the kubelet to perform the TLS Bootstrap...
+
+This node has joined the cluster:
+* Certificate signing request was sent to apiserver and a response was received.
+* The Kubelet was informed of the new secure connection details.
+
+Run <span style="color:#f1fa8c">&#39;kubectl get nodes&#39;</span> on the control-plane to see this node join the cluster.</code></pre></div>
+<blockquote>
+<p>如果忘记了上面的 join 命令可以使用命令<code>kubeadm token create --print-join-command</code>重新获取。</p>
+</blockquote>
+
+<p>执行成功后运行 get nodes 命令：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get nodes
+NAME          STATUS     ROLES    AGE    VERSION
+ydzs-master   NotReady      master   39m    v1.15.3
+ydzs-node1    NotReady   &lt;none&gt;   106s   v1.15.3</code></pre></div>
+<p>可以看到是 NotReady 状态，这是因为还没有安装网络插件，接下来安装网络插件，可以在文档 <a href="https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/">https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/</a> 中选择我们自己的网络插件，这里我们安装 calio:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ wget https://docs.projectcalico.org/v3.8/manifests/calico.yaml
+<span style="color:#6272a4"># 因为有节点是多网卡，所以需要在资源清单文件中指定内网网卡</span>
+$ vi calico.yaml
+......
+spec:
+  containers:
+  - env:
+    - name: DATASTORE_TYPE
+      value: kubernetes
+    - name: IP_AUTODETECTION_METHOD  <span style="color:#6272a4"># DaemonSet中添加该环境变量</span>
+      value: <span style="color:#8be9fd;font-style:italic">interface</span><span style="color:#ff79c6">=</span>eth0    <span style="color:#6272a4"># 指定内网网卡</span>
+    - name: WAIT_FOR_DATASTORE
+      value: <span style="color:#f1fa8c">&#34;true&#34;</span>
+......
+$ kubectl apply -f calico.yaml  <span style="color:#6272a4"># 安装calico网络插件</span></code></pre></div>
+<p>隔一会儿查看 Pod 运行状态：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-system
+NAME                                       READY   STATUS    RESTARTS   AGE
+calico-kube-controllers-65b8787765-svztx   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          82s
+calico-node-gmng9                          <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          82s
+calico-node-t695p                          <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          82s
+coredns-cf8fb6d7f-jsq5h                    <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          42m
+coredns-cf8fb6d7f-vxz4c                    <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          42m
+etcd-ydzs-master                           <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          41m
+kube-apiserver-ydzs-master                 <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          41m
+kube-controller-manager-ydzs-master        <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          41m
+kube-proxy-4z4vf                           <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          42m
+kube-proxy-qk57t                           <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          5m11s
+kube-scheduler-ydzs-master                 <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          41m</code></pre></div>
+<p>网络插件运行成功了，node 状态也正常了：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl get nodes
+NAME          STATUS   ROLES    AGE     VERSION
+ydzs-master   Ready    master   3h25m   v1.15.3
+ydzs-node1    Ready    &lt;none&gt;   168m    v1.15.3</code></pre></div>
+<p>用同样的方法添加另外一个节点即可。</p>
+
+<h2 id="安装-dashboard">安装 Dashboard</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ wget https://raw.githubusercontent.com/kubernetes/dashboard/v1.10.1/src/deploy/recommended/kubernetes-dashboard.yaml
+$ vi kubernetes-dashboard.yaml
+<span style="color:#6272a4"># 修改镜像名称</span>
+......
+containers:
+- args:
+  - --auto-generate-certificates
+  image: gcr.azk8s.cn/google_containers/kubernetes-dashboard-amd64:v1.10.1
+  imagePullPolicy: IfNotPresent
+......
+<span style="color:#6272a4"># 修改Service为NodePort类型</span>
+......
+selector:
+  k8s-app: kubernetes-dashboard
+type: NodePort
+......</code></pre></div>
+<p>直接创建：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f kubernetes-dashboard.yaml
+$ kubectl get pods -n kube-system -l k8s-app<span style="color:#ff79c6">=</span>kubernetes-dashboard
+NAME                                  READY   STATUS    RESTARTS   AGE
+kubernetes-dashboard-fcfb4cbc-t462n   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          50m
+$ kubectl get svc -n kube-system -l k8s-app<span style="color:#ff79c6">=</span>kubernetes-dashboard
+NAME                   TYPE       CLUSTER-IP      EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>         AGE
+kubernetes-dashboard   NodePort   <span style="color:#bd93f9">10</span>.110.172.49   &lt;none&gt;        <span style="color:#bd93f9">443</span>:32497/TCP   55m</code></pre></div>
+<p>然后可以通过上面的 32497 端口去访问 Dashboard，要记住使用 https，Chrome不生效可以使用Firefox测试：</p>
+
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/install-k8s-dashboard-login.png" alt="k8s dashboard login"><figcaption>k8s dashboard login</figcaption></figure>
+
+<p>然后创建一个具有全局所有权限的用户来登录Dashboard：(admin.yaml)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: admin
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: <span style="color:#f1fa8c">&#34;true&#34;</span>
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: admin
+  namespace: kube-system
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin
+  namespace: kube-system
+  labels:
+    kubernetes.io/cluster-service: <span style="color:#f1fa8c">&#34;true&#34;</span>
+    addonmanager.kubernetes.io/mode: Reconcile</code></pre></div>
+<p>直接创建：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f admin.yaml
+$ kubectl get secret -n kube-system|grep admin-token
+admin-token-d5jsg                  kubernetes.io/service-account-token   <span style="color:#bd93f9">3</span>         1d
+$ kubectl get secret admin-token-d5jsg -o <span style="color:#8be9fd;font-style:italic">jsonpath</span><span style="color:#ff79c6">={</span>.data.token<span style="color:#ff79c6">}</span> -n kube-system |base64 -d# 会生成一串很长的base64后的字符串</code></pre></div>
+<p>然后用上面的base64解码后的字符串作为token登录Dashboard即可：
+<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/install-k8s-dashboard.png" alt="k8s dashboard" /></p>
+
+<p>最终我们就完成了使用 kubeadm 搭建 v1.15.3 版本的 kubernetes 集群、coredns、ipvs、calico。
+<p><a href="https://www.qikqiak.com/post/promotion-51" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/9mogk.png" alt="kubernetes进阶课程"></a></p>
+</p>
+
+          <h2>微信公众号</h2>
+<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
+<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/how-to-use-ipvs-in-kubernetes/">ipvs 基本介绍</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-kubeadm-upgrade-k8s/">使用 kubeadm 更新 kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/office-env-k8s-network/">办公环境下 kubernetes 网络互通方案</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/service-found-dns/">集群内部服务发现之 DNS</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-kubeadm-install-kubernetes-1.10/">使用kubeadm搭建kubernetes1.10集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kustomize-101/">使用 Kustomize 配置 Kubernetes 应用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/install-kubesphere-on-k8s/">在现有 Kubernetes 集群上安装 KubeSphere</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-3/">Drone 结合 Helm 部署 Kubernetes 应用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-2/">使用 Drone Pipeline 构建 Docker 镜像</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-1/">使用 Kubernetes Helm 安装 Drone</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/use-github-actions-build-go-app/" data-toggle="tooltip" data-placement="top" title="使用 GitHub Actions 自动化构建 Golang 应用">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/promotion-51/" data-toggle="tooltip" data-placement="top" title="打造独当一面的 Kubernetes 运维、开发工程师">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '使用 kubeadm 搭建 v1.15.3 版本 Kubernetes 集群',
+        createIssueManually: true,
+        id: 'use-kubeadm-install-kubernetes-1.15.3\/',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2019
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">文章归档</a>
+            &nbsp;&bull;&nbsp;
+            
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.53</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+
+<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+
+
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+
+  </body>
+</html>
+
