@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [VMWare 开源的 Kubernetes Dashboard 工具 Octant](https://www.qikqiak.com/post/vmware-k8s-dashboard-octant/)
  * [使用 kubeadm 搭建 v1.15.3 版本 Kubernetes 集群](https://www.qikqiak.com/post/use-kubeadm-install-kubernetes-1.15.3/)
  * [使用 GitHub Actions 自动化构建 Golang 应用](https://www.qikqiak.com/post/use-github-actions-build-go-app/)
  * [使用 Kustomize 配置 Kubernetes 应用](https://www.qikqiak.com/post/kustomize-101/)
