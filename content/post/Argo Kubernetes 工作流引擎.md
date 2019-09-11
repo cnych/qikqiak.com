@@ -1,5 +1,5 @@
 ---
-title: Kubernetes 工作流引擎：Argo
+title: Kubernetes 工作流引擎：Argo（1）
 date: 2019-09-10
 tags: ["kubernetes", "workflow", "Argo"]
 slug: argo-workflow-engine-for-k8s
@@ -144,7 +144,7 @@ $ wget https://raw.githubusercontent.com/argoproj/argo/master/examples/coinflip.
 ![argo coinflip demo](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-coinflip-demo.png)
 
 上面的 Worflow 运行一个随机的整数脚本，常量为 0=heads、1=tails，调用特定模板（heads 或者 tails）取决于“flip-coin”任务的输出，如上面 Workflow 图中所示，flip-coin 任务执行 heads 任务只有当 heads 模板被执行的时候。
-
+<!--adsense-text-->
 同样，使用`argo submit`来提交 Coinflip 这个 Workflow：
 ```shell
 $ argo submit coinflip.yaml
@@ -303,6 +303,136 @@ Created:             Tue Sep 10 18:59:24 +0800 (now)
 
 ![argo dag ui view](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-dag-ui-view.png)
 
-同样类似地，步骤可用于定义多步骤 Workflow，下面的示例中包含两个模板 hello-hello-hello 和 whalesay（嵌套工作流）。
 
-> TODO......
+
+## 使用 Minio 进行制品管理和 Argo 集成
+制品是任何工作流的一部分（比如：CI/CD 中），工作流中的步骤会生成制品，然后其他后续步骤可以使用这个制品。
+
+我们这里使用 Minio 来作为制品仓库，Minio 是兼容 Amazon S3 API 的开源对象存储服务器。
+<!--adsense-text-->
+首先先安装 Minio，我们这里使用 Helm 来快速的安装，如果对 Helm 的使用还不熟悉的，可以查看前面我们的文章：[Kubernetes Helm 初体验](/post/first-use-helm-on-kubernetes/)。
+```shell
+$ helm install stable/minio --name minio --set service.type=NodePort --set defaultBucket.enabled=true --set defaultBucket.name=my-bucket --set persistence.enabled=false --namespace argo
+```
+
+我们这里指定了一个名为 my-bucket 的默认 Bucket，使用 NodePort 类型的 Service，另外需要注意的是我这里单纯为了测试，所以将 persistence.enabled 设置为了 false，对于线上环境一定要记得持久化数据：
+```shell
+$ kubectl get pods -n argo  -l app=minio
+NAME                     READY   STATUS    RESTARTS   AGE
+minio-7954d6976d-jjm42   1/1     Running   0          9m25s
+$ kubectl get svc -n argo  -l app=minio
+NAME    TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+minio   NodePort   10.109.167.218   <none>        9000:31311/TCP   9m31s
+```
+
+到这里证明 Minio 就已经安装成功了，然后我们就可以通过 31311 这个 NodePort 端口访问 Minio 的 Dashboard 页面，我们可以使用默认的 accessKey（AKIAIOSFODNN7EXAMPLE） 和 secretKey（wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY）登录：
+
+![minio ui](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/minio-ui.png)
+
+
+然后我们需要把 Minio 和 Argo 集成在一起，通过编辑 workflow-controller configmap 来引用上面的 Minio Service 和 Secret，上面我们通过 Helm 安装 Minio 的时候会自动将默认的 accessKey 和 secretKey 添加到名为 minio 的 Secret 对象中去：
+```shell
+$ kubectl get secret minio -n argo -o yaml
+apiVersion: v1
+data:
+  accesskey: QUtJQUlPU0ZPRE5ON0VYQU1QTEU=
+  secretkey: d0phbHJYVXRuRkVNSS9LN01ERU5HL2JQeFJmaUNZRVhBTVBMRUtFWQ==
+kind: Secret
+......
+type: Opaque
+```
+
+直接编辑 workflow-controller-configmap，按照如下方式添加上 Minio 相关配置：
+```yaml
+...
+data:
+  config: |
+    artifactRepository:
+      s3:
+        bucket: my-bucket  # 默认的 bucket 名称
+        endpoint: minio.argo:9000  # Minio 服务地址
+        insecure: true
+        # accessKeySecret 和 secretKeySecret 是 secret 中包含的，引入名为 minio 的 k8s secret 对象，这两个 key：'accesskey' 和 'secretkey', 存储 真是的 minio 认证信息。
+        accessKeySecret:
+          name: minio
+          key: accesskey
+        secretKeySecret:
+          name: minio
+          key: secretkey
+kind: ConfigMap
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"ConfigMap","metadata":{"annotations":{},"name":"workflow-controller-configmap","namespace":"argo"}}
+  creationTimestamp: "2019-09-10T03:27:43Z"
+  name: workflow-controller-configmap
+  namespace: argo
+  resourceVersion: "1890436"
+  selfLink: /api/v1/namespaces/argo/configmaps/workflow-controller-configmap
+  uid: b1fd1a24-721d-4ce1-a02c-90fff0e931ee
+```
+
+编辑完成后我们就完成了 Minio 和 Argo 的集成。不过这里需要注意的是 Secret 对象是 namespace 作用域的，上面 ConfigMap 解析 Secret 对象是和我们使用的 Workflow 的 namespace 中获取 Minio Secret 的，所以如果 Minio 和 Workflow 不在同一个 namespace 下面，需要我们拷贝一份 Secret 到对应的 namespace 下面去，比如我们这里 Workflow 都在 default 这个 namespace 下面，那么我就需要在 default 下面创建相同的 Secret：(minio-secret.yaml)
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio
+type: Opaque
+data:
+  accesskey: QUtJQUlPU0ZPRE5ON0VYQU1QTEU=
+  secretkey: d0phbHJYVXRuRkVNSS9LN01ERU5HL2JQeFJmaUNZRVhBTVBMRUtFWQ==
+```
+
+创建上面的 Secret 对象：
+```shell
+$ kubectl create -f minio-secret.yaml
+```
+
+然后下载我们这里使用到的 Workflow 示例文件：
+```shell
+$ wget https://raw.githubusercontent.com/argoproj/argo/master/examples/artifact-passing.yaml
+```
+
+详细的 Workflow 内容如下图所示：
+
+![Artifactory Management Configuration](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-artifact.png)
+
+上面 Workflow 包括两个步骤：
+
+* 步骤1生成制品：使用 whalesay 模板生成制品
+* 步骤2消费制品：使用步骤1中创建的制品并打印消息。
+
+同样，我们使用`argo submit`命令提交这个 Workflow：
+```shell
+$ argo submit artifact-passing.yaml
+Name:                artifact-passing-x4rhq
+Namespace:           default
+ServiceAccount:      default
+Status:              Pending
+Created:             Wed Sep 11 12:01:07 +0800 (now)
+```
+
+![argo artifact events](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-artifact-events.png)
+
+我们可以看到上面 Workflow 的两个步骤都已经成功了，然后我们去 minio-ui 上面就可以查看到上面 Workflow 生成的制品了：
+
+![minio ui data](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/minio-ui-data.png)
+
+
+上面我们创建的制品被存储在 Minio 的 my-bucket 中，消费制品的任务根据 Workflow 中的定义根据提供的配置拉取制品，Minio 类似于 S3 提供了一个可共享的链接来使用制品:
+
+![minio ui sharedata](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/minio-ui-sharedata.png)
+
+除了上面提到的这些用法之外，Argo Workflow 还有很多其他用法，我们可以查看 Argo 官方提供的样例了解更多使用方法：[https://github.com/argoproj/argo/tree/master/examples](https://github.com/argoproj/argo/tree/master/examples)。
+
+本文更多的是提到 Argo Workflow 的一些基本使用方法，下一篇文章我们再通过一个完整的示例来演示下 Argo Workflow 的实际用途。
+
+## 参考链接
+
+* [Argo Getting Started](https://argoproj.github.io/docs/argo/demo.html)
+* [Argo: Workflow Engine for Kubernetes](https://itnext.io/argo-workflow-engine-for-kubernetes-7ae81eda1cc5)
+* [Argo examples](https://github.com/argoproj/argo/tree/master/examples)
+
+<!--adsense-self-->
+
