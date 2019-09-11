@@ -7,7 +7,7 @@ slug: maesh-service-mesh-by-trafik
 gitcomment: true
 category: "kubernetes"
 ---
-[![Maesh](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/maesh.png)](/post/maesh-service-mesh-by-trafik/)
+[![Maesh](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/maesh.jpg)](/post/maesh-service-mesh-by-trafik/)
 
 Containous（Traefik 团队）推出了全新设计的轻量级 service mesh（服务网格）工具：[Maesh](http://mae.sh/)，Maesh 允许对 Kubernetes 集群内流动的流量进行管理，这与入流量和出流量同样很重要。
 

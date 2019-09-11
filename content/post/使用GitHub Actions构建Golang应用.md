@@ -13,7 +13,7 @@ GitHub 前一段时间推出了自家的自动化构建工具：[GitHub Actions]
 
 `GitHub Actions`允许构建一个完整的 CI/CD Pipeline，与 GitHub 生态系统深度集成，而无需使用 Travis CI 或者 Circle CI 等第三方服务，对于开源项目都是可以免费使用的。如果你也想尽快使用的话，可以通过链接 [https://github.com/features/actions/signup](https://github.com/features/actions/signup) 去申请权限。
 
-![github actions](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/github-actions.png)
+![github actions](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/github-actions.jpg)
 
 <!--more-->
 
