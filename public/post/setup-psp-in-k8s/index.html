@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>Kubernetes Pod 安全策略(PSP)配置-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="Kubernetes Pod 安全策略(PSP)配置" />
+  <meta name="twitter:title" content="Kubernetes Pod 安全策略(PSP)配置" />
+
+  <meta name="description" content="默认情况下，Kubernetes 允许创建一个有特权容器的 Pod，这些容器很可能会危机系统安全，而 Pod 安全策略（PSP）则通过确保请求者有权限按配置来创建 Pod，从而来保护集群免受特权 Pod 的影响。">
+  <meta property="og:description" content="默认情况下，Kubernetes 允许创建一个有特权容器的 Pod，这些容器很可能会危机系统安全，而 Pod 安全策略（PSP）则通过确保请求者有权限按配置来创建 Pod，从而来保护集群免受特权 Pod 的影响。">
+  <meta name="twitter:description" content="默认情况下，Kubernetes 允许创建一个有特权容器的 Pod，这些容器很可能会危机系统安全，而 Pod 安全策略（PSP）则通过确保请求者有权限按配置来创建 Pod，从而来保护集群免受特权 Pod 的影响。">
+  <meta name="author" content=""/>
+  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/favicon.png"/>
+  <meta property="og:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/setup-psp-in-k8s/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.53" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/setup-psp-in-k8s/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
+
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.dda6a253747d6ead5b02b78e8b25e18211ff59ab4aaee4a95698ab96a5c63f37.css' integrity='sha256-3aaiU3R9bq1bAreOiyXhghH/WatKruSpVpirlqXGPzc='>
+
+  
+    
+    <!--[if lt IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <![endif]-->
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, RBAC, psp, kubeadm, 安全策略, PodSecurityPolicy">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/">阳明的博客</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="首页" href="https://www.qikqiak.com/">首页</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/ops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1568397917828-25e02104303f.jpeg" data-img-desc-1="A wonderful morning in summer!"></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>Kubernetes Pod 安全策略(PSP)配置</h1>
+                  
+                  
+                    <span class="post-meta">
+  
+    发表于 September 15, 2019
+  
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>Kubernetes Pod 安全策略(PSP)配置</h1>
+                
+                
+                  <span class="post-meta">
+  
+    发表于 September 15, 2019
+  
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/psp/">psp</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/kubeadm/">kubeadm</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/rbac/">RBAC</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#admission-controller">Admission Controller</a></li>
+<li><a href="#serviceaccount-controller-manager">ServiceAccount Controller Manager</a></li>
+<li><a href="#策略">策略</a></li>
+<li><a href="#rbac">RBAC</a></li>
+<li><a href="#特定应用的-serviceaccount">特定应用的 ServiceAccount</a></li>
+<li><a href="#参考资料">参考资料</a></li>
+</ul></li>
+</ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>默认情况下，Kubernetes 允许创建一个有特权容器的 Pod，这些容器很可能会危机系统安全，而 Pod 安全策略（PSP）则通过确保请求者有权限按配置来创建 Pod，从而来保护集群免受特权 Pod 的影响。</p>
+
+<p><code>PodSecurityPolicy</code> 是 Kubernetes API 对象，你可以在不对 Kubernetes 进行任何修改的情况下创建它们，但是，默认情况下不会强制执行我们创建的一些策略，我们需要一个准入控制器、kube-controller-manager 配置以及 RBAC 权限配置，下面我们就来对这些配置进行一一说明。</p>
+
+<p><a href="https://www.qikqiak.com/post/setup-psp-in-k8s/"><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/k8s-psp.png" alt="k8s PodSecurityPolicy" /></a></p>
+
+<h2 id="admission-controller">Admission Controller</h2>
+
+<p>Admission Controller（准入控制器）拦截对 kube-apiserver 的请求，拦截发生在请求的对象被持久化之前，但是在请求被验证和授权之后。这样我们就可以查看请求对象的来源，并验证需要的内容是否正确。通过将它们添加到 kube-apiserver 的<code>--enable-admission-plugins</code>参数中来启用准入控制器。在1.10版本之前，使用现在已经弃用的<code>--admision-control</code>参数，另外需要注意准入控制器的顺序很重要。</p>
+
+<p>将<code>PodSecurityPolicy</code>添加到 kube-apiserver 上的<code>--enabled-admission-plugins</code>参数中，然后重启 kube-apiserver：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">--enable-admission-plugins<span style="color:#ff79c6">=</span>NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,PodSecurityPolicy</code></pre></div>
+<blockquote>
+<p>其他插件来自 Kubernetes 文档中<a href="https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#is-there-a-recommended-set-of-admission-controllers-to-use">推荐的一些插件列表</a>。</p>
+</blockquote>
+
+<p>PodSecurityPolicy 已经添加到上面的列表中了，现在 PSP 的控制器已经启用了，但是我们集群中现在缺少一些安全策略，那么新的 Pod 创建就会失败。</p>
+
+<p>比如现在我们创建一个 Nginx 的 Deployment，YAML 文件内容如下所示：（nginx.yaml）</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deploy
+  namespace: default
+  labels:
+    app: nginx
+spec:
+  replicas: <span style="color:#bd93f9">1</span>
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:<span style="color:#bd93f9">1.15</span>.<span style="color:#bd93f9">4</span></code></pre></div>
+<p>然后直接创建上面的 Deployment：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f nginx.yaml
+deployment.apps/nginx-deploy created</code></pre></div>
+<p>我们可以看到 Deployment 已经创建成功了，现在检查下 default 命名空间下面的 pod、replicaset、deployment：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get po,rs,deploy -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>nginx
+
+NAME                                       READY   STATUS      RESTARTS   AGE
+
+NAME                                            DESIRED   CURRENT   READY   AGE
+replicaset.extensions/nginx-deploy-77f7d4c6b4   <span style="color:#bd93f9">1</span>         <span style="color:#bd93f9">0</span>         <span style="color:#bd93f9">0</span>       40s
+
+NAME                                 READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.extensions/nginx-deploy   <span style="color:#bd93f9">0</span>/1     <span style="color:#bd93f9">0</span>            <span style="color:#bd93f9">0</span>           40s</code></pre></div>
+<p>可以看到 replicaset 和 deployment 都创建成功了，但是 replicaset 控制器却并没有创建  Pod，这个时候就需要使用 ServiceAccount 了。
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5376999672787220"
+     data-ad-slot="9165834656"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</p>
+
+<h2 id="serviceaccount-controller-manager">ServiceAccount Controller Manager</h2>
+
+<p>一般来说用户很少会直接创建 Pod，通过是通过 Deployment、StatefulSet、Job 或者 DasemonSet 这些控制器来创建 Pod 的，我们这里需要配置 kube-controller-manager 来为其包含的每个控制器使用单独的 ServiceAccount，我们可以通过在其命令启动参数中添加如下标志来实现：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">--use-service-account-credentials<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>一般情况下上面这个标志在大多数安装工具（如 kubeadm）中都是默认开启的，所以不需要单独配置了。</p>
+
+<p>当 kube-controller-manager 开启上面的标志后，它将使用由 Kubernetes 自动生成的以下 ServiceAccount:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get serviceaccount -n kube-system | egrep -o <span style="color:#f1fa8c">&#39;[A-Za-z0-9-]+-controller&#39;</span>
+
+attachdetach-controller
+calico-kube-controller
+certificate-controller
+clusterrole-aggregation-controller
+cronjob-controller
+daemon-set-controller
+deployment-controller
+disruption-controller
+endpoint-controller
+expand-controller
+job-controller
+namespace-controller
+node-controller
+pv-protection-controller
+pvc-protection-controller
+replicaset-controller
+replication-controller
+resourcequota-controller
+service-account-controller
+service-controller
+statefulset-controller
+ttl-controller</code></pre></div>
+<p>这些 ServiceAccount 指定了哪个控制器可以解析哪些策略的配置。</p>
+
+<h2 id="策略">策略</h2>
+
+<p>PodSecurityPolicy 对象提供了一种声明式的方式，用于表达我们运行用户和 ServiceAccount 在我们的集群中创建的内容。我们可以查看<a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#policy-reference">策略文档</a>来了解如何设置。在我们当前示例中，我们将创建2个策略，第一个是提供限制访问的“默认”策略，保证使用特权设置（例如使用 hostNetwork）无法创建 Pod。第二种是一个“提升”的许可策略，允许将特权设置用于某些 Pod，例如在 kube-system 命名空间下面创建的 Pod 有权限。</p>
+
+<p>首先，创建一个限制性策略，作为默认策略：(psp-restrictive.yaml)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: restrictive
+spec:
+  privileged: <span style="color:#ff79c6">false</span>
+  hostNetwork: <span style="color:#ff79c6">false</span>
+  allowPrivilegeEscalation: <span style="color:#ff79c6">false</span>
+  defaultAllowPrivilegeEscalation: <span style="color:#ff79c6">false</span>
+  hostPID: <span style="color:#ff79c6">false</span>
+  hostIPC: <span style="color:#ff79c6">false</span>
+  runAsUser:
+    rule: RunAsAny
+  fsGroup:
+    rule: RunAsAny
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  volumes:
+  - <span style="color:#f1fa8c">&#39;configMap&#39;</span>
+  - <span style="color:#f1fa8c">&#39;downwardAPI&#39;</span>
+  - <span style="color:#f1fa8c">&#39;emptyDir&#39;</span>
+  - <span style="color:#f1fa8c">&#39;persistentVolumeClaim&#39;</span>
+  - <span style="color:#f1fa8c">&#39;secret&#39;</span>
+  - <span style="color:#f1fa8c">&#39;projected&#39;</span>
+  allowedCapabilities:
+  - <span style="color:#f1fa8c">&#39;*&#39;</span></code></pre></div>
+<p>直接创建上面的 psp 对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f psp-restrictive.yaml
+podsecuritypolicy.policy/restrictive configured</code></pre></div>
+<p>虽然限制性的访问对于大多数 Pod 创建是足够的了，但是对于需要提升访问权限的 Pod 来说，就需要一些允许策略了，例如，kube-proxy 就需要启用 hostNetwork:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-system -l k8s-app<span style="color:#ff79c6">=</span>kube-proxy
+NAME               READY   STATUS    RESTARTS   AGE
+kube-proxy-4z4vf   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          18d
+$ kubectl get pods -n kube-system kube-proxy-4z4vf -o yaml |grep hostNetwork
+  hostNetwork: true</code></pre></div>
+<p>这就需要创建一个用于提升创建权限的许可策略了：(psp-permissive.yaml)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: permissive
+spec:
+  privileged: <span style="color:#ff79c6">true</span>
+  hostNetwork: <span style="color:#ff79c6">true</span>
+  hostIPC: <span style="color:#ff79c6">true</span>
+  hostPID: <span style="color:#ff79c6">true</span>
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  runAsUser:
+    rule: RunAsAny
+  fsGroup:
+    rule: RunAsAny
+  hostPorts:
+  - min: <span style="color:#bd93f9">0</span>
+    max: <span style="color:#bd93f9">65535</span>
+  volumes:
+  - <span style="color:#f1fa8c">&#39;*&#39;</span></code></pre></div>
+<p>同样直接创建上面的 psp 对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f psp-permissive.yaml
+podsecuritypolicy.policy/permissive configured
+$ kubectl get psp
+NAME               PRIV    CAPS   SELINUX    RUNASUSER   FSGROUP     SUPGROUP    READONLYROOTFS   VOLUMES
+permissive         <span style="color:#8be9fd;font-style:italic">true</span>           RunAsAny   RunAsAny    RunAsAny    RunAsAny    <span style="color:#8be9fd;font-style:italic">false</span>            *
+restrictive        <span style="color:#8be9fd;font-style:italic">false</span>   *      RunAsAny   RunAsAny    RunAsAny    RunAsAny    <span style="color:#8be9fd;font-style:italic">false</span>            configMap,downwardAPI,emptyDir,persistentVolumeClaim,secret,projected</code></pre></div>
+<p>现在配置都已经就绪了，但是我们需要引入到 Kubernetes 授权，这样才可以确定请求 Pod 创建的用户或者 ServiceAccount 是否解决了限制性或许可性策略，这就需要用到 RBAC 了。</p>
+
+<h2 id="rbac">RBAC</h2>
+
+<p>在我们启用 Pod 安全策略的时候，可能会对 RBAC 引起混淆。它确定了一个账户可以使用的策略，使用集群范围的 ClusterRoleBinding 可以为 ServiceAccount（例如 replicaset-controller）提供对限制性策略的访问权限。使用命名空间范围的 RoleBinding，可以启用对许可策略的访问，这样可以在特定的命名空间（如 kube-system）中进行操作。下面演示了 daemonset-controller 创建 kube-proxy Pod 的解析路径：</p>
+
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/rbac-flow.png" alt="rbac flow"><figcaption>rbac flow</figcaption></figure>
+
+<p>上面的流程图可以帮助我们从概念上去了解策略解决方案，当然实际上的代码执行路径不一定就完全就是这样的，这只是一个简单的演示。</p>
+
+<p>首先创建允许使用<code>restrictive</code>策略的 ClusterRole。然后创建一个 ClusterRoleBinding，将<code>restrictive</code>策略和系统中所有的控制器 ServiceAccount 进行绑定:(psp-restrictive-rbac.yaml)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: psp-restrictive
+rules:
+- apiGroups:
+  - extensions
+  resources:
+  - podsecuritypolicies
+  resourceNames:
+  - restrictive
+  verbs:
+  - use
+
+---
+
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: psp-default
+subjects:
+- kind: Group
+  name: system:serviceaccounts
+  namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: psp-restrictive
+  apiGroup: rbac.authorization.k8s.io</code></pre></div>
+<p>直接创建上面的 RBAC 相关的资源对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f psp-restrictive-rbac.yaml
+clusterrole.rbac.authorization.k8s.io/psp-restrictive created
+clusterrolebinding.rbac.authorization.k8s.io/psp-default created</code></pre></div>
+<p>然后现在我们再重新创建上面我们的定义的 Deployment：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl delete -f nginx.yaml
+deployment.apps <span style="color:#f1fa8c">&#34;nginx-deploy&#34;</span> deleted
+$ kubectl apply -f nginx.yaml
+deployment.apps/nginx-deploy created</code></pre></div>
+<p>创建完成后同样查看下 default 命名空间下面我们创建的一些资源对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get po,rs,deploy -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>nginx
+NAME                                       READY   STATUS      RESTARTS   AGE
+pod/nginx-deploy-77f7d4c6b4-njfdl          <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          13s
+
+NAME                                            DESIRED   CURRENT   READY   AGE
+replicaset.extensions/nginx-deploy-77f7d4c6b4   <span style="color:#bd93f9">1</span>         <span style="color:#bd93f9">1</span>         <span style="color:#bd93f9">1</span>       13s
+
+NAME                                 READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.extensions/nginx-deploy   <span style="color:#bd93f9">1</span>/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">1</span>           13s</code></pre></div>
+<p>我们可以看到 Pods 被成功创建了，但是，如果我们尝试做一些策略不允许的事情，正常来说就应该被拒绝了。首先删除上面的这个 Deployment：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl delete -f nginx.yaml
+deployment.apps <span style="color:#f1fa8c">&#34;nginx-deploy&#34;</span> deleted</code></pre></div>
+<p>现在我们在 nginx-deploy 基础上添加<code>hostNetwork: true</code>来使用 hostNetwork 这个特权：（nginx-hostnetwork.yaml）</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-hostnetwork-deploy
+  namespace: default
+  labels:
+    app: nginx
+spec:
+  replicas: <span style="color:#bd93f9">1</span>
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:<span style="color:#bd93f9">1.15</span>.<span style="color:#bd93f9">4</span>
+      hostNetwork: <span style="color:#ff79c6">true</span>  <span style="color:#6272a4"># 注意添加hostNetwork</span></code></pre></div>
+<p>然后直接创建上面的 Deployment 这个资源对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f nginx-hostnetwork.yaml
+deployment.apps/nginx-hostnetwork-deploy created</code></pre></div>
+<p>创建完成后同样查看 default 这个命名空间下面的一些资源对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get po,rs,deploy -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>nginx
+
+NAME                                       READY   STATUS      RESTARTS   AGE
+
+NAME                                                        DESIRED   CURRENT   READY   AGE
+replicaset.extensions/nginx-hostnetwork-deploy-74c8fbd687   <span style="color:#bd93f9">1</span>         <span style="color:#bd93f9">0</span>         <span style="color:#bd93f9">0</span>       44s
+
+NAME                                             READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.extensions/nginx-hostnetwork-deploy   <span style="color:#bd93f9">0</span>/1     <span style="color:#bd93f9">0</span>            <span style="color:#bd93f9">0</span>           44s</code></pre></div>
+<p>现在我们发现 ReplicaSet 又没有创建 Pod 了，可以使用<code>kubectl describe</code>命令去查看这里我们创建的 ReplicaSet 资源对象来了解更多的信息：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl describe rs nginx-hostnetwork-deploy-74c8fbd687
+Name:           nginx-hostnetwork-deploy-74c8fbd687
+......
+Events:
+  Type     Reason        Age                   From                   Message
+  ----     ------        ----                  ----                   -------
+  Warning  FailedCreate  80s <span style="color:#ff79c6">(</span>x15 over 2m42s<span style="color:#ff79c6">)</span>  replicaset-controller  Error creating: pods <span style="color:#f1fa8c">&#34;nginx-hostnetwork-deploy-74c8fbd687-&#34;</span> is forbidden: unable to validate against any pod security policy: <span style="color:#ff79c6">[</span>spec.securityContext.hostNetwork: Invalid value: true: Host network is not allowed to be used<span style="color:#ff79c6">]</span></code></pre></div>
+<p>我们可以看到很明显 Hostnetwork 不被允许使用，但是在某些情况下，我们的确有在某个命名空间（比如 kube-system）下面创建使用 hostNetwork 的 Pod，这里就需要我们创建一个允许执行的 ClusterRole，然后为特定的命名空间创建一个 RoleBinding，将这里的 ClusterRole 和相关的控制器 ServiceAccount 进行绑定:(psp-permissive-rbac.yaml)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: psp-permissive
+rules:
+- apiGroups:
+  - extensions
+  resources:
+  - podsecuritypolicies
+  resourceNames:
+  - permissive
+  verbs:
+  - use
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: psp-permissive
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: psp-permissive
+subjects:
+- kind: ServiceAccount
+  name: daemon-set-controller
+  namespace: kube-system
+- kind: ServiceAccount
+  name: replicaset-controller
+  namespace: kube-system
+- kind: ServiceAccount
+  name: job-controller
+  namespace: kube-system</code></pre></div>
+<p>然后直接创建上面的 RBAC 相关的资源对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f psp-permissive-rbac.yaml
+clusterrole.rbac.authorization.k8s.io/psp-permissive created
+rolebinding.rbac.authorization.k8s.io/psp-permissive created</code></pre></div>
+<p>现在，我们就可以在 kube-system 这个命名空间下面使用 hostNetwork 来创建 Pod 了，将上面的 nginx 资源清单更改成 kube-system 命名空间下面：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-hostnetwork-deploy
+  namespace: kube-system
+  labels:
+    app: nginx
+spec:
+  replicas: <span style="color:#bd93f9">1</span>
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:<span style="color:#bd93f9">1.15</span>.<span style="color:#bd93f9">4</span>
+      hostNetwork: <span style="color:#ff79c6">true</span></code></pre></div>
+<p>重新创建这个 Deployment：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f nginx-hostnetwork.yaml
+deployment.apps/nginx-hostnetwork-deploy created</code></pre></div>
+<p>创建完成后同样查看下对应的资源对象创建情况：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get po,rs,deploy -n kube-system -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>nginx
+NAME                                            READY   STATUS    RESTARTS   AGE
+pod/nginx-hostnetwork-deploy-74c8fbd687-7x8px   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          2m1s
+
+NAME                                                        DESIRED   CURRENT   READY   AGE
+replicaset.extensions/nginx-hostnetwork-deploy-74c8fbd687   <span style="color:#bd93f9">1</span>         <span style="color:#bd93f9">1</span>         <span style="color:#bd93f9">1</span>       2m1s
+
+NAME                                             READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.extensions/nginx-hostnetwork-deploy   <span style="color:#bd93f9">1</span>/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">1</span>           2m1s</code></pre></div>
+<p>现在我们可以看到 Pod 在 kube-system 这个命名空间下面创建成功了。</p>
+
+<h2 id="特定应用的-serviceaccount">特定应用的 ServiceAccount</h2>
+
+<p>如果我们现在有这样的一个需求，在某个命名空间下面要强制执行我们创建的 restrictive（限制性）策略，但是这个命名空间下面的某个应用需要使用 permissive（许可）策略，那么应该怎么办呢？在当前模型中，我们只有集群级别和命名空间级别的解析。为了给某个应用提供单独的许可策略，我们可以为应用的 ServiceAccount 提供使用 permissive 这个 ClusterRole 的能力。</p>
+
+<p>比如，还是在默认的命名空间下面创建一个名为 specialsa 的 ServiceAccount:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create serviceaccount specialsa
+serviceaccount/specialsa created</code></pre></div>
+<p>然后创建一个 RoleBinding 将 specialsa 绑定到上面的 psp-permissive 这个 CluterRole 上:(specialsa-psp.yaml)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: specialsa-psp-permissive
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: psp-permissive
+subjects:
+- kind: ServiceAccount
+  name: specialsa
+  namespace: default</code></pre></div>
+<p>创建上面的 RoleBinding 对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f specialsa-psp.yaml
+rolebinding.rbac.authorization.k8s.io/specialsa-psp-permissive created</code></pre></div>
+<p>然后为我们上面的 Deployment 添加上 serviceAccount 属性:(nginx-hostnetwork-sa.yaml)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-hostnetwork-deploy
+  namespace: default
+  labels:
+    app: nginx
+spec:
+  replicas: <span style="color:#bd93f9">1</span>
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:<span style="color:#bd93f9">1.15</span>.<span style="color:#bd93f9">4</span>
+      hostNetwork: <span style="color:#ff79c6">true</span>
+      serviceAccount: specialsa  <span style="color:#6272a4"># 注意这里使用的sa的权限绑定</span></code></pre></div>
+<p>然后直接创建即可:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f nginx-hostnetwork-sa.yaml
+deployment.apps/nginx-hostnetwork-deploy configured</code></pre></div>
+<p>这个时候我们查看 default 这个命名空间下面带有 hostNetwork 的 Pod 也创建成功了:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get po,rs,deploy -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>nginx
+NAME                                            READY   STATUS    RESTARTS   AGE
+pod/nginx-hostnetwork-deploy-6c85dfbf95-hqt8j   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          65s
+
+NAME                                                        DESIRED   CURRENT   READY   AGE
+replicaset.extensions/nginx-hostnetwork-deploy-6c85dfbf95   <span style="color:#bd93f9">1</span>         <span style="color:#bd93f9">1</span>         <span style="color:#bd93f9">1</span>       65s
+replicaset.extensions/nginx-hostnetwork-deploy-74c8fbd687   <span style="color:#bd93f9">0</span>         <span style="color:#bd93f9">0</span>         <span style="color:#bd93f9">0</span>       31m
+
+NAME                                             READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.extensions/nginx-hostnetwork-deploy   <span style="color:#bd93f9">1</span>/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">1</span>           31m</code></pre></div>
+<blockquote>
+<p>上面我们描述了 Pod 安全策略是一种通过使用 PSP 授权策略来保护 k8s 集群中的 Pod 的创建过程的方法。</p>
+</blockquote>
+
+<h2 id="参考资料">参考资料</h2>
+
+<ul>
+<li><a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#policy-reference">Policy Reference</a></li>
+<li><a href="https://octetz.com/posts/setting-up-psps">Setting Up Pod Security Policies</a></li>
+<li><a href="https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#is-there-a-recommended-set-of-admission-controllers-to-use">Is there a recommended set of admission controllers to use?</a></li>
+</ul>
+
+<p><a href="https://www.qikqiak.com/post/promotion-51" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/9mogk.png" alt="kubernetes进阶课程"></a></p>
+
+
+          <h2>微信公众号</h2>
+<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
+<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/use-kubeadm-install-kubernetes-1.15.3/">使用 kubeadm 搭建 v1.15.3 版本 Kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-kubeadm-upgrade-k8s/">使用 kubeadm 更新 kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-rbac-in-k8s/">Kubernetes RBAC 详解</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-kubeadm-install-kubernetes-1.10/">使用kubeadm搭建kubernetes1.10集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/how-to-use-ipvs-in-kubernetes/">ipvs 基本介绍</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/argo-workflow-engine-for-k8s/">Kubernetes 工作流引擎：Argo（1）</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/vmware-k8s-dashboard-octant/">VMWare 开源的 Kubernetes 可视化工具 Octant</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kustomize-101/">使用 Kustomize 配置 Kubernetes 应用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/install-kubesphere-on-k8s/">在现有 Kubernetes 集群上安装 KubeSphere</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-3/">Drone 结合 Helm 部署 Kubernetes 应用</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/argo-workflow-engine-for-k8s/" data-toggle="tooltip" data-placement="top" title="Kubernetes 工作流引擎：Argo（1）">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/promotion-51/" data-toggle="tooltip" data-placement="top" title="打造独当一面的 Kubernetes 运维、开发工程师">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: 'Kubernetes Pod 安全策略(PSP)配置',
+        createIssueManually: true,
+        id: 'setup-psp-in-k8s',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2019
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.53</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+
+<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+
+
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+
+  </body>
+</html>
+

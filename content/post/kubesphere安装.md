@@ -152,7 +152,7 @@ metadata:
 ```
 
 只需要修改 ConfigMap 的值即可，其中 kube_apiserver_host 就是现有集群的 APIServer 地址，etcd_endpoint_ips 就是 etcd 的所在节点 IP，默认端口为 2379，如果你是集群模式 etcd，这里可以填写多个节点 IP，中间用`,`隔开，下面就是不需要安装的组件设置为 False。
-
+<!--adsense-text-->
 到这里执行安装命令即可：
 ```shell
 $ kubectl apply -f deploy/kubesphere.yaml

@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [Kubernetes Pod 安全策略(PSP)配置](https://www.qikqiak.com/post/setup-psp-in-k8s/)
  * [Kubernetes 工作流引擎：Argo](https://www.qikqiak.com/post/argo-workflow-engine-for-k8s/)
  * [Traefik 团队开源的轻量级 Service Mesh 工具 Maesh](https://www.qikqiak.com/post/maesh-service-mesh-by-trafik/)
  * [VMWare 开源的 Kubernetes Dashboard 工具 Octant](https://www.qikqiak.com/post/vmware-k8s-dashboard-octant/)
