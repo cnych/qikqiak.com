@@ -75,7 +75,7 @@ deployment.extensions/nginx-deploy   0/1     0            0           40s
 <!--adsense-text-->
 
 ## ServiceAccount Controller Manager
-一般来说用户很少会直接创建 Pod，通过是通过 Deployment、StatefulSet、Job 或者 DasemonSet 这些控制器来创建 Pod 的，我们这里需要配置 kube-controller-manager 来为其包含的每个控制器使用单独的 ServiceAccount，我们可以通过在其命令启动参数中添加如下标志来实现：
+一般来说用户很少会直接创建 Pod，通常是通过 Deployment、StatefulSet、Job 或者 DasemonSet 这些控制器来创建 Pod 的，我们这里需要配置 kube-controller-manager 来为其包含的每个控制器使用单独的 ServiceAccount，我们可以通过在其命令启动参数中添加如下标志来实现：
 ```shell
 --use-service-account-credentials=true
 ```

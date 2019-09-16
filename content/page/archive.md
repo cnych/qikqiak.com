@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [Helm V2 迁移到 V3 版本](https://www.qikqiak.com/post/migrate-helm-to-v3/)
  * [Kubernetes Pod 安全策略(PSP)配置](https://www.qikqiak.com/post/setup-psp-in-k8s/)
  * [Kubernetes 工作流引擎：Argo](https://www.qikqiak.com/post/argo-workflow-engine-for-k8s/)
  * [Traefik 团队开源的轻量级 Service Mesh 工具 Maesh](https://www.qikqiak.com/post/maesh-service-mesh-by-trafik/)
