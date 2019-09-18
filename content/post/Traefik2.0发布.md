@@ -13,6 +13,8 @@ category: "kubernetes"
 
 <!--more-->
 
+> 在 Kubernetes 集群上安装 Traefik 2.0 可以参考我这里的资源清单文件：[https://github.com/cnych/kubeapp](https://github.com/cnych/kubeapp/tree/master/traefik2)。
+
 ## 支持 SNI 路由和多协议端口的 TCP
 
 ![traefik tcp](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/traefik-tcp.png)
@@ -36,7 +38,7 @@ tcp:
 ```
 
 上面这个配置示例表示每个以 database-entrypoint 结尾的请求都将被路由到 database-service 这个服务上去。
-
+<!--adsense-text-->
 此外通过 TLS，Traefik 还可以根据 SNI 来路由 TCP 请求。在下面示例中，Traefik 就将根据 SNI 将请求路由到两个数据库：
 ```yaml
 tcp:
@@ -256,3 +258,4 @@ Traefik 2.0 有了这么多的新功能和增强功能，为了帮助用户可�
 * [Community forum](https://community.containo.us/)
 * [Traefik 2.0](https://blog.containo.us/traefik-2-0-6531ec5196c2)
 
+<!--adsense-self-->

@@ -40,7 +40,7 @@ Maesh 建立在 [Traefik](https://traefik.io/)之上，提供了大部分用户�
 
 ## 安装使用简单
 将 Maesh 安装到您的 Kubernetes 集群上是很简单的：直接安装 Helm chart 包即可，因为没有额外的程序，没有要安装的 CRD，也没有新的词汇表供用户学习。如果用户了解 Pod 和 Service 的工作方式，那么你就可以很容易理解和使用 Maesh。
-
+<!--adsense-text-->
 使用以下命令安装 Maesh：
 ```shell
 $ helm repo add maesh https://containous.github.io/maesh/charts
@@ -68,3 +68,5 @@ $ kubectl annotate service mongo-database maesh.containo.us/traffic-type=tcp
 * https://github.com/containous/maesh
 * https://community.containo.us/c/maesh
 * https://blog.containo.us/announcing-maesh-a-lightweight-and-simpler-service-mesh-made-by-the-traefik-team-cb866edc6f29
+
+<!--adsense-self-->
