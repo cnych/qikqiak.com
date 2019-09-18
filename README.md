@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [Traefik 2.0 正式版发布](https://www.qikqiak.com/post/traefik2-ga/)
  * [Helm V2 迁移到 V3 版本](https://www.qikqiak.com/post/migrate-helm-to-v3/)
  * [Kubernetes Pod 安全策略(PSP)配置](https://www.qikqiak.com/post/setup-psp-in-k8s/)
  * [Kubernetes 工作流引擎：Argo](https://www.qikqiak.com/post/argo-workflow-engine-for-k8s/)
