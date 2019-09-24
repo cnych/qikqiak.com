@@ -16,5 +16,4 @@ nopager: true
 * [devopser](http://www.devopser.org?utm_source=qikqiak)
 * [sealyun](https://sealyun.com?utm_source=qikqiak)
 * [wujunze](https://wujunze.com?utm_source=qikqiak)
-* [程序猿DD](http://blog.didispace.com?utm_source=qikqiak)
 * [(王丽兵)开发笔记](https://www.wanglibing.com?utm_source=qikqiak)
