@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [使用 inlets 和 kubernetes 访问本地服务](https:/www.qikqiak.com/post/k8s-inlets-local-endpoinsts/)
  * [Traefik 2.0 正式版发布](https://www.qikqiak.com/post/traefik2-ga/)
  * [Helm V2 迁移到 V3 版本](https://www.qikqiak.com/post/migrate-helm-to-v3/)
  * [Kubernetes Pod 安全策略(PSP)配置](https://www.qikqiak.com/post/setup-psp-in-k8s/)
