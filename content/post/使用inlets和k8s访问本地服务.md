@@ -9,7 +9,6 @@ bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-156
 category: "kubernetes"
 ---
 
-
 我们经常有在外网访问我们本地服务的需求，特别是在开发调试阶段，比如做微信登录或者微信支付的时候就需要使用外网正式的域名，然而我们很多时候都是在本地进行开发，我们不可能频繁的部署到外网环境去进行测试，因为这样效率太低了，这是我们开发会经常面临的一个问题。
 
 <!--more-->

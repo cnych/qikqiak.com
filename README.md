@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [基于自定义指标扩展的 Kubernetes 应用](https://www.qikqiak.com/post/build-k8s-app-with-custom-metrics/)
  * [使用 inlets 和 kubernetes 访问本地服务](https:/www.qikqiak.com/post/k8s-inlets-local-endpoinsts/)
  * [Traefik 2.0 正式版发布](https://www.qikqiak.com/post/traefik2-ga/)
  * [Helm V2 迁移到 V3 版本](https://www.qikqiak.com/post/migrate-helm-to-v3/)
