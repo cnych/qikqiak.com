@@ -1,5 +1,5 @@
 ---
-title: 对 Kubernetes 应用进行自定义指标扩容
+title: 对 Kubernetes 应用进行自定义指标扩缩容
 date: 2019-09-27
 tags: ["prometheus", "kubernetes", "websocket"]
 keywords: ["prometheus", "kubernetes", "prometheus operator", "adapter", "扩缩容"]
