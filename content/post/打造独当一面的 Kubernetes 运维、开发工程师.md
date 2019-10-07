@@ -7,7 +7,7 @@ keywords: ["kubernetes", "课程", "优惠", "51"]
 slug: promotion-51
 landing: true
 gitcomment: true
-weight: 1
+# weight: 1
 category: "kubernetes"
 ---
 
