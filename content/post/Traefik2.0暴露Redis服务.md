@@ -66,7 +66,7 @@ metadata:
   name: redis
 spec:
   entryPoints:
-    - web
+    - redis
   routes:
   - match: HostSNI(`*`)
     services:
