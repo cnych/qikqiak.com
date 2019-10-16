@@ -6,25 +6,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
 
-  <title>Traefik 2.0 暴露 Redis(TCP) 服务-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
-  <meta property="og:title" content="Traefik 2.0 暴露 Redis(TCP) 服务" />
-  <meta name="twitter:title" content="Traefik 2.0 暴露 Redis(TCP) 服务" />
+  <title>Traefik 2.0 实现自动化 HTTPS-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="Traefik 2.0 实现自动化 HTTPS" />
+  <meta name="twitter:title" content="Traefik 2.0 实现自动化 HTTPS" />
 
-  <meta name="description" content="前面我们已经提到了 Traefik2.0 已经正式发布了，Traefik2.0 已经支持了 TCP 服务的，但是 Traefik 的官方文档实在是有点混乱，特别是在 Kubernetes 下面的使用更不详细，我在业余时间已经在尝试对官方文档进行翻译，地址：https://www.qikqiak.com/traefik-book，去掉了一些多余的文档，增加一些在 Kubernetes 下面的使用案例。">
-  <meta property="og:description" content="前面我们已经提到了 Traefik2.0 已经正式发布了，Traefik2.0 已经支持了 TCP 服务的，但是 Traefik 的官方文档实在是有点混乱，特别是在 Kubernetes 下面的使用更不详细，我在业余时间已经在尝试对官方文档进行翻译，地址：https://www.qikqiak.com/traefik-book，去掉了一些多余的文档，增加一些在 Kubernetes 下面的使用案例。">
-  <meta name="twitter:description" content="前面我们已经提到了 Traefik2.0 已经正式发布了，Traefik2.0 已经支持了 TCP 服务的，但是 Traefik 的官方文档实在是有点混乱，特别是在 Kubernetes 下面的使用更不详细，我在业余时间已经在尝试对官方文档进行翻译，地址：https://www.qikqiak.com/traefik-book，去掉了一些多余的文档，增加一些在 Kubernetes 下面的使用案 …">
+  <meta name="description" content="上一篇文章我们实现了 Traefik 2.0 暴露 Redis(TCP) 服务，我们了解到 Traefik 中使用 TCP 路由配置需要 SNI，而 SNI 又是依赖 TLS 的，所以需要配置证书才能正常访问 TCP 服务，其实 Traefik 除了支持我们手动配置 TLS 证书之外，还支持自动生成 TLS 证书，本文就来为大家介绍如何在 Traefik 2.0 中配置自动化 HTTPS 服务。">
+  <meta property="og:description" content="上一篇文章我们实现了 Traefik 2.0 暴露 Redis(TCP) 服务，我们了解到 Traefik 中使用 TCP 路由配置需要 SNI，而 SNI 又是依赖 TLS 的，所以需要配置证书才能正常访问 TCP 服务，其实 Traefik 除了支持我们手动配置 TLS 证书之外，还支持自动生成 TLS 证书，本文就来为大家介绍如何在 Traefik 2.0 中配置自动化 HTTPS 服务。">
+  <meta name="twitter:description" content="上一篇文章我们实现了 Traefik 2.0 暴露 Redis(TCP) 服务，我们了解到 Traefik 中使用 TCP 路由配置需要 SNI，而 SNI 又是依赖 TLS 的，所以需要配置证书才能正常访问 TCP 服务，其实 Traefik 除了支持我们手动配置 TLS 证书之外，还支持自动生成 TLS 证书，本文就来为大家介绍如何在 Traefik 2.0 中配置自动化 HTTPS 服务。">
   <meta name="author" content=""/>
   <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/favicon.png" rel="icon" type="image/x-icon" />
   <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/favicon.png"/>
   <meta property="og:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
   <meta name="twitter:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
   <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://www.qikqiak.com/post/expose-redis-by-traefik2/" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/automatic-https-with-traefik2/" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="阳明的博客" />
 
   <meta name="generator" content="Hugo 0.55.6" />
-  <link rel="canonical" href="https://www.qikqiak.com/post/expose-redis-by-traefik2/" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/automatic-https-with-traefik2/" />
   <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
   
@@ -46,7 +46,7 @@
     <![endif]-->
 <meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
 <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-<meta name="keywords" content="traefik, kubernetes, traefik 2.0, Ingress, TCP, redis">
+<meta name="keywords" content="traefik, kubernetes, traefik 2.0, Ingress, TCP, https, acme">
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -220,7 +220,7 @@ autocomplete('#aa-search-input',
 
 
   
-    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1570997491915-47ade51fed9f.jpeg" data-img-desc-1="https://unsplash.com/photos/77AW8rM9KGg"></div>
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1571181761981-0765e0328710.jpeg" data-img-desc-1="Drying roses"></div>
   
 
   <header class="header-section has-img">
@@ -231,12 +231,12 @@ autocomplete('#aa-search-input',
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
-                <h1>Traefik 2.0 暴露 Redis(TCP) 服务</h1>
+                <h1>Traefik 2.0 实现自动化 HTTPS</h1>
                   
                   
                     <span class="post-meta">
   
-    发表于 October 14, 2019
+    发表于 October 16, 2019
   
   
 </span>
@@ -258,12 +258,12 @@ autocomplete('#aa-search-input',
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
             <div class="post-heading">
-              <h1>Traefik 2.0 暴露 Redis(TCP) 服务</h1>
+              <h1>Traefik 2.0 实现自动化 HTTPS</h1>
                 
                 
                   <span class="post-meta">
   
-    发表于 October 14, 2019
+    发表于 October 16, 2019
   
   
 </span>
@@ -300,7 +300,7 @@ autocomplete('#aa-search-input',
               
                   <a href="https://www.qikqiak.com/tags/ingress/">ingress</a> &nbsp;
               
-                  <a href="https://www.qikqiak.com/tags/tcp/">tcp</a> &nbsp;
+                  <a href="https://www.qikqiak.com/tags/https/">https</a> &nbsp;
               
             </h5>
             
@@ -323,59 +323,46 @@ autocomplete('#aa-search-input',
           
           
 
-          <p>前面我们已经提到了 <a href="./post/traefik2-ga/">Traefik2.0 已经正式发布了</a>，Traefik2.0 已经支持了 TCP 服务的，但是 Traefik 的官方文档实在是有点混乱，特别是在 Kubernetes 下面的使用更不详细，我在业余时间已经在尝试对官方文档进行翻译，地址：<a href="https://www.qikqiak.com/traefik-book/">https://www.qikqiak.com/traefik-book</a>，去掉了一些多余的文档，增加一些在 Kubernetes 下面的使用案例。</p>
+          <p>上一篇文章我们实现了 <a href="./post/expose-redis-by-traefik2/">Traefik 2.0 暴露 Redis(TCP) 服务</a>，我们了解到 Traefik 中使用 TCP 路由配置需要 SNI，而 SNI 又是依赖 TLS 的，所以需要配置证书才能正常访问 TCP 服务，其实 Traefik 除了支持我们手动配置 TLS 证书之外，还支持自动生成 TLS 证书，本文就来为大家介绍如何在 Traefik 2.0 中配置自动化 HTTPS 服务。</p>
 
-<p>本文是来演示如何在 Kubernetes 下面通过 Traefik 暴露一个 TCP 服务的，这里我们以 Redis 为例。首先需要保证 Traefik 2.0 已经安装到了 Kubernetes 集群之中，可以参考之前我们提供的安装资源清单 <a href="https://github.com/cnych/kubeapp/tree/master/traefik2">https://github.com/cnych/kubeapp</a>。</p>
+<p>同样的，前提条件还是需要提前在 Kubernetes 集群中安装好 Traefik 2.0 服务，可以参考之前我们提供的安装资源清单 <a href="https://github.com/cnych/kubeapp/tree/master/traefik2">https://github.com/cnych/kubeapp</a>。里面包含4个文件：IngressRoute.yaml、crd.yaml、rbac.yaml、traefik.yaml，部分文件我们需要做一些变更。</p>
 
-<h2 id="部署-redis">部署 Redis</h2>
-
-<p>为了演示方便，我们这里只部署单节点的 Redis，对于 Redis 集群模式并不是我们这里的重点，下面是我们部署使用的资源清单文件：（redis.yaml）</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: extensions/v1beta1
-kind: Deployment
-metadata:
-  name: redis
-spec:
-  template:
-    metadata:
-      labels:
-        app: redis
-    spec:
-      containers:
-      - name: redis
-        image: redis:<span style="color:#bd93f9">3.2</span>.<span style="color:#bd93f9">11</span>
-        ports:
-        - containerPort: <span style="color:#bd93f9">6379</span>
-          protocol: TCP
-
---<span style="color:#f1fa8c">-
-</span><span style="color:#f1fa8c">
-</span><span style="color:#f1fa8c">apiVersion: v1</span>
-kind: Service
-metadata:
-  name: redis
-spec:
-  ports:
-  - port: <span style="color:#bd93f9">6379</span>
-    targetPort: <span style="color:#bd93f9">6379</span>
-  selector:
-    app: redis</code></pre></div>
-<p>直接创建即可：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f redis.yaml</code></pre></div>
-<h2 id="暴露-tcp-服务">暴露 TCP 服务</h2>
-
-<p>由于 Traefik 中使用 TCP 路由配置需要 SNI，而 SNI 又是依赖 TLS 的，所以我们需要配置证书才行，但是如果没有证书的话，我们可以使用通配符 <code>*</code> 进行配置，我们这里创建一个 IngressRouteTCP 类型的 CRD 对象（前面我们就已经安装了对应的 CRD 资源）：(ingressroute-redis.yaml)</p>
+<p>我们这里就以 Traefik 的 WebUI 为例，之前我们开启了 KubernetesCRD 这个 Provider，通过创建一个 IngressRoute 对象来开启对 WebUI 的访问，资源清单如下所示：(IngressRoute.yaml)</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: traefik.containo.us/v1alpha1
-kind: IngressRouteTCP
+kind: IngressRoute
 metadata:
-  name: redis
+  name: traefik-webui
+  namespace: kube-system
 spec:
   entryPoints:
-    - redis
+    - web
   routes:
-  - match: HostSNI(`<span style="color:#ff79c6">*`)</span>
+  - match: Host(`traefik.qikqiak.com`)
+    kind: Rule
     services:
-    - name: redis
-      port: <span style="color:#bd93f9">6379</span></code></pre></div>
+    - name: traefik
+      port: <span style="color:#bd93f9">8080</span></code></pre></div>
+<p>要使用 Let&rsquo;s Encrypt 来进行自动化 HTTPS，就需要首先开启 ACME，开启 ACME 需要通过静态配置的方式，也就是说可以通过环境变量、启动参数等方式来提供，我们这里还是直接使用启动参数的形式来开启，在 Traefik 的部署文件中添加如下命令行参数：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">args:
+- --entrypoints.web.Address=:<span style="color:#bd93f9">80</span>
+- --entrypoints.websecure.Address=:<span style="color:#bd93f9">443</span>
+- --api.insecure=<span style="color:#ff79c6">true</span>  <span style="color:#6272a4"># 开启 webui 需要该参数</span>
+- --providers.kubernetescrd
+- --api
+- --api.dashboard=<span style="color:#ff79c6">true</span>
+- --accesslog
+<span style="color:#6272a4"># 使用 tls 验证这种方式</span>
+- --certificatesresolvers.default.acme.tlsChallenge=<span style="color:#ff79c6">true</span>
+<span style="color:#6272a4"># 邮箱配置</span>
+- --certificatesResolvers.default.acme.email=<span style="color:#f1fa8c">&#34;ych_1024@163.com&#34;</span>
+<span style="color:#6272a4"># 保存 ACME 证书的位置</span>
+- --certificatesResolvers.default.acme.storage=<span style="color:#f1fa8c">&#34;acme.json&#34;</span>
+<span style="color:#6272a4"># 下面是用于测试的ca服务，如果https证书生成成功了，则移除下面参数</span>
+- --certificatesresolvers.default.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory</code></pre></div>
+<p>这里我们使用的是 <code>tlsChallenge</code> 这种 ACME 验证方式，需要注意的是当使用这种验证时，Let&rsquo;s Encrypt 到 Traefik 443 端口必须是可达的，除了这种验证方式外，还有 <code>httpChallenge</code> 和 <code>dnsChallenge</code> 两种验证方式，更常用的是 http 这种验证方式，关于这几种验证方式的使用可以查看文档：<a href="https://www.qikqiak.com/traefik-book/https/acme/">https://www.qikqiak.com/traefik-book/https/acme/</a> 了解他们之间的区别。</p>
+
+<p>上面我们相当于指定了一个名为 <code>default</code> 的证书解析器，然后要注意的是，一定要将这里的 WebUI 的域名<code>traefik.qikqiak.com</code> 解析到 Traefik 的所在节点，解析完成后，重新部署 Traefik：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">$ kubectl apply -f traefik.yaml</code></pre></div>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
 
 <ins class="adsbygoogle"
@@ -389,49 +376,73 @@ spec:
 </script>
 
 
-<p>要注意的是这里的<code>entryPoints</code>部分，是根据我们启动的 Traefik 的静态配置中的 entryPoints 来决定的，比如我们可以自己添加一个用于 Redis 的专门的入口点：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">containers:
-- image: traefik:v2.<span style="color:#bd93f9">0</span>
-  name: traefik-ingress-lb
-  ports:
-  - name: web
-    containerPort: <span style="color:#bd93f9">80</span>
-    hostPort: <span style="color:#bd93f9">80</span>
-  - name: websecure
-    containerPort: <span style="color:#bd93f9">443</span>
-    hostPort: <span style="color:#bd93f9">443</span>
-  - name: redis
-    containerPort: <span style="color:#bd93f9">6379</span>
-    hostPort: <span style="color:#bd93f9">6379</span>
-  - name: admin
-    containerPort: <span style="color:#bd93f9">8080</span>
-  args:
-  - --entrypoints.web.Address=:<span style="color:#bd93f9">80</span>
-  - --entrypoints.websecure.Address=:<span style="color:#bd93f9">443</span>
-  - --entrypoints.redis.Address=:<span style="color:#bd93f9">6379</span>
-  - --api.insecure=<span style="color:#ff79c6">true</span>
-  - --providers.kubernetescrd
-  - --api
-  - --api.dashboard=<span style="color:#ff79c6">true</span>
-  - --accesslog</code></pre></div>
-<p>这里给入口点添加 hostPort 是为了能够通过节点的端口访问到服务，关于 <code>entryPoints</code> 入口点的更多信息，可以查看文档 <a href="https://www.qikqiak.com/traefik-book/routing/entrypoints/">entrypoints</a> 了解更多信息。</p>
+<p>部署完成后，我们需要让 WebUI 的域名去监听 443 端口，因为我们这里使用的是 <code>tlsChallenge</code> 这种验证方式，在上面的 <code>IngressRoute.yaml</code> 文件中新建一个对象，用来监听 443 端口，如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-webui-tls
+  namespace: kube-system
+spec:
+  entryPoints:
+  - websecure  <span style="color:#6272a4"># 注意这里是websecure这个entryPoint，监控443端口</span>
+  routes:
+  - match: Host(`traefik.youdianzhishi.com`)
+    kind: Rule
+    services:
+    - name: traefik
+      port: <span style="color:#bd93f9">8080</span>
+  tls:
+    certResolver: default  <span style="color:#6272a4"># 使用我们配置的 default 这个解析器</span></code></pre></div>
+<p>然后更新对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f IngressRoute.yaml
+<span style="color:#6272a4"># 现在有两个 IngressRoute 对象</span>
+$ kubectl get ingressroutes -n kube-system
+NAME                AGE
+traefik-webui       28d
+traefik-webui-tls   5h15m</code></pre></div>
+<p>这个时候如果一切正常的话我们已经可以通过 HTTPS 去访问我们的服务了：</p>
 
-<p>然后直接创建上面的 IngressRouteTCP 对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f ingressroute-redis.yaml</code></pre></div>
-<p>创建完成后，同样我们可以去 Traefik 的 Dashboard 页面上查看是否生效：</p>
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/traefik2-webui-https.png" alt="traefik2 webui https"><figcaption>traefik2 webui https</figcaption></figure>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/traefik-redis-tcp.jpg" alt="traefik redis service"><figcaption>traefik redis service</figcaption></figure>
+<blockquote>
+<p>Traefik 会自动跟踪其生成的 ACME 证书的到期日期。如果证书过期之前还不到 30 天了，Traefik 会尝试进行自动续订。</p>
+</blockquote>
 
-<p>然后我们配置一个域名解析到 Traefik 所在的节点，然后通过 6379 端口来连接 Redis 服务：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ redis-cli -h redis.youdianzhishi.com -p <span style="color:#bd93f9">6379</span>
-redis.youdianzhishi.com:6379&gt; ping
-PONG
-redis.youdianzhishi.com:6379&gt; <span style="color:#8be9fd;font-style:italic">set</span> hello world
-OK
-redis.youdianzhishi.com:6379&gt; get hello
-<span style="color:#f1fa8c">&#34;world&#34;</span>
-redis.youdianzhishi.com:6379&gt;</code></pre></div>
-<p>到这里我们就完成了将 Redis（TCP）服务暴露给外部用户了。本文中用到的资源清单文件可以从这里获取：<a href="https://github.com/cnych/kubeapp/tree/master/traefik2/redis">https://github.com/cnych/kubeapp/tree/master/traefik2/redis</a>。</p>
+<p>同样的，我们通过 HTTP 协议也是可以访问到的，但是如果需要将 HTTP 请求强制跳转到 HTTPS 的话，就需要借助 Traefik 2.0 的提供的中间件来完成了。</p>
+
+<figure><img src="https://www.qikqiak.com/traefik-book/assets/img/middleware/overview.png" alt="traefik2 中间件"><figcaption>traefik2 中间件</figcaption></figure>
+
+<p>同样，在上面的 IngressRoute.yaml 文件中添加一个 Middleware 的 CRD 对象，内容如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-https
+  namespace: kube-system
+spec:
+  redirectScheme:
+    scheme: https</code></pre></div>
+<p>这里我们就声明了一个名为 <code>redirectSchemea</code> 的中间件，该中间件可以将我们的请求跳转到另外的 scheme 请求，然后将该中间件配置到 HTTP 请求的服务上面：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-webui
+  namespace: kube-system
+spec:
+  entryPoints:
+  - web
+  routes:
+  - match: Host(`traefik.youdianzhishi.com`)
+    kind: Rule
+    services:
+    - name: traefik
+      port: <span style="color:#bd93f9">8080</span>
+    middlewares:  <span style="color:#6272a4"># 使用上面新建的中间件</span>
+    - name: redirect-https</code></pre></div>
+<p>然后更新对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f IngressRoute.yaml</code></pre></div>
+<p>这样当我们通过 HTTP 去访问 WebUI 服务时，也会自动跳转到 HTTPS 上面去，同样可以查看 <a href="https://www.qikqiak.com/traefik-book/middlewares/overview/">中间件文件</a> 了解更多关于中间件的信息。</p>
+
+<p>本文中用到的资源清单文件可以从这里获取：<a href="https://github.com/cnych/kubeapp/tree/master/traefik2/https">https://github.com/cnych/kubeapp/tree/master/traefik2/https</a>。</p>
 
 <p>关于 Traefik 2.0 的更多使用，可以关注 <a href="[https://www.qikqiak.com/traefik-book]">https://www.qikqiak.com/traefik-book</a> 文档。</p>
 
@@ -500,25 +511,25 @@ redis.youdianzhishi.com:6379&gt;</code></pre></div>
 <h3>相关文章</h3>
 <ul style="margin-bottom: 25px;">
     
+    <li><a href="https://www.qikqiak.com/post/expose-redis-by-traefik2/">Traefik 2.0 暴露 Redis(TCP) 服务</a></li>
+    
     <li><a href="https://www.qikqiak.com/post/traefik2-ga/">Traefik 2.0 正式版发布</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/ingress-traefik2/">外部服务发现之 ingress(二)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/automatic-kubernetes-ingress-https-with-lets-encrypt/">Kubernetes Ingress 自动化 HTTPS</a></li>
     
     <li><a href="https://www.qikqiak.com/post/install-nginx-ingress/">nginx-ingress 的安装使用</a></li>
     
     <li><a href="https://www.qikqiak.com/post/how-to-protect-exposed-k8s-server/">如何保护对外暴露的 Kubernetes 服务</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/automatic-kubernetes-ingress-https-with-lets-encrypt/">Kubernetes Ingress 自动化 HTTPS</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/ingress-traefik2/">外部服务发现之 ingress(二)</a></li>
-    
     <li><a href="https://www.qikqiak.com/post/ingress-traefik1/">外部服务发现之 ingress(一)</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/">在 Kubernetes 上安装 Gitlab</a></li>
+    <li><a href="https://www.qikqiak.com/post/update-kubernetes-dashboard-more-secure/">kubernetes dashboard 升级之路</a></li>
     
     <li><a href="https://www.qikqiak.com/post/build-k8s-app-with-custom-metrics/">对 Kubernetes 应用进行自定义指标扩缩容</a></li>
     
     <li><a href="https://www.qikqiak.com/post/k8s-inlets-local-endpoinsts/">使用 inlets 和 kubernetes 访问本地服务</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/migrate-helm-to-v3/">Helm V2 迁移到 V3 版本</a></li>
     
 </ul>
 
@@ -528,13 +539,9 @@ redis.youdianzhishi.com:6379&gt;</code></pre></div>
         <ul class="pager blog-pager">
           
             <li class="previous">
-              <a href="https://www.qikqiak.com/post/free-use-jetbrains-ide/" data-toggle="tooltip" data-placement="top" title="免费获取 JetBrains 全系产品正版 License">&larr; 前一篇</a>
+              <a href="https://www.qikqiak.com/post/expose-redis-by-traefik2/" data-toggle="tooltip" data-placement="top" title="Traefik 2.0 暴露 Redis(TCP) 服务">&larr; 前一篇</a>
             </li>
           
-          
-            <li class="next">
-              <a href="https://www.qikqiak.com/post/automatic-https-with-traefik2/" data-toggle="tooltip" data-placement="top" title="Traefik 2.0 实现自动化 HTTPS">后一篇 &rarr;</a>
-            </li>
           
         </ul>
         
@@ -551,9 +558,9 @@ redis.youdianzhishi.com:6379&gt;</code></pre></div>
         owner: 'cnych',
         admin: ['cnych'],
         labels: ['gitment'],
-        title: 'Traefik 2.0 暴露 Redis(TCP) 服务',
+        title: 'Traefik 2.0 实现自动化 HTTPS',
         createIssueManually: true,
-        id: 'expose-redis-by-traefik2',      
+        id: 'automatic-https-with-traefik2',      
         distractionFreeMode: true  
     });
     gitalk.render('gitalk-container');

@@ -57,7 +57,7 @@ $ kubectl apply -f redis.yaml
 ```
 
 ## 暴露 TCP 服务
-由于 Traefik 中使用 TCP 路由配置需要 SNI，而 SNI 有是依赖 TLS 的，所以我们需要配置证书才行，但是如果没有证书的话，我们可以使用通配符 `*` 进行配置，我们这里创建一个 IngressRouteTCP 类型的 CRD 对象（前面我们就已经安装了对应的 CRD 资源）：(ingressroute-redis.yaml)
+由于 Traefik 中使用 TCP 路由配置需要 SNI，而 SNI 又是依赖 TLS 的，所以我们需要配置证书才行，但是如果没有证书的话，我们可以使用通配符 `*` 进行配置，我们这里创建一个 IngressRouteTCP 类型的 CRD 对象（前面我们就已经安装了对应的 CRD 资源）：(ingressroute-redis.yaml)
 
 ```yaml
 apiVersion: traefik.containo.us/v1alpha1
@@ -130,7 +130,7 @@ redis.youdianzhishi.com:6379> get hello
 redis.youdianzhishi.com:6379>
 ```
 
-到这里我们就完成了将 Redis（TCP）服务暴露给外部用户了。
+到这里我们就完成了将 Redis（TCP）服务暴露给外部用户了。本文中用到的资源清单文件可以从这里获取：[https://github.com/cnych/kubeapp/tree/master/traefik2/redis](https://github.com/cnych/kubeapp/tree/master/traefik2/redis)。
 
 关于 Traefik 2.0 的更多使用，可以关注 [https://www.qikqiak.com/traefik-book]([https://www.qikqiak.com/traefik-book]) 文档。
 
