@@ -133,7 +133,7 @@ NAME                 PROVISIONER      AGE
 course-nfs-storage   fuseim.pri/ifs   11s
 ```
 
-## 新建 StorageClass
+## 新建 PVC
 上面把`StorageClass`资源对象创建成功了，接下来我们来通过一个示例测试下动态 PV，首先创建一个 PVC 对象：(test-pvc.yaml)
 ```yaml
 kind: PersistentVolumeClaim
