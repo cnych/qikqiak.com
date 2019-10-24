@@ -9,7 +9,7 @@ bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-157
 category: "kubernetes"
 ---
 
-上一篇文章我们实现了 [Traefik 2.0 暴露 Redis(TCP) 服务](./post/expose-redis-by-traefik2/)，我们了解到 Traefik 中使用 TCP 路由配置需要 SNI，而 SNI 又是依赖 TLS 的，所以需要配置证书才能正常访问 TCP 服务，其实 Traefik 除了支持我们手动配置 TLS 证书之外，还支持自动生成 TLS 证书，本文就来为大家介绍如何在 Traefik 2.0 中配置自动化 HTTPS 服务。
+上一篇文章我们实现了 [Traefik 2.0 暴露 Redis(TCP) 服务](/post/expose-redis-by-traefik2/)，我们了解到 Traefik 中使用 TCP 路由配置需要 SNI，而 SNI 又是依赖 TLS 的，所以需要配置证书才能正常访问 TCP 服务，其实 Traefik 除了支持我们手动配置 TLS 证书之外，还支持自动生成 TLS 证书，本文就来为大家介绍如何在 Traefik 2.0 中配置自动化 HTTPS 服务。
 
 <!--more-->
 

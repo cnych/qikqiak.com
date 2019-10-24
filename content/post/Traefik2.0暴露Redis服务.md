@@ -9,7 +9,7 @@ bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-157
 category: "kubernetes"
 ---
 
-前面我们已经提到了 [Traefik2.0 已经正式发布了](./post/traefik2-ga/)，Traefik2.0 已经支持了 TCP 服务的，但是 Traefik 的官方文档实在是有点混乱，特别是在 Kubernetes 下面的使用更不详细，我在业余时间已经在尝试对官方文档进行翻译，地址：[https://www.qikqiak.com/traefik-book](https://www.qikqiak.com/traefik-book/)，去掉了一些多余的文档，增加一些在 Kubernetes 下面的使用案例。
+前面我们已经提到了 [Traefik2.0 已经正式发布了](/post/traefik2-ga/)，Traefik2.0 已经支持了 TCP 服务的，但是 Traefik 的官方文档实在是有点混乱，特别是在 Kubernetes 下面的使用更不详细，我在业余时间已经在尝试对官方文档进行翻译，地址：[https://www.qikqiak.com/traefik-book](https://www.qikqiak.com/traefik-book/)，去掉了一些多余的文档，增加一些在 Kubernetes 下面的使用案例。
 
 <!--more-->
 
