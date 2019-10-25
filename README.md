@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [Traefik 2.0 实现灰度发布](https://www.qikqiak.com/post/canary-with-traefik2/)
  * [Traefik 2.0 实现自动化 HTTPS](https://www.qikqiak.com/post/automatic-https-with-traefik2/)
  * [使用 Traefik 2.0 暴露 Redis 服务](https://www.qikqiak.com/post/expose-redis-by-traefik2/)
  * [基于自定义指标扩展的 Kubernetes 应用](https://www.qikqiak.com/post/build-k8s-app-with-custom-metrics/)
