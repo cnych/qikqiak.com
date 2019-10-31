@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>使用 Golang 自定义 Kubernetes Ingress Controller-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="使用 Golang 自定义 Kubernetes Ingress Controller" />
+  <meta name="twitter:title" content="使用 Golang 自定义 Kubernetes Ingress Controller" />
+
+  <meta name="description" content="在 Kubernetes 中通过 Ingress 来暴露服务到集群外部，这个已经是一个很普遍的方式了，而真正扮演请求转发的角色是背后的 Ingress Controller，比如我们经常使用的 traefik、ingress-nginx 等就是一个 Ingress Controller。本文我们将通过 golang 来实现一个简单的自定义的 Ingress Controller，可以加深我们对 Ingress 的理解。">
+  <meta property="og:description" content="在 Kubernetes 中通过 Ingress 来暴露服务到集群外部，这个已经是一个很普遍的方式了，而真正扮演请求转发的角色是背后的 Ingress Controller，比如我们经常使用的 traefik、ingress-nginx 等就是一个 Ingress Controller。本文我们将通过 golang 来实现一个简单的自定义的 Ingress Controller，可以加深我们对 Ingress 的理解。">
+  <meta name="twitter:description" content="在 Kubernetes 中通过 Ingress 来暴露服务到集群外部，这个已经是一个很普遍的方式了，而真正扮演请求转发的角色是背后的 Ingress Controller，比如我们经常使用的 traefik、ingress-nginx 等就是一个 Ingress Controller。本文我们将通过 golang 来实现一个简单的自定义的 Ingress Controller， …">
+  <meta name="author" content=""/>
+  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/favicon.png"/>
+  <meta property="og:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/custom-k8s-ingress-controller-with-go/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.55.6" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/custom-k8s-ingress-controller-with-go/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
+
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
+    <!--[if lt IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <![endif]-->
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, ingress, golang, ingress controller, traefik, nginx">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qikqiak-blog-logo.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="首页" href="https://www.qikqiak.com/">首页</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1572444768149-925f4150c0b2.jpeg" data-img-desc-1="https://unsplash.com/photos/eIiHJH4wfq0"></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>使用 Golang 自定义 Kubernetes Ingress Controller</h1>
+                  
+                  
+                    <span class="post-meta">
+  
+    发表于 October 31, 2019
+  
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>使用 Golang 自定义 Kubernetes Ingress Controller</h1>
+                
+                
+                  <span class="post-meta">
+  
+    发表于 October 31, 2019
+  
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/ingress/">ingress</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/golang/">golang</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#概述">概述</a></li>
+<li><a href="#ingress-对象">Ingress 对象</a></li>
+<li><a href="#ingress-controllers">Ingress Controllers</a></li>
+<li><a href="#自定义-ingress-controller">自定义 Ingress Controller</a>
+<ul>
+<li><a href="#kubernetes-对象查询">Kubernetes 对象查询</a></li>
+<li><a href="#路由表">路由表</a></li>
+<li><a href="#http-server">HTTP Server</a></li>
+<li><a href="#main-函数">Main 函数</a></li>
+</ul></li>
+<li><a href="#kubernetes-配置">Kubernetes 配置</a></li>
+<li><a href="#参考链接">参考链接</a></li>
+</ul></li>
+</ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>在 Kubernetes 中通过 Ingress 来暴露服务到集群外部，这个已经是一个很普遍的方式了，而真正扮演请求转发的角色是背后的 Ingress Controller，比如我们经常使用的 traefik、ingress-nginx 等就是一个 Ingress Controller。本文我们将通过 golang 来实现一个简单的自定义的 Ingress Controller，可以加深我们对 Ingress 的理解。</p>
+
+<h2 id="概述">概述</h2>
+
+<p>我们在 Kubernetes 集群上往往会运行很多无状态的 Web 应用，一般来说这些应用是通过一个 Deployment 和一个对应的 Service 组成，比如我们在集群上运行一个 whoami 的应用，对应的资源清单如下所示：(whoami.yaml)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whoami
+  labels:
+    app: whoami
+spec:
+  replicas: <span style="color:#bd93f9">1</span>
+  selector:
+    matchLabels:
+      app: whoami
+  template:
+    metadata:
+      labels:
+        app: whoami
+    spec:
+      containers:
+        - name: whoami
+          image: cnych/whoami
+          ports:
+            - containerPort: <span style="color:#bd93f9">80</span>
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: whoami
+spec:
+  selector:
+    app: whoami
+  ports:
+    - protocol: TCP
+      port: <span style="color:#bd93f9">80</span>
+      targetPort: <span style="color:#bd93f9">80</span></code></pre></div>
+<p>可以直接使用上面的资源清单部署该应用：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f whoami.yaml</code></pre></div>
+<p>通过部署该应用，在 Kubernetes 集群内部我们可以通过地址 <code>whoami.default.svc.cluster.local</code> 来访问该 Web 应用，但是在集群外部的用户应该如何来访问呢？当然我们可以使用 NodePort 类型的 Service 来进行访问，但是当我们应用越来越多的时候端口的管理也是一个很大的问题，所以一般情况下不采用该方式，之前我们的方法是用 DaemonSet 在每个边缘节点上运行一个 Nginx 应用：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">spec:
+  hostNetwork: <span style="color:#ff79c6">true</span>
+  containers:
+    - image: nginx:<span style="color:#bd93f9">1.15</span>.<span style="color:#bd93f9">3</span>-alpine
+      name: nginx
+      ports:
+        - name: http
+          containerPort: <span style="color:#bd93f9">80</span>
+          hostPort: <span style="color:#bd93f9">80</span></code></pre></div>
+<p>通过设置 <code>hostNetwork:true</code>，容器将绑定节点的80端口，而不仅仅是容器，这样我们就可以通过节点的公共 IP 地址的 80 端口访问到 Nginx 应用了。这种方法理论上肯定是有效的，但是有一个最大的问题就是需要创建一个 Nginx 配置文件，如果应用有变更，还需要手动修改配置，不能自动发现和热更新，这对于大量的应用维护的成本显然太大。这个时候我们就可以用另外一个 Kubernetes 提供的方案了：<code>Ingress</code>。</p>
+
+<h2 id="ingress-对象">Ingress 对象</h2>
+
+<p>Kubernetes 内置就支持通过 Ingress 对象将外部的域名映射到集群内部服务，我们可以通过如下的 Ingress 对象来对外暴露服务：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: whoami
+spec:
+  tls:
+    - hosts:
+        - <span style="color:#f1fa8c">&#34;*.qikqiak.com&#34;</span>
+      secretName: qikqiak-tls
+  rules:
+    - host: who.qikqiak.com
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: whoami
+              servicePort: <span style="color:#bd93f9">80</span></code></pre></div>
+<p>该资源清单声明了如何将 HTTP 请求路由到后端服务：</p>
+
+<ul>
+<li>任何到域名 <code>who.qikqiak.com</code> 的请求都将被路由到 <code>whoami</code> 服务后面的 Pod 列表中去。</li>
+<li>如果是 HTTPS 请求，并且域名匹配 <code>*.qikqiak.com</code>，则对请求使用 <code>qikqiak-tls</code> 这个证书。</li>
+</ul>
+
+<p>这个配置显然比我们取手动维护 Nginx 的配置要方便太多了，完全就是自动化的。
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5376999672787220"
+     data-ad-slot="9165834656"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</p>
+
+<h2 id="ingress-controllers">Ingress Controllers</h2>
+
+<p>上面我们声明的 Ingress 对象，只是一个集群的资源对象而已，并不会去真正处理我们的请求，这个时候我们还必须安装一个 Ingress Controller，该控制器负责读取 Ingress 对象的规则并进行真正的请求处理，简单来说就是 Ingress 对象只是一个声明，Ingress Controllers 就是真正的实现。</p>
+
+<p>对于 Ingress Controller 有很多种选择，比如我们前面文章大量提到的 <a href="https://www.qikqiak.com/tags/traefik/">traefik</a>、或者 <a href="https://kubernetes.github.io/ingress-nginx/">ingress-nginx</a> 等等，我们可以根据自己的需求选择合适的 Ingress Controller 安装即可。</p>
+
+<p>但是实际上，自定义一个 Ingress Controller 也是非常简单的（当然要支持各种请求特性就需要大量的工作了）。</p>
+
+<h2 id="自定义-ingress-controller">自定义 Ingress Controller</h2>
+
+<p>这里我们将用 Golang 来自定义一个简单的 Ingress Controller，自定义的控制器主要需要实现以下几个功能：</p>
+
+<ul>
+<li>通过 Kubernetes API 查询和监听 Service、Ingress 以及 Secret 这些对象</li>
+<li>加载 TLS 证书用于 HTTPS 请求</li>
+<li>根据加载的 Kubernetes 数据构造一个用于 HTTP 服务的路由，当然该路由需要非常高效，因为所有传入的流量都将通过该路由</li>
+<li>在 80 和 443 端口上监听传入的 HTTP 请求，然后根据路由查找对应的后端服务，然后代理请求和响应。443 端口将使用 TLS 证书进行安全连接。</li>
+</ul>
+
+<p>下面我们将来依次介绍上面的实现。</p>
+
+<h3 id="kubernetes-对象查询">Kubernetes 对象查询</h3>
+
+<p>我们可以通过一个 rest 配置然后调用 <code>NewForConfig</code> 来创建一个 Kubernetes 客户端，由于我们要通过集群内部的 Service 进行服务的访问，所以不能在集群外部使用，所以不能使用 kubeconfig 的方式来获取 Config：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">config, err <span style="color:#ff79c6">:=</span> rest.<span style="color:#50fa7b">InClusterConfig</span>()
+<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+    log.<span style="color:#50fa7b">Fatal</span>().<span style="color:#50fa7b">Err</span>(err).<span style="color:#50fa7b">Msg</span>(<span style="color:#f1fa8c">&#34;get kubernetes configuration failed&#34;</span>)
+}
+client, err <span style="color:#ff79c6">:=</span> kubernetes.<span style="color:#50fa7b">NewForConfig</span>(config)
+<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+    log.<span style="color:#50fa7b">Fatal</span>().<span style="color:#50fa7b">Err</span>(er).<span style="color:#50fa7b">Msg</span>(<span style="color:#f1fa8c">&#34;create kubernetes client failed&#34;</span>)
+}</code></pre></div>
+<p>然后我们创建一个 <code>Watcher</code> 和 <code>Payload</code>，<code>Watcher</code> 是来负责查询 Kubernetes 和创建 Payloads 的，Payloads 包含了满足 HTTP 请求所需要的所有的 Kubernetes 数据：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#6272a4">// 通过 Watcher 加载的 Kubernetes 的数据集合。
+</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">type</span> Payload <span style="color:#8be9fd;font-style:italic">struct</span> {
+    Ingresses       []IngressPayload
+    TLSCertificates <span style="color:#8be9fd;font-style:italic">map</span>[<span style="color:#8be9fd">string</span>]<span style="color:#ff79c6">*</span>tls.Certificate
+}
+
+<span style="color:#6272a4">// 一个 IngressPayload 是一个 Ingress 加上他的服务端口。
+</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">type</span> IngressPayload <span style="color:#8be9fd;font-style:italic">struct</span> {
+    Ingress      <span style="color:#ff79c6">*</span>extensionsv1beta1.Ingress
+    ServicePorts <span style="color:#8be9fd;font-style:italic">map</span>[<span style="color:#8be9fd">string</span>]<span style="color:#8be9fd;font-style:italic">map</span>[<span style="color:#8be9fd">string</span>]<span style="color:#8be9fd">int</span>
+}</code></pre></div>
+<p>另外需要注意除了端口外，Ingress 还可以通过端口名称来引用后端服务的端口，所以我们可以通过查询相应的 Service 来填充该数据。</p>
+
+<p>Watcher 主要用来监听 Ingress、Service、Secret 的变化：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#6272a4">// 在 Kubernetes 集群中监听 Ingress 对象的 Watcher
+</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">type</span> Watcher <span style="color:#8be9fd;font-style:italic">struct</span> {
+    client   kubernetes.Interface
+    onChange <span style="color:#8be9fd;font-style:italic">func</span>(<span style="color:#ff79c6">*</span>Payload)
+}</code></pre></div>
+<p>只要我们检测到某些变化，就会调用 <code>onChange</code> 函数。为了实现上面的监听功能，我们需要使用 <code>k8s.io/client-go/informers</code> 这个包，该包提供了一种类型安全、高效的机制来查询、list 和 watch Kubernetes 对象，我们只需要为需要的每个对象创建一个 <code>SharedInformerFactory</code> 以及 <code>Listers</code> 即可：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#8be9fd;font-style:italic">func</span> (w <span style="color:#ff79c6">*</span>Watcher) <span style="color:#50fa7b">Run</span>(ctx context.Context) <span style="color:#8be9fd">error</span> {
+    factory <span style="color:#ff79c6">:=</span> informers.<span style="color:#50fa7b">NewSharedInformerFactory</span>(w.client, time.Minute)
+    secretLister <span style="color:#ff79c6">:=</span> factory.<span style="color:#50fa7b">Core</span>().<span style="color:#50fa7b">V1</span>().<span style="color:#50fa7b">Secrets</span>().<span style="color:#50fa7b">Lister</span>()
+    serviceLister <span style="color:#ff79c6">:=</span> factory.<span style="color:#50fa7b">Core</span>().<span style="color:#50fa7b">V1</span>().<span style="color:#50fa7b">Services</span>().<span style="color:#50fa7b">Lister</span>()
+    ingressLister <span style="color:#ff79c6">:=</span> factory.<span style="color:#50fa7b">Extensions</span>().<span style="color:#50fa7b">V1beta1</span>().<span style="color:#50fa7b">Ingresses</span>().<span style="color:#50fa7b">Lister</span>()
+    <span style="color:#ff79c6">...</span>
+}</code></pre></div>
+<p>然后定义一个 <code>onChange</code> 的本地函数，该函数在检测到变更时随时调用。我们这里在每种类型的变更时每次都从头开始重新构建所有的内容，暂时还未考虑性能问题。因为 Watcher 和 HTTP 处理程序都在不同的 goroutine 中运行，所以我们基本上可以构建一个有效的负载，而不会影响任何正在进行的请求，当然这是一种简单粗暴的做法。</p>
+
+<p>我们可以通过从 listing ingresses 对象开始：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">ingresses, err <span style="color:#ff79c6">:=</span> ingressLister.<span style="color:#50fa7b">List</span>(labels.<span style="color:#50fa7b">Everything</span>())
+<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+    log.<span style="color:#50fa7b">Error</span>().<span style="color:#50fa7b">Err</span>(err).<span style="color:#50fa7b">Msg</span>(<span style="color:#f1fa8c">&#34;failed to list ingresses&#34;</span>)
+    <span style="color:#ff79c6">return</span>
+}</code></pre></div>
+<p>对于每个 ingress 对象，如果有 TLS 规则，则从 secrets 对象中加载证书：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#ff79c6">for</span> _, rec <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">range</span> ingress.Spec.TLS {
+    <span style="color:#ff79c6">if</span> rec.SecretName <span style="color:#ff79c6">!=</span> <span style="color:#f1fa8c">&#34;&#34;</span> {
+        secret, err <span style="color:#ff79c6">:=</span> secretLister.<span style="color:#50fa7b">Secrets</span>(ingress.Namespace).<span style="color:#50fa7b">Get</span>(rec.SecretName)
+        <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+            log.<span style="color:#50fa7b">Error</span>().<span style="color:#50fa7b">Err</span>(err).<span style="color:#50fa7b">Str</span>(<span style="color:#f1fa8c">&#34;namespace&#34;</span>, ingress.Namespace).<span style="color:#50fa7b">Str</span>(<span style="color:#f1fa8c">&#34;name&#34;</span>, rec.SecretName).<span style="color:#50fa7b">Msg</span>(<span style="color:#f1fa8c">&#34;unknown secret&#34;</span>)
+            <span style="color:#ff79c6">continue</span>
+        }
+        cert, err <span style="color:#ff79c6">:=</span> tls.<span style="color:#50fa7b">X509KeyPair</span>(secret.Data[<span style="color:#f1fa8c">&#34;tls.crt&#34;</span>], secret.Data[<span style="color:#f1fa8c">&#34;tls.key&#34;</span>])
+        <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+            log.<span style="color:#50fa7b">Error</span>().<span style="color:#50fa7b">Err</span>(err).<span style="color:#50fa7b">Str</span>(<span style="color:#f1fa8c">&#34;namespace&#34;</span>, ingress.Namespace).<span style="color:#50fa7b">Str</span>(<span style="color:#f1fa8c">&#34;name&#34;</span>, rec.SecretName).<span style="color:#50fa7b">Msg</span>(<span style="color:#f1fa8c">&#34;invalid tls certificate&#34;</span>)
+            <span style="color:#ff79c6">continue</span>
+        }
+        payload.TLSCertificates[rec.SecretName] = <span style="color:#ff79c6">&amp;</span>cert
+    }
+}</code></pre></div>
+<p>Go 语言已经内置了一些和加密相关的包，可以很简单的处理 TLS 证书，对于实际的 HTTP 规则，这里我们添加了一个 <code>addBackend</code> 的辅助函数：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">addBackend <span style="color:#ff79c6">:=</span> <span style="color:#8be9fd;font-style:italic">func</span>(ingressPayload <span style="color:#ff79c6">*</span>IngressPayload, backend extensionsv1beta1.IngressBackend) {
+    svc, err <span style="color:#ff79c6">:=</span> serviceLister.<span style="color:#50fa7b">Services</span>(ingressPayload.Ingress.Namespace).<span style="color:#50fa7b">Get</span>(backend.ServiceName)
+    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+        log.<span style="color:#50fa7b">Error</span>().<span style="color:#50fa7b">Err</span>(err).<span style="color:#50fa7b">Str</span>(<span style="color:#f1fa8c">&#34;namespace&#34;</span>, ingressPayload.Ingress.Namespace).<span style="color:#50fa7b">Str</span>(<span style="color:#f1fa8c">&#34;name&#34;</span>, backend.ServiceName).<span style="color:#50fa7b">Msg</span>(<span style="color:#f1fa8c">&#34;unknown service&#34;</span>)
+    } <span style="color:#ff79c6">else</span> {
+        m <span style="color:#ff79c6">:=</span> <span style="color:#8be9fd;font-style:italic">make</span>(<span style="color:#8be9fd;font-style:italic">map</span>[<span style="color:#8be9fd">string</span>]<span style="color:#8be9fd">int</span>)
+        <span style="color:#ff79c6">for</span> _, port <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">range</span> svc.Spec.Ports {
+            m[port.Name] = <span style="color:#8be9fd;font-style:italic">int</span>(port.Port)
+        }
+        ingressPayload.ServicePorts[svc.Name] = m
+    }
+}</code></pre></div>
+<p>每个 HTTP 规则和可选的默认规则都会调用该方法：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#ff79c6">if</span> ingress.Spec.Backend <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+    <span style="color:#50fa7b">addBackend</span>(<span style="color:#ff79c6">&amp;</span>ingressPayload, <span style="color:#ff79c6">*</span>ingress.Spec.Backend)
+}
+<span style="color:#ff79c6">for</span> _, rule <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">range</span> ingress.Spec.Rules {
+    <span style="color:#ff79c6">if</span> rule.HTTP <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+        <span style="color:#ff79c6">continue</span>
+    }
+    <span style="color:#ff79c6">for</span> _, path <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">range</span> rule.HTTP.Paths {
+        <span style="color:#50fa7b">addBackend</span>(<span style="color:#ff79c6">&amp;</span>ingressPayload, path.Backend)
+    }
+}</code></pre></div>
+<p>然后调用 <code>onChange</code> 回调：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">w.<span style="color:#50fa7b">onChange</span>(payload)</code></pre></div>
+<p>每当发生更改时，都会调用本地 <code>onChange</code> 函数，最后一步就是启动我们的 <code>informers</code>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#8be9fd;font-style:italic">var</span> wg sync.WaitGroup
+wg.<span style="color:#50fa7b">Add</span>(<span style="color:#bd93f9">1</span>)
+<span style="color:#ff79c6">go</span> <span style="color:#8be9fd;font-style:italic">func</span>() {
+    informer <span style="color:#ff79c6">:=</span> factory.<span style="color:#50fa7b">Core</span>().<span style="color:#50fa7b">V1</span>().<span style="color:#50fa7b">Secrets</span>().<span style="color:#50fa7b">Informer</span>()
+    informer.<span style="color:#50fa7b">AddEventHandler</span>(handler)
+    informer.<span style="color:#50fa7b">Run</span>(ctx.<span style="color:#50fa7b">Done</span>())
+    wg.<span style="color:#50fa7b">Done</span>()
+}()
+
+wg.<span style="color:#50fa7b">Add</span>(<span style="color:#bd93f9">1</span>)
+<span style="color:#ff79c6">go</span> <span style="color:#8be9fd;font-style:italic">func</span>() {
+    informer <span style="color:#ff79c6">:=</span> factory.<span style="color:#50fa7b">Extensions</span>().<span style="color:#50fa7b">V1beta1</span>().<span style="color:#50fa7b">Ingresses</span>().<span style="color:#50fa7b">Informer</span>()
+    informer.<span style="color:#50fa7b">AddEventHandler</span>(handler)
+    informer.<span style="color:#50fa7b">Run</span>(ctx.<span style="color:#50fa7b">Done</span>())
+    wg.<span style="color:#50fa7b">Done</span>()
+}()
+
+wg.<span style="color:#50fa7b">Add</span>(<span style="color:#bd93f9">1</span>)
+<span style="color:#ff79c6">go</span> <span style="color:#8be9fd;font-style:italic">func</span>() {
+    informer <span style="color:#ff79c6">:=</span> factory.<span style="color:#50fa7b">Core</span>().<span style="color:#50fa7b">V1</span>().<span style="color:#50fa7b">Services</span>().<span style="color:#50fa7b">Informer</span>()
+    informer.<span style="color:#50fa7b">AddEventHandler</span>(handler)
+    informer.<span style="color:#50fa7b">Run</span>(ctx.<span style="color:#50fa7b">Done</span>())
+    wg.<span style="color:#50fa7b">Done</span>()
+}()
+
+wg.<span style="color:#50fa7b">Wait</span>()</code></pre></div>
+<p>我们这里每个 informer 都使用同一个 handler：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">debounced <span style="color:#ff79c6">:=</span> debounce.<span style="color:#50fa7b">New</span>(time.Second)
+handler <span style="color:#ff79c6">:=</span> cache.ResourceEventHandlerFuncs{
+    AddFunc: <span style="color:#8be9fd;font-style:italic">func</span>(obj <span style="color:#8be9fd;font-style:italic">interface</span>{}) {
+        <span style="color:#50fa7b">debounced</span>(onChange)
+    },
+    UpdateFunc: <span style="color:#8be9fd;font-style:italic">func</span>(oldObj, newObj <span style="color:#8be9fd;font-style:italic">interface</span>{}) {
+        <span style="color:#50fa7b">debounced</span>(onChange)
+    },
+    DeleteFunc: <span style="color:#8be9fd;font-style:italic">func</span>(obj <span style="color:#8be9fd;font-style:italic">interface</span>{}) {
+        <span style="color:#50fa7b">debounced</span>(onChange)
+    },
+}</code></pre></div>
+<p><a href="https://godoc.org/github.com/bep/debounce">Debouncing（防抖动）</a> 是一种避免事件重复的方法，我们设置一个小的延迟，如果在达到延迟之前发生了其他事件，则重启计时器。</p>
+
+<h3 id="路由表">路由表</h3>
+
+<p>路由表的目标是通过预先计算大部分查询相关信息来提高查询效率，这里我们就需要使用一些高效的数据结构来进行存储，由于在集群中有大量的路由规则，所以要实现映射查询既高效又容易理解的最简单的方法我们能想到的就是使用 <code>Map</code>，<code>Map</code> 可以为我们提供 <code>O(1)</code> 效率的查询，我们这里使用 Map 进行初始化查找，如果在后面找到了多个规则，则使用切片来存储这些规则。
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5376999672787220"
+     data-ad-slot="9165834656"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+一个路由表由两个 <code>Map</code> 构成，一个是根据域名映射的证书，一个就是根据域名映射的后端路由表：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#8be9fd;font-style:italic">type</span> RoutingTable <span style="color:#8be9fd;font-style:italic">struct</span> {
+    certificatesByHost <span style="color:#8be9fd;font-style:italic">map</span>[<span style="color:#8be9fd">string</span>]<span style="color:#8be9fd;font-style:italic">map</span>[<span style="color:#8be9fd">string</span>]<span style="color:#ff79c6">*</span>tls.Certificate
+    backendsByHost     <span style="color:#8be9fd;font-style:italic">map</span>[<span style="color:#8be9fd">string</span>][]routingTableBackend
+}
+
+<span style="color:#6272a4">// NewRoutingTable 创建一个新的路由表
+</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">NewRoutingTable</span>(payload <span style="color:#ff79c6">*</span>watcher.Payload) <span style="color:#ff79c6">*</span>RoutingTable {
+    rt <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">&amp;</span>RoutingTable{
+        certificatesByHost: <span style="color:#8be9fd;font-style:italic">make</span>(<span style="color:#8be9fd;font-style:italic">map</span>[<span style="color:#8be9fd">string</span>]<span style="color:#8be9fd;font-style:italic">map</span>[<span style="color:#8be9fd">string</span>]<span style="color:#ff79c6">*</span>tls.Certificate),
+        backendsByHost:     <span style="color:#8be9fd;font-style:italic">make</span>(<span style="color:#8be9fd;font-style:italic">map</span>[<span style="color:#8be9fd">string</span>][]routingTableBackend),
+    }
+    rt.<span style="color:#50fa7b">init</span>(payload)
+    <span style="color:#ff79c6">return</span> rt
+}</code></pre></div>
+<p>此外路由表下面还有两个主要的方法：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#6272a4">// GetCertificate 获得一个证书
+</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">func</span> (rt <span style="color:#ff79c6">*</span>RoutingTable) <span style="color:#50fa7b">GetCertificate</span>(sni <span style="color:#8be9fd">string</span>) (<span style="color:#ff79c6">*</span>tls.Certificate, <span style="color:#8be9fd">error</span>) {
+    hostCerts, ok <span style="color:#ff79c6">:=</span> rt.certificatesByHost[sni]
+    <span style="color:#ff79c6">if</span> ok {
+        <span style="color:#ff79c6">for</span> h, cert <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">range</span> hostCerts {
+            <span style="color:#ff79c6">if</span> rt.<span style="color:#50fa7b">matches</span>(sni, h) {
+                <span style="color:#ff79c6">return</span> cert, <span style="color:#ff79c6">nil</span>
+            }
+        }
+    }
+    <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, errors.<span style="color:#50fa7b">New</span>(<span style="color:#f1fa8c">&#34;certificate not found&#34;</span>)
+}
+
+<span style="color:#6272a4">// GetBackend 通过给定的 host 和 path 获取后端程序
+</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">func</span> (rt <span style="color:#ff79c6">*</span>RoutingTable) <span style="color:#50fa7b">GetBackend</span>(host, path <span style="color:#8be9fd">string</span>) (<span style="color:#ff79c6">*</span>url.URL, <span style="color:#8be9fd">error</span>) {
+    <span style="color:#6272a4">// strip the port
+</span><span style="color:#6272a4"></span>    <span style="color:#ff79c6">if</span> idx <span style="color:#ff79c6">:=</span> strings.<span style="color:#50fa7b">IndexByte</span>(host, <span style="color:#f1fa8c">&#39;:&#39;</span>); idx &gt; <span style="color:#bd93f9">0</span> {
+        host = host[:idx]
+    }
+    backends <span style="color:#ff79c6">:=</span> rt.backendsByHost[host]
+    <span style="color:#ff79c6">for</span> _, backend <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">range</span> backends {
+        <span style="color:#ff79c6">if</span> backend.<span style="color:#50fa7b">matches</span>(path) {
+            <span style="color:#ff79c6">return</span> backend.url, <span style="color:#ff79c6">nil</span>
+        }
+    }
+    <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, errors.<span style="color:#50fa7b">New</span>(<span style="color:#f1fa8c">&#34;backend not found&#34;</span>)
+}</code></pre></div>
+<p>其中 <code>GetCertificate</code> 来获取用于安全连接的 TLS 证书。HTTP 处理程序使用 <code>GetBackend</code> 将请求代理到后端，对于 TLS 证书，我们还有一个 <code>matches</code> 方法来处理通配符证书：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#8be9fd;font-style:italic">func</span> (rt <span style="color:#ff79c6">*</span>RoutingTable) <span style="color:#50fa7b">matches</span>(sni <span style="color:#8be9fd">string</span>, certHost <span style="color:#8be9fd">string</span>) <span style="color:#8be9fd">bool</span> {
+    <span style="color:#ff79c6">for</span> strings.<span style="color:#50fa7b">HasPrefix</span>(certHost, <span style="color:#f1fa8c">&#34;*.&#34;</span>) {
+        <span style="color:#ff79c6">if</span> idx <span style="color:#ff79c6">:=</span> strings.<span style="color:#50fa7b">IndexByte</span>(sni, <span style="color:#f1fa8c">&#39;.&#39;</span>); idx <span style="color:#ff79c6">&gt;=</span> <span style="color:#bd93f9">0</span> {
+            sni = sni[idx<span style="color:#ff79c6">+</span><span style="color:#bd93f9">1</span>:]
+        } <span style="color:#ff79c6">else</span> {
+            <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">false</span>
+        }
+        certHost = certHost[<span style="color:#bd93f9">2</span>:]
+    }
+    <span style="color:#ff79c6">return</span> sni <span style="color:#ff79c6">==</span> certHost
+}</code></pre></div>
+<p>其实对于后端应用来说，<code>matches</code> 方法实际上就是一个正则表达式匹配（因为 Ingress 对象的 path 字段定义的是一个正则表达式）：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#8be9fd;font-style:italic">type</span> routingTableBackend <span style="color:#8be9fd;font-style:italic">struct</span> {
+    pathRE <span style="color:#ff79c6">*</span>regexp.Regexp
+    url    <span style="color:#ff79c6">*</span>url.URL
+}
+
+<span style="color:#8be9fd;font-style:italic">func</span> (rtb routingTableBackend) <span style="color:#50fa7b">matches</span>(path <span style="color:#8be9fd">string</span>) <span style="color:#8be9fd">bool</span> {
+    <span style="color:#ff79c6">if</span> rtb.pathRE <span style="color:#ff79c6">==</span> <span style="color:#ff79c6">nil</span> {
+        <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">true</span>
+    }
+    <span style="color:#ff79c6">return</span> rtb.pathRE.<span style="color:#50fa7b">MatchString</span>(path)
+}</code></pre></div>
+<h3 id="http-server">HTTP Server</h3>
+
+<p>最后我们需要来实现一个 HTTP Server，用来接收网络入口的请求。首先定义一个私有的 <code>config</code> 结构体：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#8be9fd;font-style:italic">type</span> config <span style="color:#8be9fd;font-style:italic">struct</span> {
+    host    <span style="color:#8be9fd">string</span>
+    port    <span style="color:#8be9fd">int</span>
+    tlsPort <span style="color:#8be9fd">int</span>
+}</code></pre></div>
+<p>定义一个 <code>Option</code> 类型：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#6272a4">// config 的修改器
+</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">type</span> Option <span style="color:#8be9fd;font-style:italic">func</span>(<span style="color:#ff79c6">*</span>config)</code></pre></div>
+<p>定义一个设置 Option 的函数：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#6272a4">// WithHost 设置 host 绑定到 config 上。
+</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">WithHost</span>(host <span style="color:#8be9fd">string</span>) Option {
+    <span style="color:#ff79c6">return</span> <span style="color:#8be9fd;font-style:italic">func</span>(cfg <span style="color:#ff79c6">*</span>config) {
+        cfg.host = host
+    }
+}</code></pre></div>
+<p>服务的结构体和构造器如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#6272a4">// 代理 HTTP 请求
+</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">type</span> Server <span style="color:#8be9fd;font-style:italic">struct</span> {
+    cfg          <span style="color:#ff79c6">*</span>config
+    routingTable atomic.Value
+    ready        <span style="color:#ff79c6">*</span>Event
+}
+
+<span style="color:#6272a4">// New 创建一个新的服务
+</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">New</span>(options <span style="color:#ff79c6">...</span>Option) <span style="color:#ff79c6">*</span>Server {
+    cfg <span style="color:#ff79c6">:=</span> <span style="color:#50fa7b">defaultConfig</span>()
+    <span style="color:#ff79c6">for</span> _, o <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">range</span> options {
+        <span style="color:#50fa7b">o</span>(cfg)
+    }
+    s <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">&amp;</span>Server{
+        cfg:   cfg,
+        ready: <span style="color:#50fa7b">NewEvent</span>(),
+    }
+    s.routingTable.<span style="color:#50fa7b">Store</span>(<span style="color:#50fa7b">NewRoutingTable</span>(<span style="color:#ff79c6">nil</span>))
+    <span style="color:#ff79c6">return</span> s
+}</code></pre></div>
+<p>通过使用一个合适的默认值，上面的初始化方法可以使大多数客户端使用变得非常容易，同时还可以根据需要进行灵活的更改，这种 API 方法在 Go 语言中是非常普遍的，有很多实际示例，比如 <a href="https://godoc.org/google.golang.org/grpc#Dial">gRPC 的 Dail 方法</a>。</p>
+
+<p>除了配置之外，我们的服务器还有指向路由表的指针和一个就绪的事件，用于在第一次设置 payload 时发出信号。但是需要注意的是，我们这里使用的是 <code>atomic.Value</code> 来存储路由表，这是为什么呢？</p>
+
+<p>由于这里我们的应用不是线程安全的，如果在 HTTP 处理程序尝试读取路由表的同时对其进行了修改，则可能导致状态错乱或者程序崩溃。所以，我们需要防止同时读取和写入这个共享的数据结构，当然有多种方法可以实现该需求：</p>
+
+<ul>
+<li>第一种就是我们这里使用的 <code>atomic.Value</code>，该类型提供了一个 <code>Load</code> 和 <code>Store</code> 的方法，可以允许我们自动<code>读取/写入</code>该值。由于我们在每次更改时都会重新构建路由表，所以我们可以在一次操作中安全地交换新旧路由表，这和<a href="https://godoc.org/sync/atomic#Value">文档中</a>的 <code>ReadMostly</code> 示例非常相似：</li>
+</ul>
+
+<p>不过这种方法的一个缺点是必须在运行时声明存储的值类型：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">s.routingTable.<span style="color:#50fa7b">Load</span>().(<span style="color:#ff79c6">*</span>RoutingTable).<span style="color:#50fa7b">GetBackend</span>(r.Host, r.URL.Path)</code></pre></div>
+<ul>
+<li>另外我们也可以使用 <code>Mutext</code> 或 <code>RWMutex</code> 来控制对关键区域代码的访问：</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#6272a4">// 读
+</span><span style="color:#6272a4"></span>s.mu.<span style="color:#50fa7b">RLock</span>()
+backendURL, err <span style="color:#ff79c6">:=</span> s.routingTable.<span style="color:#50fa7b">GetBackend</span>(r.Host, r.URL.Path)
+s.mu.<span style="color:#50fa7b">RUnlock</span>()
+
+<span style="color:#6272a4">// 写
+</span><span style="color:#6272a4"></span>rt <span style="color:#ff79c6">:=</span> <span style="color:#50fa7b">NewRoutingTable</span>(payload)
+s.mu.<span style="color:#50fa7b">Lock</span>()
+s.routingTable = rt
+s.mu.<span style="color:#50fa7b">Unlock</span>()</code></pre></div>
+<ul>
+<li>还有一种方法就是让路由表本身成为线程安全的，使用 <code>sync.Map</code> 来代替 <code>Map</code> 并添加方法来动态更新路由表。一般来说，我会避免使用这种方法，它使代码更难于理解和维护了，而且如果你实际上最终没有多个 goroutine 访问数据结构的话，就会增加不必要的开销了。</li>
+</ul>
+
+<p>真正的处理服务的 <code>ServeHTTP</code> 方法如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#6272a4">// ServeHTTP 处理 HTTP 请求
+</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">func</span> (s <span style="color:#ff79c6">*</span>Server) <span style="color:#50fa7b">ServeHTTP</span>(w http.ResponseWriter, r <span style="color:#ff79c6">*</span>http.Request) {
+    <span style="color:#6272a4">// 根据请求的域名和 Path 路径获取背后真实的后端地址
+</span><span style="color:#6272a4"></span>    backendURL, err <span style="color:#ff79c6">:=</span> s.routingTable.<span style="color:#50fa7b">Load</span>().(<span style="color:#ff79c6">*</span>RoutingTable).<span style="color:#50fa7b">GetBackend</span>(r.Host, r.URL.Path)
+    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+        http.<span style="color:#50fa7b">Error</span>(w, <span style="color:#f1fa8c">&#34;upstream server not found&#34;</span>, http.StatusNotFound)
+        <span style="color:#ff79c6">return</span>
+    }
+    log.<span style="color:#50fa7b">Info</span>().<span style="color:#50fa7b">Str</span>(<span style="color:#f1fa8c">&#34;host&#34;</span>, r.Host).<span style="color:#50fa7b">Str</span>(<span style="color:#f1fa8c">&#34;path&#34;</span>, r.URL.Path).<span style="color:#50fa7b">Str</span>(<span style="color:#f1fa8c">&#34;backend&#34;</span>, backendURL.<span style="color:#50fa7b">String</span>()).<span style="color:#50fa7b">Msg</span>(<span style="color:#f1fa8c">&#34;proxying request&#34;</span>)
+
+    <span style="color:#6272a4">// 对后端真实 URL 发起代理请求
+</span><span style="color:#6272a4"></span>    p <span style="color:#ff79c6">:=</span> httputil.<span style="color:#50fa7b">NewSingleHostReverseProxy</span>(backendURL)
+    p.ErrorLog = stdlog.<span style="color:#50fa7b">New</span>(log.Logger, <span style="color:#f1fa8c">&#34;&#34;</span>, <span style="color:#bd93f9">0</span>)
+    p.<span style="color:#50fa7b">ServeHTTP</span>(w, r)
+}</code></pre></div>
+<p>这里我们使用了 <code>httputil</code> 这个包，该包具有反向代理的一些实现方法，我们可以将其用于 HTTP 服务，它可以将请求转发到指定的 URL 上，然后将响应发送回客户端。</p>
+
+<h3 id="main-函数">Main 函数</h3>
+
+<p>将所有组件组合在一起，然后通过 <code>main</code> 方法提供入口，我们这里使用 <code>flag</code> 包来提供一些命令行参数：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">main</span>() {
+    flag.<span style="color:#50fa7b">StringVar</span>(<span style="color:#ff79c6">&amp;</span>host, <span style="color:#f1fa8c">&#34;host&#34;</span>, <span style="color:#f1fa8c">&#34;0.0.0.0&#34;</span>, <span style="color:#f1fa8c">&#34;the host to bind&#34;</span>)
+    flag.<span style="color:#50fa7b">IntVar</span>(<span style="color:#ff79c6">&amp;</span>port, <span style="color:#f1fa8c">&#34;port&#34;</span>, <span style="color:#bd93f9">80</span>, <span style="color:#f1fa8c">&#34;the insecure http port&#34;</span>)
+    flag.<span style="color:#50fa7b">IntVar</span>(<span style="color:#ff79c6">&amp;</span>tlsPort, <span style="color:#f1fa8c">&#34;tls-port&#34;</span>, <span style="color:#bd93f9">443</span>, <span style="color:#f1fa8c">&#34;the secure https port&#34;</span>)
+    flag.<span style="color:#50fa7b">Parse</span>()
+
+    client, err <span style="color:#ff79c6">:=</span> kubernetes.<span style="color:#50fa7b">NewForConfig</span>(<span style="color:#50fa7b">getKubernetesConfig</span>())
+    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+        log.<span style="color:#50fa7b">Fatal</span>().<span style="color:#50fa7b">Err</span>(err).<span style="color:#50fa7b">Msg</span>(<span style="color:#f1fa8c">&#34;failed to create kubernetes client&#34;</span>)
+    }
+
+    s <span style="color:#ff79c6">:=</span> server.<span style="color:#50fa7b">New</span>(server.<span style="color:#50fa7b">WithHost</span>(host), server.<span style="color:#50fa7b">WithPort</span>(port), server.<span style="color:#50fa7b">WithTLSPort</span>(tlsPort))
+    w <span style="color:#ff79c6">:=</span> watcher.<span style="color:#50fa7b">New</span>(client, <span style="color:#8be9fd;font-style:italic">func</span>(payload <span style="color:#ff79c6">*</span>watcher.Payload) {
+        s.<span style="color:#50fa7b">Update</span>(payload)
+    })
+
+    <span style="color:#8be9fd;font-style:italic">var</span> eg errgroup.Group
+    eg.<span style="color:#50fa7b">Go</span>(<span style="color:#8be9fd;font-style:italic">func</span>() <span style="color:#8be9fd">error</span> {
+        <span style="color:#ff79c6">return</span> s.<span style="color:#50fa7b">Run</span>(context.<span style="color:#50fa7b">TODO</span>())
+    })
+    eg.<span style="color:#50fa7b">Go</span>(<span style="color:#8be9fd;font-style:italic">func</span>() <span style="color:#8be9fd">error</span> {
+        <span style="color:#ff79c6">return</span> w.<span style="color:#50fa7b">Run</span>(context.<span style="color:#50fa7b">TODO</span>())
+    })
+    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">:=</span> eg.<span style="color:#50fa7b">Wait</span>(); err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+        log.<span style="color:#50fa7b">Fatal</span>().<span style="color:#50fa7b">Err</span>(err).<span style="color:#50fa7b">Send</span>()
+    }
+}</code></pre></div>
+<h2 id="kubernetes-配置">Kubernetes 配置</h2>
+
+<p>有了服务器代码，现在我们就可以在 Kubernetes 上用 DaemonSet 控制器来运行我们的 Ingress Controller：（k8s-ingress-controller.yaml）</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: k8s-simple-ingress-controller
+  namespace: default
+
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: k8s-simple-ingress-controller
+rules:
+  - apiGroups:
+      - <span style="color:#f1fa8c">&#34;&#34;</span>
+    resources:
+      - services
+      - endpoints
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - extensions
+    resources:
+      - ingresses
+    verbs:
+      - get
+      - list
+      - watch
+
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: k8s-simple-ingress-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: k8s-simple-ingress-controller
+subjects:
+- kind: ServiceAccount
+  name: k8s-simple-ingress-controller
+  namespace: default
+
+---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: k8s-simple-ingress-controller
+  labels:
+    app: ingress-controller
+spec:
+  selector:
+    matchLabels:
+      app: ingress-controller
+  template:
+    metadata:
+      labels:
+        app: ingress-controller
+    spec:
+      hostNetwork: <span style="color:#ff79c6">true</span>
+      dnsPolicy: ClusterFirstWithHostNet
+      serviceAccountName: k8s-simple-ingress-controller
+      containers:
+        - name: k8s-simple-ingress-controller
+          image: cnych/k8s-simple-ingress-controller:v0.<span style="color:#bd93f9">1</span>
+          ports:
+            - name: http
+              containerPort: <span style="color:#bd93f9">80</span>
+            - name: https
+              containerPort: <span style="color:#bd93f9">443</span></code></pre></div>
+<p>由于我们要在应用中监听 Ingress、Service、Secret 这些资源对象，所以需要声明对应的 RBAC 权限，这样当我们的请求到达 Ingress Controller 的节点后，然后根据 Ingress 对象的规则，将请求转发到对应的 Service 上就完成了服务暴露的整个过程。</p>
+
+<p>直接创建上面我们自定义的 Ingress Controller 的资源清单：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f k8s-ingress-controller.yaml
+$ kubectl get pods -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>ingress-controller
+NAME                                             READY   STATUS    RESTARTS   AGE
+k8s-simple-ingress-controller-694df987c7-h2qlc   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          7m59s</code></pre></div>
+<p>然后为我们最开始的 whoami 服务创建一个 Ingress 对象：（whoami-ingress.yaml）</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: whoami
+spec:
+  rules:
+    - host: who.qikqiak.com
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: whoami
+              servicePort: <span style="color:#bd93f9">80</span></code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f whoami-ingress.yaml</code></pre></div>
+<p>然后将域名 <code>who.qikqiak.com</code> 解析到我们部署的 Ingress Controller 的 Pod 节点上，就可以直接访问了：</p>
+
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/k8s-simple-ingress-controller-demo.png" alt="k8s simple ingress controller demo"><figcaption>k8s simple ingress controller demo</figcaption></figure>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl logs -f k8s-simple-ingress-controller-694df987c7-h2qlc
+<span style="color:#bd93f9">5</span>:37AM INF starting secure HTTP server <span style="color:#8be9fd;font-style:italic">addr</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span>.0.0.0:443
+<span style="color:#bd93f9">5</span>:37AM INF starting insecure HTTP server <span style="color:#8be9fd;font-style:italic">addr</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span>.0.0.0:80
+<span style="color:#bd93f9">5</span>:39AM INF proxying request <span style="color:#8be9fd;font-style:italic">backend</span><span style="color:#ff79c6">=</span>http://whoami:80 <span style="color:#8be9fd;font-style:italic">host</span><span style="color:#ff79c6">=</span>who.qikqiak.com <span style="color:#8be9fd;font-style:italic">path</span><span style="color:#ff79c6">=</span>/</code></pre></div>
+<p>到这里我们就完成了自定义一个简单的 Ingress Controller，当然这只是一个最基础的功能，在实际使用中还会有更多的需求，比如 TCP 的支持、对请求进行一些修改之类的，这就需要花更多的时间去实现了。</p>
+
+<blockquote>
+<p>本文相关代码都整理到了 GitHub 上，地址：<a href="https://github.com/cnych/kubernetes-simple-ingress-controller">https://github.com/cnych/kubernetes-simple-ingress-controller</a>。</p>
+</blockquote>
+
+<h2 id="参考链接">参考链接</h2>
+
+<ul>
+<li><a href="https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/">Ingress Controllers</a></li>
+<li><a href="http://www.doxsey.net/blog/how-to-build-a-custom-kubernetes-ingress-controller-in-go">How to Build a Custom Kubernetes Ingress Controller in Go</a></li>
+</ul>
+
+<p><a href="https://www.qikqiak.com/post/promotion-51" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/9mogk.png" alt="kubernetes进阶课程"></a></p>
+
+
+          <h2>微信公众号</h2>
+<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
+<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/install-nginx-ingress/">nginx-ingress 的安装使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/how-to-protect-exposed-k8s-server/">如何保护对外暴露的 Kubernetes 服务</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/ingress-traefik2/">外部服务发现之 ingress(二)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/ingress-traefik1/">外部服务发现之 ingress(一)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/automatic-kubernetes-ingress-https-with-lets-encrypt/">Kubernetes Ingress 自动化 HTTPS</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/canary-with-traefik2/">Traefik 2.0 实现灰度发布</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/automatic-https-with-traefik2/">Traefik 2.0 实现自动化 HTTPS</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/expose-redis-by-traefik2/">Traefik 2.0 暴露 Redis(TCP) 服务</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/traefik2-ga/">Traefik 2.0 正式版发布</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/helm-chart-tips-and-tricks/">Helm Chart 模板开发技巧</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/canary-with-traefik2/" data-toggle="tooltip" data-placement="top" title="Traefik 2.0 实现灰度发布">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/promotion-51/" data-toggle="tooltip" data-placement="top" title="Kubernetes 进阶训练营">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '使用 Golang 自定义 Kubernetes Ingress Controller',
+        createIssueManually: true,
+        id: 'custom-k8s-ingress-controller-with-go',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2019
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+<script type="text/javascript" src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
+  </body>
+</html>
+
