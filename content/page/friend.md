@@ -17,3 +17,4 @@ nopager: true
 * [sealyun](https://sealyun.com?utm_source=qikqiak)
 * [wujunze](https://wujunze.com?utm_source=qikqiak)
 * [(王丽兵)开发笔记](https://www.wanglibing.com?utm_source=qikqiak)
+* [kuboard](https://kuboard.cn?utm_source=qikqiak)
