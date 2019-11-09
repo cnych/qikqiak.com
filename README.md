@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [k8s技术圈一周精选[第6期]](https://www.qikqiak.com/post/k8s-tech-weekly-collection-phase6/)
  * [使用 Golang 自定义 Kubernetes Ingress Controller](https://www.qikqiak.com/post/custom-k8s-ingress-controller-with-go/)
  * [Traefik 2.0 实现灰度发布](https://www.qikqiak.com/post/canary-with-traefik2/)
  * [Traefik 2.0 实现自动化 HTTPS](https://www.qikqiak.com/post/automatic-https-with-traefik2/)
@@ -127,7 +128,7 @@
 
 #### Golang
  * [Go Modules 基本使用](https://www.qikqiak.com/post/go-modules-usage/)
- 
+
 #### Python
  * [深入理解 Python 元类](https://www.qikqiak.com/post/what-is-metaclass-in-python)
  * [在 Django 中如何添加没有微秒的 DateTimeField 属性](https://www.qikqiak.com/post/how-to-add-datetimefield-in-django-without-microsecond)
