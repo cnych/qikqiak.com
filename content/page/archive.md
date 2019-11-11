@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [使用 Rook 快速搭建 Ceph 集群](https://www.qikqiak.com/post/deploy-ceph-cluster-with-rook/)
  * [k8s技术圈一周精选[第6期]](https://www.qikqiak.com/post/k8s-tech-weekly-collection-phase6/)
  * [使用 Golang 自定义 Kubernetes Ingress Controller](https://www.qikqiak.com/post/custom-k8s-ingress-controller-with-go/)
  * [Traefik 2.0 实现灰度发布](https://www.qikqiak.com/post/canary-with-traefik2/)

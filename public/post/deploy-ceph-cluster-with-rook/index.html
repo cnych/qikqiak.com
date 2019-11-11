@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>使用 Rook 快速搭建 Ceph 集群-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="使用 Rook 快速搭建 Ceph 集群" />
+  <meta name="twitter:title" content="使用 Rook 快速搭建 Ceph 集群" />
+
+  <meta name="description" content="Rook 是一个开源的云原生存储编排工具，提供平台、框架和对各种存储解决方案的支持，以和云原生环境进行本地集成。
+
+Rook 将存储软件转变成自我管理、自我扩展和自我修复的存储服务，通过自动化部署、启动、配置、供应、扩展、升级、迁移、灾难恢复、监控和资源管理来实现。Rook 底层使用云原生容器管理、调度和编排平台提供的能力来提供这些功能。
+
+Rook 利用扩展功能将其深度集成到云原生环境中，并为调度、生命周期管理、资源管理、安全性、监控等提供了无缝的体验。有关 Rook 当前支持的存储解决方案的状态的更多详细信息，可以参考 Rook 仓库 的项目介绍。不过目前 Rook 已经很好地提供了对 Ceph 的支持，本文简单为大家介绍如何使用 Rook 来快速搭建 Ceph 集群。">
+  <meta property="og:description" content="Rook 是一个开源的云原生存储编排工具，提供平台、框架和对各种存储解决方案的支持，以和云原生环境进行本地集成。
+
+Rook 将存储软件转变成自我管理、自我扩展和自我修复的存储服务，通过自动化部署、启动、配置、供应、扩展、升级、迁移、灾难恢复、监控和资源管理来实现。Rook 底层使用云原生容器管理、调度和编排平台提供的能力来提供这些功能。
+
+Rook 利用扩展功能将其深度集成到云原生环境中，并为调度、生命周期管理、资源管理、安全性、监控等提供了无缝的体验。有关 Rook 当前支持的存储解决方案的状态的更多详细信息，可以参考 Rook 仓库 的项目介绍。不过目前 Rook 已经很好地提供了对 Ceph 的支持，本文简单为大家介绍如何使用 Rook 来快速搭建 Ceph 集群。">
+  <meta name="twitter:description" content="Rook 是一个开源的云原生存储编排工具，提供平台、框架和对各种存储解决方案的支持，以和云原生环境进行本地集成。
+
+Rook 将存储软件转变成自我管理、自我扩展和自我修复的存储服务，通过自动化部署、启动、配置、供应、扩展、升级、迁移、灾难恢复、监控和资源管理来实现。Rook 底层使用云原生容器管理、调度和编排平台提供的能力来提供这些功能。
+
+Rook 利用扩展功能将其深度集成到云原生环境中，并为调 …">
+  <meta name="author" content=""/>
+  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/favicon.png"/>
+  <meta property="og:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/deploy-ceph-cluster-with-rook/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.55.6" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/deploy-ceph-cluster-with-rook/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
+
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
+    <!--[if lt IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <![endif]-->
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, rook, ceph, Rook, Operator">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qikqiak-blog-logo.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="首页" href="https://www.qikqiak.com/">首页</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1571208756906-92fea1cc1087.jpeg" data-img-desc-1="Photo of the Day by Kevin Mueller"></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>使用 Rook 快速搭建 Ceph 集群</h1>
+                  
+                  
+                    <span class="post-meta">
+  
+    发表于 November 11, 2019
+  
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>使用 Rook 快速搭建 Ceph 集群</h1>
+                
+                
+                  <span class="post-meta">
+  
+    发表于 November 11, 2019
+  
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/rook/">rook</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/ceph/">ceph</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#部署-rook-operator">部署 Rook Operator</a></li>
+<li><a href="#创建-rook-ceph-集群">创建 Rook Ceph 集群</a>
+<ul>
+<li><a href="#rook-工具箱">Rook 工具箱</a></li>
+</ul></li>
+<li><a href="#存储">存储</a></li>
+<li><a href="#ceph-dashboard">Ceph Dashboard</a>
+<ul>
+<li><a href="#配置-dashboard">配置 Dashboard</a></li>
+</ul></li>
+<li><a href="#监控">监控</a></li>
+</ul></li>
+</ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p><a href="https://rook.io">Rook</a> 是一个开源的云原生存储编排工具，提供平台、框架和对各种存储解决方案的支持，以和云原生环境进行本地集成。</p>
+
+<p>Rook 将存储软件转变成自我管理、自我扩展和自我修复的存储服务，通过自动化部署、启动、配置、供应、扩展、升级、迁移、灾难恢复、监控和资源管理来实现。Rook 底层使用云原生容器管理、调度和编排平台提供的能力来提供这些功能。</p>
+
+<p>Rook 利用扩展功能将其深度集成到云原生环境中，并为调度、生命周期管理、资源管理、安全性、监控等提供了无缝的体验。有关 Rook 当前支持的存储解决方案的状态的更多详细信息，可以参考 <a href="https://github.com/rook/rook/blob/master/README.md#project-status">Rook 仓库</a> 的项目介绍。不过目前 Rook 已经很好地提供了对 <a href="https://ceph.io/">Ceph</a> 的支持，本文简单为大家介绍如何使用 Rook 来快速搭建 Ceph 集群。</p>
+
+<blockquote>
+<p>Ceph 是一种高度可扩展的分布式存储解决方案，用于具有多年生产部署的块存储，对象存储和共享文件系统。</p>
+</blockquote>
+
+<p>本文试验环境：</p>
+
+<ul>
+<li>Kubernetes: v1.16.2</li>
+<li>Docker：18.09.9</li>
+<li>Rook：release-1.1</li>
+</ul>
+
+<h2 id="部署-rook-operator">部署 Rook Operator</h2>
+
+<p>我们这里部署 <code>release-1.1</code> 版本的 Rook，点击查看部署使用的
+<a href="https://github.com/rook/rook/blob/release-1.1/cluster/examples/kubernetes/ceph">部署清单文件</a>。</p>
+
+<p>从上面链接中下载 common.yaml 与 operator.yaml 两个资源清单文件：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f common.yaml
+$ kubectl apply -f operator.yaml</code></pre></div>
+<p>在继续操作之前，验证 <code>rook-ceph-operator</code> 是否处于“Running”状态：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pod -n rook-ceph</code></pre></div>
+<h2 id="创建-rook-ceph-集群">创建 Rook Ceph 集群</h2>
+
+<p>现在 Rook Operator 处于 Running 状态，接下来我们就可以创建 Ceph 集群了。为了使集群在重启后不受影响，请确保设置的 <code>dataDirHostPath</code> 属性值为有效得主机路径。更多相关设置，可以查看<a href="https://rook.io/docs/rook/v1.1/ceph-cluster-crd.html">集群配置相关文档</a>。</p>
+
+<p>创建如下的资源清单文件：(cluster.yaml)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: ceph.rook.io/v1
+kind: CephCluster
+metadata:
+  name: rook-ceph
+  namespace: rook-ceph
+spec:
+  cephVersion:
+    <span style="color:#6272a4"># 最新得 ceph 镜像, 可以查看 https://hub.docker.com/r/ceph/ceph/tags</span>
+    image: ceph/ceph:v14.<span style="color:#bd93f9">2.4</span>-<span style="color:#bd93f9">20190917</span>
+  dataDirHostPath: /data/rook  <span style="color:#6272a4"># 主机有效目录</span>
+  mon:
+    count: <span style="color:#bd93f9">3</span>
+  dashboard:
+    enabled: <span style="color:#ff79c6">true</span>
+  storage:
+    useAllNodes: <span style="color:#ff79c6">true</span>
+    useAllDevices: <span style="color:#ff79c6">false</span>
+    <span style="color:#6272a4"># 重要: Directories 应该只在预生产环境中使用</span>
+    directories:
+    - path: /var/lib/rook</code></pre></div>
+<p>然后直接创建即可：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f cluster.yaml</code></pre></div>
+<p>我们可以通过 kubectl 来查看 rook-ceph 命名空间下面的 Pod 状态，出现类似于如下的情况，证明已经全部运行了：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n rook-ceph
+NAME                                            READY   STATUS      RESTARTS   AGE
+csi-cephfsplugin-cp5mc                          <span style="color:#bd93f9">3</span>/3     Running     <span style="color:#bd93f9">0</span>          24m
+csi-cephfsplugin-fs9s5                          <span style="color:#bd93f9">3</span>/3     Running     <span style="color:#bd93f9">0</span>          24m
+csi-cephfsplugin-provisioner-75c965db4f-b5wf4   <span style="color:#bd93f9">4</span>/4     Running     <span style="color:#bd93f9">0</span>          24m
+csi-cephfsplugin-provisioner-75c965db4f-zkrth   <span style="color:#bd93f9">4</span>/4     Running     <span style="color:#bd93f9">0</span>          24m
+csi-cephfsplugin-qvfpb                          <span style="color:#bd93f9">3</span>/3     Running     <span style="color:#bd93f9">0</span>          24m
+csi-cephfsplugin-vgzl6                          <span style="color:#bd93f9">3</span>/3     Running     <span style="color:#bd93f9">0</span>          24m
+csi-rbdplugin-cj842                             <span style="color:#bd93f9">3</span>/3     Running     <span style="color:#bd93f9">0</span>          24m
+csi-rbdplugin-ksc24                             <span style="color:#bd93f9">3</span>/3     Running     <span style="color:#bd93f9">0</span>          24m
+csi-rbdplugin-provisioner-56cbc4d585-5dkzg      <span style="color:#bd93f9">5</span>/5     Running     <span style="color:#bd93f9">0</span>          24m
+csi-rbdplugin-provisioner-56cbc4d585-xdqw9      <span style="color:#bd93f9">5</span>/5     Running     <span style="color:#bd93f9">0</span>          24m
+csi-rbdplugin-s5kjc                             <span style="color:#bd93f9">3</span>/3     Running     <span style="color:#bd93f9">0</span>          24m
+csi-rbdplugin-z6bj2                             <span style="color:#bd93f9">3</span>/3     Running     <span style="color:#bd93f9">0</span>          24m
+rook-ceph-mgr-a-68977dd7ff-t9rmk                <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          17m
+rook-ceph-mon-a-84f4d48897-5lqtl                <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          22m
+rook-ceph-mon-b-5d4858f579-5z9ld                <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          19m
+rook-ceph-mon-c-8675b47cf7-82q8r                <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          19m
+rook-ceph-operator-587d765957-lrmsr             <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          152m
+rook-ceph-osd-1-856db94654-smdhp                <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          16m
+rook-ceph-osd-20-77d7f7787f-h2dkg               <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          8m50s
+rook-ceph-osd-prepare-ydzs-node1-qgmsc          <span style="color:#bd93f9">0</span>/1     Completed   <span style="color:#bd93f9">0</span>          5m2s
+rook-ceph-osd-prepare-ydzs-node2-h667n          <span style="color:#bd93f9">0</span>/1     Completed   <span style="color:#bd93f9">0</span>          4m59s
+rook-discover-bd8qh                             <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          139m
+rook-discover-bq6w8                             <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">4</span>          85m
+rook-discover-c8qmz                             <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          116m
+rook-discover-ncjts                             <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          139m</code></pre></div>
+<p>OSD Pod 的数量将取决于集群中的节点数量以及配置的设备和目录的数量。如果用上面我们的资源清单，则每个节点将创建一个 OSD。rook-ceph-agent 和 rook-discover 是否存在也是依赖于我们的配置的。</p>
+
+<h3 id="rook-工具箱">Rook 工具箱</h3>
+
+<p>要验证集群是否处于正常状态，我们可以使用 <a href="https://rook.io/docs/rook/v1.1/ceph-toolbox.html">Rook 工具箱</a> 来运行 <code>ceph status</code> 命令查看。</p>
+
+<p>Rook 工具箱是一个用于调试和测试 Rook 的常用工具容器，该工具基于 CentOS 镜像，所以可以使用 <code>yum</code> 来轻松安装更多的工具包。
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5376999672787220"
+     data-ad-slot="9165834656"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+我们这里用 Deployment 控制器来部署 Rook 工具箱，部署的资源清单文件如下所示：（toolbox.yaml）</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rook-ceph-tools
+  namespace: rook-ceph
+  labels:
+    app: rook-ceph-tools
+spec:
+  selector:
+    matchLabels:
+      app: rook-ceph-tools
+  template:
+    metadata:
+      labels:
+        app: rook-ceph-tools
+    spec:
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: rook-ceph-tools
+        image: rook/ceph:v1.<span style="color:#bd93f9">1.0</span>
+        command: [<span style="color:#f1fa8c">&#34;/tini&#34;</span>]
+        args: [<span style="color:#f1fa8c">&#34;-g&#34;</span>, <span style="color:#f1fa8c">&#34;--&#34;</span>, <span style="color:#f1fa8c">&#34;/usr/local/bin/toolbox.sh&#34;</span>]
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: ROOK_ADMIN_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: rook-ceph-mon
+                key: admin-secret
+        securityContext:
+          privileged: <span style="color:#ff79c6">true</span>
+        volumeMounts:
+          - mountPath: /dev
+            name: dev
+          - mountPath: /sys/bus
+            name: sysbus
+          - mountPath: /lib/modules
+            name: libmodules
+          - name: mon-endpoint-volume
+            mountPath: /etc/rook
+      <span style="color:#6272a4"># 如果设置 hostNetwork: false,  &#34;rbd map&#34; 命令会被 hang 住, 参考 https://github.com/rook/rook/issues/2021</span>
+      hostNetwork: <span style="color:#ff79c6">true</span>
+      volumes:
+        - name: dev
+          hostPath:
+            path: /dev
+        - name: sysbus
+          hostPath:
+            path: /sys/bus
+        - name: libmodules
+          hostPath:
+            path: /lib/modules
+        - name: mon-endpoint-volume
+          configMap:
+            name: rook-ceph-mon-endpoints
+            items:
+            - key: data
+              path: mon-endpoints</code></pre></div>
+<p>然后直接运行这个 rook-ceph-tools pod：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f toolbox.yaml</code></pre></div>
+<p>一旦 toolbox 的 Pod 运行成功后，我们就可以使用下面的命令进入到工具箱内部进行操作：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl -n rook-ceph <span style="color:#8be9fd;font-style:italic">exec</span> -it <span style="color:#ff79c6">$(</span>kubectl -n rook-ceph get pod -l <span style="color:#f1fa8c">&#34;app=rook-ceph-tools&#34;</span> -o <span style="color:#8be9fd;font-style:italic">jsonpath</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;{.items[0].metadata.name}&#39;</span><span style="color:#ff79c6">)</span> bash</code></pre></div>
+<p>工具箱中的所有可用工具命令均已准备就绪，可满足您的故障排除需求。例如：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">ceph status
+ceph osd status
+ceph df
+rados df</code></pre></div>
+<p>比如现在我们要查看集群的状态，需要满足下面的条件才认为是健康的：</p>
+
+<ul>
+<li>所有 mons 应该达到法定数量</li>
+<li>mgr 应该是激活状态</li>
+<li>至少有一个 OSD 处于激活状态</li>
+<li>如果不是 HEALTH_OK 状态，则应该查看告警或者错误信息</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ ceph status
+ceph status
+  cluster:
+    id:     dae083e6-8487-447b-b6ae-9eb321818439
+    health: HEALTH_OK
+
+  services:
+    mon: <span style="color:#bd93f9">3</span> daemons, quorum a,b,c <span style="color:#ff79c6">(</span>age 15m<span style="color:#ff79c6">)</span>
+    mgr: a<span style="color:#ff79c6">(</span>active, since 2m<span style="color:#ff79c6">)</span>
+    osd: <span style="color:#bd93f9">31</span> osds: <span style="color:#bd93f9">2</span> up <span style="color:#ff79c6">(</span>since 6m<span style="color:#ff79c6">)</span>, <span style="color:#bd93f9">2</span> in <span style="color:#ff79c6">(</span>since 6m<span style="color:#ff79c6">)</span>
+
+  data:
+    pools:   <span style="color:#bd93f9">0</span> pools, <span style="color:#bd93f9">0</span> pgs
+    objects: <span style="color:#bd93f9">0</span> objects, <span style="color:#bd93f9">0</span> B
+    usage:   <span style="color:#bd93f9">79</span> GiB used, <span style="color:#bd93f9">314</span> GiB / <span style="color:#bd93f9">393</span> GiB avail
+    pgs:</code></pre></div>
+<p>如果群集运行不正常，可以查看 <a href="https://rook.io/docs/rook/v1.1/ceph-common-issues.html">Ceph 常见问题</a>以了解更多详细信息和可能的解决方案。</p>
+
+<h2 id="存储">存储</h2>
+
+<p>对于 Rook 暴露的三种存储类型可以查看对应的文档：</p>
+
+<ul>
+<li><a href="https://rook.io/docs/rook/v1.1/ceph-block.html">块存储</a>：创建一个 Pod 使用的块存储</li>
+<li><a href="https://rook.io/docs/rook/v1.1/ceph-object.html">对象存储</a>：创建一个在 Kubernetes 集群内部和外部都可以访问的对象存储</li>
+<li><a href="https://rook.io/docs/rook/v1.1/ceph-filesystem.html">共享文件系统</a>：创建要在多个 Pod 之间共享的文件系统</li>
+</ul>
+
+<h2 id="ceph-dashboard">Ceph Dashboard</h2>
+
+<p>Ceph 有一个 Dashboard 工具，我们可以在上面查看集群的状态，包括总体运行状态，mgr、osd 和其他 Ceph 进程的状态，查看池和 PG 状态，以及显示守护进程的日志等等。</p>
+
+<p>我们可以在上面的 cluster CRD 对象中开启 dashboard，设置<code>dashboard.enable=true</code>即可，这样 Rook Operator 就会启用 ceph-mgr dashboard 模块，并将创建一个 Kubernetes Service 来暴露该服务，将启用端口 7000 进行 https 访问，如果 Ceph 集群部署成功了，我们可以使用下面的命令来查看 Dashboard 的 Service：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get service -n rook-ceph
+NAME                         TYPE        CLUSTER-IP       EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>          AGE
+rook-ceph-mgr                            ClusterIP   <span style="color:#bd93f9">10</span>.96.49.29     &lt;none&gt;        <span style="color:#bd93f9">9283</span>/TCP            23m
+rook-ceph-mgr-dashboard                  ClusterIP   <span style="color:#bd93f9">10</span>.109.8.98     &lt;none&gt;        <span style="color:#bd93f9">7000</span>/TCP            23m</code></pre></div>
+<p>这里的 <code>rook-ceph-mgr</code> 服务用于报告 Prometheus metrics 指标数据的，而后面的的 <code>rook-ceph-mgr-dashboard</code> 服务就是我们的 Dashboard 服务，如果在集群内部我们可以通过 DNS 名称 <code>http://rook-ceph-mgr-dashboard.rook-ceph:7000</code> 或者 CluterIP <code>http://10.109.8.98:7000</code> 来进行访问，但是如果要在集群外部进行访问的话，我们就需要通过 Ingress 或者 NodePort 类型的 Service 来暴露了，为了方便测试我们这里创建一个新的 NodePort 类型的服务来访问 Dashboard，资源清单如下所示：（dashboard-external.yaml）</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: rook-ceph-mgr-dashboard-external
+  namespace: rook-ceph
+  labels:
+    app: rook-ceph-mgr
+    rook_cluster: rook-ceph
+spec:
+  ports:
+  - name: dashboard
+    port: <span style="color:#bd93f9">7000</span>
+    protocol: TCP
+    targetPort: <span style="color:#bd93f9">7000</span>
+  selector:
+    app: rook-ceph-mgr
+    rook_cluster: rook-ceph
+  type: NodePort</code></pre></div>
+<p>同样直接创建即可：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f dashboard-external.yaml</code></pre></div>
+<p>创建完成后我们可以查看到新创建的 <code>rook-ceph-mgr-dashboard-external</code> 这个 Service 服务：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get service -n rook-ceph 
+NAME                                    TYPE        CLUSTER-IP       EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>          AGE
+rook-ceph-mgr                           ClusterIP   <span style="color:#bd93f9">10</span>.96.49.29     &lt;none&gt;        <span style="color:#bd93f9">9283</span>/TCP            23m
+rook-ceph-mgr-dashboard                 ClusterIP   <span style="color:#bd93f9">10</span>.109.8.98     &lt;none&gt;        <span style="color:#bd93f9">7000</span>/TCP            23m
+rook-ceph-mgr-dashboard-external        NodePort    <span style="color:#bd93f9">10</span>.98.8.0       &lt;none&gt;        <span style="color:#bd93f9">7000</span>:32381/TCP      3m30s</code></pre></div>
+<p>现在我们需要通过 <code>http://&lt;NodeIp&gt;:32381</code> 就可以访问到 Dashboard 了。</p>
+
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/ceph-dashboard-login.png" alt="ceph dashboard login"><figcaption>ceph dashboard login</figcaption></figure>
+
+<p>但是在访问的时候需要我们登录才能够访问，Rook 创建了一个默认的用户 admin，并在运行 Rook 的命名空间中生成了一个名为 <code>rook-ceph-dashboard-admin-password</code> 的 Secret，要获取密码，可以运行以下命令：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl -n rook-ceph get secret rook-ceph-dashboard-password -o <span style="color:#8be9fd;font-style:italic">jsonpath</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;{[&#39;data&#39;][&#39;password&#39;]}&#34;</span> | base64 --decode <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#8be9fd;font-style:italic">echo</span>
+xxxx（登录密码）</code></pre></div>
+<p>用上面获得的密码和用户名 admin 就可以登录 Dashboard 了，在 Dashboard 上面可以查看到整个集群的状态：</p>
+
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/ceph-dashboard.png" alt="ceph dashboard"><figcaption>ceph dashboard</figcaption></figure>
+
+<h3 id="配置-dashboard">配置 Dashboard</h3>
+
+<p>除此之外在使用上面的 CRD 创建 ceph 集群的时候我们还可以通过如下的配置来配置 Dashboard：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">spec:
+  dashboard:
+    urlPrefix: /ceph-dashboard
+    port: <span style="color:#bd93f9">8443</span>
+    ssl: <span style="color:#ff79c6">true</span></code></pre></div>
+<ul>
+<li><p><code>urlPrefix</code>：如果通过反向代理访问 Dashboard，则可能希望在 URL 前缀下来访问，要让 Dashboard 使用包含前缀的的链接，可以设置 <code>urlPrefix</code></p></li>
+
+<li><p><code>port</code>：可以使用端口设置将为 Dashboard 提供服务的端口从默认值修改为其他端口，K8S 服务暴露的端口也会相应的更新</p></li>
+
+<li><p><code>ssl</code>：通过设置 <code>ssl=false</code>，可以在不使用 SSL 的情况下为 Dashboard 提供服务</p></li>
+</ul>
+
+<h2 id="监控">监控</h2>
+
+<p>每个 Rook 群集都有一些内置的指标 collectors/exporters，用于使用 Prometheus 进行监控。要了解如何为 Rook 群集设置监控，可以按照<a href="https://rook.io/docs/rook/v1.1/ceph-monitoring.html">监控指南</a>中的步骤进行操作。</p>
+
+<p><a href="https://www.qikqiak.com/post/promotion-51" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/9mogk.png" alt="kubernetes进阶课程"></a></p>
+
+
+          <h2>微信公众号</h2>
+<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
+<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/course-11-promotion/">双11精品课程限时优惠活动</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-tech-weekly-collection-phase6/">k8s技术圈一周精选[第6期]</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/custom-k8s-ingress-controller-with-go/">使用 Golang 自定义 Kubernetes Ingress Controller</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/canary-with-traefik2/">Traefik 2.0 实现灰度发布</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/automatic-https-with-traefik2/">Traefik 2.0 实现自动化 HTTPS</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/expose-redis-by-traefik2/">Traefik 2.0 暴露 Redis(TCP) 服务</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/build-k8s-app-with-custom-metrics/">对 Kubernetes 应用进行自定义指标扩缩容</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-inlets-local-endpoinsts/">使用 inlets 和 kubernetes 访问本地服务</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/traefik2-ga/">Traefik 2.0 正式版发布</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/migrate-helm-to-v3/">Helm V2 迁移到 V3 版本</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/k8s-tech-weekly-collection-phase6/" data-toggle="tooltip" data-placement="top" title="k8s技术圈一周精选[第6期]">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/course-11-promotion/" data-toggle="tooltip" data-placement="top" title="双11精品课程限时优惠活动">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '使用 Rook 快速搭建 Ceph 集群',
+        createIssueManually: true,
+        id: 'deploy-ceph-cluster-with-rook',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2019
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+<script type="text/javascript" src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
+  </body>
+</html>
+
