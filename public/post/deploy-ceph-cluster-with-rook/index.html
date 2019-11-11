@@ -333,6 +333,7 @@ autocomplete('#aa-search-input',
 <li><a href="#ceph-dashboard">Ceph Dashboard</a>
 <ul>
 <li><a href="#配置-dashboard">配置 Dashboard</a></li>
+<li><a href="#开启-object-gateway-管理">开启 Object Gateway 管理</a></li>
 </ul></li>
 <li><a href="#监控">监控</a></li>
 </ul></li>
@@ -622,6 +623,41 @@ xxxx（登录密码）</code></pre></div>
 
 <li><p><code>ssl</code>：通过设置 <code>ssl=false</code>，可以在不使用 SSL 的情况下为 Dashboard 提供服务</p></li>
 </ul>
+
+<h3 id="开启-object-gateway-管理">开启 Object Gateway 管理</h3>
+
+<p>为了在 Dashboard 上面使用 Object Gateway 管理功能，你需要提供一个一个带有 <code>system</code> 标志的登录认证用户。如果没有这样的用户，可以使用下面的命令创建一个：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># 先进入 Rook 工具箱 Pod</span>
+$ kubectl -n rook-ceph <span style="color:#8be9fd;font-style:italic">exec</span> -it <span style="color:#ff79c6">$(</span>kubectl -n rook-ceph get pod -l <span style="color:#f1fa8c">&#34;app=rook-ceph-tools&#34;</span> -o <span style="color:#8be9fd;font-style:italic">jsonpath</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;{.items[0].metadata.name}&#39;</span><span style="color:#ff79c6">)</span> bash
+<span style="color:#6272a4"># 创建用户</span>
+$ radosgw-admin user create --uid<span style="color:#ff79c6">=</span>myuser --display-name<span style="color:#ff79c6">=</span>test-user <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    --system
+<span style="color:#ff79c6">{</span>
+    <span style="color:#f1fa8c">&#34;user_id&#34;</span>: <span style="color:#f1fa8c">&#34;myuser&#34;</span>,
+    <span style="color:#f1fa8c">&#34;display_name&#34;</span>: <span style="color:#f1fa8c">&#34;test-user&#34;</span>,
+    <span style="color:#f1fa8c">&#34;email&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
+    <span style="color:#f1fa8c">&#34;suspended&#34;</span>: <span style="color:#bd93f9">0</span>,
+    <span style="color:#f1fa8c">&#34;max_buckets&#34;</span>: <span style="color:#bd93f9">1000</span>,
+    <span style="color:#f1fa8c">&#34;subusers&#34;</span>: <span style="color:#ff79c6">[]</span>,
+    <span style="color:#f1fa8c">&#34;keys&#34;</span>: <span style="color:#ff79c6">[</span>
+        <span style="color:#ff79c6">{</span>
+            <span style="color:#f1fa8c">&#34;user&#34;</span>: <span style="color:#f1fa8c">&#34;myuser&#34;</span>,
+            <span style="color:#f1fa8c">&#34;access_key&#34;</span>: <span style="color:#f1fa8c">&#34;&lt;记住ak这个值&gt;&#34;</span>,
+            <span style="color:#f1fa8c">&#34;secret_key&#34;</span>: <span style="color:#f1fa8c">&#34;&lt;记住sk这个值&gt;&#34;</span>
+        <span style="color:#ff79c6">}</span>
+    <span style="color:#ff79c6">]</span>,
+    ......
+<span style="color:#ff79c6">}</span></code></pre></div>
+<p>创建后会为当前用户生成一个 <code>access_key</code> 和 <code>secret_key</code> 这两个值，记住这两个值，下面需要使用到。</p>
+
+<p>然后执行下面的命令进行配置：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ ceph dashboard set-rgw-api-user-id myuser
+Option RGW_API_USER_ID updated
+$ ceph dashboard set-rgw-api-access-key &lt;access-key&gt;
+Option RGW_API_ACCESS_KEY updated
+$ ceph dashboard set-rgw-api-secret-key &lt;secret-key&gt;
+Option RGW_API_SECRET_KEY updated</code></pre></div>
+<p>现在就可以访问 Object Gateway 的菜单了。</p>
 
 <h2 id="监控">监控</h2>
 

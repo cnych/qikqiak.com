@@ -310,6 +310,48 @@ spec:
 * `ssl`：通过设置 `ssl=false`，可以在不使用 SSL 的情况下为 Dashboard 提供服务
 
 
+### 开启 Object Gateway 管理
+为了在 Dashboard 上面使用 Object Gateway 管理功能，你需要提供一个一个带有 `system` 标志的登录认证用户。如果没有这样的用户，可以使用下面的命令创建一个：
+
+```shell
+# 先进入 Rook 工具箱 Pod
+$ kubectl -n rook-ceph exec -it $(kubectl -n rook-ceph get pod -l "app=rook-ceph-tools" -o jsonpath='{.items[0].metadata.name}') bash
+# 创建用户
+$ radosgw-admin user create --uid=myuser --display-name=test-user \
+    --system
+{
+    "user_id": "myuser",
+    "display_name": "test-user",
+    "email": "",
+    "suspended": 0,
+    "max_buckets": 1000,
+    "subusers": [],
+    "keys": [
+        {
+            "user": "myuser",
+            "access_key": "<记住ak这个值>",
+            "secret_key": "<记住sk这个值>"
+        }
+    ],
+    ......
+}
+```
+
+创建后会为当前用户生成一个 `access_key` 和 `secret_key` 这两个值，记住这两个值，下面需要使用到。
+
+然后执行下面的命令进行配置：
+```shell
+$ ceph dashboard set-rgw-api-user-id myuser
+Option RGW_API_USER_ID updated
+$ ceph dashboard set-rgw-api-access-key <access-key>
+Option RGW_API_ACCESS_KEY updated
+$ ceph dashboard set-rgw-api-secret-key <secret-key>
+Option RGW_API_SECRET_KEY updated
+```
+
+现在就可以访问 Object Gateway 的菜单了。
+
+
 ## 监控
 每个 Rook 群集都有一些内置的指标 collectors/exporters，用于使用 Prometheus 进行监控。要了解如何为 Rook 群集设置监控，可以按照[监控指南](https://rook.io/docs/rook/v1.1/ceph-monitoring.html)中的步骤进行操作。
 
