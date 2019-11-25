@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [使用 OAM 部署 Kubernetes 应用](https://www.qikqiak.com/post/deploy-k8s-app-with-oam/)
  * [在 Kubernetes 中配置 Container Capabilities](https://www.qikqiak.com/post/capabilities-on-k8s/)
  * [Gloo 1.0 正式版发布](https://www.qikqiak.com/post/gloo-1.0-release/)
  * [使用 Rook 快速搭建 Ceph 集群](https://www.qikqiak.com/post/deploy-ceph-cluster-with-rook/)
