@@ -23,7 +23,7 @@ Ingress controller 可以理解为一个监听器，通过不断地与 kube-apis
 
 ## Traefik
 Traefik 是一款开源的反向代理与负载均衡工具。它最大的优点是能够与常见的微服务系统直接整合，可以实现自动化动态配置。目前支持 Docker、Swarm、Mesos/Marathon、 Mesos、Kubernetes、Consul、Etcd、Zookeeper、BoltDB、Rest API 等等后端模型。
-![traefik](https://blog.qikqiak.com/img/posts/traefik-architecture.png)
+![traefik](https://www.qikqiak.com/img/posts/traefik-architecture.png)
 
 要使用 traefik，我们同样需要部署 traefik 的 Pod，由于我们演示的集群中只有 master 节点有外网网卡，所以我们这里只有 master 这一个边缘节点，我们将 traefik 部署到该节点上即可。
 
@@ -85,8 +85,8 @@ clusterrolebinding.rbac.authorization.k8s.io "traefik-ingress-controller" create
 然后使用 Deployment 来管理 Pod，直接使用官方的 traefik 镜像部署即可（traefik.yaml）
 ```yaml
 ---
+apiVersion: apps/v1
 kind: Deployment
-apiVersion: extensions/v1beta1
 metadata:
   name: traefik-ingress-controller
   namespace: kube-system
@@ -110,7 +110,7 @@ spec:
       nodeSelector:
         kubernetes.io/hostname: master
       containers:
-      - image: traefik
+      - image: traefik:v1.7.17
         name: traefik-ingress-lb
         ports:
         - name: http
@@ -143,7 +143,7 @@ spec:
 直接创建上面的资源对象即可：
 ```shell
 $ kubectl create -f traefik.yaml
-deployment.extensions "traefik-ingress-controller" created
+deployment.apps "traefik-ingress-controller" created
 service "traefik-ingress-service" created
 ```
 
