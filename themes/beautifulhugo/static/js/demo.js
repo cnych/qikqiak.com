@@ -50,3 +50,4 @@ function setupSlideshow(root) {
 }
 
 document.querySelectorAll(".slideshow-js").forEach(setupSlideshow);
+console.log(document.querySelectorAll(".slideshow-js"));

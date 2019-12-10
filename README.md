@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [Kubernetes Deployment 故障排查常见方法[译]](https://www.qikqiak.com/post/troubleshooting-deployments/)
  * [ingress-nginx 中 Rewrite 的使用](https://www.qikqiak.com/post/url-rewrite-on-ingress-nginx/)
  * [使用 OAM 部署 Kubernetes 应用](https://www.qikqiak.com/post/deploy-k8s-app-with-oam/)
  * [在 Kubernetes 中配置 Container Capabilities](https://www.qikqiak.com/post/capabilities-on-k8s/)
