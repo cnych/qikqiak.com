@@ -9,7 +9,7 @@ notoc: true
 bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/trouble-deploy-cover.png", desc: "A visual guide on troubleshooting Kubernetes deployments"}]
 category: "kubernetes"
 ---
-本文翻译至 [A visual guide on troubleshooting Kubernetes deployments](https://learnk8s.io/troubleshooting-deployments)。
+本文翻译自 [A visual guide on troubleshooting Kubernetes deployments](https://learnk8s.io/troubleshooting-deployments)。
 
 下面示意图可以帮助你调试 Kubernetes Deployment（你可以在此处[【下载它的 PDF 版本】](https://learnk8s.io/a/troubleshooting-kubernetes.pdf)），另外在微信群里面也看到有朋友分享了一个对应的中文版（你可以在此处[【下载它的中文版本】](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/trouble-deploy-cn.png)）：
 
