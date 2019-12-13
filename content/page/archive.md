@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [Prometheus 黑盒监控](https://www.qikqiak.com/post/blackbox-exporter-on-prometheus/)
  * [Kubernetes Deployment 故障排查常见方法[译]](https://www.qikqiak.com/post/troubleshooting-deployments/)
  * [ingress-nginx 中 Rewrite 的使用](https://www.qikqiak.com/post/url-rewrite-on-ingress-nginx/)
  * [使用 OAM 部署 Kubernetes 应用](https://www.qikqiak.com/post/deploy-k8s-app-with-oam/)
