@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [Prometheus 记录规则的使用](https://www.qikqiak.com/post/recoding-rules-on-prometheus/)
  * [Prometheus 黑盒监控](https://www.qikqiak.com/post/blackbox-exporter-on-prometheus/)
  * [Kubernetes Deployment 故障排查常见方法[译]](https://www.qikqiak.com/post/troubleshooting-deployments/)
  * [ingress-nginx 中 Rewrite 的使用](https://www.qikqiak.com/post/url-rewrite-on-ingress-nginx/)

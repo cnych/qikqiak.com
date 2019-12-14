@@ -7,7 +7,7 @@ slug: blackbox-exporter-on-prometheus
 gitcomment: true
 notoc: true
 bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1576132526842-61e6db8dbb9b.jpeg", desc: "Cirkular Khrome-1"}]
-category: "kubernetes"
+category: "prometheus"
 ---
 
 前面我们主要介绍了 Prometheus 下如何进行白盒监控，我们监控主机的资源用量、容器的运行状态、数据库中间件的运行数据、自动发现 Kubernetes 集群中的资源等等，这些都是支持业务和服务的基础设施，通过白盒能够了解其内部的实际运行状态，通过对监控指标的观察能够预判可能出现的问题，从而对潜在的不确定因素进行优化。而从完整的监控逻辑的角度，除了大量的应用白盒监控以外，还应该添加适当的 `Blackbox（黑盒）`监控，黑盒监控即以用户的身份测试服务的外部可见性，常见的黑盒监控包括`HTTP 探针`、`TCP 探针` 等用于检测站点或者服务的可访问性，以及访问效率等。
