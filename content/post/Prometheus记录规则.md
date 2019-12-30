@@ -116,3 +116,5 @@ global:
 
 * [DEFINING RECORDING RULES](https://prometheus.io/docs/prometheus/latest/configuration/recording_rules/)
 * [Today I Learned: Prometheus Recording Rules](https://deploy.live/blog/today-i-learned-prometheus-recording-rules/)
+
+<!--adsense-self-->
