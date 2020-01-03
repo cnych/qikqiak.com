@@ -708,7 +708,7 @@ spec:
   - match: HostSNI(`*`)
     services:
     - name: mongo-traefik
-      port: 27107
+      port: 27017
 ```
 
 要注意的是这里的 `entryPoints` 部分，是根据我们启动的 Traefik 的静态配置中的 entryPoints 来决定的，我们当然可以使用前面我们定义得 80 和 443 这两个入口点，但是也可以可以自己添加一个用于 mongo 服务的专门入口点：
