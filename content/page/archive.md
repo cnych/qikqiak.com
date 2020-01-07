@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [自定义 Kubernetes 调度器](https://www.qikqiak.com/post/custom-kube-scheduler/)
  * [一文搞懂 Traefik2.1 的使用](https://www.qikqiak.com/post/traefik-2.1-101/)
  * [Prometheus 记录规则的使用](https://www.qikqiak.com/post/recoding-rules-on-prometheus/)
  * [Prometheus 黑盒监控](https://www.qikqiak.com/post/blackbox-exporter-on-prometheus/)
