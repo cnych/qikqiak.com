@@ -23,9 +23,9 @@ category: "kubernetes"
 
 下面的示意图可以来简单说明：
 
-{{< demo src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/deployment-demo1.svg&https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/deployment-demo2.svg&https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/deployment-demo3.svg" desc="在 Kubernetes 中，你的应用程序通过两层负载均衡器暴露服务：内部的和外部的。&内部的负载均衡器称为 Service，而外部的负载均衡器称为 Ingress。&Pod 不会直接部署，Deployment 会负责创建 Pod 并管理它们。" >}}
-
 <!--more-->
+
+{{< demo src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/deployment-demo1.svg&https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/deployment-demo2.svg&https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/deployment-demo3.svg" desc="在 Kubernetes 中，你的应用程序通过两层负载均衡器暴露服务：内部的和外部的。&内部的负载均衡器称为 Service，而外部的负载均衡器称为 Ingress。&Pod 不会直接部署，Deployment 会负责创建 Pod 并管理它们。" >}}
 
 假设你要部署一个简单的 “HelloWorld” 应用，该应用的 YAML 文件的内容应该类似下面这样：
 ```yaml
