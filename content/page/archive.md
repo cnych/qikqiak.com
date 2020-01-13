@@ -154,6 +154,7 @@ nopager: true
  * [用python处理csv文件](https://www.qikqiak.com/post/python-process-csv-file/)
 
 #### 课程
+ * [基于 Jenkins 的 DevOps 流水线实践](https://www.qikqiak.com/post/devops-base-on-jenkins/)
  * [打造独当一面的 Kubernetes 运维、开发工程师](https://www.qikqiak.com/post/promotion-51)
  * [Kubernetes 线下3天闭门集训](https://www.qikqiak.com/postk8s-offline-training)
  * [小白入行 AI 的必修课](https://www.qikqiak.com/post/post/ai-start-course)
