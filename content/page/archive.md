@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [自定义 Traefik2 中间件](https://www.qikqiak.com/post/custom-traefik2-middleware/)
  * [Traefik2.X 版本 中 URL Rewrite 的使用](https://www.qikqiak.com/post/url-rewrite-on-traefik2.X/)
  * [自定义 Kubernetes 调度器](https://www.qikqiak.com/post/custom-kube-scheduler/)
  * [一文搞懂 Traefik2.1 的使用](https://www.qikqiak.com/post/traefik-2.1-101/)
