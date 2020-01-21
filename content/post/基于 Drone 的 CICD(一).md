@@ -71,6 +71,8 @@ server:
   kubernetes:
     ## set to true if you want drone to use kubernetes to run pipelines
     enabled: true
+  host: drone.qikqiak.com  # 必须加上这个属性，否则github回调地址会是drone的Service地址
+  protocol: https
     
 persistence:
   enabled: true
