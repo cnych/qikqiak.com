@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>Kubernetes 零宕机滚动更新-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="Kubernetes 零宕机滚动更新" />
+  <meta name="twitter:title" content="Kubernetes 零宕机滚动更新" />
+
+  <meta name="description" content="软件世界的发展比以往任何时候都快，为了保持竞争力需要尽快推出新的软件版本，而又不影响在线得用户。许多企业已将工作负载迁移到了 Kubernetes 集群，Kubernetes 集群本身就考虑到了一些生产环境的实践，但是要让 Kubernetes 实现真正的零停机不中断或丢失请求，我们还需要做一些额外的操作才行。">
+  <meta property="og:description" content="软件世界的发展比以往任何时候都快，为了保持竞争力需要尽快推出新的软件版本，而又不影响在线得用户。许多企业已将工作负载迁移到了 Kubernetes 集群，Kubernetes 集群本身就考虑到了一些生产环境的实践，但是要让 Kubernetes 实现真正的零停机不中断或丢失请求，我们还需要做一些额外的操作才行。">
+  <meta name="twitter:description" content="软件世界的发展比以往任何时候都快，为了保持竞争力需要尽快推出新的软件版本，而又不影响在线得用户。许多企业已将工作负载迁移到了 Kubernetes 集群，Kubernetes 集群本身就考虑到了一些生产环境的实践，但是要让 Kubernetes 实现真正的零停机不中断或丢失请求，我们还需要做一些额外的操作才行。">
+  <meta name="author" content=""/>
+  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/favicon.png"/>
+  <meta property="og:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/zero-downtime-rolling-update-k8s/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.55.6" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/zero-downtime-rolling-update-k8s/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
+
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
+    <!--[if lt IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <![endif]-->
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, rolling-update, 宕机, 滚动更新">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qikqiak-blog-logo.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="首页" href="https://www.qikqiak.com/">首页</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1581375279144-bb3b381c7046.png" data-img-desc-1="Painted, sliced avocado"></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>Kubernetes 零宕机滚动更新</h1>
+                  
+                  
+                    <span class="post-meta">
+  
+    发表于 February 11, 2020
+  
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>Kubernetes 零宕机滚动更新</h1>
+                
+                
+                  <span class="post-meta">
+  
+    发表于 February 11, 2020
+  
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/rolling-update/">rolling-update</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#滚动更新">滚动更新</a></li>
+<li><a href="#可用性检测">可用性检测</a></li>
+<li><a href="#原因分析">原因分析</a></li>
+<li><a href="#零宕机">零宕机</a></li>
+<li><a href="#总结">总结</a></li>
+<li><a href="#参考文档">参考文档</a></li>
+</ul></li>
+</ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>软件世界的发展比以往任何时候都快，为了保持竞争力需要尽快推出新的软件版本，而又不影响在线得用户。许多企业已将工作负载迁移到了 Kubernetes 集群，Kubernetes 集群本身就考虑到了一些生产环境的实践，但是要让 Kubernetes 实现真正的零停机不中断或丢失请求，我们还需要做一些额外的操作才行。</p>
+
+<h2 id="滚动更新">滚动更新</h2>
+
+<p>默认情况下，Kubernetes 的 Deployment 是具有滚动更新的策略来进行 Pod 更新的，该策略可以在任何时间点更新应用的时候保证某些实例依然可以正常运行来防止应用 down 掉，当新部署的 Pod 启动并可以处理流量之后，才会去杀掉旧的 Pod。</p>
+
+<p>在使用过程中我们还可以指定 Kubernetes 在更新期间如何处理多个副本的切换方式，比如我们有一个3副本的应用，在更新的过程中是否应该立即创建这3个新的 Pod 并等待他们全部启动，或者杀掉一个之外的所有旧的 Pod，或者还是要一个一个的 Pod 进行替换？下面示例是使用默认的滚动更新升级策略的一个 Deployment 定义，在更新过程中最多可以有一个超过副本数的容器（maxSurge），并且在更新过程中没有不可用的容器。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zero-downtime
+  labels:
+    app: zero-downtime
+spec:
+  replicas: <span style="color:#bd93f9">3</span>
+  selector:
+    matchLabels:
+      app: zero-downtime
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: <span style="color:#bd93f9">1</span>
+      maxUnavailable: <span style="color:#bd93f9">0</span>
+  template:
+    <span style="color:#6272a4"># with image nginx</span>
+    <span style="color:#6272a4"># ...</span></code></pre></div>
+<p>上面的 <code>zero-downtime</code> 这个应用使用 nginx 这个镜像创建3个副本，该 Deployment 执行滚动更新的方式：首先创建一个新版本的 Pod，等待 Pod 启动并准备就绪，然后删除一个旧的 Pod，然后继续下一个新的 Pod，直到所有副本都已替换完成。为了让 Kubernetes 知道我们的 Pod 何时可以准备处理流量请求了，我们还需要配置上 liveness 和 readiness 探针。下面展示的就是<code>新旧</code> Pod 替换的输出信息：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods
+NAME                            READY   STATUS              RESTARTS   AGE
+zero-downtime-d449b5cc4-k8b27   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          3m9s
+zero-downtime-d449b5cc4-n2lc4   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          3m9s
+zero-downtime-d449b5cc4-sdw8b   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          3m9s
+...
+
+zero-downtime-d449b5cc4-k8b27   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          3m9s
+zero-downtime-d449b5cc4-n2lc4   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          3m9s
+zero-downtime-d449b5cc4-sdw8b   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          3m9s
+zero-downtime-d569474d4-q9khv   <span style="color:#bd93f9">0</span>/1     ContainerCreating   <span style="color:#bd93f9">0</span>          12s
+...
+
+zero-downtime-d449b5cc4-n2lc4   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          3m9s
+zero-downtime-d449b5cc4-sdw8b   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          3m9s
+zero-downtime-d449b5cc4-k8b27   <span style="color:#bd93f9">1</span>/1     Terminating         <span style="color:#bd93f9">0</span>          3m29s
+zero-downtime-d569474d4-q9khv   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          1m
+...
+
+zero-downtime-d449b5cc4-n2lc4   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          5m
+zero-downtime-d449b5cc4-sdw8b   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          5m
+zero-downtime-d569474d4-q9khv   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          1m
+zero-downtime-d569474d4-2c7qz   <span style="color:#bd93f9">0</span>/1     ContainerCreating   <span style="color:#bd93f9">0</span>          10s
+...
+
+...
+
+zero-downtime-d569474d4-2c7qz   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          40s
+zero-downtime-d569474d4-mxbs4   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          13s
+zero-downtime-d569474d4-q9khv   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          67s</code></pre></div>
+<h2 id="可用性检测">可用性检测</h2>
+
+<p>如果我们从旧版本到新版本进行滚动更新，只是简单的通过输出显示来判断哪些 Pod 是存活并准备就绪的，那么这个滚动更新的行为看上去肯定就是有效的，但是往往实际情况就是从旧版本到新版本的切换的过程并不总是十分顺畅的，应用程序很有可能会丢弃掉某些客户端的请求。</p>
+
+<p>为了测试是否存在请求被丢弃，特别是那些针对即将要退出服务的实例的请求，我们可以使用一些负载测试工具来连接我们的应用程序进行测试。我们需要关注的重点是所有的 HTTP 请求，包括 keep-alive 的 HTTP 连接是否都被正确处理了，所以我们这里可以使用 <a href="http://httpd.apache.org/docs/current/programs/ab.html">Apache Bench（AB Test）</a> 或者 <a href="https://fortio.org/">Fortio（Istio 测试工具）</a> 这样的测试工具来测试。</p>
+
+<p>我们使用多个线程以并发的方式去连接到正在运行的应用程序，我们关心的是响应的状态和失败的连接，而不是延迟或吞吐量之类的信息。我们这里使用 Fortio 这个测试工具，比如每秒 500 个请求和 8 个并发的 keep-alive 连接的测试命令如下所示(使用域名<code>zero.qikqiak.com</code>代理到上面的3个 Pod)：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ fortio load -a -c <span style="color:#bd93f9">8</span> -qps <span style="color:#bd93f9">500</span> -t 60s <span style="color:#f1fa8c">&#34;http://zero.qikqiak.com/&#34;</span></code></pre></div>
+<blockquote>
+<p>关于 fortio 的具体使用可以查看官方文档：<a href="https://github.com/fortio/fortio">https://github.com/fortio/fortio</a></p>
+</blockquote>
+
+<p>使用 <code>-a</code> 参数可以将测试报告保存为网页的形式，这样我们可以直接在浏览器中查看测试报告。如果我们在进行滚动更新应用的过程中启动测试，则可能会看到一些请求无法连接的情况：
+<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/fortio-zero-downtime-test1.png" alt="fortio-zero-downtime-test" /></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">Starting at <span style="color:#bd93f9">1000</span> qps with <span style="color:#bd93f9">8</span> thread<span style="color:#ff79c6">(</span>s<span style="color:#ff79c6">)</span> <span style="color:#ff79c6">[</span>gomax <span style="color:#bd93f9">2</span><span style="color:#ff79c6">]</span> <span style="color:#ff79c6">for</span> 1m0s : <span style="color:#bd93f9">7500</span> calls each <span style="color:#ff79c6">(</span>total <span style="color:#bd93f9">60000</span><span style="color:#ff79c6">)</span>
+Ended after 1m0.006243654s : <span style="color:#bd93f9">5485</span> calls. <span style="color:#8be9fd;font-style:italic">qps</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">91</span>.407
+Aggregated Sleep Time : count <span style="color:#bd93f9">5485</span> avg -17.626081 +/- <span style="color:#bd93f9">15</span> min -54.753398956 max <span style="color:#bd93f9">0</span>.000709054 sum -96679.0518
+<span style="color:#ff79c6">[</span>...<span style="color:#ff79c6">]</span>
+Code <span style="color:#bd93f9">200</span> : <span style="color:#bd93f9">5463</span> <span style="color:#ff79c6">(</span><span style="color:#bd93f9">99</span>.6 %<span style="color:#ff79c6">)</span>
+Code <span style="color:#bd93f9">502</span> : <span style="color:#bd93f9">20</span> <span style="color:#ff79c6">(</span><span style="color:#bd93f9">0</span>.4 %<span style="color:#ff79c6">)</span>
+Response Header Sizes : count <span style="color:#bd93f9">5485</span> avg <span style="color:#bd93f9">213</span>.14166 +/- <span style="color:#bd93f9">13</span>.53 min <span style="color:#bd93f9">0</span> max <span style="color:#bd93f9">214</span> sum <span style="color:#bd93f9">1169082</span>
+Response Body/Total Sizes : count <span style="color:#bd93f9">5485</span> avg <span style="color:#bd93f9">823</span>.18651 +/- <span style="color:#bd93f9">44</span>.41 min <span style="color:#bd93f9">0</span> max <span style="color:#bd93f9">826</span> sum <span style="color:#bd93f9">4515178</span>
+<span style="color:#ff79c6">[</span>...<span style="color:#ff79c6">]</span></code></pre></div>
+<p>从上面的输出可以看出有部分请求处理失败了（502），我们可以运行几种通过不同方式连接到应用程序的测试场景，比如通过 Kubernetes Ingress 或者直接从集群内部通过 Service 进行连接。我们会看到在滚动更新过程中的行为可能会有所不同，具体的还是需要取决于测试的配置参数，和通过 Ingress 的连接相比，从集群内部连接到服务的客户端可能不会遇到那么多的失败连接。</p>
+
+<h2 id="原因分析">原因分析</h2>
+
+<p>现在的问题是需要弄明白当应用在滚动更新期间重新路由流量时，从旧的 Pod 实例到新的实例究竟会发生什么，首先让我们先看看 Kubernetes 是如何管理工作负载连接的。
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5376999672787220"
+     data-ad-slot="9165834656"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+如果我们执行测试的客户端直接从集群内部连接到 zero-downtime 这个 Service，那么首先会通过 集群的 DNS 服务解析到 Service 的 ClusterIP，然后转发到 Service 后面的 Pod 实例，这是每个节点上面的 <code>kube-proxy</code> 通过更新 iptables 规则来实现的。</p>
+
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200212151246.png" alt="kubernetes kube-proxy"><figcaption>kubernetes kube-proxy</figcaption></figure>
+
+<p>Kubernetes 会根据 Pods 的状态去更新 Endpoints 对象，这样就可以保证 Endpoints 中包含的都是准备好处理请求的 Pod。</p>
+
+<p>但是 Kubernetes Ingress 连接到实例的方式稍有不同，这就是为什么当客户端通过 Ingresss 连接到应用程序的时候，我们会在滚动更新过程中查看到不同的宕机行为。</p>
+
+<p>大部分 Ingress  Controller，比如 nginx-ingress、traefik 都是通过直接 watch Endpoints 对象来直接获取 Pod 的地址的，而不用通过 iptables 做一层转发了。</p>
+
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200212131555.png" alt="kubernetes ingress"><figcaption>kubernetes ingress</figcaption></figure>
+
+<p>无论我们如何连接到应用程序，Kubernetes 的目标都是在滚动更新的过程中最大程度地减少服务的中断。一旦新的 Pod 处于活动状态并准备就绪后，Kubernetes 就将会停止就的 Pod，从而将 Pod 的状态更新为 <code>“Terminating”</code>，然后从 Endpoints 对象中移除，并且发送一个 <code>SIGTERM</code> 信号给 Pod 的主进程。<code>SIGTERM</code> 信号就会让容器以正常的方式关闭，并且不接受任何新的连接。Pod 从 Endpoints 对象中被移除后，前面的负载均衡器就会将流量路由到其他（新的）Pod 中去。这个也是造成我们的应用可用性差距的主要原因，因为在负责均衡器注意到变更并更新其配置之前，终止信号就会去停用 Pod，而这个重新配置过程又是异步发生的，所以并不能保证正确的顺序，所以就可能导致很少的请求会被路由到终止的 Pod 上去。</p>
+
+<h2 id="零宕机">零宕机</h2>
+
+<p>那么如何增强我们的应用程序以实现真正的零宕机迁移呢？</p>
+
+<p>首先，要实现这个目标的先决条件是我们的容器要正确处理终止信号，在 <code>SIGTERM</code> 信号上实现优雅关闭。下一步需要添加 readiness 可读探针，来检查我们的应用程序是否已经准备好来处理流量了。</p>
+
+<p>可读探针只是我们平滑滚动更新的起点，为了解决 Pod 停止的时候不会阻塞并等到负载均衡器重新配置的问题，我们需要使用 <code>preStop</code> 这个生命周期的钩子，在容器终止之前调用该钩子。</p>
+
+<p>生命周期钩子函数是同步的，所以必须在将最终终止信号发送到容器之前完成，在我们的示例中，我们使用该钩子简单的等待，然后 <code>SIGTERM</code> 信号将停止应用程序进程。同时，Kubernetes 将从 Endpoints 对象中删除该 Pod，所以该 Pod 将会从我们的负载均衡器中排除，基本上来说我们的生命周期钩子函数等待的时间可以确保在应用程序停止之前重新配置负载均衡器。</p>
+
+<p>这里我们在 <code>zero-downtime</code> 这个 Deployment 中添加一个 <code>preStop</code> 钩子：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zero-downtime
+  labels:
+    app: zero-downtime
+spec:
+  replicas: <span style="color:#bd93f9">3</span>
+  selector:
+    matchLabels:
+      app: zero-downtime
+  template:
+    spec:
+      containers:
+      - name: zero-downtime
+        image: nginx
+        livenessProbe:
+          <span style="color:#6272a4"># ...</span>
+        readinessProbe:
+          <span style="color:#6272a4"># ...</span>
+        lifecycle:
+          preStop:
+            exec:
+              command: [<span style="color:#f1fa8c">&#34;/bin/bash&#34;</span>, <span style="color:#f1fa8c">&#34;-c&#34;</span>, <span style="color:#f1fa8c">&#34;sleep 20&#34;</span>]
+  strategy:
+    <span style="color:#6272a4"># ...</span></code></pre></div>
+<p>我们这里使用 <code>preStop</code> 设置了一个 20s 的宽限期，Pod 在真正销毁前会先 sleep 等待 20s，这就相当于留了时间给 Endpoints 控制器和 kube-proxy 更新去 Endpoints 对象和转发规则，这段时间 Pod 虽然处于 Terminating 状态，即便在转发规则更新完全之前有请求被转发到这个 Terminating 的 Pod，依然可以被正常处理，因为它还在 sleep，没有被真正销毁。</p>
+
+<p>现在，当我们去查看滚动更新期间的 Pod 行为时，我们将看到正在终止的 Pod 处于 <code>Terminating</code> 状态，但是在等待时间结束之前不会关闭的，如果我们使用 <code>Fortio</code> 重新测试下，则会看到零失败请求的理想行为：</p>
+
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/fortio-zero-downtime-test2.png" alt="fortio zeor downtime test"><figcaption>fortio zeor downtime test</figcaption></figure>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">Starting at <span style="color:#bd93f9">1000</span> qps with <span style="color:#bd93f9">8</span> thread<span style="color:#ff79c6">(</span>s<span style="color:#ff79c6">)</span> <span style="color:#ff79c6">[</span>gomax <span style="color:#bd93f9">2</span><span style="color:#ff79c6">]</span> <span style="color:#ff79c6">for</span> 1m0s : <span style="color:#bd93f9">7500</span> calls each <span style="color:#ff79c6">(</span>total <span style="color:#bd93f9">60000</span><span style="color:#ff79c6">)</span>
+Ended after 1m0.091439891s : <span style="color:#bd93f9">10015</span> calls. <span style="color:#8be9fd;font-style:italic">qps</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">166</span>.66
+Aggregated Sleep Time : count <span style="color:#bd93f9">10015</span> avg -23.316213 +/- <span style="color:#bd93f9">14</span>.52 min -50.161414028 max <span style="color:#bd93f9">0</span>.001811225 sum -233511.876
+<span style="color:#ff79c6">[</span>...<span style="color:#ff79c6">]</span>
+Code <span style="color:#bd93f9">200</span> : <span style="color:#bd93f9">10015</span> <span style="color:#ff79c6">(</span><span style="color:#bd93f9">100</span>.0 %<span style="color:#ff79c6">)</span>
+Response Header Sizes : count <span style="color:#bd93f9">10015</span> avg <span style="color:#bd93f9">214</span> +/- <span style="color:#bd93f9">0</span> min <span style="color:#bd93f9">214</span> max <span style="color:#bd93f9">214</span> sum <span style="color:#bd93f9">2143210</span>
+Response Body/Total Sizes : count <span style="color:#bd93f9">10015</span> avg <span style="color:#bd93f9">826</span> +/- <span style="color:#bd93f9">0</span> min <span style="color:#bd93f9">826</span> max <span style="color:#bd93f9">826</span> sum <span style="color:#bd93f9">8272390</span>
+Saved result to data/2020-02-12-162008_Fortio.json 
+All <span style="color:#ff79c6">done</span> <span style="color:#bd93f9">10015</span> calls <span style="color:#bd93f9">47</span>.405 ms avg, <span style="color:#bd93f9">166</span>.7 qps</code></pre></div>
+<h2 id="总结">总结</h2>
+
+<p>Kubernetes 在考虑到生产就绪性方面已经做得很好了，但是为了在生产环境中运行我们的企业级应用，我们就必须了解 Kubernetes 是如何在后台运行的，以及我们的应用程序在启动和关闭期间的行为。而且上面的方式是只适用于短连接的，对于类似于 websocket 这种长连接应用需要做滚动更新的话目前还没有找到一个很好的解决方案，有的团队是将长连接转换成短连接来进行处理的，我这边还是在应用层面来做的支持，比如客户端增加重试机制，连接断掉以后会自动重新连接，大家如果有更好的办法也可以留言互相讨论下方案。</p>
+
+<h2 id="参考文档">参考文档</h2>
+
+<ul>
+<li><a href="https://blog.sebastian-daschner.com/entries/zero-downtime-updates-kubernetes">Zero-Downtime Rolling Updates With Kubernetes</a></li>
+<li><a href="https://freecontent.manning.com/handling-client-requests-properly-with-kubernetes/">Handling Client Requests Properly with Kubernetes</a></li>
+</ul>
+
+<p><a href="https://www.qikqiak.com/post/promotion-51" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/9mogk.png" alt="kubernetes进阶课程"></a></p>
+
+
+          <h2>微信公众号</h2>
+<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
+<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/deploy-vscode-on-k8s/">在 Kubernetes 集群上部署 VSCode</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/devops-base-on-jenkins/">基于 Jenkins 的 DevOps 流水线实践</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/url-rewrite-on-traefik2.x/">Traefik2.X 版本 中 URL Rewrite 的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/custom-kube-scheduler/">自定义 Kubernetes 调度器</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/traefik-2.1-101/">一文搞懂 Traefik2.1 的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/recording-rules-on-prometheus/">Prometheus 记录规则的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/blackbox-exporter-on-prometheus/">Prometheus 黑盒监控</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/troubleshooting-deployments/">Kubernetes Deployment 故障排查常见方法[译]</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/url-rewrite-on-ingress-nginx/">ingress-nginx 中 Rewrite 的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/deploy-k8s-app-with-oam/">使用 OAM 部署 Kubernetes 应用</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/deploy-vscode-on-k8s/" data-toggle="tooltip" data-placement="top" title="在 Kubernetes 集群上部署 VSCode">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/devops-base-on-jenkins/" data-toggle="tooltip" data-placement="top" title="基于 Jenkins 的 DevOps 流水线实践">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: 'Kubernetes 零宕机滚动更新',
+        createIssueManually: true,
+        id: 'zero-downtime-rolling-update-k8s',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2020
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+<script type="text/javascript" src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
+  </body>
+</html>
+
