@@ -169,6 +169,7 @@ nopager: true
  * [好吧，海马学院正式上线了](https://www.qikqiak.com/post/haimaxy-online/)
 
 #### 其他
+ * [GitHub CLI 命令行工具使用](https://www.qikqiak.com/post/github-cli-tool-usage/)
  * [免费获取 JetBrains 全系产品正版 License](https://www.qikqiak.com/post/free-use-jetbrains-ide/)
  * [微博图床一键迁移到阿里云 OSS](https://www.qikqiak.com/post/sina-img-transfer-to-oss)
  * [如何在 Keynote 中插入高亮代码？](https://www.qikqiak.com/post/insert-code-on-keynote)

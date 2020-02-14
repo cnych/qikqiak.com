@@ -5,11 +5,14 @@ tags: ["github", "cli", "devops"]
 keywords: ["github", "git", "cli", "命令行"]
 slug: github-cli-tool-usage
 gitcomment: true
+notoc: true
 category: "devops"
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1581375279144-bb3b381c7046.png", desc: "Painted, sliced avocado"}]
 ---
+[![github cli](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200214152110.png)](/post/github-cli-tool-usage/)
+
 GitHub 被巨软收购以后推出了一系列非常好用的开发者工具，比如前面我们使用过的 CI/CD 工具 [GitHub Actions](/post/use-github-actions-build-go-app/)、[包管理工具 packages](https://github.com/features/packages)，今天我们要为大家介绍的是近来 GitHub 发布的又一个非常有用的工具: [GitHub CLI](https://cli.github.com/)，可以让开发者通过命令行于 GitHub 进行无缝的协同工作，也就是我们直接在命令行终端上就可以进行 pull requests、issues 等其他功能，现在已经发布 Beta 版本，我们可以在 [macOS、Windows 或者 Linux 平台](https://github.com/cli/cli#installation-and-upgrading)上安装 GitHub CLI。
 
+<!--more-->
 
 ## 安装
 要安装 GitHub CLI 非常简单，比如我们这里在 macOS 下面依然可以用 Homebrew 工具进行安装：
@@ -102,3 +105,57 @@ Opening https://github.com/cnych/qikqiak.com/issues/152 in your browser.
 
 ### 创建 PR
 创建一个分支，在提交几次代码后修复了 issue 中描述的 BUG 后，然后可以使用 `gh` 命令来创建一个 pull request 来提交我们贡献的代码：
+```shell
+gh pr create
+[git remote -v]
+> POST /graphql
+< HTTP 200 OK
+[git rev-parse --abbrev-ref HEAD]
+[git status --porcelain]
+[git push --set-upstream origin HEAD:gh-pages]
+
+Creating pull request for gh-pages into master in cnych/qikqiak.com
+
+[git rev-parse --show-toplevel]
+? Title Update gitignore
+? Body <Received>
+? What's next?  [Use arrows to move, type to filter]
+> Preview in browser
+  Submit
+  Cancel
+
+```
+
+我们还可以通过键盘上的上下方向键来移动进行动作选择，可以跳转到浏览器中进行操作，也可以直接提交或者取消。
+<!--adsense-text-->
+
+### 状态查看
+当我们创建了一个 pull request 过后要想快速了解其状态，同样可以使用 `gh` 命令来显示 pull requests 的 review 和状态：
+```shell
+$ gh pr status
+[git remote -v]
+[git rev-parse --abbrev-ref HEAD]
+[git config --get-regexp ^branch\.gh-pages\.(remote|merge)$]
+> POST /graphql
+< HTTP 200 OK
+> POST /graphql
+< HTTP 200 OK
+
+Relevant pull requests in cnych/qikqiak.com
+
+Current branch
+  #153  Update gitignore rules [gh-pages]
+   - Checks passing
+
+Created by you
+  #153  Update gitignore rules [gh-pages]
+   - Checks passing
+
+Requesting a code review from you
+  You have no pull requests to review
+```
+
+这里我们只是简单介绍了 issue 和 pull requests 的几个常用命令，更多的使用方式可以查看官方文档了解更多：[https://cli.github.com/manual/examples](https://cli.github.com/manual/examples)。
+
+
+<!--adsense-self-->
