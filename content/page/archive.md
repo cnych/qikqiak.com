@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [在 Kubernetes 上部署 Vault](https://www.qikqiak.com/post/deploy-vault-on-k8s/)
  * [在 Kubernetes 上部署 Spinnaker](https://www.qikqiak.com/post/deploy-spinnaker-on-k8s/)
  * [Kubernetes 零宕机滚动更新](https://www.qikqiak.com/post/zero-downtime-rolling-update-k8s/)
  * [在 Kubernetes 集群上部署 VSCode](https://www.qikqiak.com/post/deploy-vscode-on-k8s/)
