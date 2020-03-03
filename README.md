@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [获取客户端访问真实 IP](https://www.qikqiak.com/post/get-client-realip/)
  * [在 Kubernetes 上部署 Vault](https://www.qikqiak.com/post/deploy-vault-on-k8s/)
  * [在 Kubernetes 上部署 Spinnaker](https://www.qikqiak.com/post/deploy-spinnaker-on-k8s/)
  * [Kubernetes 零宕机滚动更新](https://www.qikqiak.com/post/zero-downtime-rolling-update-k8s/)
