@@ -11,3 +11,4 @@ bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-158
 ---
 
 https://www.ardanlabs.com/blog/2020/02/docker-images-part1-reducing-image-size.html
+https://kinbiko.com/go/testing/beginners/
