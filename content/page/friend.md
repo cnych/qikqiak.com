@@ -18,4 +18,4 @@ nopager: true
 * [(王丽兵)开发笔记](https://www.wanglibing.com?utm_source=qikqiak)
 * [风巢知识导航](https://wind-nest.com?utm_source=qikqiak)
 * [运维咖啡吧](https://ops-coffee.cn?utm_source=qikqiak)
-* [Happiness"Blog](https://blog.k8s.fit)
+* [Happiness"Blog](https://blog.k8s.fit?utm_source=qikqiak)
