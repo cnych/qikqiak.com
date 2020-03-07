@@ -1,5 +1,6 @@
 ---
 title: 基于 Jenkins 的 DevOps 流水线实践
+subtitle: 全面掌握基于 Jenkins 的流水线最佳实践方式
 date: 2020-01-13
 tags: ["kubernetes", "jenkins", "devops", "课程"]
 keywords: ["kubernetes", "课程", "优惠", "jenkins", "devops", "流水线"]
@@ -9,6 +10,8 @@ gitcomment: true
 weight: 2
 category: "kubernetes"
 ---
+
+[![devops jenkins](https://sdn.youdianzhishi.com/images/2020/3/7/9461711bff5a4f5b999ebcc0f65bb12b.jpg?imageView2/2/format/webp)](/post/devops-base-on-jenkins/)
 
 <!--more-->
 
