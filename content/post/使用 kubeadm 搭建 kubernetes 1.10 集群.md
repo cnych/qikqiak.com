@@ -11,7 +11,7 @@ category: "kubernetes"
 
 `kubeadm`是`Kubernetes`官方提供的用于快速安装 Kubernetes 集群的工具，通过将集群的各个组件进行容器化安装管理，通过`kubeadm`的方式安装集群比二进制的方式安装要方便不少，但是目录`kubeadm`还处于`beta`状态，还不能用于生产环境，[Using kubeadm to Create a Cluster](https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/)文档中已经说明`kubeadm`将会很快能够用于生产环境了。
 
-所以现在来了解下`kubeadm`的使用方式的话还是很有必要的，对于现阶段想要用于生产环境的，建议还是参考我们前面的文章：[手动搭建高可用的kubernetes 集群](https://blog.qikqiak.com/post/manual-install-high-available-kubernetes-cluster/)或者[视频教程](https://www.haimaxy.com/course/pjrqxm/?utm_source=blog)。
+所以现在来了解下`kubeadm`的使用方式的话还是很有必要的，对于现阶段想要用于生产环境的，建议还是参考我们前面的文章：[手动搭建高可用的kubernetes 集群](/post/manual-install-high-available-kubernetes-cluster/)或者[视频教程](https://youdianzhishi.com/course/pjrqxm/?utm_source=blog)。
 
 <!--more-->
 
