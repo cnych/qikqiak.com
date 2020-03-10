@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [有时光机的 Kubernetes Dashboard - Kubevious](https://www.qikqiak.com/post/k8s-ui-kubevious/)
  * [获取客户端访问真实 IP](https://www.qikqiak.com/post/get-client-realip/)
  * [在 Kubernetes 上部署 Vault](https://www.qikqiak.com/post/deploy-vault-on-k8s/)
  * [在 Kubernetes 上部署 Spinnaker](https://www.qikqiak.com/post/deploy-spinnaker-on-k8s/)
