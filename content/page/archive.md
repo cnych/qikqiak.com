@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [在 Kubernetes 集群上部署 Kafka](https://www.qikqiak.com/post/install-kafka-in-kubernetes/)
  * [Kubernetes 集群均衡器 Descheduler](https://www.qikqiak.com/post/k8s-cluster-balancer/)
  * [有时光机的 Kubernetes Dashboard - Kubevious](https://www.qikqiak.com/post/k8s-ui-kubevious/)
  * [获取客户端访问真实 IP](https://www.qikqiak.com/post/get-client-realip/)
