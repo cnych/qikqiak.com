@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [优秀的 Grafana K8S 插件 - DevOpsProdigy KubeGraf](https://www.qikqiak.com/post/grafana-k8s-plugin-kubegraf/)
  * [在 Kubernetes 集群上部署 Kafka](https://www.qikqiak.com/post/install-kafka-in-kubernetes/)
  * [Kubernetes 集群均衡器 Descheduler](https://www.qikqiak.com/post/k8s-cluster-balancer/)
  * [有时光机的 Kubernetes Dashboard - Kubevious](https://www.qikqiak.com/post/k8s-ui-kubevious/)
