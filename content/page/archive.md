@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [ingress-nginx 控制器工作原理](https://www.qikqiak.com/post/ingress-nginx-how-to-work/)
  * [用 Kubernetes 资源对象创建 Grafana Dashboard](https://www.qikqiak.com/post/use-crd-create-grafana-dashboard/)
  * [AlertManager 何时报警](https://www.qikqiak.com/post/alertmanager-when-alert/)
  * [优秀的 Grafana K8S 插件 - DevOpsProdigy KubeGraf](https://www.qikqiak.com/post/grafana-k8s-plugin-kubegraf/)
