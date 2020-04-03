@@ -1,5 +1,5 @@
 ---
-title: ingress-nginx 控制器工作原理
+title: ingress-nginx 控制器工作原理[译]
 date: 2020-03-30
 keywords: ["ingress", "nginx", "kubernetes"]
 tags: ["ingress", "ingress-nginx", "kubernetes", "nginx"]
@@ -84,3 +84,5 @@ ingress-nginx 的目标是构造配置文件（nginx.conf），主要用途是�
 ## 参考文档
 
 * [https://kubernetes.github.io/ingress-nginx/how-it-works/](https://kubernetes.github.io/ingress-nginx/how-it-works/)
+
+<!--adsense-self-->

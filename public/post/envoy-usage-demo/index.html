@@ -6,31 +6,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
 
-  <title>ingress-nginx 控制器工作原理[译]-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
-  <meta property="og:title" content="ingress-nginx 控制器工作原理[译]" />
-  <meta name="twitter:title" content="ingress-nginx 控制器工作原理[译]" />
+  <title>Envoy 简单入门示例-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="Envoy 简单入门示例" />
+  <meta name="twitter:title" content="Envoy 简单入门示例" />
 
-  <meta name="description" content="
-
-本文的目的是解释 Nginx Ingress 控制器的工作原理，特别是 Nginx 模型的构建方式以及我们为何需要这个模型。">
-  <meta property="og:description" content="
-
-本文的目的是解释 Nginx Ingress 控制器的工作原理，特别是 Nginx 模型的构建方式以及我们为何需要这个模型。">
-  <meta name="twitter:description" content="
-
-本文的目的是解释 Nginx Ingress 控制器的工作原理，特别是 Nginx 模型的构建方式以及我们为何需要这个模型。">
+  <meta name="description" content="Envoy 是为云原生应用而设计的开源边缘和服务代理，也是 Istio Service Mesh 默认的数据平面，本文我们通过一个简单的示例来介绍 Envoy 的基本使用。">
+  <meta property="og:description" content="Envoy 是为云原生应用而设计的开源边缘和服务代理，也是 Istio Service Mesh 默认的数据平面，本文我们通过一个简单的示例来介绍 Envoy 的基本使用。">
+  <meta name="twitter:description" content="Envoy 是为云原生应用而设计的开源边缘和服务代理，也是 Istio Service Mesh 默认的数据平面，本文我们通过一个简单的示例来介绍 Envoy 的基本使用。">
   <meta name="author" content=""/>
   <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/favicon.png" rel="icon" type="image/x-icon" />
   <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/favicon.png"/>
   <meta property="og:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
   <meta name="twitter:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
   <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://www.qikqiak.com/post/ingress-nginx-how-to-work/" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/envoy-usage-demo/" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="阳明的博客" />
 
   <meta name="generator" content="Hugo 0.55.6" />
-  <link rel="canonical" href="https://www.qikqiak.com/post/ingress-nginx-how-to-work/" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/envoy-usage-demo/" />
   <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
   
@@ -52,7 +46,7 @@
     <![endif]-->
 <meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
 <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-<meta name="keywords" content="ingress, nginx, kubernetes">
+<meta name="keywords" content="envoy, kubernetes">
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -226,8 +220,35 @@ autocomplete('#aa-search-input',
 
 
   
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200403112418.png" data-img-desc-1="https://unsplash.com/photos/ITkhmqFN4dI"></div>
+  
 
-  <header class="header-section ">
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>Envoy 简单入门示例</h1>
+                  
+                  
+                    <span class="post-meta">
+  
+    发表于 April 3, 2020
+  
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
     
     
     
@@ -237,12 +258,12 @@ autocomplete('#aa-search-input',
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
             <div class="post-heading">
-              <h1>ingress-nginx 控制器工作原理[译]</h1>
+              <h1>Envoy 简单入门示例</h1>
                 
                 
                   <span class="post-meta">
   
-    发表于 March 30, 2020
+    发表于 April 3, 2020
   
   
 </span>
@@ -273,13 +294,11 @@ autocomplete('#aa-search-input',
             
             <h5 id="tags" style="margin-top: 30px;">标签:
               
-                  <a href="https://www.qikqiak.com/tags/ingress/">ingress</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/ingress-nginx/">ingress-nginx</a> &nbsp;
+                  <a href="https://www.qikqiak.com/tags/envoy/">envoy</a> &nbsp;
               
                   <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
               
-                  <a href="https://www.qikqiak.com/tags/nginx/">nginx</a> &nbsp;
+                  <a href="https://www.qikqiak.com/tags/istio/">istio</a> &nbsp;
               
             </h5>
             
@@ -302,77 +321,162 @@ autocomplete('#aa-search-input',
           
           
 
-          <p><a href="https://www.qikqiak.com/post/ingress-nginx-how-to-work/"><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200331110423.png" alt="ingress-nginx 控制器工作原理" /></a></p>
+          <p><a href="https://www.envoyproxy.io/">Envoy</a> 是为云原生应用而设计的开源边缘和服务代理，也是 Istio Service Mesh 默认的数据平面，本文我们通过一个简单的示例来介绍 Envoy 的基本使用。</p>
 
-<p>本文的目的是解释 Nginx Ingress 控制器的工作原理，特别是 Nginx 模型的构建方式以及我们为何需要这个模型。</p>
+<h2 id="1-配置">1. 配置</h2>
 
-<h2 id="1-nginx-配置">1.NGINX 配置</h2>
+<h3 id="创建代理配置">创建代理配置</h3>
 
-<p>ingress-nginx 的目标是构造配置文件（nginx.conf），主要用途是在配置文件有任何变更后都需要重新加载 NGINX。不过需要特别注意的是，在只有 upstream 配置变更的时候我们不需要重新加载 Nginx（即当你部署的应用 Endpoints 变更时）。我们使用 <a href="https://github.com/openresty/lua-nginx-module">lua-nginx-module</a> 达到这个目的。请通过 下面的内容 来了解有关操作方法的更多信息。</p>
+<p>Envoy 使用 YAML 配置文件来控制代理的行为。在下面的步骤中，我们将使用静态配置接口来构建配置，也意味着所有设置都是预定义在配置文件中的。此外 Envoy 也支持动态配置，这样可以通过外部一些源来自动发现进行设置。</p>
 
-<h2 id="2-nginx-模型">2.NGINX 模型</h2>
+<h3 id="资源">资源</h3>
 
-<p>通常，一个 Kubernetes 控制器采用 <a href="https://coreos.com/kubernetes/docs/latest/replication-controller.html#the-reconciliation-loop-in-detail">synchronization loop pattern</a> 来检查控制器中所需的状态是否已更新或者需要变更。为了达到这个目的，我们需要使用集群中放入不同对象来构建模型，特别是 Ingresses、Services、Endpoints、Secrets 以及 Configmaps 来生成反映集群状态时间点的配置文件。</p>
+<p>Envoy 配置的第一行定义了正在使用的接口配置，在这里我们将配置静态 API，因此第一行应为 <code>static_resources</code>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">static_resources:</code></pre></div>
+<h3 id="监听器">监听器</h3>
 
-<p>为了从集群获取这些对象，我们使用 <a href="https://godoc.org/k8s.io/client-go/informers#NewFilteredSharedInformerFactory">Kubernetes Informers</a>，特别是 FilteredSharedInformer。当一个新的对象添加、修改或者删除的时候，informers 允许通过<a href="https://godoc.org/k8s.io/client-go/tools/cache#ResourceEventHandlerFuncs">回调</a> 针对单个变更进行响应。不过没有办法知道一个特定的变更是否会影响最终的配置文件，所以在每次变更时，我们都必须基于集群的状态重新构建一个新模型，并将其和当前的模型进行比较。如果新模型等于当前模型，那么我们就可以避免生成新的 NGINX 配置并触发重新加载，否则，我们就通过 Endpoints 来检查不同，然后使用 HTTP POST 请求一个新的 Endpoints 列表发送给运行在 Nginx 中的 Lua 程序并且避免重新生成一个新的 NGINX 配置以及触发重新加载。如果运行的模型和当前的差异不仅仅是 Endpoints，我们则基于新的模型创建一个新的 NGINX 配置文件，替代当前的模型并触发一次重新加载。</p>
+<p>在配置的开始定义了监听器（Listeners）。监听器是 Envoy 监听请求的网络配置，例如 IP 地址和端口。我们这里的 Envoy 在 Docker 容器内运行，因此它需要监听 IP 地址 <code>0.0.0.0</code>，在这种情况下，Envoy 将在端口 <code>10000</code> 上进行监听。</p>
 
-<p>该模型的用途之一是当状态没有变化的时候避免不必要的重新加载，并检测定义中的冲突。</p>
+<p>下面是定义监听器的配置：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">static_resources:
+  listeners:
+  - name: listener_0
+    address:
+      socket_address: { address: <span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">0.0</span>, port_value: <span style="color:#bd93f9">10000</span> }</code></pre></div>
+<h3 id="过滤器">过滤器</h3>
 
-<p>生成 NGINX 配置最终是从一个 Go template 生成的，使用新模型作为这个模板所需要的变量输入。</p>
+<p>通过 Envoy 监听传入的流量，下一步是定义如何处理这些请求。每个监听器都有一组过滤器，并且不同的监听器可以具有一组不同的过滤器。</p>
 
-<h2 id="3-构建-nginx-模型">3.构建 NGINX 模型</h2>
+<p>在我们这个示例中，我们将所有流量代理到 <code>baidu.com</code>，配置完成后我们应该能够通过请求 Envoy 的端点就可以直接看到百度的主页了，而无需更改 URL 地址。</p>
 
-<p>建立模型是一项成本比较高的操作，所以必须使用同步循环。通过使用 <a href="https://github.com/kubernetes/ingress-nginx/blob/master/internal/task/queue.go#L38">work queue</a>，可以不丢失变更并通过 sync.Mutex 移除来强制执行一次同步循环，此外还可以在同步循环的开始和结束之间创建一个时间窗口，从而允许我们摒弃不必要的更新。重要的是要理解，集群中的任何变更都会生成事件，然后 informer 会发送给控制器，这也是使用 work queue 的原因之一。</p>
+<p>过滤器是通过 <code>filter_chains</code> 来定义的，每个过滤器的目的是找到传入请求的匹配项，以使其与目标地址进行匹配：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">static_resources:
+  listeners:
+  - name: listener_0
+    address:
+      socket_address: { address: <span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">0.0</span>, port_value: <span style="color:#bd93f9">10000</span> }
 
-<p>建立模型的操作方式：</p>
-
-<ul>
-<li>通过 <code>CreationTimestamp</code> 字段对 Ingress 规则排序，即先创建的规则优先</li>
-<li>如果相同 host 的相同路径被多个 Ingress 定义，那么先创建的规则优先</li>
-<li>如果多个 Ingress 包含相同 host 的 TLS 部分，那么先创建的规则优先</li>
-<li>如果多个 Ingresses 定义了一个 annotation 影响到 Server 块配置，那么先创建的规则优先</li>
-<li>创建一个 NGINX Servers 列表（按主机名）</li>
-<li>创建一个 NGINX Upstreams 列表</li>
-<li>如果多个 Ingresses 定义了同一个 host 的不同路径，ingress 控制器会合并这些规则</li>
-<li>Annotations 被应用于这个 Ingress 的所有路径</li>
-<li>多个 Ingresses 可以定义不同的 annotations，这些定义不会在 Ingresses 之间共享</li>
-</ul>
-
-<h2 id="4-重新加载">4.重新加载</h2>
-
-<p>下面描述了一些需要重新加载的场景：</p>
-
-<ul>
-<li>新的 Ingress 资源创建</li>
-<li>添加 TLS 部分到现有的 Ingress</li>
-<li>变更 Ingress annotations 不仅仅影响 upstream 配置。对于实例 load-balance 这个 annotation 不需要重新加载</li>
-<li>从 Ingress 中添加/移除路径</li>
-<li>一个 Ingress、Service、Secret 被移除</li>
-<li>一些 Ingress 缺少可用的引用对象时，如 Service 或者 Secret</li>
-<li>Secret 对象被更新了</li>
-</ul>
-
-<h2 id="5-避免重新加载">5.避免重新加载</h2>
-
-<p>在某些情况下，有可能需要避免重新加载，尤其是在 endpoints 发送变化的时候，如 Pod 启动或者被替换时。完全移除重新加载这超过了 Ingress 控制器的范围。这将需要大量的工作，并且有时没有任何意义。仅当 NGINX 变更了读取新配置的方式时，才进行变更，基本上，新的更改不会替代工作进程。</p>
-
-<h3 id="5-1-避免-endpoints-变更时重新加载">5.1 避免 Endpoints 变更时重新加载</h3>
-
-<p>在每个 endpoint 对象变更时，控制器从所有能看到的服务上获取 endpoints 并生成相应的后端对象。然后将这些对象发送给运行在 Nginx 内部的 Lua 处理程序。Lua 程序将这些后端存储在共享内存区域。然后对于在 <code>balancer_by_lua</code> 上下文运行的每个请求，Lua 代码检测 endpoints 选择对应 upstream 并应用已经配置的负载均衡算法，Nginx 负责其余的工作。这样，我们避免在 endpoint 变更时重新加载 Nginx。注意，这也包括仅影响 Nginx upstream 配置的 annoations 变更。</p>
-
-<p>在频繁部署应用的较大集群中，这个特性可以避免大量的 Nginx 重新加载，否则会影响响应延迟，负责均衡质量（每一次重新加载 Nginx 都会重置负载均衡状态）等等。</p>
-
-<h3 id="5-2-避免因错误的配置而中断">5.2 避免因错误的配置而中断</h3>
-
-<p>因为 ingress-nginx 使用 <code>synchronization loop pattern</code>，它对所有匹配到的对象应用配置。如果某些 Ingress 对象配置损坏，如 <code>nginx.ingress.kubernetes.io/configuration-snippet</code> 这个 annotation 语法错误，生成的配置变得无效，将不会重新加载，并不再考虑其它 Ingress。</p>
-
-<p>为了防止这种情况发生，nginx ingress 控制器选择暴露一个 <a href="https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#validatingadmissionwebhook">validating admission webhook server</a> 以确保传入的 ingress 对象可用性。这个 webhook 把传入的 ingress 对象追加到 ingresses 列表上，生成配置并调用 nginx 以确保配置没有语法错误。</p>
-
-<h2 id="参考文档">参考文档</h2>
+    filter_chains:
+    - filters:
+      - name: envoy.http_connection_manager
+        config:
+          stat_prefix: ingress_http
+          route_config:
+            name: local_route
+            virtual_hosts:
+            - name: local_service
+              domains: [<span style="color:#f1fa8c">&#34;*&#34;</span>]
+              routes:
+              - match: { prefix: <span style="color:#f1fa8c">&#34;/&#34;</span> }
+                route: { host_rewrite: www.baidu.com, cluster: service_baidu }
+          http_filters:
+          - name: envoy.router</code></pre></div>
+<p>该过滤器使用了 <code>envoy.http_connection_manager</code>，这是为 HTTP 连接设计的一个内置过滤器:</p>
 
 <ul>
-<li><a href="https://kubernetes.github.io/ingress-nginx/how-it-works/">https://kubernetes.github.io/ingress-nginx/how-it-works/</a></li>
+<li><code>stat_prefix</code>：为连接管理器发出统计信息时使用的一个前缀。</li>
+<li><code>route_config</code>：路由配置，如果虚拟主机匹配上了则检查路由。在我们这里的配置中，无论请求的主机域名是什么，<code>route_config</code> 都匹配所有传入的 HTTP 请求。</li>
+<li><code>routes</code>：如果 URL 前缀匹配，则一组路由规则定义了下一步将发生的状况。<code>/</code> 表示匹配根路由。</li>
+<li><code>host_rewrite</code>：更改 HTTP 请求的入站 Host 头信息。</li>
+<li><code>cluster</code>: 将要处理请求的集群名称，下面会有相应的实现。</li>
+<li><code>http_filters</code>: 该过滤器允许 Envoy 在处理请求时去适应和修改请求。</li>
 </ul>
+
+<h3 id="集群">集群</h3>
+
+<p>当请求于过滤器匹配时，该请求将会传递到集群。下面的配置就是将主机定义为访问 HTTPS 的 baidu.com 域名，如果定义了多个主机，则 Envoy 将执行轮询（Round Robin）策略。配置如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">static_resources:
+  listeners:
+  - name: listener_0
+    address:
+      socket_address: { address: <span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">0.0</span>, port_value: <span style="color:#bd93f9">10000</span> }
+
+    filter_chains:
+    - filters:
+      - name: envoy.http_connection_manager
+        config:
+          stat_prefix: ingress_http
+          route_config:
+            name: local_route
+            virtual_hosts:
+            - name: local_service
+              domains: [<span style="color:#f1fa8c">&#34;*&#34;</span>]
+              routes:
+              - match: { prefix: <span style="color:#f1fa8c">&#34;/&#34;</span> }
+                route: { host_rewrite: www.baidu.com, cluster: service_baidu }
+          http_filters:
+          - name: envoy.router
+
+  clusters:
+  - name: service_baidu
+    connect_timeout: <span style="color:#bd93f9">0.</span>25s
+    type: LOGICAL_DNS
+    dns_lookup_family: V4_ONLY
+    lb_policy: ROUND_ROBIN
+    hosts: [{ socket_address: { address: www.baidu.com, port_value: <span style="color:#bd93f9">443</span> }}]
+    tls_context: { sni: baidu.com }</code></pre></div>
+<h3 id="管理">管理</h3>
+
+<p>最后，还需要配置一个管理模块：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">admin:
+  access_log_path: /tmp/admin_access.log
+  address:
+    socket_address: { address: <span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">0.0</span>, port_value: <span style="color:#bd93f9">9901</span> }</code></pre></div>
+<p>上面的配置定义了 Envoy 的静态配置模板，监听器定义了 Envoy 的端口和 IP 地址，监听器具有一组过滤器来匹配传入的请求，匹配请求后，将请求转发到集群。
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5376999672787220"
+     data-ad-slot="9165834656"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</p>
+
+<h2 id="2-开启代理">2. 开启代理</h2>
+
+<p>配置完成后，可以通过 Docker 容器来启动 Envoy，将上面的配置文件通过 Volume 挂载到容器中的 <code>/etc/envoy/envoy.yaml</code> 文件。</p>
+
+<p>然后使用以下命令启动绑定到端口 80 的 Envoy 容器：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ docker run --name<span style="color:#ff79c6">=</span>envoy -d <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -p <span style="color:#bd93f9">80</span>:10000 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -v <span style="color:#ff79c6">$(</span><span style="color:#8be9fd;font-style:italic">pwd</span><span style="color:#ff79c6">)</span>/manifests/1.getting-started/envoy.yaml:/etc/envoy/envoy.yaml <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  envoyproxy/envoy:latest</code></pre></div>
+<p>启动后，我们可以在本地的 80 端口上去访问应用 <code>curl localhost</code> 来测试代理是否成功。同样我们也可以通过在本地浏览器中访问 <code>localhost</code> 来查看：</p>
+
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200402202659.png" alt="envoy proxy baidu"><figcaption>envoy proxy baidu</figcaption></figure>
+
+<p>可以看到请求被代理到了 <code>baidu.com</code>，而且应该也可以看到 URL 地址没有变化，还是 <code>localhost</code>。</p>
+
+<h2 id="3-管理视图">3. 管理视图</h2>
+
+<p>Envoy 提供了一个管理视图，可以让我们去查看配置、统计信息、日志以及其他 Envoy 内部的一些数据。</p>
+
+<p>我们可以通过添加其他的资源定义来配置 admin，其中也可以定义管理视图的端口，不过需要注意该端口不要和其他监听器配置冲突。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">admin:
+  access_log_path: /tmp/admin_access.log
+  address:
+    socket_address: { address: <span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">0.0</span>, port_value: <span style="color:#bd93f9">9901</span> }</code></pre></div>
+<p>当然我们也可以通过 Docker 容器将管理端口暴露给外部用户。上面的配置就会将管理页面暴露给外部用户，当然我们这里仅仅用于演示是可以的，如果你是用于线上环境还需要做好一些安全保护措施，可以查看 <a href="https://www.envoyproxy.io/docs/envoy/latest/operations/admin">Envoy 的相关文档</a> 了解更多安全配置。</p>
+
+<p>要将管理页面也暴露给外部用户，我们使用如下命令运行另外一个容器：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ docker run --name<span style="color:#ff79c6">=</span>envoy-with-admin -d <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    -p <span style="color:#bd93f9">9901</span>:9901 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    -p <span style="color:#bd93f9">10000</span>:10000 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    -v <span style="color:#ff79c6">$(</span><span style="color:#8be9fd;font-style:italic">pwd</span><span style="color:#ff79c6">)</span>/manifests/1.getting-started/envoy.yaml:/etc/envoy/envoy.yaml <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    envoyproxy/envoy:latest</code></pre></div>
+<p>运行成功后，现在我们可以在浏览器里面输入 <code>localhost:9901</code> 来访问 Envoy 的管理页面：</p>
+
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200402204612.png" alt="envoy admin view"><figcaption>envoy admin view</figcaption></figure>
+
+<blockquote>
+<p>需要注意的是当前的管理页面不仅允许执行一些破坏性的操作（比如，关闭服务），而且还可能暴露一些私有信息（比如统计信息、集群名称、证书信息等）。所以应该只允许通过安全网络去访问管理页面。</p>
+</blockquote>
+
+<p>当然 Envoy 还有很多用法，本文只是一个最简单的入门示例，后续再慢慢深入。</p>
 
 <p><a href="https://youdianzhishi.com/web/course/1012" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
 
@@ -439,25 +543,25 @@ autocomplete('#aa-search-input',
 <h3>相关文章</h3>
 <ul style="margin-bottom: 25px;">
     
-    <li><a href="https://www.qikqiak.com/post/url-rewrite-on-ingress-nginx/">ingress-nginx 中 Rewrite 的使用</a></li>
+    <li><a href="https://www.qikqiak.com/post/install-kubesphere-on-k8s/">在现有 Kubernetes 集群上安装 KubeSphere</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/install-nginx-ingress/">nginx-ingress 的安装使用</a></li>
+    <li><a href="https://www.qikqiak.com/post/k8s-admission-webhook/">深入理解 Kubernetes Admission Webhook</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/how-to-protect-exposed-k8s-server/">如何保护对外暴露的 Kubernetes 服务</a></li>
+    <li><a href="https://www.qikqiak.com/post/k8s-istio-course/">Istio 实训免费视频课程</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/ingress-traefik2/">外部服务发现之 ingress(二)</a></li>
+    <li><a href="https://www.qikqiak.com/post/ingress-nginx-how-to-work/">ingress-nginx 控制器工作原理[译]</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/ingress-traefik1/">外部服务发现之 ingress(一)</a></li>
+    <li><a href="https://www.qikqiak.com/post/use-crd-create-grafana-dashboard/">用 Kubernetes 资源对象创建 Grafana Dashboard</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/traefik-2.1-101/">一文搞懂 Traefik2.1 的使用</a></li>
+    <li><a href="https://www.qikqiak.com/post/alertmanager-when-alert/">AlertManager 何时报警</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/custom-k8s-ingress-controller-with-go/">使用 Golang 自定义 Kubernetes Ingress Controller</a></li>
+    <li><a href="https://www.qikqiak.com/post/install-kafka-in-kubernetes/">在 Kubernetes 集群上部署 Kafka</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/url-rewrite-on-traefik2.x/">Traefik2.X 版本 中 URL Rewrite 的使用</a></li>
+    <li><a href="https://www.qikqiak.com/post/k8s-cluster-balancer/">Kubernetes 集群均衡器 Descheduler</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/automatic-kubernetes-ingress-https-with-lets-encrypt/">Kubernetes Ingress 自动化 HTTPS</a></li>
+    <li><a href="https://www.qikqiak.com/post/k8s-ui-kubevious/">带时光机的 Kubernetes Dashboard - Kubevious</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/pod-mount-single-file/">Pod 中挂载单个文件的方法</a></li>
+    <li><a href="https://www.qikqiak.com/post/get-client-realip/">获取客户端访问真实 IP</a></li>
     
 </ul>
 
@@ -467,12 +571,12 @@ autocomplete('#aa-search-input',
         <ul class="pager blog-pager">
           
             <li class="previous">
-              <a href="https://www.qikqiak.com/post/use-crd-create-grafana-dashboard/" data-toggle="tooltip" data-placement="top" title="用 Kubernetes 资源对象创建 Grafana Dashboard">&larr; 前一篇</a>
+              <a href="https://www.qikqiak.com/post/ingress-nginx-how-to-work/" data-toggle="tooltip" data-placement="top" title="ingress-nginx 控制器工作原理[译]">&larr; 前一篇</a>
             </li>
           
           
             <li class="next">
-              <a href="https://www.qikqiak.com/post/envoy-usage-demo/" data-toggle="tooltip" data-placement="top" title="Envoy 简单入门示例">后一篇 &rarr;</a>
+              <a href="https://www.qikqiak.com/post/devops-base-on-jenkins/" data-toggle="tooltip" data-placement="top" title="基于 Jenkins 的 DevOps 流水线实践">后一篇 &rarr;</a>
             </li>
           
         </ul>
@@ -502,9 +606,9 @@ autocomplete('#aa-search-input',
         owner: 'cnych',
         admin: ['cnych'],
         labels: ['gitment'],
-        title: 'ingress-nginx 控制器工作原理[译]',
+        title: 'Envoy 简单入门示例',
         createIssueManually: true,
-        id: 'ingress-nginx-how-to-work',      
+        id: 'envoy-usage-demo',      
         distractionFreeMode: true  
     });
     gitalk.render('gitalk-container');
