@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [Kubernetes HPA 使用详解](https://www.qikqiak.com/post/k8s-hpa-usage/)
  * [Envoy 简单入门示例](https://www.qikqiak.com/post/envoy-usage-demo/)
  * [ingress-nginx 控制器工作原理](https://www.qikqiak.com/post/ingress-nginx-how-to-work/)
  * [用 Kubernetes 资源对象创建 Grafana Dashboard](https://www.qikqiak.com/post/use-crd-create-grafana-dashboard/)

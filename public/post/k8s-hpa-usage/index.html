@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>Kubernetes HPA 使用详解-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="Kubernetes HPA 使用详解" />
+  <meta name="twitter:title" content="Kubernetes HPA 使用详解" />
+
+  <meta name="description" content="在前面的学习中我们使用用一个 kubectl scale 命令可以来实现 Pod 的扩缩容功能，但是这个毕竟是完全手动操作的，要应对线上的各种复杂情况，我们需要能够做到自动化去感知业务，来自动进行扩缩容。为此，Kubernetes 也为我们提供了这样的一个资源对象：Horizontal Pod Autoscaling（Pod 水平自动伸缩），简称HPA，HPA 通过监控分析一些控制器控制的所有 Pod 的负载变化情况来确定是否需要调整 Pod 的副本数量，这是 HPA 最基本的原理：
+
+
+
+我们可以简单的通过 kubectl autoscale 命令来创建一个 HPA 资源对象，HPA Controller默认30s轮询一次（可通过 kube-controller-manager 的--horizontal-pod-autoscaler-sync-period 参数进行设置），查询指定的资源中的 Pod 资源使用率，并且与创建时设定的值和指标做对比，从而实现自动伸缩的功能。">
+  <meta property="og:description" content="在前面的学习中我们使用用一个 kubectl scale 命令可以来实现 Pod 的扩缩容功能，但是这个毕竟是完全手动操作的，要应对线上的各种复杂情况，我们需要能够做到自动化去感知业务，来自动进行扩缩容。为此，Kubernetes 也为我们提供了这样的一个资源对象：Horizontal Pod Autoscaling（Pod 水平自动伸缩），简称HPA，HPA 通过监控分析一些控制器控制的所有 Pod 的负载变化情况来确定是否需要调整 Pod 的副本数量，这是 HPA 最基本的原理：
+
+
+
+我们可以简单的通过 kubectl autoscale 命令来创建一个 HPA 资源对象，HPA Controller默认30s轮询一次（可通过 kube-controller-manager 的--horizontal-pod-autoscaler-sync-period 参数进行设置），查询指定的资源中的 Pod 资源使用率，并且与创建时设定的值和指标做对比，从而实现自动伸缩的功能。">
+  <meta name="twitter:description" content="在前面的学习中我们使用用一个 kubectl scale 命令可以来实现 Pod 的扩缩容功能，但是这个毕竟是完全手动操作的，要应对线上的各种复杂情况，我们需要能够做到自动化去感知业务，来自动进行扩缩容。为此，Kubernetes 也为我们提供了这样的一个资源对象：Horizontal Pod Autoscaling（Pod 水平自动伸缩），简称HPA，HPA …">
+  <meta name="author" content=""/>
+  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/favicon.png"/>
+  <meta property="og:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:image" content="https://www.qikqiak.com/img/avatar.jpeg" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/k8s-hpa-usage/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.55.6" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/k8s-hpa-usage/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
+
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
+    <!--[if lt IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <![endif]-->
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, hpa, prometheus, cpu, 内存, 自定义">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qikqiak-blog-logo.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="首页" href="https://www.qikqiak.com/">首页</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200407200508.png" data-img-desc-1="Freediver blowing bubble rings in the deep."></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>Kubernetes HPA 使用详解</h1>
+                  
+                  
+                    <span class="post-meta">
+  
+    发表于 April 7, 2020
+  
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>Kubernetes HPA 使用详解</h1>
+                
+                
+                  <span class="post-meta">
+  
+    发表于 April 7, 2020
+  
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/hpa/">hpa</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/prometheus/">prometheus</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#metrics-server">Metrics Server</a>
+<ul>
+<li><a href="#聚合-api">聚合 API</a></li>
+<li><a href="#安装">安装</a></li>
+</ul></li>
+<li><a href="#基于-cpu">基于 CPU</a></li>
+<li><a href="#基于内存">基于内存</a></li>
+<li><a href="#基于自定义指标">基于自定义指标</a></li>
+</ul></li>
+</ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>在前面的学习中我们使用用一个 <code>kubectl scale</code> 命令可以来实现 Pod 的扩缩容功能，但是这个毕竟是完全手动操作的，要应对线上的各种复杂情况，我们需要能够做到自动化去感知业务，来自动进行扩缩容。为此，Kubernetes 也为我们提供了这样的一个资源对象：<code>Horizontal Pod Autoscaling（Pod 水平自动伸缩）</code>，简称<code>HPA</code>，HPA 通过监控分析一些控制器控制的所有 Pod 的负载变化情况来确定是否需要调整 Pod 的副本数量，这是 HPA 最基本的原理：</p>
+
+<figure><img src="https://www.qikqiak.com/k8strain/assets/img/controller/horizontal-pod-autoscaler.svg" alt="HPA"><figcaption>HPA</figcaption></figure>
+
+<p>我们可以简单的通过 <code>kubectl autoscale</code> 命令来创建一个 HPA 资源对象，<code>HPA Controller</code>默认<code>30s</code>轮询一次（可通过 <code>kube-controller-manager</code> 的<code>--horizontal-pod-autoscaler-sync-period</code> 参数进行设置），查询指定的资源中的 Pod 资源使用率，并且与创建时设定的值和指标做对比，从而实现自动伸缩的功能。</p>
+
+<h2 id="metrics-server">Metrics Server</h2>
+
+<p>在 HPA 的第一个版本中，我们需要 <code>Heapster</code> 提供 CPU 和内存指标，在 HPA v2 过后就需要安装 Metrcis Server 了，<code>Metrics Server</code> 可以通过标准的 Kubernetes API 把监控数据暴露出来，有了 <code>Metrics Server</code> 之后，我们就完全可以通过标准的 Kubernetes API 来访问我们想要获取的监控数据了：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">https://10.96.0.1/apis/metrics.k8s.io/v1beta1/namespaces/&lt;namespace-name&gt;/pods/&lt;pod-name&gt;</code></pre></div>
+<p>比如当我们访问上面的 API 的时候，我们就可以获取到该 Pod 的资源数据，这些数据其实是来自于 kubelet 的 <code>Summary API</code> 采集而来的。不过需要说明的是我们这里可以通过标准的 API 来获取资源监控数据，并不是因为 <code>Metrics Server</code> 就是 APIServer 的一部分，而是通过 Kubernetes 提供的 <code>Aggregator</code> 汇聚插件来实现的，是独立于 APIServer 之外运行的。</p>
+
+<figure><img src="https://www.qikqiak.com/k8strain/assets/img/controller/k8s-hpa-ms.png" alt="HAP Metrics Server"><figcaption>HAP Metrics Server</figcaption></figure>
+
+<h3 id="聚合-api">聚合 API</h3>
+
+<p><code>Aggregator</code> 允许开发人员编写一个自己的服务，把这个服务注册到 Kubernetes 的 APIServer 里面去，这样我们就可以像原生的 APIServer 提供的 API 使用自己的 API 了，我们把自己的服务运行在 Kubernetes 集群里面，然后 Kubernetes 的 <code>Aggregator</code> 通过 Service 名称就可以转发到我们自己写的 Service 里面去了。这样这个聚合层就带来了很多好处：</p>
+
+<ul>
+<li>增加了 API 的扩展性，开发人员可以编写自己的 API 服务来暴露他们想要的 API。</li>
+<li>丰富了 API，核心 kubernetes 团队阻止了很多新的 API 提案，通过允许开发人员将他们的 API 作为单独的服务公开，这样就无须社区繁杂的审查了。</li>
+<li>开发分阶段实验性 API，新的 API 可以在单独的聚合服务中开发，当它稳定之后，在合并会 APIServer 就很容易了。</li>
+<li>确保新 API 遵循 Kubernetes 约定，如果没有这里提出的机制，社区成员可能会被迫推出自己的东西，这样很可能造成社区成员和社区约定不一致。</li>
+</ul>
+
+<h3 id="安装">安装</h3>
+
+<p>所以现在我们要使用 HPA，就需要在集群中安装 <code>Metrics Server</code> 服务，要安装 <code>Metrics Server</code> 就需要开启 <code>Aggregator</code>，因为 <code>Metrics Server</code> 就是通过该代理进行扩展的，不过我们集群是通过 Kubeadm 搭建的，默认已经开启了，如果是二进制方式安装的集群，需要单独配置 kube-apsierver 添加如下所示的参数：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">--requestheader-client-ca-file=&lt;path to aggregator CA cert&gt;
+--requestheader-allowed-names=aggregator
+--requestheader-extra-headers-prefix=X-Remote-Extra-
+--requestheader-group-headers=X-Remote-Group
+--requestheader-username-headers=X-Remote-User
+--proxy-client-cert-file=&lt;path to aggregator proxy cert&gt;
+--proxy-client-key-file=&lt;path to aggregator proxy key&gt;</code></pre></div>
+<p>如果 <code>kube-proxy</code> 没有和 APIServer 运行在同一台主机上，那么需要确保启用了如下 kube-apsierver 的参数：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">--enable-aggregator-routing=<span style="color:#ff79c6">true</span></code></pre></div>
+<p>对于这些证书的生成方式，我们可以查看官方文档：<a href="https://github.com/kubernetes-sigs/apiserver-builder-alpha/blob/master/docs/concepts/auth.md">https://github.com/kubernetes-sigs/apiserver-builder-alpha/blob/master/docs/concepts/auth.md</a>。</p>
+
+<p><code>Aggregator</code> 聚合层启动完成后，就可以来安装 <code>Metrics Server</code> 了，我们可以获取该仓库的官方安装资源清单：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ git clone https://github.com/kubernetes-incubator/metrics-server
+$ <span style="color:#8be9fd;font-style:italic">cd</span> metrics-server
+$ kubectl apply -f deploy/1.8+/</code></pre></div>
+<p>在部署之前，修改 <code>metrcis-server/deploy/1.8+/metrics-server-deployment.yaml</code> 的镜像地址为：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">containers:
+- name: metrics-server
+  image: gcr.azk8s.cn/google_containers/metrics-server-amd64:v0.<span style="color:#bd93f9">3.6</span></code></pre></div>
+<p>等部署完成后，可以查看 Pod 日志是否正常：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-system -l k8s-app<span style="color:#ff79c6">=</span>metrics-server
+NAME                              READY   STATUS    RESTARTS   AGE
+metrics-server-6886856d7c-g5k6q   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          2m39s
+$ kubectl logs -f metrics-server-6886856d7c-g5k6q -n kube-system
+......
+E1119 <span style="color:#bd93f9">09</span>:05:57.234312       <span style="color:#bd93f9">1</span> manager.go:111<span style="color:#ff79c6">]</span> unable to fully collect metrics: <span style="color:#ff79c6">[</span>unable to fully scrape metrics from <span style="color:#8be9fd;font-style:italic">source</span> kubelet_summary:ydzs-node1: unable to fetch metrics from Kubelet ydzs-node1 <span style="color:#ff79c6">(</span>ydzs-node1<span style="color:#ff79c6">)</span>: Get https://ydzs-node1:10250/stats/summary?only_cpu_and_memory<span style="color:#ff79c6">=</span>true: dial tcp: lookup ydzs-node1 on <span style="color:#bd93f9">10</span>.96.0.10:53: no such host, unable to fully scrape metrics from <span style="color:#8be9fd;font-style:italic">source</span> kubelet_summary:ydzs-node4: unable to fetch metrics from Kubelet ydzs-node4 <span style="color:#ff79c6">(</span>ydzs-node4<span style="color:#ff79c6">)</span>: Get https://ydzs-node4:10250/stats/summary?only_cpu_and_memory<span style="color:#ff79c6">=</span>true: dial tcp: lookup ydzs-node4 on <span style="color:#bd93f9">10</span>.96.0.10:53: no such host, unable to fully scrape metrics from <span style="color:#8be9fd;font-style:italic">source</span> kubelet_summary:ydzs-node3: unable to fetch metrics from Kubelet ydzs-node3 <span style="color:#ff79c6">(</span>ydzs-node3<span style="color:#ff79c6">)</span>: Get https://ydzs-node3:10250/stats/summary?only_cpu_and_memory<span style="color:#ff79c6">=</span>true: dial tcp: lookup ydzs-node3 on <span style="color:#bd93f9">10</span>.96.0.10:53: no such host, unable to fully scrape metrics from <span style="color:#8be9fd;font-style:italic">source</span> kubelet_summary:ydzs-master: unable to fetch metrics from Kubelet ydzs-master <span style="color:#ff79c6">(</span>ydzs-master<span style="color:#ff79c6">)</span>: Get https://ydzs-master:10250/stats/summary?only_cpu_and_memory<span style="color:#ff79c6">=</span>true: dial tcp: lookup ydzs-master on <span style="color:#bd93f9">10</span>.96.0.10:53: no such host, unable to fully scrape metrics from <span style="color:#8be9fd;font-style:italic">source</span> kubelet_summary:ydzs-node2: unable to fetch metrics from Kubelet ydzs-node2 <span style="color:#ff79c6">(</span>ydzs-node2<span style="color:#ff79c6">)</span>: Get https://ydzs-node2:10250/stats/summary?only_cpu_and_memory<span style="color:#ff79c6">=</span>true: dial tcp: lookup ydzs-node2 on <span style="color:#bd93f9">10</span>.96.0.10:53: no such host<span style="color:#ff79c6">]</span></code></pre></div>
+<p>我们可以发现 Pod 中出现了一些错误信息：<code>xxx: no such host</code>，我们看到这个错误信息一般就可以确定是 DNS 解析不了造成的，我们可以看到 Metrics Server 会通过 kubelet 的 10250 端口获取信息，使用的是 hostname，我们部署集群的时候在节点的 <code>/etc/hosts</code> 里面添加了节点的 hostname 和 ip 的映射，但是是我们的 Metrics Server 的 Pod 内部并没有这个 hosts 信息，当然也就不识别 hostname 了，要解决这个问题，有两种方法：
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5376999672787220"
+     data-ad-slot="9165834656"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+第一种方法就是在集群内部的 DNS 服务里面添加上 hostname 的解析，比如我们这里集群中使用的是 <code>CoreDNS</code>，我们就可以去修改下 CoreDNS 的 Configmap 信息，添加上 hosts 信息：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl edit configmap coredns -n kube-system
+apiVersion: v1
+data:
+  Corefile: |
+    .:53 <span style="color:#ff79c6">{</span>
+        errors
+        health
+        hosts <span style="color:#ff79c6">{</span>  <span style="color:#6272a4"># 添加集群节点hosts隐射信息</span>
+          <span style="color:#bd93f9">10</span>.151.30.11 ydzs-master
+          <span style="color:#bd93f9">10</span>.151.30.57 ydzs-node3
+          <span style="color:#bd93f9">10</span>.151.30.59 ydzs-node4
+          <span style="color:#bd93f9">10</span>.151.30.22 ydzs-node1
+          <span style="color:#bd93f9">10</span>.151.30.23 ydzs-node2
+          fallthrough
+        <span style="color:#ff79c6">}</span>
+        kubernetes cluster.local in-addr.arpa ip6.arpa <span style="color:#ff79c6">{</span>
+           pods insecure
+           upstream
+           fallthrough in-addr.arpa ip6.arpa
+        <span style="color:#ff79c6">}</span>
+        prometheus :9153
+        proxy . /etc/resolv.conf
+        cache <span style="color:#bd93f9">30</span>
+        reload
+    <span style="color:#ff79c6">}</span>
+kind: ConfigMap
+metadata:
+  creationTimestamp: <span style="color:#bd93f9">2019</span>-05-18T11:07:46Z
+  name: coredns
+  namespace: kube-system</code></pre></div>
+<p>这样当在集群内部访问集群的 hostname 的时候就可以解析到对应的 ip 了，另外一种方法就是在 metrics-server 的启动参数中修改 <code>kubelet-preferred-address-types</code> 参数，如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">args:
+- --cert-dir=/tmp
+- --secure-port=<span style="color:#bd93f9">4443</span>
+- --kubelet-preferred-address-types=InternalIP</code></pre></div>
+<p>我们这里使用第二种方式，然后重新安装：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-system -l k8s-app<span style="color:#ff79c6">=</span>metrics-server
+NAME                              READY   STATUS        RESTARTS   AGE
+metrics-server-6dcfdf89b5-tvdcp   <span style="color:#bd93f9">1</span>/1     Running       <span style="color:#bd93f9">0</span>          33s
+$ kubectl logs -f metric-metrics-server-58fc94d9f-jlxcb -n kube-system
+......
+E1119 <span style="color:#bd93f9">09</span>:08:49.805959       <span style="color:#bd93f9">1</span> manager.go:111<span style="color:#ff79c6">]</span> unable to fully collect metrics: <span style="color:#ff79c6">[</span>unable to fully scrape metrics from <span style="color:#8be9fd;font-style:italic">source</span> kubelet_summary:ydzs-node3: unable to fetch metrics from Kubelet ydzs-node3 <span style="color:#ff79c6">(</span><span style="color:#bd93f9">10</span>.151.30.57<span style="color:#ff79c6">)</span>: Get https://10.151.30.57:10250/stats/summary?only_cpu_and_memory<span style="color:#ff79c6">=</span>true: x509: cannot validate certificate <span style="color:#ff79c6">for</span> <span style="color:#bd93f9">10</span>.151.30.57 because it doesn<span style="color:#f1fa8c">&#39;t contain any IP SANs, unable to fully scrape metrics from source kubelet_summary:ydzs-node4: unable to fetch metrics from Kubelet ydzs-node4 (10.151.30.59): Get https://10.151.30.59:10250/stats/summary?only_cpu_and_memory=true: x509: cannot validate certificate for 10.151.30.59 because it doesn&#39;</span>t contain any IP SANs, unable to fully scrape metrics from <span style="color:#8be9fd;font-style:italic">source</span> kubelet_summary:ydzs-node2: unable to fetch metrics from Kubelet ydzs-node2 <span style="color:#ff79c6">(</span><span style="color:#bd93f9">10</span>.151.30.23<span style="color:#ff79c6">)</span>: Get https://10.151.30.23:10250/stats/summary?only_cpu_and_memory<span style="color:#ff79c6">=</span>true: x509: cannot validate certificate <span style="color:#ff79c6">for</span> <span style="color:#bd93f9">10</span>.151.30.23 because it doesn<span style="color:#f1fa8c">&#39;t contain any IP SANs, unable to fully scrape metrics from source kubelet_summary:ydzs-master: unable to fetch metrics from Kubelet ydzs-master (10.151.30.11): Get https://10.151.30.11:10250/stats/summary?only_cpu_and_memory=true: x509: cannot validate certificate for 10.151.30.11 because it doesn&#39;</span>t contain any IP SANs, unable to fully scrape metrics from <span style="color:#8be9fd;font-style:italic">source</span> kubelet_summary:ydzs-node1: unable to fetch metrics from Kubelet ydzs-node1 <span style="color:#ff79c6">(</span><span style="color:#bd93f9">10</span>.151.30.22<span style="color:#ff79c6">)</span>: Get https://10.151.30.22:10250/stats/summary?only_cpu_and_memory<span style="color:#ff79c6">=</span>true: x509: cannot validate certificate <span style="color:#ff79c6">for</span> <span style="color:#bd93f9">10</span>.151.30.22 because it doesn&#39;t contain any IP SANs<span style="color:#ff79c6">]</span></code></pre></div>
+<p>因为部署集群的时候，CA 证书并没有把各个节点的 IP 签上去，所以这里 <code>Metrics Server</code> 通过 IP 去请求时，提示签的证书没有对应的 IP（错误：<code>x509: cannot validate certificate for 10.151.30.22 because it doesn’t contain any IP SANs</code>），我们可以添加一个<code>--kubelet-insecure-tls</code>参数跳过证书校验：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">args:
+- --cert-dir=/tmp
+- --secure-port=<span style="color:#bd93f9">4443</span>
+- --kubelet-insecure-tls
+- --kubelet-preferred-address-types=InternalIP</code></pre></div>
+<p>然后再重新安装即可成功！可以通过如下命令来验证：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">$ kubectl apply -f deploy/<span style="color:#bd93f9">1.8</span>+/
+$ kubectl get pods -n kube-system -l k8s-app=metrics-server
+NAME                              READY   STATUS    RESTARTS   AGE
+metrics-server-5d4dbb78bb-6klw6   <span style="color:#bd93f9">1</span>/<span style="color:#bd93f9">1</span>     Running   <span style="color:#bd93f9">0</span>          14s
+$ kubectl logs -f metrics-server-5d4dbb78bb-6klw6 -n kube-system
+I1119 <span style="color:#bd93f9">09</span>:<span style="color:#bd93f9">10</span>:<span style="color:#bd93f9">44.249092</span>       <span style="color:#bd93f9">1</span> serving.go:<span style="color:#bd93f9">312</span>] Generated self-signed cert (/tmp/apiserver.crt, /tmp/apiserver.key)
+I1119 <span style="color:#bd93f9">09</span>:<span style="color:#bd93f9">10</span>:<span style="color:#bd93f9">45.264076</span>       <span style="color:#bd93f9">1</span> secure_serving.go:<span style="color:#bd93f9">116</span>] Serving securely on [::]:<span style="color:#bd93f9">4443</span>
+$ kubectl get apiservice | grep metrics
+v1beta1.metrics.k8s.io                 kube-system/metrics-server   True        9m
+$ kubectl get --raw <span style="color:#f1fa8c">&#34;/apis/metrics.k8s.io/v1beta1/nodes&#34;</span>
+{<span style="color:#f1fa8c">&#34;kind&#34;</span>:<span style="color:#f1fa8c">&#34;NodeMetricsList&#34;</span>,<span style="color:#f1fa8c">&#34;apiVersion&#34;</span>:<span style="color:#f1fa8c">&#34;metrics.k8s.io/v1beta1&#34;</span>,<span style="color:#f1fa8c">&#34;metadata&#34;</span>:{<span style="color:#f1fa8c">&#34;selfLink&#34;</span>:<span style="color:#f1fa8c">&#34;/apis/metrics.k8s.io/v1beta1/nodes&#34;</span>},<span style="color:#f1fa8c">&#34;items&#34;</span>:[{<span style="color:#f1fa8c">&#34;metadata&#34;</span>:{<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;ydzs-node3&#34;</span>,<span style="color:#f1fa8c">&#34;selfLink&#34;</span>:<span style="color:#f1fa8c">&#34;/apis/metrics.k8s.io/v1beta1/nodes/ydzs-node3&#34;</span>,<span style="color:#f1fa8c">&#34;creationTimestamp&#34;</span>:<span style="color:#f1fa8c">&#34;2019-11-19T09:11:53Z&#34;</span>},<span style="color:#f1fa8c">&#34;timestamp&#34;</span>:<span style="color:#f1fa8c">&#34;2019-11-19T09:11:38Z&#34;</span>,<span style="color:#f1fa8c">&#34;window&#34;</span>:<span style="color:#f1fa8c">&#34;30s&#34;</span>,<span style="color:#f1fa8c">&#34;usage&#34;</span>:{<span style="color:#f1fa8c">&#34;cpu&#34;</span>:<span style="color:#f1fa8c">&#34;240965441n&#34;</span>,<span style="color:#f1fa8c">&#34;memory&#34;</span>:<span style="color:#f1fa8c">&#34;3004360Ki&#34;</span>}},{<span style="color:#f1fa8c">&#34;metadata&#34;</span>:{<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;ydzs-node4&#34;</span>,<span style="color:#f1fa8c">&#34;selfLink&#34;</span>:<span style="color:#f1fa8c">&#34;/apis/metrics.k8s.io/v1beta1/nodes/ydzs-node4&#34;</span>,<span style="color:#f1fa8c">&#34;creationTimestamp&#34;</span>:<span style="color:#f1fa8c">&#34;2019-11-19T09:11:53Z&#34;</span>},<span style="color:#f1fa8c">&#34;timestamp&#34;</span>:<span style="color:#f1fa8c">&#34;2019-11-19T09:11:37Z&#34;</span>,<span style="color:#f1fa8c">&#34;window&#34;</span>:<span style="color:#f1fa8c">&#34;30s&#34;</span>,<span style="color:#f1fa8c">&#34;usage&#34;</span>:{<span style="color:#f1fa8c">&#34;cpu&#34;</span>:<span style="color:#f1fa8c">&#34;167036681n&#34;</span>,<span style="color:#f1fa8c">&#34;memory&#34;</span>:<span style="color:#f1fa8c">&#34;2574664Ki&#34;</span>}},{<span style="color:#f1fa8c">&#34;metadata&#34;</span>:{<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;ydzs-master&#34;</span>,<span style="color:#f1fa8c">&#34;selfLink&#34;</span>:<span style="color:#f1fa8c">&#34;/apis/metrics.k8s.io/v1beta1/nodes/ydzs-master&#34;</span>,<span style="color:#f1fa8c">&#34;creationTimestamp&#34;</span>:<span style="color:#f1fa8c">&#34;2019-11-19T09:11:53Z&#34;</span>},<span style="color:#f1fa8c">&#34;timestamp&#34;</span>:<span style="color:#f1fa8c">&#34;2019-11-19T09:11:38Z&#34;</span>,<span style="color:#f1fa8c">&#34;window&#34;</span>:<span style="color:#f1fa8c">&#34;30s&#34;</span>,<span style="color:#f1fa8c">&#34;usage&#34;</span>:{<span style="color:#f1fa8c">&#34;cpu&#34;</span>:<span style="color:#f1fa8c">&#34;350907350n&#34;</span>,<span style="color:#f1fa8c">&#34;memory&#34;</span>:<span style="color:#f1fa8c">&#34;2986716Ki&#34;</span>}},{<span style="color:#f1fa8c">&#34;metadata&#34;</span>:{<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;ydzs-node1&#34;</span>,<span style="color:#f1fa8c">&#34;selfLink&#34;</span>:<span style="color:#f1fa8c">&#34;/apis/metrics.k8s.io/v1beta1/nodes/ydzs-node1&#34;</span>,<span style="color:#f1fa8c">&#34;creationTimestamp&#34;</span>:<span style="color:#f1fa8c">&#34;2019-11-19T09:11:53Z&#34;</span>},<span style="color:#f1fa8c">&#34;timestamp&#34;</span>:<span style="color:#f1fa8c">&#34;2019-11-19T09:11:39Z&#34;</span>,<span style="color:#f1fa8c">&#34;window&#34;</span>:<span style="color:#f1fa8c">&#34;30s&#34;</span>,<span style="color:#f1fa8c">&#34;usage&#34;</span>:{<span style="color:#f1fa8c">&#34;cpu&#34;</span>:<span style="color:#f1fa8c">&#34;1319638039n&#34;</span>,<span style="color:#f1fa8c">&#34;memory&#34;</span>:<span style="color:#f1fa8c">&#34;2094376Ki&#34;</span>}},{<span style="color:#f1fa8c">&#34;metadata&#34;</span>:{<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;ydzs-node2&#34;</span>,<span style="color:#f1fa8c">&#34;selfLink&#34;</span>:<span style="color:#f1fa8c">&#34;/apis/metrics.k8s.io/v1beta1/nodes/ydzs-node2&#34;</span>,<span style="color:#f1fa8c">&#34;creationTimestamp&#34;</span>:<span style="color:#f1fa8c">&#34;2019-11-19T09:11:53Z&#34;</span>},<span style="color:#f1fa8c">&#34;timestamp&#34;</span>:<span style="color:#f1fa8c">&#34;2019-11-19T09:11:36Z&#34;</span>,<span style="color:#f1fa8c">&#34;window&#34;</span>:<span style="color:#f1fa8c">&#34;30s&#34;</span>,<span style="color:#f1fa8c">&#34;usage&#34;</span>:{<span style="color:#f1fa8c">&#34;cpu&#34;</span>:<span style="color:#f1fa8c">&#34;320381888n&#34;</span>,<span style="color:#f1fa8c">&#34;memory&#34;</span>:<span style="color:#f1fa8c">&#34;3270368Ki&#34;</span>}}]}
+$ kubectl top nodes
+NAME          CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+ydzs-master   351m         <span style="color:#bd93f9">17</span>%    2916Mi          <span style="color:#bd93f9">79</span>%       
+ydzs-node1    1320m        <span style="color:#bd93f9">33</span>%    2045Mi          <span style="color:#bd93f9">26</span>%       
+ydzs-node2    321m         <span style="color:#bd93f9">8</span>%     3193Mi          <span style="color:#bd93f9">41</span>%       
+ydzs-node3    241m         <span style="color:#bd93f9">6</span>%     2933Mi          <span style="color:#bd93f9">37</span>%       
+ydzs-node4    168m         <span style="color:#bd93f9">4</span>%     2514Mi          <span style="color:#bd93f9">32</span>% </code></pre></div>
+<p>现在我们可以通过 <code>kubectl top</code> 命令来获取到资源数据了，证明 <code>Metrics Server</code> 已经安装成功了。</p>
+
+<h2 id="基于-cpu">基于 CPU</h2>
+
+<p>现在我们用 Deployment 来创建一个 Nginx Pod，然后利用 <code>HPA</code> 来进行自动扩缩容。资源清单如下所示：（hpa-demo.yaml）</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hpa-demo
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: <span style="color:#bd93f9">80</span></code></pre></div>
+<p>然后直接创建 Deployment：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f hpa-demo.yaml
+deployment.apps/hpa-demo created
+$ kubectl get pods -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>nginx
+NAME                        READY   STATUS    RESTARTS   AGE
+hpa-demo-85ff79dd56-pz8th   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          21s</code></pre></div>
+<p>现在我们来创建一个 <code>HPA</code> 资源对象，可以使用<code>kubectl autoscale</code>命令来创建：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl autoscale deployment hpa-demo --cpu-percent<span style="color:#ff79c6">=</span><span style="color:#bd93f9">10</span> --min<span style="color:#ff79c6">=</span><span style="color:#bd93f9">1</span> --max<span style="color:#ff79c6">=</span><span style="color:#bd93f9">10</span>
+horizontalpodautoscaler.autoscaling/hpa-demo autoscaled
+$ kubectl get hpa
+NAME       REFERENCE             TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+hpa-demo   Deployment/hpa-demo   &lt;unknown&gt;/10%   <span style="color:#bd93f9">1</span>         <span style="color:#bd93f9">10</span>        <span style="color:#bd93f9">1</span>          16s</code></pre></div>
+<p>此命令创建了一个关联资源 hpa-demo 的 HPA，最小的 Pod 副本数为1，最大为10。HPA 会根据设定的 cpu 使用率（10%）动态的增加或者减少 Pod 数量。</p>
+
+<p>当然我们依然还是可以通过创建 YAML 文件的形式来创建 HPA 资源对象。如果我们不知道怎么编写的话，可以查看上面命令行创建的HPA的YAML文件：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get hpa hpa-demo -o yaml
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  annotations:
+    autoscaling.alpha.kubernetes.io/conditions: <span style="color:#f1fa8c">&#39;[{&#34;type&#34;:&#34;AbleToScale&#34;,&#34;status&#34;:&#34;True&#34;,&#34;lastTransitionTime&#34;:&#34;2019-11-19T09:15:12Z&#34;,&#34;reason&#34;:&#34;SucceededGetScale&#34;,&#34;message&#34;:&#34;the
+</span><span style="color:#f1fa8c">      HPA controller was able to get the target&#39;&#39;s current scale&#34;},{&#34;type&#34;:&#34;ScalingActive&#34;,&#34;status&#34;:&#34;False&#34;,&#34;lastTransitionTime&#34;:&#34;2019-11-19T09:15:12Z&#34;,&#34;reason&#34;:&#34;FailedGetResourceMetric&#34;,&#34;message&#34;:&#34;the
+</span><span style="color:#f1fa8c">      HPA was unable to compute the replica count: missing request for cpu&#34;}]&#39;</span>
+  creationTimestamp: <span style="color:#f1fa8c">&#34;2019-11-19T09:14:56Z&#34;</span>
+  name: hpa-demo
+  namespace: default
+  resourceVersion: <span style="color:#f1fa8c">&#34;3094084&#34;</span>
+  selfLink: /apis/autoscaling/v1/namespaces/default/horizontalpodautoscalers/hpa-demo
+  uid: b84d79f1-75b0-46e0-95b5-4cbe3509233b
+spec:
+  maxReplicas: <span style="color:#bd93f9">10</span>
+  minReplicas: <span style="color:#bd93f9">1</span>
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: hpa-demo
+  targetCPUUtilizationPercentage: <span style="color:#bd93f9">10</span>
+status:
+  currentReplicas: <span style="color:#bd93f9">1</span>
+  desiredReplicas: <span style="color:#bd93f9">0</span></code></pre></div>
+<p>然后我们可以根据上面的 YAML 文件就可以自己来创建一个基于 YAML 的 HPA 描述文件了。但是我们发现上面信息里面出现了一些 Fail 信息，我们来查看下这个 HPA 对象的信息：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl describe hpa hpa-demo
+Name:                                                  hpa-demo
+Namespace:                                             default
+Labels:                                                &lt;none&gt;
+Annotations:                                           &lt;none&gt;
+CreationTimestamp:                                     Tue, <span style="color:#bd93f9">19</span> Nov <span style="color:#bd93f9">2019</span> <span style="color:#bd93f9">17</span>:14:56 +0800
+Reference:                                             Deployment/hpa-demo
+Metrics:                                               <span style="color:#ff79c6">(</span> current / target <span style="color:#ff79c6">)</span>
+  resource cpu on pods  <span style="color:#ff79c6">(</span>as a percentage of request<span style="color:#ff79c6">)</span>:  &lt;unknown&gt; / <span style="color:#bd93f9">10</span>%
+Min replicas:                                          <span style="color:#bd93f9">1</span>
+Max replicas:                                          <span style="color:#bd93f9">10</span>
+Deployment pods:                                       <span style="color:#bd93f9">1</span> current / <span style="color:#bd93f9">0</span> desired
+Conditions:
+  Type           Status  Reason                   Message
+  ----           ------  ------                   -------
+  AbleToScale    True    SucceededGetScale        the HPA controller was able to get the target&#39;s current scale
+  ScalingActive  False   FailedGetResourceMetric  the HPA was unable to compute the replica count: missing request <span style="color:#ff79c6">for</span> cpu
+Events:
+  Type     Reason                        Age                From                       Message
+  ----     ------                        ----               ----                       -------
+  Warning  FailedGetResourceMetric       14s <span style="color:#ff79c6">(</span>x4 over 60s<span style="color:#ff79c6">)</span>  horizontal-pod-autoscaler  missing request <span style="color:#ff79c6">for</span> cpu
+  Warning  FailedComputeMetricsReplicas  14s <span style="color:#ff79c6">(</span>x4 over 60s<span style="color:#ff79c6">)</span>  horizontal-pod-autoscaler  invalid metrics <span style="color:#ff79c6">(</span><span style="color:#bd93f9">1</span> invalid out of <span style="color:#bd93f9">1</span><span style="color:#ff79c6">)</span>, first error is: failed to get cpu utilization: missing request <span style="color:#ff79c6">for</span> cpu</code></pre></div>
+<p>我们可以看到上面的事件信息里面出现了 <code>failed to get cpu utilization: missing request for cpu</code> 这样的错误信息。这是因为我们上面创建的 Pod 对象没有添加 request 资源声明，这样导致 HPA 读取不到 CPU 指标信息，所以如果要想让 HPA 生效，对应的 Pod 资源必须添加 requests 资源声明，更新我们的资源清单文件：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hpa-demo
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: <span style="color:#bd93f9">80</span>
+        resources:
+          requests:
+            memory: 50Mi
+            cpu: 50m</code></pre></div>
+<p>然后重新更新 Deployment，重新创建 HPA 对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f hpa.yaml 
+deployment.apps/hpa-demo configured
+$ kubectl get pods -o wide -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>nginx
+NAME                        READY   STATUS    RESTARTS   AGE     IP            NODE         NOMINATED NODE   READINESS GATES
+hpa-demo-69968bb59f-twtdp   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          4m11s   <span style="color:#bd93f9">10</span>.244.4.97   ydzs-node4   &lt;none&gt;           &lt;none&gt;
+$ kubectl delete hpa hpa-demo
+horizontalpodautoscaler.autoscaling <span style="color:#f1fa8c">&#34;hpa-demo&#34;</span> deleted
+$ kubectl autoscale deployment hpa-demo --cpu-percent<span style="color:#ff79c6">=</span><span style="color:#bd93f9">10</span> --min<span style="color:#ff79c6">=</span><span style="color:#bd93f9">1</span> --max<span style="color:#ff79c6">=</span><span style="color:#bd93f9">10</span>
+horizontalpodautoscaler.autoscaling/hpa-demo autoscaled
+$ kubectl describe hpa hpa-demo                                          
+Name:                                                  hpa-demo
+Namespace:                                             default
+Labels:                                                &lt;none&gt;
+Annotations:                                           &lt;none&gt;
+CreationTimestamp:                                     Tue, <span style="color:#bd93f9">19</span> Nov <span style="color:#bd93f9">2019</span> <span style="color:#bd93f9">17</span>:23:49 +0800
+Reference:                                             Deployment/hpa-demo
+Metrics:                                               <span style="color:#ff79c6">(</span> current / target <span style="color:#ff79c6">)</span>
+  resource cpu on pods  <span style="color:#ff79c6">(</span>as a percentage of request<span style="color:#ff79c6">)</span>:  <span style="color:#bd93f9">0</span>% <span style="color:#ff79c6">(</span><span style="color:#bd93f9">0</span><span style="color:#ff79c6">)</span> / <span style="color:#bd93f9">10</span>%
+Min replicas:                                          <span style="color:#bd93f9">1</span>
+Max replicas:                                          <span style="color:#bd93f9">10</span>
+Deployment pods:                                       <span style="color:#bd93f9">1</span> current / <span style="color:#bd93f9">1</span> desired
+Conditions:
+  Type            Status  Reason               Message
+  ----            ------  ------               -------
+  AbleToScale     True    ScaleDownStabilized  recent recommendations were higher than current one, applying the highest recent recommendation
+  ScalingActive   True    ValidMetricFound     the HPA was able to successfully calculate a replica count from cpu resource utilization <span style="color:#ff79c6">(</span>percentage of request<span style="color:#ff79c6">)</span>
+  ScalingLimited  False   DesiredWithinRange   the desired count is within the acceptable range
+Events:           &lt;none&gt;
+$ kubectl get hpa                                                        
+NAME       REFERENCE             TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
+hpa-demo   Deployment/hpa-demo   <span style="color:#bd93f9">0</span>%/10%    <span style="color:#bd93f9">1</span>         <span style="color:#bd93f9">10</span>        <span style="color:#bd93f9">1</span>          52s</code></pre></div>
+<p>现在可以看到 HPA 资源对象已经正常了，现在我们来增大负载进行测试，我们来创建一个 busybox 的 Pod，并且循环访问上面创建的 Pod：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl run -it --image busybox test-hpa --restart<span style="color:#ff79c6">=</span>Never --rm /bin/sh
+If you don&#39;t see a <span style="color:#8be9fd;font-style:italic">command</span> prompt, try pressing enter.
+/ <span style="color:#6272a4"># while true; do wget -q -O- http://10.244.4.97; done</span></code></pre></div>
+<p>下图可以看到，HPA 已经开始工作：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$  kubectl get hpa
+NAME       REFERENCE             TARGETS    MINPODS   MAXPODS   REPLICAS   AGE
+hpa-demo   Deployment/hpa-demo   <span style="color:#bd93f9">338</span>%/10%   <span style="color:#bd93f9">1</span>         <span style="color:#bd93f9">10</span>        <span style="color:#bd93f9">1</span>          5m15s
+$ kubectl get pods -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>nginx --watch 
+NAME                        READY   STATUS              RESTARTS   AGE
+hpa-demo-69968bb59f-8hjnn   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          22s
+hpa-demo-69968bb59f-9ss9f   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          22s
+hpa-demo-69968bb59f-bllsd   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          22s
+hpa-demo-69968bb59f-lnh8k   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          37s
+hpa-demo-69968bb59f-r8zfh   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          22s
+hpa-demo-69968bb59f-twtdp   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          6m43s
+hpa-demo-69968bb59f-w792g   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          37s
+hpa-demo-69968bb59f-zlxkp   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          37s
+hpa-demo-69968bb59f-znp6q   <span style="color:#bd93f9">0</span>/1     ContainerCreating   <span style="color:#bd93f9">0</span>          6s
+hpa-demo-69968bb59f-ztnvx   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          6s</code></pre></div>
+<p>我们可以看到已经自动拉起了很多新的 Pod，最后定格在了我们上面设置的 10 个 Pod，同时查看资源 hpa-demo 的副本数量，副本数量已经从原来的1变成了10个：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get deployment hpa-demo
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+hpa-demo   <span style="color:#bd93f9">10</span>/10   <span style="color:#bd93f9">10</span>           <span style="color:#bd93f9">10</span>          17m</code></pre></div>
+<p>查看 HPA 资源的对象了解工作过程：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl describe hpa hpa-demo
+Name:                                                  hpa-demo
+Namespace:                                             default
+Labels:                                                &lt;none&gt;
+Annotations:                                           &lt;none&gt;
+CreationTimestamp:                                     Tue, <span style="color:#bd93f9">19</span> Nov <span style="color:#bd93f9">2019</span> <span style="color:#bd93f9">17</span>:23:49 +0800
+Reference:                                             Deployment/hpa-demo
+Metrics:                                               <span style="color:#ff79c6">(</span> current / target <span style="color:#ff79c6">)</span>
+  resource cpu on pods  <span style="color:#ff79c6">(</span>as a percentage of request<span style="color:#ff79c6">)</span>:  <span style="color:#bd93f9">0</span>% <span style="color:#ff79c6">(</span><span style="color:#bd93f9">0</span><span style="color:#ff79c6">)</span> / <span style="color:#bd93f9">10</span>%
+Min replicas:                                          <span style="color:#bd93f9">1</span>
+Max replicas:                                          <span style="color:#bd93f9">10</span>
+Deployment pods:                                       <span style="color:#bd93f9">10</span> current / <span style="color:#bd93f9">10</span> desired
+Conditions:
+  Type            Status  Reason               Message
+  ----            ------  ------               -------
+  AbleToScale     True    ScaleDownStabilized  recent recommendations were higher than current one, applying the highest recent recommendation
+  ScalingActive   True    ValidMetricFound     the HPA was able to successfully calculate a replica count from cpu resource utilization <span style="color:#ff79c6">(</span>percentage of request<span style="color:#ff79c6">)</span>
+  ScalingLimited  True    TooManyReplicas      the desired replica count is more than the maximum replica count
+Events:
+  Type    Reason             Age    From                       Message
+  ----    ------             ----   ----                       -------
+  Normal  SuccessfulRescale  5m45s  horizontal-pod-autoscaler  New size: <span style="color:#bd93f9">4</span>; reason: cpu resource utilization <span style="color:#ff79c6">(</span>percentage of request<span style="color:#ff79c6">)</span> above target
+  Normal  SuccessfulRescale  5m30s  horizontal-pod-autoscaler  New size: <span style="color:#bd93f9">8</span>; reason: cpu resource utilization <span style="color:#ff79c6">(</span>percentage of request<span style="color:#ff79c6">)</span> above target
+  Normal  SuccessfulRescale  5m14s  horizontal-pod-autoscaler  New size: <span style="color:#bd93f9">10</span>; reason: cpu resource utilization <span style="color:#ff79c6">(</span>percentage of request<span style="color:#ff79c6">)</span> above target</code></pre></div>
+<p>同样的这个时候我们来关掉 busybox 来减少负载，然后等待一段时间观察下 HPA 和 Deployment 对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get hpa
+NAME       REFERENCE             TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
+hpa-demo   Deployment/hpa-demo   <span style="color:#bd93f9">0</span>%/10%    <span style="color:#bd93f9">1</span>         <span style="color:#bd93f9">10</span>        <span style="color:#bd93f9">1</span>          14m
+$ kubectl get deployment hpa-demo
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+hpa-demo   <span style="color:#bd93f9">1</span>/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">1</span>           24m</code></pre></div>
+<blockquote>
+<p>从 Kubernetes <code>v1.12</code> 版本开始我们可以通过设置 <code>kube-controller-manager</code> 组件的<code>--horizontal-pod-autoscaler-downscale-stabilization</code> 参数来设置一个持续时间，用于指定在当前操作完成后，<code>HPA</code> 必须等待多长时间才能执行另一次缩放操作。默认为5分钟，也就是默认需要等待5分钟后才会开始自动缩放。</p>
+</blockquote>
+
+<p>可以看到副本数量已经由 10 变为 1，当前我们只是演示了 CPU 使用率这一个指标，在后面的课程中我们还会学习到根据自定义的监控指标来自动对 Pod 进行扩缩容。</p>
+
+<h2 id="基于内存">基于内存</h2>
+
+<p><code>HorizontalPodAutoscaler</code> 是 Kubernetes autoscaling API 组的资源，在当前稳定版本 <code>autoscaling/v1</code> 中只支持基于 CPU 指标的缩放。在 Beta 版本 <code>autoscaling/v2beta2</code>，引入了基于内存和自定义指标的缩放。所以我们这里需要使用 Beta 版本的 API。</p>
+
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200407120950.png" alt="hpa api version"><figcaption>hpa api version</figcaption></figure>
+
+<p>现在我们用 Deployment 来创建一个 Nginx Pod，然后利用 HPA 来进行自动扩缩容。资源清单如下所示：（hpa-mem-demo.yaml）</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hpa-mem-demo
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      volumes:
+      - name: increase-mem-script
+        configMap:
+          name: increase-mem-config
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: <span style="color:#bd93f9">80</span>
+        volumeMounts:
+        - name: increase-mem-script
+          mountPath: /etc/script
+        resources:
+          requests:
+            memory: 50Mi
+            cpu: 50m
+        securityContext:
+          privileged: <span style="color:#ff79c6">true</span></code></pre></div>
+<p>这里和前面普通的应用有一些区别，我们将一个名为 <code>increase-mem-config</code> 的 ConfigMap 资源对象挂载到了容器中，该配置文件是用于后面增加容器内存占用的脚本，配置文件如下所示：（increase-mem-cm.yaml）</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: increase-mem-config
+data:
+  increase-mem.sh: <span style="color:#f1fa8c">|
+</span><span style="color:#f1fa8c">    #!/bin/bash  </span>
+    mkdir /tmp/memory  
+    mount -t tmpfs -o size=40M tmpfs /tmp/memory  
+    dd if=/dev/zero of=/tmp/memory/block  
+    sleep <span style="color:#bd93f9">60</span> 
+    rm /tmp/memory/block  
+    umount /tmp/memory  
+    rmdir /tmp/memory</code></pre></div>
+<p>由于这里增加内存的脚本需要使用到 <code>mount</code> 命令，这需要声明为特权模式，所以我们添加了 <code>securityContext.privileged=true</code> 这个配置。现在我们直接创建上面的资源对象即可：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f increase-mem-cm.yaml
+$ kubectl apply -f hpa-mem-demo.yaml 
+$ kubectl get pods -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>nginx
+NAME                            READY   STATUS    RESTARTS   AGE
+hpa-mem-demo-66944b79bf-tqrn9   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          35s</code></pre></div>
+<p>然后需要创建一个基于内存的 HPA 资源对象：（hpa-mem.yaml）</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: nginx-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: hpa-mem-demo
+  minReplicas: <span style="color:#bd93f9">1</span>
+  maxReplicas: <span style="color:#bd93f9">5</span>
+  metrics:
+  - type: Resource
+    resource:
+      name: memory
+      targetAverageUtilization: <span style="color:#bd93f9">60</span></code></pre></div>
+<p>要注意这里使用的 <code>apiVersion</code> 是 <code>autoscaling/v2beta1</code>，然后 <code>metrics</code> 属性里面指定的是内存的配置，直接创建上面的资源对象即可：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f hpa-mem.yaml 
+horizontalpodautoscaler.autoscaling/nginx-hpa created
+$ kubectl get hpa
+NAME        REFERENCE                 TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
+nginx-hpa   Deployment/hpa-mem-demo   <span style="color:#bd93f9">2</span>%/60%    <span style="color:#bd93f9">1</span>         <span style="color:#bd93f9">5</span>         <span style="color:#bd93f9">1</span>          12s</code></pre></div>
+<p>到这里证明 HPA 资源对象已经部署成功了，接下来我们对应用进行压测，将内存压上去，直接执行上面我们挂载到容器中的 <code>increase-mem.sh</code> 脚本即可：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -it hpa-mem-demo-66944b79bf-tqrn9 /bin/bash
+root@hpa-mem-demo-66944b79bf-tqrn9:/# ls /etc/script/
+increase-mem.sh
+root@hpa-mem-demo-66944b79bf-tqrn9:/# <span style="color:#8be9fd;font-style:italic">source</span> /etc/script/increase-mem.sh 
+dd: writing to <span style="color:#f1fa8c">&#39;/tmp/memory/block&#39;</span>: No space left on device
+<span style="color:#bd93f9">81921</span>+0 records in
+<span style="color:#bd93f9">81920</span>+0 records out
+<span style="color:#bd93f9">41943040</span> bytes <span style="color:#ff79c6">(</span><span style="color:#bd93f9">42</span> MB, <span style="color:#bd93f9">40</span> MiB<span style="color:#ff79c6">)</span> copied, <span style="color:#bd93f9">0</span>.584029 s, <span style="color:#bd93f9">71</span>.8 MB/s</code></pre></div>
+<p>然后打开另外一个终端观察 HPA 资源对象的变化情况：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get hpa
+NAME        REFERENCE                 TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
+nginx-hpa   Deployment/hpa-mem-demo   <span style="color:#bd93f9">83</span>%/60%   <span style="color:#bd93f9">1</span>         <span style="color:#bd93f9">5</span>         <span style="color:#bd93f9">1</span>          5m3s
+$ kubectl describe hpa nginx-hpa
+Name:                                                     nginx-hpa
+Namespace:                                                default
+Labels:                                                   &lt;none&gt;
+Annotations:                                              kubectl.kubernetes.io/last-applied-configuration:
+                                                            <span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;apiVersion&#34;</span>:<span style="color:#f1fa8c">&#34;autoscaling/v2beta1&#34;</span>,<span style="color:#f1fa8c">&#34;kind&#34;</span>:<span style="color:#f1fa8c">&#34;HorizontalPodAutoscaler&#34;</span>,<span style="color:#f1fa8c">&#34;metadata&#34;</span>:<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;annotations&#34;</span>:<span style="color:#ff79c6">{}</span>,<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;nginx-hpa&#34;</span>,<span style="color:#f1fa8c">&#34;namespace&#34;</span>:<span style="color:#f1fa8c">&#34;default&#34;</span>...
+CreationTimestamp:                                        Tue, <span style="color:#bd93f9">07</span> Apr <span style="color:#bd93f9">2020</span> <span style="color:#bd93f9">13</span>:13:59 +0800
+Reference:                                                Deployment/hpa-mem-demo
+Metrics:                                                  <span style="color:#ff79c6">(</span> current / target <span style="color:#ff79c6">)</span>
+  resource memory on pods  <span style="color:#ff79c6">(</span>as a percentage of request<span style="color:#ff79c6">)</span>:  <span style="color:#bd93f9">3</span>% <span style="color:#ff79c6">(</span><span style="color:#bd93f9">1740800</span><span style="color:#ff79c6">)</span> / <span style="color:#bd93f9">60</span>%
+Min replicas:                                             <span style="color:#bd93f9">1</span>
+Max replicas:                                             <span style="color:#bd93f9">5</span>
+Deployment pods:                                          <span style="color:#bd93f9">2</span> current / <span style="color:#bd93f9">2</span> desired
+Conditions:
+  Type            Status  Reason               Message
+  ----            ------  ------               -------
+  AbleToScale     True    ScaleDownStabilized  recent recommendations were higher than current one, applying the highest recent recommendation
+  ScalingActive   True    ValidMetricFound     the HPA was able to successfully calculate a replica count from memory resource utilization <span style="color:#ff79c6">(</span>percentage of request<span style="color:#ff79c6">)</span>
+  ScalingLimited  False   DesiredWithinRange   the desired count is within the acceptable range
+Events:
+  Type     Reason                        Age                    From                       Message
+  ----     ------                        ----                   ----                       -------
+  Warning  FailedGetResourceMetric       5m26s <span style="color:#ff79c6">(</span>x3 over 5m58s<span style="color:#ff79c6">)</span>  horizontal-pod-autoscaler  unable to get metrics <span style="color:#ff79c6">for</span> resource memory: no metrics returned from resource metrics API
+  Warning  FailedComputeMetricsReplicas  5m26s <span style="color:#ff79c6">(</span>x3 over 5m58s<span style="color:#ff79c6">)</span>  horizontal-pod-autoscaler  invalid metrics <span style="color:#ff79c6">(</span><span style="color:#bd93f9">1</span> invalid out of <span style="color:#bd93f9">1</span><span style="color:#ff79c6">)</span>, first error is: failed to get memory utilization: unable to get metrics <span style="color:#ff79c6">for</span> resource memory: no metrics returned from resource metrics API
+  Normal   SuccessfulRescale             77s                    horizontal-pod-autoscaler  New size: <span style="color:#bd93f9">2</span>; reason: memory resource utilization <span style="color:#ff79c6">(</span>percentage of request<span style="color:#ff79c6">)</span> above target
+$ kubectl top pod hpa-mem-demo-66944b79bf-tqrn9
+NAME                            CPU<span style="color:#ff79c6">(</span>cores<span style="color:#ff79c6">)</span>   MEMORY<span style="color:#ff79c6">(</span>bytes<span style="color:#ff79c6">)</span>
+hpa-mem-demo-66944b79bf-tqrn9   0m           41Mi</code></pre></div>
+<p>可以看到内存使用已经超过了我们设定的 60% 这个阈值了，HPA 资源对象也已经触发了自动扩容，变成了两个副本了：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>nginx
+NAME                            READY   STATUS    RESTARTS   AGE
+hpa-mem-demo-66944b79bf-8m4d9   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          2m51s
+hpa-mem-demo-66944b79bf-tqrn9   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          8m11s</code></pre></div>
+<p>当内存释放掉后，controller-manager 默认5分钟过后会进行缩放，到这里就完成了基于内存的 HPA 操作。
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5376999672787220"
+     data-ad-slot="9165834656"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</p>
+
+<h2 id="基于自定义指标">基于自定义指标</h2>
+
+<p>除了基于 CPU 和内存来进行自动扩缩容之外，我们还可以根据自定义的监控指标来进行。这个我们就需要使用 <code>Prometheus Adapter</code>，Prometheus 用于监控应用的负载和集群本身的各种指标，<code>Prometheus Adapter</code> 可以帮我们使用 Prometheus 收集的指标并使用它们来制定扩展策略，这些指标都是通过 APIServer 暴露的，而且 HPA 资源对象也可以很轻易的直接使用。</p>
+
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200407180510.png" alt="custom metrics by prometheus"><figcaption>custom metrics by prometheus</figcaption></figure>
+
+<p>首先，我们部署一个示例应用，在该应用程序上测试 Prometheus 指标自动缩放，资源清单文件如下所示：（hpa-prome-demo.yaml）</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hpa-prom-demo
+spec:
+  selector:
+    matchLabels:
+      app: nginx-server
+  template:
+    metadata:
+      labels:
+        app: nginx-server
+    spec:
+      containers:
+      - name: nginx-demo
+        image: cnych/nginx-vts:v1.<span style="color:#bd93f9">0</span>
+        resources:
+          limits:
+            cpu: 50m
+          requests:
+            cpu: 50m
+        ports:
+        - containerPort: <span style="color:#bd93f9">80</span>
+          name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hpa-prom-demo
+  annotations:
+    prometheus.io/scrape: <span style="color:#f1fa8c">&#34;true&#34;</span>
+    prometheus.io/port: <span style="color:#f1fa8c">&#34;80&#34;</span>
+    prometheus.io/path: <span style="color:#f1fa8c">&#34;/status/format/prometheus&#34;</span>
+spec:
+  ports:
+  - port: <span style="color:#bd93f9">80</span>
+    targetPort: <span style="color:#bd93f9">80</span>
+    name: http
+  selector:
+    app: nginx-server
+  type: NodePort</code></pre></div>
+<p>这里我们部署的应用是在 80 端口的 <code>/status/format/prometheus</code> 这个端点暴露 nginx-vts 指标的，前面我们已经在 Prometheus 中配置了 Endpoints 的自动发现，所以我们直接在 Service 对象的 <code>annotations</code> 中进行配置，这样我们就可以在 Prometheus 中采集该指标数据了。为了测试方便，我们这里使用 NodePort 类型的 Service，现在直接创建上面的资源对象即可：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f hpa-prome-demo.yaml
+deployment.apps/hpa-prom-demo created
+service/hpa-prom-demo created
+$ kubectl get pods -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>nginx-server 
+NAME                             READY   STATUS    RESTARTS   AGE
+hpa-prom-demo-755bb56f85-lvksr   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          4m52s
+$ kubectl get svc 
+NAME            TYPE        CLUSTER-IP       EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>        AGE
+hpa-prom-demo   NodePort    <span style="color:#bd93f9">10</span>.101.210.158   &lt;none&gt;        <span style="color:#bd93f9">80</span>:32408/TCP   5m44s
+......</code></pre></div>
+<p>部署完成后我们可以使用如下命令测试应用是否正常，以及指标数据接口能够正常获取：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ curl http://k8s.qikqiak.com:32408
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+&lt;title&gt;Welcome to nginx!&lt;/title&gt;
+&lt;style&gt;
+    body <span style="color:#ff79c6">{</span>
+        width: 35em;
+        margin: <span style="color:#bd93f9">0</span> auto;
+        font-family: Tahoma, Verdana, Arial, sans-serif;
+    <span style="color:#ff79c6">}</span>
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;h1&gt;Welcome to nginx!&lt;/h1&gt;
+&lt;p&gt;If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.&lt;/p&gt;
+
+&lt;p&gt;For online documentation and support please refer to
+&lt;a <span style="color:#8be9fd;font-style:italic">href</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;http://nginx.org/&#34;</span>&gt;nginx.org&lt;/a&gt;.&lt;br/&gt;
+Commercial support is available at
+&lt;a <span style="color:#8be9fd;font-style:italic">href</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;http://nginx.com/&#34;</span>&gt;nginx.com&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Thank you <span style="color:#ff79c6">for</span> using nginx.&lt;/em&gt;&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+$ curl http://k8s.qikqiak.com:32408/status/format/prometheus 
+<span style="color:#6272a4"># HELP nginx_vts_info Nginx info</span>
+<span style="color:#6272a4"># TYPE nginx_vts_info gauge</span>
+nginx_vts_info<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">hostname</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;hpa-prom-demo-755bb56f85-lvksr&#34;</span>,version<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;1.13.12&#34;</span><span style="color:#ff79c6">}</span> <span style="color:#bd93f9">1</span>
+<span style="color:#6272a4"># HELP nginx_vts_start_time_seconds Nginx start time</span>
+<span style="color:#6272a4"># TYPE nginx_vts_start_time_seconds gauge</span>
+nginx_vts_start_time_seconds <span style="color:#bd93f9">1586240091</span>.623
+<span style="color:#6272a4"># HELP nginx_vts_main_connections Nginx connections</span>
+<span style="color:#6272a4"># TYPE nginx_vts_main_connections gauge</span>
+......</code></pre></div>
+<p>上面的指标数据中，我们比较关心的是 <code>nginx_vts_server_requests_total</code> 这个指标，表示请求总数，是一个 <code>Counter</code> 类型的指标，我们将使用该指标的值来确定是否需要对我们的应用进行自动扩缩容。</p>
+
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200407182102.png" alt="nginx_vts_server_requests_total"><figcaption>nginx_vts_server_requests_total</figcaption></figure>
+
+<p>接下来我们将 Prometheus-Adapter 安装到集群中，并添加一个规则来跟踪 Pod 的请求，我们可以将 Prometheus 中的任何一个指标都用于 HPA，但是前提是你得通过查询语句将它拿到（包括指标名称和其对应的值）。</p>
+
+<p>这里我们定义一个如下所示的规则：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">rules:
+- seriesQuery: <span style="color:#f1fa8c">&#39;nginx_vts_server_requests_total&#39;</span>
+  seriesFilters: []
+  resources:
+    overrides:
+      kubernetes_namespace:
+        resource: namespace
+      kubernetes_pod_name:
+        resource: pod
+  name:
+    matches: <span style="color:#f1fa8c">&#34;^(.*)_total&#34;</span>
+    as: <span style="color:#f1fa8c">&#34;${1}_per_second&#34;</span>
+  metricsQuery: (sum(rate(&lt;&lt;.Series&gt;&gt;{&lt;&lt;.LabelMatchers&gt;&gt;}[1m])) by (&lt;&lt;.GroupBy&gt;&gt;))</code></pre></div>
+<p>这是一个带参数的 Prometheus 查询，其中：</p>
+
+<ul>
+<li><code>seriesQuery</code>：查询 Prometheus 的语句，通过这个查询语句查询到的所有指标都可以用于 HPA</li>
+<li><code>seriesFilters</code>：查询到的指标可能会存在不需要的，可以通过它过滤掉。</li>
+
+<li><p><code>resources</code>：通过 <code>seriesQuery</code> 查询到的只是指标，如果需要查询某个 Pod 的指标，肯定要将它的名称和所在的命名空间作为指标的标签进行查询，<code>resources</code> 就是将指标的标签和 k8s 的资源类型关联起来，最常用的就是 pod 和 namespace。有两种添加标签的方式，一种是 <code>overrides</code>，另一种是 <code>template</code>。</p>
+
+<ul>
+<li><code>overrides</code>：它会将指标中的标签和 k8s 资源关联起来。上面示例中就是将指标中的 pod 和 namespace 标签和 k8s 中的 pod 和 namespace 关联起来，因为 pod 和 namespace 都属于核心 api 组，所以不需要指定 api 组。当我们查询某个 pod 的指标时，它会自动将 pod 的名称和名称空间作为标签加入到查询条件中。比如 <code>nginx: {group: &quot;apps&quot;, resource: &quot;deployment&quot;}</code> 这么写表示的就是将指标中 nginx 这个标签和 apps 这个 api 组中的 <code>deployment</code> 资源关联起来；</li>
+<li>template：通过 go 模板的形式。比如<code>template: &quot;kube_&lt;&lt;.Group&gt;&gt;_&lt;&lt;.Resource&gt;&gt;&quot;</code> 这么写表示，假如 <code>&lt;&lt;.Group&gt;&gt;</code> 为 apps，<code>&lt;&lt;.Resource&gt;&gt;</code> 为 deployment，那么它就是将指标中 <code>kube_apps_deployment</code> 标签和 deployment 资源关联起来。</li>
+</ul></li>
+
+<li><p><code>name</code>：用来给指标重命名的，之所以要给指标重命名是因为有些指标是只增的，比如以 total 结尾的指标。这些指标拿来做 HPA 是没有意义的，我们一般计算它的速率，以速率作为值，那么此时的名称就不能以 total 结尾了，所以要进行重命名。</p>
+
+<ul>
+<li><code>matches</code>：通过正则表达式来匹配指标名，可以进行分组</li>
+<li><code>as</code>：默认值为 <code>$1</code>，也就是第一个分组。<code>as</code> 为空就是使用默认值的意思。</li>
+</ul></li>
+
+<li><p><code>metricsQuery</code>：这就是 Prometheus 的查询语句了，前面的 <code>seriesQuery</code> 查询是获得 HPA 指标。当我们要查某个指标的值时就要通过它指定的查询语句进行了。可以看到查询语句使用了速率和分组，这就是解决上面提到的只增指标的问题。</p>
+
+<ul>
+<li><code>Series</code>：表示指标名称</li>
+<li><code>LabelMatchers</code>：附加的标签，目前只有 <code>pod</code> 和 <code>namespace</code> 两种，因此我们要在之前使用 <code>resources</code> 进行关联</li>
+<li><code>GroupBy</code>：就是 pod 名称，同样需要使用 <code>resources</code> 进行关联。</li>
+</ul></li>
+</ul>
+
+<p>接下来我们通过 Helm Chart 来部署 Prometheus Adapter，新建 <code>hpa-prome-adapter-values.yaml</code> 文件覆盖默认的 Values 值，内容如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">rules:
+  default: <span style="color:#ff79c6">false</span>
+  custom:
+  - seriesQuery: <span style="color:#f1fa8c">&#39;nginx_vts_server_requests_total&#39;</span>
+    resources: 
+      overrides:
+        kubernetes_namespace:
+          resource: namespace
+        kubernetes_pod_name:
+          resource: pod
+    name:
+      matches: <span style="color:#f1fa8c">&#34;^(.*)_total&#34;</span>
+      as: <span style="color:#f1fa8c">&#34;${1}_per_second&#34;</span>
+    metricsQuery: (sum(rate(&lt;&lt;.Series&gt;&gt;{&lt;&lt;.LabelMatchers&gt;&gt;}[1m])) by (&lt;&lt;.GroupBy&gt;&gt;))
+
+prometheus:
+  url: http://thanos-querier.kube-mon.svc.cluster.local</code></pre></div>
+<p>这里我们添加了一条 rules 规则，然后指定了 Prometheus 的地址，我们这里是使用了 Thanos 部署的 Promethues 集群，所以用 Querier 的地址。使用下面的命令一键安装：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ helm install prometheus-adapter stable/prometheus-adapter -n kube-mon -f hpa-prome-adapter-values.yaml
+NAME: prometheus-adapter
+LAST DEPLOYED: Tue Apr  <span style="color:#bd93f9">7</span> <span style="color:#bd93f9">15</span>:26:36 <span style="color:#bd93f9">2020</span>
+NAMESPACE: kube-mon
+STATUS: deployed
+REVISION: <span style="color:#bd93f9">1</span>
+TEST SUITE: None
+NOTES:
+prometheus-adapter has been deployed.
+In a few minutes you should be able to list metrics using the following command<span style="color:#ff79c6">(</span>s<span style="color:#ff79c6">)</span>:
+
+  kubectl get --raw /apis/custom.metrics.k8s.io/v1beta1</code></pre></div>
+<p>等一小会儿，安装完成后，可以使用下面的命令来检测是否生效了：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-mon -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>prometheus-adapter
+NAME                                  READY   STATUS    RESTARTS   AGE
+prometheus-adapter-58b559fc7d-l2j6t   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          3m21s
+$  kubectl get --raw<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;/apis/custom.metrics.k8s.io/v1beta1&#34;</span> | jq
+<span style="color:#ff79c6">{</span>
+  <span style="color:#f1fa8c">&#34;kind&#34;</span>: <span style="color:#f1fa8c">&#34;APIResourceList&#34;</span>,
+  <span style="color:#f1fa8c">&#34;apiVersion&#34;</span>: <span style="color:#f1fa8c">&#34;v1&#34;</span>,
+  <span style="color:#f1fa8c">&#34;groupVersion&#34;</span>: <span style="color:#f1fa8c">&#34;custom.metrics.k8s.io/v1beta1&#34;</span>,
+  <span style="color:#f1fa8c">&#34;resources&#34;</span>: <span style="color:#ff79c6">[</span>
+    <span style="color:#ff79c6">{</span>
+      <span style="color:#f1fa8c">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;namespaces/nginx_vts_server_requests_per_second&#34;</span>,
+      <span style="color:#f1fa8c">&#34;singularName&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
+      <span style="color:#f1fa8c">&#34;namespaced&#34;</span>: false,
+      <span style="color:#f1fa8c">&#34;kind&#34;</span>: <span style="color:#f1fa8c">&#34;MetricValueList&#34;</span>,
+      <span style="color:#f1fa8c">&#34;verbs&#34;</span>: <span style="color:#ff79c6">[</span>
+        <span style="color:#f1fa8c">&#34;get&#34;</span>
+      <span style="color:#ff79c6">]</span>
+    <span style="color:#ff79c6">}</span>,
+    <span style="color:#ff79c6">{</span>
+      <span style="color:#f1fa8c">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;pods/nginx_vts_server_requests_per_second&#34;</span>,
+      <span style="color:#f1fa8c">&#34;singularName&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
+      <span style="color:#f1fa8c">&#34;namespaced&#34;</span>: true,
+      <span style="color:#f1fa8c">&#34;kind&#34;</span>: <span style="color:#f1fa8c">&#34;MetricValueList&#34;</span>,
+      <span style="color:#f1fa8c">&#34;verbs&#34;</span>: <span style="color:#ff79c6">[</span>
+        <span style="color:#f1fa8c">&#34;get&#34;</span>
+      <span style="color:#ff79c6">]</span>
+    <span style="color:#ff79c6">}</span>
+  <span style="color:#ff79c6">]</span>
+<span style="color:#ff79c6">}</span></code></pre></div>
+<p>我们可以看到 <code>nginx_vts_server_requests_per_second</code> 指标可用。 现在，让我们检查该指标的当前值：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get --raw <span style="color:#f1fa8c">&#34;/apis/custom.metrics.k8s.io/v1beta1/namespaces/default/pods/*/nginx_vts_server_requests_per_second&#34;</span> | jq .
+<span style="color:#ff79c6">{</span>
+  <span style="color:#f1fa8c">&#34;kind&#34;</span>: <span style="color:#f1fa8c">&#34;MetricValueList&#34;</span>,
+  <span style="color:#f1fa8c">&#34;apiVersion&#34;</span>: <span style="color:#f1fa8c">&#34;custom.metrics.k8s.io/v1beta1&#34;</span>,
+  <span style="color:#f1fa8c">&#34;metadata&#34;</span>: <span style="color:#ff79c6">{</span>
+    <span style="color:#f1fa8c">&#34;selfLink&#34;</span>: <span style="color:#f1fa8c">&#34;/apis/custom.metrics.k8s.io/v1beta1/namespaces/default/pods/%2A/nginx_vts_server_requests_per_second&#34;</span>
+  <span style="color:#ff79c6">}</span>,
+  <span style="color:#f1fa8c">&#34;items&#34;</span>: <span style="color:#ff79c6">[</span>
+    <span style="color:#ff79c6">{</span>
+      <span style="color:#f1fa8c">&#34;describedObject&#34;</span>: <span style="color:#ff79c6">{</span>
+        <span style="color:#f1fa8c">&#34;kind&#34;</span>: <span style="color:#f1fa8c">&#34;Pod&#34;</span>,
+        <span style="color:#f1fa8c">&#34;namespace&#34;</span>: <span style="color:#f1fa8c">&#34;default&#34;</span>,
+        <span style="color:#f1fa8c">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;hpa-prom-demo-755bb56f85-lvksr&#34;</span>,
+        <span style="color:#f1fa8c">&#34;apiVersion&#34;</span>: <span style="color:#f1fa8c">&#34;/v1&#34;</span>
+      <span style="color:#ff79c6">}</span>,
+      <span style="color:#f1fa8c">&#34;metricName&#34;</span>: <span style="color:#f1fa8c">&#34;nginx_vts_server_requests_per_second&#34;</span>,
+      <span style="color:#f1fa8c">&#34;timestamp&#34;</span>: <span style="color:#f1fa8c">&#34;2020-04-07T09:45:45Z&#34;</span>,
+      <span style="color:#f1fa8c">&#34;value&#34;</span>: <span style="color:#f1fa8c">&#34;527m&#34;</span>,
+      <span style="color:#f1fa8c">&#34;selector&#34;</span>: null
+    <span style="color:#ff79c6">}</span>
+  <span style="color:#ff79c6">]</span>
+<span style="color:#ff79c6">}</span></code></pre></div>
+<p>出现类似上面的信息就表明已经配置成功了，接下来我们部署一个针对上面的自定义指标的 HAP 资源对象，如下所示：(hpa-prome.yaml)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: nginx-custom-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: hpa-prom-demo
+  minReplicas: <span style="color:#bd93f9">2</span>
+  maxReplicas: <span style="color:#bd93f9">5</span>
+  metrics:
+  - type: Pods
+    pods:
+      metricName: nginx_vts_server_requests_per_second
+      targetAverageValue: <span style="color:#bd93f9">10</span></code></pre></div>
+<p>如果请求数超过每秒10个，则将对应用进行扩容。直接创建上面的资源对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f hpa-prome.yaml
+horizontalpodautoscaler.autoscaling/nginx-custom-hpa created
+$ kubectl describe hpa nginx-custom-hpa
+Name:                                              nginx-custom-hpa
+Namespace:                                         default
+Labels:                                            &lt;none&gt;
+Annotations:                                       kubectl.kubernetes.io/last-applied-configuration:
+                                                     <span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;apiVersion&#34;</span>:<span style="color:#f1fa8c">&#34;autoscaling/v2beta1&#34;</span>,<span style="color:#f1fa8c">&#34;kind&#34;</span>:<span style="color:#f1fa8c">&#34;HorizontalPodAutoscaler&#34;</span>,<span style="color:#f1fa8c">&#34;metadata&#34;</span>:<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;annotations&#34;</span>:<span style="color:#ff79c6">{}</span>,<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;nginx-custom-hpa&#34;</span>,<span style="color:#f1fa8c">&#34;namespace&#34;</span>:<span style="color:#f1fa8c">&#34;d...
+</span><span style="color:#f1fa8c">CreationTimestamp:                                 Tue, 07 Apr 2020 17:54:55 +0800
+</span><span style="color:#f1fa8c">Reference:                                         Deployment/hpa-prom-demo
+</span><span style="color:#f1fa8c">Metrics:                                           ( current / target )
+</span><span style="color:#f1fa8c">  &#34;</span>nginx_vts_server_requests_per_second<span style="color:#f1fa8c">&#34; on pods:  &lt;unknown&gt; / 10
+</span><span style="color:#f1fa8c">Min replicas:                                      2
+</span><span style="color:#f1fa8c">Max replicas:                                      5
+</span><span style="color:#f1fa8c">Deployment pods:                                   1 current / 2 desired
+</span><span style="color:#f1fa8c">Conditions:
+</span><span style="color:#f1fa8c">  Type         Status  Reason            Message
+</span><span style="color:#f1fa8c">  ----         ------  ------            -------
+</span><span style="color:#f1fa8c">  AbleToScale  True    SucceededRescale  the HPA controller was able to update the target scale to 2
+</span><span style="color:#f1fa8c">Events:
+</span><span style="color:#f1fa8c">  Type    Reason             Age   From                       Message
+</span><span style="color:#f1fa8c">  ----    ------             ----  ----                       -------
+</span><span style="color:#f1fa8c">  Normal  SuccessfulRescale  7s    horizontal-pod-autoscaler  New size: 2; reason: Current number of replicas below Spec.MinReplicas</span></code></pre></div>
+<p>可以看到 HPA 对象已经生效了，会应用最小的副本数2，所以会新增一个 Pod 副本：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>nginx-server
+NAME                             READY   STATUS    RESTARTS   AGE
+hpa-prom-demo-755bb56f85-s5dzf   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          67s
+hpa-prom-demo-755bb56f85-wbpfr   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          3m30s</code></pre></div>
+<p>接下来我们同样对应用进行压测：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ <span style="color:#ff79c6">while</span> true; <span style="color:#ff79c6">do</span> wget -q -O- http://k8s.qikqiak.com:32408; <span style="color:#ff79c6">done</span></code></pre></div>
+<p>打开另外一个终端观察 HPA 对象的变化：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get hpa
+NAME               REFERENCE                  TARGETS     MINPODS   MAXPODS   REPLICAS   AGE
+nginx-custom-hpa   Deployment/hpa-prom-demo   14239m/10   <span style="color:#bd93f9">2</span>         <span style="color:#bd93f9">5</span>         <span style="color:#bd93f9">2</span>          4m27s
+$ kubectl describe hpa nginx-custom-hpa
+Name:                                              nginx-custom-hpa
+Namespace:                                         default
+Labels:                                            &lt;none&gt;
+Annotations:                                       kubectl.kubernetes.io/last-applied-configuration:
+                                                     <span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;apiVersion&#34;</span>:<span style="color:#f1fa8c">&#34;autoscaling/v2beta1&#34;</span>,<span style="color:#f1fa8c">&#34;kind&#34;</span>:<span style="color:#f1fa8c">&#34;HorizontalPodAutoscaler&#34;</span>,<span style="color:#f1fa8c">&#34;metadata&#34;</span>:<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;annotations&#34;</span>:<span style="color:#ff79c6">{}</span>,<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;nginx-custom-hpa&#34;</span>,<span style="color:#f1fa8c">&#34;namespace&#34;</span>:<span style="color:#f1fa8c">&#34;d...
+</span><span style="color:#f1fa8c">CreationTimestamp:                                 Tue, 07 Apr 2020 17:54:55 +0800
+</span><span style="color:#f1fa8c">Reference:                                         Deployment/hpa-prom-demo
+</span><span style="color:#f1fa8c">Metrics:                                           ( current / target )
+</span><span style="color:#f1fa8c">  &#34;</span>nginx_vts_server_requests_per_second<span style="color:#f1fa8c">&#34; on pods:  14308m / 10
+</span><span style="color:#f1fa8c">Min replicas:                                      2
+</span><span style="color:#f1fa8c">Max replicas:                                      5
+</span><span style="color:#f1fa8c">Deployment pods:                                   3 current / 3 desired
+</span><span style="color:#f1fa8c">Conditions:
+</span><span style="color:#f1fa8c">  Type            Status  Reason              Message
+</span><span style="color:#f1fa8c">  ----            ------  ------              -------
+</span><span style="color:#f1fa8c">  AbleToScale     True    ReadyForNewScale    recommended size matches current size
+</span><span style="color:#f1fa8c">  ScalingActive   True    ValidMetricFound    the HPA was able to successfully calculate a replica count from pods metric nginx_vts_server_requests_per_second
+</span><span style="color:#f1fa8c">  ScalingLimited  False   DesiredWithinRange  the desired count is within the acceptable range
+</span><span style="color:#f1fa8c">Events:
+</span><span style="color:#f1fa8c">  Type    Reason             Age   From                       Message
+</span><span style="color:#f1fa8c">  ----    ------             ----  ----                       -------
+</span><span style="color:#f1fa8c">  Normal  SuccessfulRescale  5m2s  horizontal-pod-autoscaler  New size: 2; reason: Current number of replicas below Spec.MinReplicas
+</span><span style="color:#f1fa8c">  Normal  SuccessfulRescale  61s   horizontal-pod-autoscaler  New size: 3; reason: pods metric nginx_vts_server_requests_per_second above target</span></code></pre></div>
+<p>可以看到指标 <code>nginx_vts_server_requests_per_second</code> 的数据已经超过阈值了，触发扩容动作了，副本数变成了3，但是后续很难继续扩容了，这是因为上面我们的 <code>while</code> 命令并不够快，3个副本完全可以满足每秒不超过 10 个请求的阈值。</p>
+
+<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200407181543.png" alt="nginx_vts_server_requests_per_second"><figcaption>nginx_vts_server_requests_per_second</figcaption></figure>
+
+<p>如果需要更好的进行测试，我们可以使用一些压测工具，比如 ab、fortio 等工具。当我们中断测试后，默认5分钟过后就会自动缩容：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl describe hpa nginx-custom-hpa
+Name:                                              nginx-custom-hpa
+Namespace:                                         default
+Labels:                                            &lt;none&gt;
+Annotations:                                       kubectl.kubernetes.io/last-applied-configuration:
+                                                     <span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;apiVersion&#34;</span>:<span style="color:#f1fa8c">&#34;autoscaling/v2beta1&#34;</span>,<span style="color:#f1fa8c">&#34;kind&#34;</span>:<span style="color:#f1fa8c">&#34;HorizontalPodAutoscaler&#34;</span>,<span style="color:#f1fa8c">&#34;metadata&#34;</span>:<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;annotations&#34;</span>:<span style="color:#ff79c6">{}</span>,<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;nginx-custom-hpa&#34;</span>,<span style="color:#f1fa8c">&#34;namespace&#34;</span>:<span style="color:#f1fa8c">&#34;d...
+</span><span style="color:#f1fa8c">CreationTimestamp:                                 Tue, 07 Apr 2020 17:54:55 +0800
+</span><span style="color:#f1fa8c">Reference:                                         Deployment/hpa-prom-demo
+</span><span style="color:#f1fa8c">Metrics:                                           ( current / target )
+</span><span style="color:#f1fa8c">  &#34;</span>nginx_vts_server_requests_per_second<span style="color:#f1fa8c">&#34; on pods:  533m / 10
+</span><span style="color:#f1fa8c">Min replicas:                                      2
+</span><span style="color:#f1fa8c">Max replicas:                                      5
+</span><span style="color:#f1fa8c">Deployment pods:                                   2 current / 2 desired
+</span><span style="color:#f1fa8c">Conditions:
+</span><span style="color:#f1fa8c">  Type            Status  Reason            Message
+</span><span style="color:#f1fa8c">  ----            ------  ------            -------
+</span><span style="color:#f1fa8c">  AbleToScale     True    ReadyForNewScale  recommended size matches current size
+</span><span style="color:#f1fa8c">  ScalingActive   True    ValidMetricFound  the HPA was able to successfully calculate a replica count from pods metric nginx_vts_server_requests_per_second
+</span><span style="color:#f1fa8c">  ScalingLimited  True    TooFewReplicas    the desired replica count is less than the minimum replica count
+</span><span style="color:#f1fa8c">Events:
+</span><span style="color:#f1fa8c">  Type    Reason             Age   From                       Message
+</span><span style="color:#f1fa8c">  ----    ------             ----  ----                       -------
+</span><span style="color:#f1fa8c">  Normal  SuccessfulRescale  23m   horizontal-pod-autoscaler  New size: 2; reason: Current number of replicas below Spec.MinReplicas
+</span><span style="color:#f1fa8c">  Normal  SuccessfulRescale  19m   horizontal-pod-autoscaler  New size: 3; reason: pods metric nginx_vts_server_requests_per_second above target
+</span><span style="color:#f1fa8c">  Normal  SuccessfulRescale  4m2s  horizontal-pod-autoscaler  New size: 2; reason: All metrics below target</span></code></pre></div>
+<p>到这里我们就完成了使用自定义的指标对应用进行自动扩缩容的操作。如果 Prometheus 安装在我们的 Kubernetes 集群之外，则只需要确保可以从集群访问到查询的端点，并在 adapter 的部署清单中对其进行更新即可。在更复杂的场景中，可以获取多个指标结合使用来制定扩展策略。</p>
+
+<p><a href="https://youdianzhishi.com/web/course/1012" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+
+
+          <h2>微信公众号</h2>
+<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
+<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/use-crd-create-grafana-dashboard/">用 Kubernetes 资源对象创建 Grafana Dashboard</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/alertmanager-when-alert/">AlertManager 何时报警</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/recording-rules-on-prometheus/">Prometheus 记录规则的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/blackbox-exporter-on-prometheus/">Prometheus 黑盒监控</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/build-k8s-app-with-custom-metrics/">对 Kubernetes 应用进行自定义指标扩缩容</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/prometheus-book/">《深入浅出Prometheus》</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/prometheus-operator-advance/">Prometheus Operator 高级配置</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/prometheus-operator-custom-alert/">Prometheus Operator 自定义报警</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/prometheus-operator-monitor-etcd/">Prometheus Operator 监控 etcd 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/grafana-log-tool-loki/">Grafana 日志聚合工具 Loki</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/envoy-usage-demo/" data-toggle="tooltip" data-placement="top" title="Envoy 简单入门示例">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/devops-base-on-jenkins/" data-toggle="tooltip" data-placement="top" title="基于 Jenkins 的 DevOps 流水线实践">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: 'Kubernetes HPA 使用详解',
+        createIssueManually: true,
+        id: 'k8s-hpa-usage',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2020
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="http://www.beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+<script type="text/javascript" src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
+  </body>
+</html>
+
