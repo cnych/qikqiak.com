@@ -41,10 +41,6 @@ s/__PILLAR__DNS__SERVER__/10.96.0.10/g
 s/__PILLAR__LOCAL__DNS__/169.254.20.10/g
 s/__PILLAR__DNS__DOMAIN__/cluster.local/g' nodelocaldns.yaml |
 kubectl apply -f -
-serviceaccount/node-local-dns created
-service/kube-dns-upstream created
-configmap/node-local-dns created
-daemonset.apps/node-local-dns created
 ```
 
 可以通过如下命令来查看对应的 Pod 是否已经启动成功：
