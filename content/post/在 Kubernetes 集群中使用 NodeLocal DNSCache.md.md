@@ -17,7 +17,7 @@ category: "kubernetes"
 
 * 如果本地没有 CoreDNS 实例，则具有最高 DNS QPS 的 Pod 可能必须到另一个节点进行解析，使用 NodeLocal DNSCache 后，拥有本地缓存将有助于改善延迟
 * 跳过 iptables DNAT 和连接跟踪将有助于减少 `conntrack` 竞争并避免 UDP DNS 条目填满 `conntrack` 表（常见的5s超时问题就是这个原因造成的）
-* 从本地缓存代理到 kube-dns 服务的连接可以升级到 TCP，TCP conntrack 条目将在连接关闭时被删除，二 UDP 条目必须超时([默认 nf_conntrack_udp_timeout 是 30 秒](https://www.kernel.org/doc/Documentation/networking/nf_conntrack-sysctl.txt))
+* 从本地缓存代理到 kube-dns 服务的连接可以升级到 TCP，TCP conntrack 条目将在连接关闭时被删除，而 UDP 条目必须超时([默认 nf_conntrack_udp_timeout 是 30 秒](https://www.kernel.org/doc/Documentation/networking/nf_conntrack-sysctl.txt))
 * 将 DNS 查询从 UDP 升级到 TCP 将减少归因于丢弃的 UDP 数据包和 DNS 超时的尾部等待时间，通常长达 30 秒（3 次重试+ 10 秒超时）
 
 
@@ -112,7 +112,7 @@ spec:
 直接部署：
 ```shell
 $ kubectl apply -f test-node-local-dns.yaml
-$ kubectl exec -it pod-b /bin/sh
+$ kubectl exec -it test-node-local-dns /bin/sh
 / # cat /etc/resolv.conf
 nameserver 169.254.20.10
 search default.svc.cluster.local svc.cluster.local cluster.local
