@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [在 Kubernetes 集群中使用 NodeLocal DNSCache](https://www.qikqiak.com/post/use-nodelocal-dns-cache/)
  * [Kubernetes HPA 使用详解](https://www.qikqiak.com/post/k8s-hpa-usage/)
  * [Envoy 简单入门示例](https://www.qikqiak.com/post/envoy-usage-demo/)
  * [ingress-nginx 控制器工作原理](https://www.qikqiak.com/post/ingress-nginx-how-to-work/)
