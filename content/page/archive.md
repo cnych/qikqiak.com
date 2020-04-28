@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [在 Kubernetes 上搭建 EFK 日志收集系统](https://www.qikqiak.com/post/install-efk-stack-on-k8s)
  * [使用编程语言描述 Kubernetes 应用 - cdk8s](https://www.qikqiak.com/post/use-cdk8s-define-k8s-apps/)
  * [在 Kubernetes 集群中使用 NodeLocal DNSCache](https://www.qikqiak.com/post/use-nodelocal-dns-cache/)
  * [Kubernetes HPA 使用详解](https://www.qikqiak.com/post/k8s-hpa-usage/)
@@ -81,7 +82,6 @@ nopager: true
  * [Kubernetes 部署策略详解](https://www.qikqiak.com/post/k8s-deployment-strategies)
  * [Helm monitor 插件(附视频)](https://www.qikqiak.com/post/helm-monitor-plugin)
  * [Istio 实训免费视频课程](https://www.qikqiak.com/post/k8s-istio-course)
- * [在 Kubernetes 上搭建 EFK 日志收集系统](https://www.qikqiak.com/post/install-efk-stack-on-k8s)
  * [Kubernetes CKA 实训视频课程](https://www.qikqiak.com/post/k8s-cka-course)
  * [办公环境下 kubernetes 网络互通方案](https://www.qikqiak.com/post/office-env-k8s-network)
  * [Prometheus 删除数据指标](https://www.qikqiak.com/post/prometheus-delete-metrics)
