@@ -8,6 +8,7 @@ nopager: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [加速开发流程的 Dockerfile 最佳实践](https://www.qikqiak.com/post/speed-up-develop-flow-dockerfile-best-practices/)
  * [在 Kubernetes 上搭建 EFK 日志收集系统](https://www.qikqiak.com/post/install-efk-stack-on-k8s)
  * [使用编程语言描述 Kubernetes 应用 - cdk8s](https://www.qikqiak.com/post/use-cdk8s-define-k8s-apps/)
  * [在 Kubernetes 集群中使用 NodeLocal DNSCache](https://www.qikqiak.com/post/use-nodelocal-dns-cache/)
