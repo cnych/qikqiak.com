@@ -48,17 +48,14 @@ CI 代表持续集成（Continuous Integration），CD 代表持续交付（Cont
 本课程就将会基于 Jenkins 来讲解 DevOps 流水线的最佳实践方式，本课程包含大量集成实践，端到端交付流水线，帮助开发人员和运维测试人员在结构化环境中更快，更安全地发布软件。
 
 
-### 课程目录（有变动）
+### 课程目录（共101节课）
 
-![jenkins-chapter1](https://sdn.youdianzhishi.com/images/2019/12/30/e1c50f789d6c44daac505ab047ab7bd3.png)
-![jenkins-chapter2](https://sdn.youdianzhishi.com/images/2019/12/30/330b68bf7d4543efaa95e1fee9170433.png)
-![jenkins-chapter3](https://sdn.youdianzhishi.com/images/2019/12/30/330b68bf7d4543efaa95e1fee9170433.png)
-![jenkins-chapter4](https://sdn.youdianzhishi.com/images/2019/12/30/1b532a9feaf04d5a805a9c202519ab77.png)
+![jenkins-chapter1](https://sdn.youdianzhishi.com/images/2020/5/1/696c11c4686040a3864ef73b12241b01.jpg)
+![jenkins-chapter2](https://sdn.youdianzhishi.com/images/2020/5/1/0d9c2cdb5b5e4582b661da47162df137.jpg)
 
 ### 课程价格
-* 课程上新价格：**128元**
-* 课程原价：**168元**
-* 有效期：**2020年1月9日-2020年1月16日**
+* 课程优惠价格：**168元**
+* 课程原价：**299元**
 * 课程链接：[https://youdianzhishi.com/web/course/1013](https://youdianzhishi.com/web/course/1013?utm_source=blog&utm_campaign=referral&utm_medium=detailpost)
 * 扫描下方二维码了解课程详情
     ![jenkins devops course](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/jenkins-course-qrcode.png)
