@@ -10,9 +10,13 @@
   <meta property="og:title" content="使用 Tekton 创建 CI 流水线（1/2）" />
   <meta name="twitter:title" content="使用 Tekton 创建 CI 流水线（1/2）" />
 
-  <meta name="description" content="Tekton 是一款功能非常强大而灵活的 CI/CD 开源的云原生框架。本文通过一个简单的示例来创建一个构建流水线，流水线中将运行应用程序的单元测试、构建 Docker 镜像然后推送到 DockerHub。">
-  <meta property="og:description" content="Tekton 是一款功能非常强大而灵活的 CI/CD 开源的云原生框架。本文通过一个简单的示例来创建一个构建流水线，流水线中将运行应用程序的单元测试、构建 Docker 镜像然后推送到 DockerHub。">
-  <meta name="twitter:description" content="Tekton 是一款功能非常强大而灵活的 CI/CD 开源的云原生框架。本文通过一个简单的示例来创建一个构建流水线，流水线中将运行应用程序的单元测试、构建 Docker 镜像然后推送到 DockerHub。">
+  <meta name="description" content="Tekton 是一款功能非常强大而灵活的 CI/CD 开源的云原生框架。Tekton 的前身是 Knative 项目的 build-pipeline 项目，这个项目是为了给 build 模块增加 pipeline 的功能，但是随着不同的功能加入到 Knative build 模块中，build 模块越来越变得像一个通用的 CI/CD 系统，于是，索性将 build-pipeline 剥离出 Knative，就变成了现在的 Tekton，而 Tekton 也从此致力于提供全功能、标准化的云原生 CI/CD 解决方案。
+
+本文将通过一个简单的示例来创建一个构建流水线，在流水线中将运行应用程序的单元测试、构建 Docker 镜像然后推送到 Docker Hub。">
+  <meta property="og:description" content="Tekton 是一款功能非常强大而灵活的 CI/CD 开源的云原生框架。Tekton 的前身是 Knative 项目的 build-pipeline 项目，这个项目是为了给 build 模块增加 pipeline 的功能，但是随着不同的功能加入到 Knative build 模块中，build 模块越来越变得像一个通用的 CI/CD 系统，于是，索性将 build-pipeline 剥离出 Knative，就变成了现在的 Tekton，而 Tekton 也从此致力于提供全功能、标准化的云原生 CI/CD 解决方案。
+
+本文将通过一个简单的示例来创建一个构建流水线，在流水线中将运行应用程序的单元测试、构建 Docker 镜像然后推送到 Docker Hub。">
+  <meta name="twitter:description" content="Tekton 是一款功能非常强大而灵活的 CI/CD 开源的云原生框架。Tekton 的前身是 Knative 项目的 build-pipeline 项目，这个项目是为了给 build 模块增加 pipeline 的功能，但是随着不同的功能加入到 Knative build 模块中，build 模块越来越变得像一个通用的 CI/CD 系统，于是，索性将 build-pipeline …">
   <meta name="author" content=""/>
   <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
   <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
@@ -220,7 +224,7 @@ autocomplete('#aa-search-input',
 
 
   
-    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1571208756906-92fea1cc1087.jpeg" data-img-desc-1="Photo of the Day by Kevin Mueller"></div>
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200506160638.png" data-img-desc-1="https://unsplash.com/photos/hkJsoE-_0vo"></div>
   
 
   <header class="header-section has-img">
@@ -305,6 +309,23 @@ autocomplete('#aa-search-input',
         <article role="main" class="blog-post" itemprop="articleBody" id="content">
           
             
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#安装">安装</a></li>
+<li><a href="#概念">概念</a></li>
+<li><a href="#示例">示例</a></li>
+<li><a href="#总结">总结</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</nav>
+</aside>
+
           
   
           
@@ -319,14 +340,179 @@ autocomplete('#aa-search-input',
           
           
 
-          <p><a href="https://tekton.dev/">Tekton</a> 是一款功能非常强大而灵活的 CI/CD 开源的云原生框架。本文通过一个简单的示例来创建一个构建流水线，流水线中将运行应用程序的单元测试、构建 Docker 镜像然后推送到 DockerHub。</p>
+          <p><a href="https://tekton.dev/">Tekton</a> 是一款功能非常强大而灵活的 CI/CD 开源的云原生框架。Tekton 的前身是 Knative 项目的 build-pipeline 项目，这个项目是为了给 build 模块增加 pipeline 的功能，但是随着不同的功能加入到 Knative build 模块中，build 模块越来越变得像一个通用的 CI/CD 系统，于是，索性将 build-pipeline 剥离出 Knative，就变成了现在的 Tekton，而 Tekton 也从此致力于提供全功能、标准化的云原生 CI/CD 解决方案。</p>
 
-<h3 id="安装-tekton">安装 Tekton</h3>
+<p>本文将通过一个简单的示例来创建一个构建流水线，在流水线中将运行应用程序的单元测试、构建 Docker 镜像然后推送到 Docker Hub。</p>
+
+<h3 id="安装">安装</h3>
 
 <p>当然前提条件是需要一个可用的 Kubernetes 集群，我们这里使用的是 v1.16.2 版本的集群，安装 Tekton 非常简单，可以直接通过 <a href="https://github.com/tektoncd/pipeline">tektoncd/pipeline</a> 的 GitHub 仓库中的 <code>release.yaml</code> 文件进行安装，如下所示的命令：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f https://github.com/tektoncd/pipeline/releases/download/v0.12.0/release.yaml</code></pre></div>
 <p>由于官方使用的镜像是 gcr 的镜像，所以正常情况下我们是获取不到的，如果你的集群由于某些原因获取不到镜像，可以使用下面的资源清单文件，我已经将镜像替换成了 Docker Hub 上面的镜像：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ </code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f https://raw.githubusercontent.com/cnych/qikqiak.com/master/data/manifests/tekton/release.yaml</code></pre></div>
+<p>上面的资源清单文件安装后，会创建一个名为 <code>tekton-pipelines</code> 的命名空间，在该命名空间下面会有大量和 tekton 相关的资源对象，我们可以通过在该命名空间中查看 Pod 并确保它们处于 Running 状态来检查安装是否成功：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n tekton-pipelines
+NAME                                           READY   STATUS    RESTARTS   AGE
+tekton-pipelines-controller-67f4dc98d8-pgxrq   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          9m46s
+tekton-pipelines-webhook-59df55445c-jw76v      <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          9m45s</code></pre></div>
+<p>Tekton 安装完成后，我们还可以选择是否安装 CLI 工具，有时候可能 Tekton 提供的命令行工具比 kubectl 管理这些资源更加方便，当然这并不是强制的，我这里是 Mac 系统，所以可以使用常用的 <code>Homebrew</code> 工具来安装：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ brew tap tektoncd/tools
+$ brew install tektoncd/tools/tektoncd-cli</code></pre></div>
+<p>安装完成后可以通过如下命令验证 CLI 是否安装成功：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ tkn version
+Client version: <span style="color:#bd93f9">0</span>.9.0
+Pipeline version: v0.12.0</code></pre></div>
+<h3 id="概念">概念</h3>
+
+<p>Tekton 为 Kubernetes 提供了多种 CRD 资源对象，可用于定义我们的流水线，主要有以下几个资源对象：</p>
+
+<ul>
+<li>Task：表示执行命令的一系列步骤，task 里可以定义一系列的 steps，例如编译代码、构建镜像、推送镜像等，每个 step 实际由一个 Pod 执行。</li>
+<li>TaskRun：task 只是定义了一个模版，taskRun 才真正代表了一次实际的运行，当然你也可以自己手动创建一个 taskRun，taskRun 创建出来之后，就会自动触发 task 描述的构建任务。</li>
+<li>Pipeline：一组任务，表示一个或多个 task、PipelineResource 以及各种定义参数的集合。</li>
+<li>PipelineRun：类似 task 和 taskRun 的关系，pipelineRun 也表示某一次实际运行的 pipeline，下发一个 pipelineRun CRD 实例到 Kubernetes后，同样也会触发一次 pipeline 的构建。</li>
+<li>PipelineResource：表示 pipeline 输入资源，比如 github 上的源码，或者 pipeline 输出资源，例如一个容器镜像或者构建生成的 jar 包等。</li>
+</ul>
+
+<h3 id="示例">示例</h3>
+
+<p>在这里我们使用一个简单的 Golang 应用，可以在仓库 <a href="https://github.com/cnych/tekton-demo">https://github.com/cnych/tekton-demo</a> 下面获取应用程序代码，测试以及 Dockerfile 文件。</p>
+
+<p>首先第一个任务就是 Clone 应用程序代码进行测试，创建一个 <code>task-test.yaml</code> 的资源文件，内容如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: test
+spec:
+  resources:
+    inputs:
+    - name: repo
+      type: git
+  steps:
+  - name: run-test
+    image: golang:<span style="color:#bd93f9">1.14</span>-alpine
+    workingDir: /workspace/repo
+    command: [<span style="color:#f1fa8c">&#34;go&#34;</span>]
+    args: [<span style="color:#f1fa8c">&#34;test&#34;</span>]</code></pre></div>
+<p>其中 <code>resources</code> 定义了我们的任务中定义的步骤所需的输入内容，这里我们的步骤需要 Clone 一个 Git 仓库作为 <code>go test</code> 命令的输入。</p>
+
+<p>Tekton 内置了一种 git 资源类型，它会自动将代码仓库 Clone 到 <code>/workspace/$input_name</code> 目录中，由于我们这里输入被命名成 <code>repo</code>，所以代码会被 Clone 到 <code>/workspace/repo</code> 目录下面。</p>
+
+<p>然后下面的 <code>steps</code> 就是来定义执行运行测试命令的步骤，这里我们直接在代码的根目录中运行 <code>go test</code> 命令即可，需要注意的是命令和参数需要分别定义。</p>
+
+<p>定义完成后直接使用 kubectl 创建该任务：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f task-test.yaml
+task.tekton.dev/test created</code></pre></div>
+<p>现在我们定义完成了一个建的 Task 任务，但是该任务并不会立即执行，我们必须创建一个 TaskRun 引用它并提供所有必需输入的数据才行。这里我们就需要将 git 代码库作为输入，我们必须先创建一个 PipelineResource 对象来定义输入信息，创建一个名为 <code>pipelineresource.yaml</code> 的资源清单文件，内容如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: cnych-tekton-example
+spec:
+  type: git
+  params:
+    - name: url
+      value: https://github.com/cnych/tekton-demo
+    - name: revision
+      value: master</code></pre></div>
+<p>直接创建上面的资源对象即可：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f pipelineresource.yaml
+pipelineresource.tekton.dev/cnych-tekton-example created</code></pre></div>
+<p>接下来我们就创建 TaskRun 对象了，创建一个名为 <code>taskrun.yaml</code> 的文件，内容如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: tekton.dev/v1beta1
+kind: TaskRun
+metadata:
+  name: testrun
+spec:
+  taskRef:
+    name: test
+  resources:
+    inputs:
+    - name: repo
+      resourceRef:
+        name: cnych-tekton-example</code></pre></div>
+<p>这里通过 <code>taskRef</code> 引用上面定义的 Task 和 git 仓库作为输入，<code>resourceRef</code> 也是引用上面定义的 <code>PipelineResource</code> 资源对象。现在我们创建这个资源对象过后，就会开始运行了：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f taskrun.yaml
+taskrun.tekton.dev/testrun created</code></pre></div>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5376999672787220"
+     data-ad-slot="9165834656"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+
+<p>创建后，我们可以通过查看 TaskRun 资源对象的状态来查看构建状态：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get taskrun
+NAME      SUCCEEDED   REASON    STARTTIME   COMPLETIONTIME
+testrun   Unknown     Pending   21s    
+$ kubectl get pods   
+NAME                             READY   STATUS     RESTARTS   AGE
+testrun-pod-mw9bt                <span style="color:#bd93f9">0</span>/2     Init:1/2   <span style="color:#bd93f9">0</span>          59s
+$ kubectl describe pod testrun-pod-mw9bt
+......
+                 node.kubernetes.io/unreachable:NoExecute <span style="color:#ff79c6">for</span> 300s
+Events:
+  Type    Reason     Age        From                 Message
+  ----    ------     ----       ----                 -------
+  Normal  Scheduled  &lt;unknown&gt;  default-scheduler    Successfully assigned default/testrun-pod-mw9bt to ydzs-node5
+  Normal  Pulling    4m20s      kubelet, ydzs-node5  Pulling image <span style="color:#f1fa8c">&#34;busybox@sha256:a2490cec4484ee6c1068ba3a05f89934010c85242f736280b35343483b2264b6&#34;</span>
+  Normal  Pulled     4m13s      kubelet, ydzs-node5  Successfully pulled image <span style="color:#f1fa8c">&#34;busybox@sha256:a2490cec4484ee6c1068ba3a05f89934010c85242f736280b35343483b2264b6&#34;</span>
+  Normal  Created    4m13s      kubelet, ydzs-node5  Created container working-dir-initializer
+  Normal  Started    4m13s      kubelet, ydzs-node5  Started container working-dir-initializer
+  Normal  Pulling    4m12s      kubelet, ydzs-node5  Pulling image <span style="color:#f1fa8c">&#34;cnych/tekton-entrypoint:v0.12.0&#34;</span>
+  Normal  Pulled     2m13s      kubelet, ydzs-node5  Successfully pulled image <span style="color:#f1fa8c">&#34;cnych/tekton-entrypoint:v0.12.0&#34;</span>
+  Normal  Created    2m13s      kubelet, ydzs-node5  Created container place-tools
+  Normal  Started    2m12s      kubelet, ydzs-node5  Started container place-tools
+  Normal  Pulling    2m12s      kubelet, ydzs-node5  Pulling image <span style="color:#f1fa8c">&#34;cnych/tekton-git-init:v0.12.0&#34;</span>
+  Normal  Pulled     33s        kubelet, ydzs-node5  Successfully pulled image <span style="color:#f1fa8c">&#34;cnych/tekton-git-init:v0.12.0&#34;</span>
+  Normal  Created    32s        kubelet, ydzs-node5  Created container step-git-source-cnych-tekton-example-d6mcz
+  Normal  Started    32s        kubelet, ydzs-node5  Started container step-git-source-cnych-tekton-example-d6mcz
+  Normal  Pulling    32s        kubelet, ydzs-node5  Pulling image <span style="color:#f1fa8c">&#34;golang:1.14-alpine&#34;</span></code></pre></div>
+<p>我们可以通过 <code>kubectl describe</code> 命令来查看任务运行的过程，首先就是通过 initContainer 中的一个 busybox 镜像将代码 Clone 下来，然后使用任务中定义的镜像来执行命令。</p>
+
+<p>当任务执行完成后， Pod 就会变成 <code>Completed</code> 状态了：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods
+NAME                READY   STATUS      RESTARTS   AGE
+testrun-pod-mw9bt   <span style="color:#bd93f9">0</span>/2     Completed   <span style="color:#bd93f9">0</span>          4m27s
+$ kubectl get taskrun
+NAME      SUCCEEDED   REASON      STARTTIME   COMPLETIONTIME
+testrun   True        Succeeded   70s         57s</code></pre></div>
+<p>我们可以查看容器的日志信息来了解任务的执行结果信息：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl logs testrun-pod-mw9bt --all-containers
+<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;level&#34;</span>:<span style="color:#f1fa8c">&#34;info&#34;</span>,<span style="color:#f1fa8c">&#34;ts&#34;</span>:1588751895.779908,<span style="color:#f1fa8c">&#34;caller&#34;</span>:<span style="color:#f1fa8c">&#34;git/git.go:136&#34;</span>,<span style="color:#f1fa8c">&#34;msg&#34;</span>:<span style="color:#f1fa8c">&#34;Successfully cloned https://github.com/cnych/tekton-demo @ f840e0c390be9a1a6edad76abbde64e882047f05 (grafted, HEAD, origin/master) in path /workspace/repo&#34;</span><span style="color:#ff79c6">}</span>
+<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;level&#34;</span>:<span style="color:#f1fa8c">&#34;info&#34;</span>,<span style="color:#f1fa8c">&#34;ts&#34;</span>:1588751895.8844209,<span style="color:#f1fa8c">&#34;caller&#34;</span>:<span style="color:#f1fa8c">&#34;git/git.go:177&#34;</span>,<span style="color:#f1fa8c">&#34;msg&#34;</span>:<span style="color:#f1fa8c">&#34;Successfully initialized and updated submodules in path /workspace/repo&#34;</span><span style="color:#ff79c6">}</span>
+PASS
+ok      _/workspace/repo        <span style="color:#bd93f9">0</span>.006s</code></pre></div>
+<p>我们可以看到我们的测试已经通过了，当然我们也可以使用 <code>Tekton CLI</code> 工具来运行这个任务。Tekton CLI 提供了一种更快、更方便的方式来运行任务。</p>
+
+<p>我们不用手动编写 TaskRun 资源清单，可以运行以下命令来执行，该命令引用我们的任务（名为 test），生成一个 TaskRun 资源对象并显示其日志：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ tkn task start <span style="color:#8be9fd;font-style:italic">test</span> --inputresource <span style="color:#8be9fd;font-style:italic">repo</span><span style="color:#ff79c6">=</span>cnych-tekton-example --showlog
+Taskrun started: test-run-z56lj
+Waiting <span style="color:#ff79c6">for</span> logs to be available...
+<span style="color:#ff79c6">[</span>git-source-cnych-tekton-example-8q268<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;level&#34;</span>:<span style="color:#f1fa8c">&#34;info&#34;</span>,<span style="color:#f1fa8c">&#34;ts&#34;</span>:1588752677.350016,<span style="color:#f1fa8c">&#34;caller&#34;</span>:<span style="color:#f1fa8c">&#34;git/git.go:136&#34;</span>,<span style="color:#f1fa8c">&#34;msg&#34;</span>:<span style="color:#f1fa8c">&#34;Successfully cloned https://github.com/cnych/tekton-demo @ f840e0c390be9a1a6edad76abbde64e882047f05 (grafted, HEAD, origin/master) in path /workspace/repo&#34;</span><span style="color:#ff79c6">}</span>
+<span style="color:#ff79c6">[</span>git-source-cnych-tekton-example-8q268<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;level&#34;</span>:<span style="color:#f1fa8c">&#34;info&#34;</span>,<span style="color:#f1fa8c">&#34;ts&#34;</span>:1588752677.453426,<span style="color:#f1fa8c">&#34;caller&#34;</span>:<span style="color:#f1fa8c">&#34;git/git.go:177&#34;</span>,<span style="color:#f1fa8c">&#34;msg&#34;</span>:<span style="color:#f1fa8c">&#34;Successfully initialized and updated submodules in path /workspace/repo&#34;</span><span style="color:#ff79c6">}</span>
+
+<span style="color:#ff79c6">[</span>run-test<span style="color:#ff79c6">]</span> PASS
+<span style="color:#ff79c6">[</span>run-test<span style="color:#ff79c6">]</span> ok  	_/workspace/repo	<span style="color:#bd93f9">0</span>.007s</code></pre></div>
+<h3 id="总结">总结</h3>
+
+<p>我们已经在 Kubernetes 集群上成功安装了 Tekton，定义了一个 Task，并通过 YAML 清单和 Tekton CLI 创建 TaskRun 对其进行了测试。在下一部发我们将创建一个任务来构建一个 Docker 镜像，并将其推送到 Docker Hub。最后，我们将创建一个流水线，按顺序运行我们的两个任务（运行应用程序测试，构建和推送）。</p>
+
+<p>参考资料：</p>
+
+<ul>
+<li><a href="https://tekton.dev/">tekton.dev</a></li>
+<li><a href="https://www.arthurkoziel.com/creating-ci-pipelines-with-tekton-part-1/">Creating CI Pipelines with Tekton</a></li>
+</ul>
+
+<p><a href="https://youdianzhishi.com/web/course/1012" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+
 
           <h2>微信公众号</h2>
 <p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
