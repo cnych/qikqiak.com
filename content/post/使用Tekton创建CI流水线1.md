@@ -1,5 +1,5 @@
 ---
-title: 使用 Tekton 创建 CI 流水线（1/2）
+title: 使用 Tekton 创建 CI/CD 流水线（1/2）
 date: 2020-05-06
 tags: ["kubernetes", "tekton"]
 slug: create-ci-pipeline-with-tekton-1
@@ -11,7 +11,7 @@ category: "kubernetes"
 
 [Tekton](https://tekton.dev/) 是一款功能非常强大而灵活的 CI/CD 开源的云原生框架。Tekton 的前身是 Knative 项目的 build-pipeline 项目，这个项目是为了给 build 模块增加 pipeline 的功能，但是随着不同的功能加入到 Knative build 模块中，build 模块越来越变得像一个通用的 CI/CD 系统，于是，索性将 build-pipeline 剥离出 Knative，就变成了现在的 Tekton，而 Tekton 也从此致力于提供全功能、标准化的云原生 CI/CD 解决方案。
 
-本文将通过一个简单的示例来创建一个构建流水线，在流水线中将运行应用程序的单元测试、构建 Docker 镜像然后推送到 Docker Hub。
+本文将通过一个简单的示例来创建一个构建流水线，在流水线中将运行应用程序的单元测试、[构建 Docker 镜像然后推送到 Docker Hub](/post/create-ci-pipeline-with-tekton-2/)。
 
 <!--more-->
 
