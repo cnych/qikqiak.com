@@ -3,6 +3,7 @@ title: Archive
 comments: false
 unrelated: true
 nopager: true
+noreadmore: true
 ---
 
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
