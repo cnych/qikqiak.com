@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [可视化创建 Kubernetes 微服务应用](https://www.qikqiak.com/post/visualize-kubernetes-app/)
  * [使用 Tekton 创建 CI/CD 流水线（2/2）](https://www.qikqiak.com/post/create-ci-pipeline-with-tekton-2/)
  * [使用 Tekton 创建 CI/CD 流水线（1/2）](https://www.qikqiak.com/post/create-ci-pipeline-with-tekton-1/)
  * [加速开发流程的 Dockerfile 最佳实践](https://www.qikqiak.com/post/speed-up-develop-flow-dockerfile-best-practices/)
