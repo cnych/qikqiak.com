@@ -2,9 +2,10 @@
 title: 解决 CoreDNS 自定义域名失效的问题
 date: 2020-05-14
 tags: ["kubernetes", "coredns"]
-keywords: ["kubernetes", "coredns", "hosts", "rewrite"]
+keywords: ["kubernetes", "coredns", "hosts", "rewrite", "插件", "A 记录"]
 slug: resolve-coredns-hosts-invalid
 gitcomment: true
+notoc: true
 category: "kubernetes"
 bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200514172611.png", desc: "https://unsplash.com/photos/xqSDI58vkUY"}]
 ---
@@ -178,8 +179,8 @@ $ kubectl edit cm node-local-dns -n kube-system
 现在我们再去测试就可以正常解析自定义的域名了：
 ```shell
 / # nslookup git.k8s.local
-Server:    10.96.0.10
-Address 1: 10.96.0.10 kube-dns.kube-system.svc.cluster.local
+Server:    169.254.20.10
+Address 1: 169.254.20.10
 
 Name:      git.k8s.local
 Address 1: 10.151.30.11 git.k8s.local
