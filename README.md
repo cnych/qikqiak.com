@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [请使用 JSON 格式记录日志[译]](https://www.qikqiak.com/post/record-log-as-json/)
  * [使用 PyCharm、Okteto 和 Kubernetes 搭建远程开发环境](https://www.qikqiak.com/post/remote-deploy-env-with-okteto/)
  * [可视化创建 Kubernetes 微服务应用](https://www.qikqiak.com/post/visualize-kubernetes-app/)
  * [使用 Tekton 创建 CI/CD 流水线（2/2）](https://www.qikqiak.com/post/create-ci-pipeline-with-tekton-2/)
