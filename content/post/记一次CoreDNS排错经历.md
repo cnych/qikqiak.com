@@ -60,7 +60,7 @@ nslookup: can't resolve 'git.k8s.local'
 
 这个时候只能去查看 LocalDNS 的 Pod 日志了：
 ```shell
-$ 
+$ kubectl logs -f node-local-dns-bb84m -n kube-system
 ......
 2020/05/14 05:30:21 [INFO] Updated Corefile with 0 custom stubdomains and upstream servers /etc/resolv.conf
 2020/05/14 05:30:21 [INFO] Using config file:
