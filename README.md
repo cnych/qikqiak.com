@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [Jenkins 共享库示例](https://www.qikqiak.com/post/jenkins-shared-library-demo/)
  * [解决 CoreDNS 自定义域名失效的问题](https://www.qikqiak.com/post/resolve-coredns-hosts-invalid/)
  * [请使用 JSON 格式记录日志[译]](https://www.qikqiak.com/post/record-log-as-json/)
  * [使用 PyCharm、Okteto 和 Kubernetes 搭建远程开发环境](https://www.qikqiak.com/post/remote-deploy-env-with-okteto/)
