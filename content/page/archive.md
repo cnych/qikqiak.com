@@ -9,6 +9,7 @@ noreadmore: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [GitOps - 在 Kubernetes 中进行 DevOps 的方式](https://www.qikqiak.com/post/gitops-devops-on-k8s/)
  * [Jenkins 共享库示例](https://www.qikqiak.com/post/jenkins-shared-library-demo/)
  * [解决 CoreDNS 自定义域名失效的问题](https://www.qikqiak.com/post/resolve-coredns-hosts-invalid/)
  * [请使用 JSON 格式记录日志[译]](https://www.qikqiak.com/post/record-log-as-json/)
