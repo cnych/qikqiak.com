@@ -1,5 +1,6 @@
 ---
 title: 使用 Tekton 创建 CI/CD 流水线（3/4）
+subtitle: Tekton Trigger 的使用
 date: 2020-05-29
 tags: ["kubernetes", "tekton"]
 slug: create-ci-pipeline-with-tekton-3
