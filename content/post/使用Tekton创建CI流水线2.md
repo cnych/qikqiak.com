@@ -1,5 +1,5 @@
 ---
-title: 使用 Tekton 创建 CI/CD 流水线（2/2）
+title: 使用 Tekton 创建 CI/CD 流水线（2/4）
 date: 2020-05-08
 tags: ["kubernetes", "tekton"]
 slug: create-ci-pipeline-with-tekton-2
