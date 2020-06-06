@@ -6,6 +6,7 @@ tags: ["kubernetes", "tekton"]
 slug: create-ci-pipeline-with-tekton-3
 keywords: ["kubernetes", "tekton", "github", "git", "gitlab", "流水线"]
 gitcomment: true
+notoc: true
 bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200529181158.png", desc: "https://unsplash.com/photos/aV31XuctrM8"}]
 category: "kubernetes"
 ---
