@@ -1,7 +1,7 @@
 ---
 title: 在 Windows 下使用 WSL2 搭建 Kubernetes 集群
 date: 2020-06-10
-tags: ["kubernetes", "wsl"]
+tags: ["kubernetes", "wsl", "kind"]
 slug: deploy-k8s-on-win-use-wsl2
 keywords: ["kubernetes", "windows", "wsl", "kind", "minikube"]
 gitcomment: true
