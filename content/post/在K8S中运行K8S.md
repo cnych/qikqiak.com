@@ -5,7 +5,7 @@ tags: ["kubernetes", "wsl", "kind", "docker"]
 slug: k8s-in-k8s
 keywords: ["kubernetes", "windows", "wsl", "kind", "cgroup"]
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/0_ELInjYSqoY9iKX1W.jpeg", desc: "Windows WSL2"}]
+bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200612120656.png", desc: "Kubernetes IN Kubernetes"}]
 category: "kubernetes"
 ---
 
