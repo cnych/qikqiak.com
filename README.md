@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [Kubernetes 中 PV 和 PVC 的状态变化](https://www.qikqiak.com/post/status-in-pv-pvc/)
  * [在 Kubernetes 中运行 Kubernetes](https://www.qikqiak.com/post/k8s-in-k8s/)
  * [在 Windows 下使用 WSL2 搭建 Kubernetes 集群](https://www.qikqiak.com/post/deploy-k8s-on-win-use-wsl2/)
  * [使用 Loki 进行日志监控和报警](https://www.qikqiak.com/post/use-loki-monitor-alert/)
