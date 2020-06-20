@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>使用 Sealed Secrets 加密 Kubernetes Secrets-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="使用 Sealed Secrets 加密 Kubernetes Secrets" />
+  <meta name="twitter:title" content="使用 Sealed Secrets 加密 Kubernetes Secrets" />
+
+  <meta name="description" content="如何在 Git 中存储 Secrets 资源">
+  <meta property="og:description" content="如何在 Git 中存储 Secrets 资源">
+  <meta name="twitter:description" content="如何在 Git 中存储 Secrets 资源">
+  <meta name="author" content=""/>
+  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/encrypt-k8s-secrets-with-sealed-secrets/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.55.6" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/encrypt-k8s-secrets-with-sealed-secrets/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
+
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
+    <!--[if lt IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <![endif]-->
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, sealed, secrets, ops, gitops, 加密">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="首页" href="https://www.qikqiak.com/">首页</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200620114105.png" data-img-desc-1="Sealed Secrets"></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>使用 Sealed Secrets 加密 Kubernetes Secrets</h1>
+                  
+                    
+                      <h2 class="post-subheading">如何在 Git 中存储 Secrets 资源</h2>
+                    
+                  
+                  
+                    <span class="post-meta">
+  
+    发表于 June 20, 2020
+  
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>使用 Sealed Secrets 加密 Kubernetes Secrets</h1>
+                
+                  
+                    <h2 class="post-subheading">如何在 Git 中存储 Secrets 资源</h2>
+                  
+                
+                
+                  <span class="post-meta">
+  
+    发表于 June 20, 2020
+  
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/sealed/">sealed</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/secrets/">secrets</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/ops/">ops</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#sealed-secrets">Sealed Secrets</a></li>
+<li><a href="#sealedsecret-作用域">SealedSecret 作用域</a></li>
+<li><a href="#sealedsecrets-使用">SealedSecrets 使用</a>
+<ul>
+<li><a href="#安装">安装</a></li>
+<li><a href="#测试">测试</a></li>
+<li><a href="#修改命名空间">修改命名空间</a></li>
+<li><a href="#修改-secret-名称">修改 Secret 名称</a></li>
+<li><a href="#创建集群范围的-sealedsecrets">创建集群范围的 SealedSecrets</a></li>
+</ul></li>
+<li><a href="#参考链接">参考链接</a></li>
+</ul></li>
+</ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>前面我们和大家提到过 GitOps 的实践，我们知道 GitOps 是提倡通过 Git 来管理所有的配置，通过声明式代码来对环境配置和基础设施进行版本管理。</p>
+
+<p>在 Kubernetes 中我们知道可以使用资源清单文件来管理集群中的一资源对象，但是讲 Kubernetes 的 Secrets 数据存储在 Git 仓库中还是非常不妥的，毕竟也是非常不安全的。</p>
+
+<p>Kubernetes Secrets 是用来帮助我们存储敏感信息的资源对象，比如密码、密钥、证书、OAuth Token、SSH KEY 等等。管理员可以通过创建 Secrets 对象，然后开发人员就可以在资源清单文件中非常方便的引用 Secrets 对象，而不用直接将这些敏感信息硬编码。</p>
+
+<p>虽然这看上去非常方便，但是有 Secrets 的问题是它们只是简单的将这些敏感信息做了一次 base64 编码而已，任何人都可以非常容易对其进行解密获得原始的数据。所以我们说 Secrets 清单文件不能直接存储在 Git 源码仓库中，但是如果每次都去手工创建的话，这又使得我们的 GitOps 不是很流畅了。</p>
+
+<p>为此 Bitnami Labs 创建了一个名为 <a href="https://github.com/bitnami-labs/sealed-secrets">Sealed Secrets</a> 的开源工具来解决这个问题。</p>
+
+<h2 id="sealed-secrets">Sealed Secrets</h2>
+
+<p>Sealed Secrets 主要由两个组件组成：</p>
+
+<ul>
+<li>一个是集群内的 Kubernetes Operator</li>
+<li>一个是名为 kubeseal 的客户端工具</li>
+</ul>
+
+<p><code>kubeseal</code> 允许我们使用非对称加密算法来加密 Kubernetes Secrets 对象，<code>SealedSecret</code> 是包含加密 Secret 的 Kubernetes CRD 资源对象，只有控制器可以进行解密，所以即使把 SealedSecret 存储在公共的代码仓库中也是非常安全的。</p>
+
+<p>当我们在 Kubernetes 集群中创建 SealedSecret 资源对象的时候，对应的 Operator 就会读取它，然后生成对应的 Secret 对象，然后我们就可以在 Pod 中直接使用这个 Secret 对象了。下面就是一个 SealedSecret 的资源对象示例：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: mysecret
+spec:
+  encryptedData:
+    secret: AgBy3i4OJSWK+PiTySYZZA9rO43cGDEq.....</code></pre></div>
+<p>当 Operator 解密上面的对象后，会生成如下所示的 Secret 对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+data:
+  secret: VGhpcyBpcyBhIHNlY3JldCE=
+kind: Secret
+metadata:
+  creationTimestamp: <span style="color:#ff79c6">null</span>
+  name: mysecret</code></pre></div>
+<h2 id="sealedsecret-作用域">SealedSecret 作用域</h2>
+
+<p>只有 Operator 才可以解密 SealedSecret，一般来说，不允许用户直接去读取 Secret 是一种比较好的做法，我们可以通过创建 RBAC 规则来禁止低权限用户来读取 Secret，也可以限制用户只能从他们的命名空间中读取 Secret 对象。虽然 SealedSecret 被设计成不能直接读取它们，但是用户还是可以绕过这个过程，获得对他们不允许查看的 Secret 对象的访问权限。</p>
+
+<p>SealedSecret 资源提供了多种方式来防止这种行为，它默认是命名空间范围的，一旦将 SealedSecret 限定在一个命名空间下面，就不能在其他命名空间中使用这个对象。</p>
+
+<p>比如，在 web 这个命名空间下面创建了一个名为 foo 带有 bar 这个值的 Secret 对象，我们就不能将这个 Secret 用于其他命名空间，即使需要相同的 Secret。虽然 SealedSecret 的控制器并没有为每个命名空间使用独立的解密密码，但是它在加密的过程中会考虑到命名空间和名称，所以达到的效果就类似于每个命名空间都有自己独立的解密密钥一样。
+<p><a href="https://youdianzhishi.com/web/course/1012" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+
+另外一种情况是我们可能在上面的 web 命名空间上有一个用户，他只能查看某些 Secrets 而不是所有的，SealedSecret 也是允许这种操作的。当我们为 web 命名空间名为 foo 的 Secret 生成一个 SealedSecret 对象时，web 命名空间上的用户如果只是对名为 bar 的 Secret 对象有读取权限，那么就不能在 SealedSecret 资源对象中将 Secret 的名称改为 bar，并用它来查看该 Secret。</p>
+
+<p>虽然这些方法可以帮助我们防止 Secrets 被滥用，但是管理起来还是比较麻烦。默认配置中，我们没办法定义通用的 Secret 来用于多个命名空间。而且很有可能我们的团队非常小，Kubernetes 集群只是运维人员来访问和维护，那么我们可能不需要这种 RBAC 的权限控制方式。</p>
+
+<p>如果我们想定义跨命名空间的 SealedSecrets 对象，我们可以使用作用域来实现这个功能。</p>
+
+<p>我们可以使用3个作用域来创建 SealedSecrets：</p>
+
+<ul>
+<li>strict（默认）：这种情况下，我们需要考虑 Secret 的名称和命名空间来加密，一旦创建了对应的  SealedSecret，就不能更改它的名称和命名空间了。</li>
+<li>namespace-wide：这个作用域允许我们在加密的 Secret 的命名空间内重命名 SealedSecret 对象。</li>
+<li>cluster-wide：这个作用域允许我们自由地在加密 Secret 的命名空间内重命名 SealedSecret，允许我们随意地将 Secret 移动到任何一个命名空间，随意命名。</li>
+</ul>
+
+<p>我们可以在使用 kubeseal 的时候使用<code>--scope</code> 参数来指定作用域：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubeseal --scope cluster-wide --format yaml &lt;secret.yaml &gt;sealed-secret.yaml</code></pre></div>
+<p>此外也可以在 Secret 中使用 annotation，在把配置传递给 kubeseal 之前使用作用域：</p>
+
+<ul>
+<li><code>sealedsecrets.bitnami.com/namespace-wide: &quot;true&quot;</code> 表示 <code>namespace-wide</code></li>
+<li><code>sealedsecrets.bitnami.com/cluster-wide: &quot;true&quot;</code> 表示 <code>cluster-wide</code></li>
+</ul>
+
+<p>如果没有指定任何注解，那么 kubeseal 默认使用 strict 这个作用域，如果设置了两个注解，那么作用域更大的优先。</p>
+
+<h2 id="sealedsecrets-使用">SealedSecrets 使用</h2>
+
+<h3 id="安装">安装</h3>
+
+<p>前面我们提到过 SealedSecrets 由客户端的 kubeseal 和集群端的 Operator 组成。我们先来安装客户端的 kubeseal 工具。</p>
+
+<p>从 <a href="https://github.com/bitnami-labs/sealed-secrets/releases">GitHub Release 页面</a>选择最新的发布版本，下载最新的二进制文件：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ wget https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.12.4/kubeseal-linux-amd64 -O kubeseal
+$ sudo install -m <span style="color:#bd93f9">755</span> kubeseal /usr/local/bin/kubeseal
+$ kubeseal --version
+kubeseal version: v0.12.4+dirty</code></pre></div>
+<p>然后安装 Kubernetes 集群端的 Operator 控制器：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.12.4/controller.yaml
+service/sealed-secrets-controller created
+rolebinding.rbac.authorization.k8s.io/sealed-secrets-service-proxier created
+rolebinding.rbac.authorization.k8s.io/sealed-secrets-controller created
+clusterrole.rbac.authorization.k8s.io/secrets-unsealer created
+serviceaccount/sealed-secrets-controller created
+customresourcedefinition.apiextensions.k8s.io/sealedsecrets.bitnami.com created
+role.rbac.authorization.k8s.io/sealed-secrets-service-proxier created
+role.rbac.authorization.k8s.io/sealed-secrets-key-admin created
+clusterrolebinding.rbac.authorization.k8s.io/sealed-secrets-controller created
+deployment.apps/sealed-secrets-controller created</code></pre></div>
+<p>控制器默认会安装在 kube-system 命名空间下面：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get pods -n kube-system -l <span style="color:#8be9fd;font-style:italic">name</span><span style="color:#ff79c6">=</span>sealed-secrets-controller
+NAME                                         READY   STATUS    RESTARTS   AGE
+sealed-secrets-controller-6bf8c44ff9-fqhgt   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          3m36s</code></pre></div>
+<p>当控制器运行成功后证明就已经安装成功了。接下来我们就可以使用 SealedSecret 来加密我们的 Secret 对象了。</p>
+
+<h3 id="测试">测试</h3>
+
+<p>为了创建 SealedSecret 对象，我们首先需要创建一个 Secret 文件：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ <span style="color:#8be9fd;font-style:italic">echo</span> -n <span style="color:#f1fa8c">&#34;This is a secret&#34;</span> | kubectl create secret generic mysecret --dry-run --from-file<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">secret</span><span style="color:#ff79c6">=</span>/dev/stdin -o yaml &gt; secret.yaml
+$ cat secret.yaml
+apiVersion: v1
+data:
+  secret: <span style="color:#8be9fd;font-style:italic">VGhpcyBpcyBhIHNlY3JldA</span><span style="color:#ff79c6">==</span>
+kind: Secret
+metadata:
+  creationTimestamp: null
+  name: mysecret</code></pre></div>
+<p>注意上面我们使用的是<code>--dry-run</code> 参数，所以并不会真正创建，不过这个 Secret 对象也只是一个 base64 编码的字符串而已，所以不适合直接放在源码仓库中。</p>
+
+<p>接下来使用 kubeseal 工具加密这个对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubeseal --format yaml &lt;secret.yaml &gt;sealedsecret.yaml
+$ cat sealedsecret.yaml
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  creationTimestamp: null
+  name: mysecret
+  namespace: default
+spec:
+  encryptedData:
+    secret: AgActQcD5PS8BkGE9bgB0gCtJrL0HQBA7IWoKYFcQAuOBxxAL5r+i6shnJQByxyo4Wv5y62MrxXlKZkliXuHygrCaxZaKUyvuPkmAcpcgg/P5kY2KI2yQd0ENqGzgPCBiqbBiEFYATykeAUSEe3uUrYeE0EeIDWpiX758UzukaP30Z9nr5m1Ce+rvUUrIaVwQvlHH3pCENGcnb+iCOd2N1zO4YUua1GIm8TFB9IaINCyJR1Djv5zoiu9auNEeVrTWW9gqr1Wj9UaHA7uYqMpdUvupRAdUxBL5HSjZKtcesOKvVtxLNPBmIzolMf42FrxBH42WEoXHOPsRxuKw6UIdsiigVwnTEJYIZyQg/iIdcuWHfOUkm4YcxVdnAuXGxqu8mUhlVNfHjX4SR7MvC+dRPWQNoiL2+uxweHNl0rZCddbzM0ELYdtn1bktaoFLiNeq0bhYYIXhdIzIZypqruuP7ZoNg6zz7ySf7OxhsevSTAD6x1wwKCcjr2kWvNj+zSu1D3zcKT8LTNqHlk35cxbjMDaGPjZ4VdvUGS0d/fBuEtiK6js1vMCfrMdPLiQFNOibro3yKNE8ES3rASIOj3XBxD3FUVT9lGNLsCaRQDQlx/7Fqdjg4o/iAY0qVz8EET8rFWRG/GX3miZdgI9WyHTOY6oUd10VjdEvVPI6JTISI36/HUXOybP+Tc/j6B9FlGmt1CkfzANvXGojjZVjm0yzPtH
+  template:
+    metadata:
+      creationTimestamp: null
+      name: mysecret
+      namespace: default</code></pre></div>
+<p>可以看到 Secret 信息已经被加密了，现在我们就可以放心的将它存储在源码仓库中去了。</p>
+
+<p>接下来我们在一个示例 Pod 中来使用下这个 Secret 对象，看能否正确获取到它的数据。</p>
+
+<p>直接创建上面生成的 SealedSecret 对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl apply -f sealedsecret.yaml
+sealedsecret.bitnami.com/mysecret created</code></pre></div>
+<p>创建完成后正常我们也可以在 default 的命名空间下面找到一个名为 mysecret 的 Secret 对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get secret mysecret
+NAME       TYPE     DATA   AGE
+mysecret   Opaque   <span style="color:#bd93f9">1</span>      7s</code></pre></div>
+<p>使用如下所示的资源清单来创建一个测试的 Pod：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl apply -f - <span style="color:#f1fa8c">&lt;&lt;EOF
+</span><span style="color:#f1fa8c">apiVersion: v1
+</span><span style="color:#f1fa8c">kind: Pod
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: busybox
+</span><span style="color:#f1fa8c">  labels:
+</span><span style="color:#f1fa8c">    app: busybox
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  containers:
+</span><span style="color:#f1fa8c">  - name: test
+</span><span style="color:#f1fa8c">    image: busybox
+</span><span style="color:#f1fa8c">    imagePullPolicy: IfNotPresent
+</span><span style="color:#f1fa8c">    command:
+</span><span style="color:#f1fa8c">      - sleep
+</span><span style="color:#f1fa8c">      - &#34;3600&#34;
+</span><span style="color:#f1fa8c">    volumeMounts:
+</span><span style="color:#f1fa8c">    - name: mysecretvol
+</span><span style="color:#f1fa8c">      mountPath: &#34;/tmp/mysecret&#34;
+</span><span style="color:#f1fa8c">      readOnly: true
+</span><span style="color:#f1fa8c">  volumes:
+</span><span style="color:#f1fa8c">  - name: mysecretvol
+</span><span style="color:#f1fa8c">    secret:
+</span><span style="color:#f1fa8c">      secretName: mysecret
+</span><span style="color:#f1fa8c">EOF</span>
+pod/busybox created
+$ kubectl get pods busybox
+NAME      READY   STATUS    RESTARTS   AGE
+busybox   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          19s</code></pre></div>
+<p>运行成功后我们可以查看容器中的密码数据来验证是否正确：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -it busybox cat /tmp/mysecret/secret
+This is a secret</code></pre></div>
+<p>可以看到正确打印出了我们定义的密码信息 <code>This is a secret</code>。
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5376999672787220"
+     data-ad-slot="9165834656"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</p>
+
+<h3 id="修改命名空间">修改命名空间</h3>
+
+<p>由于上面我们的 Secret 中没有指定任何作用域信息，所以这个 Secret 只能在指定的 default （默认的）命名空间下面使用。比如这里我们将上面的 SealedSecret 对象修改到名为 test 的命名空间中去：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ cp -a sealedsecret.yaml sealedsecret-test.yaml
+$ sed -i <span style="color:#f1fa8c">&#39;s/default/test/g&#39;</span> sealedsecret-test.yaml
+$ kubectl create ns <span style="color:#8be9fd;font-style:italic">test</span>
+namespace/test created
+$ kubectl apply -f sealedsecret-test.yaml
+sealedsecret.bitnami.com/mysecret created</code></pre></div>
+<p>创建完成后，我们查看下是否有生成对应的 Secret 对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get secret -n <span style="color:#8be9fd;font-style:italic">test</span>
+NAME                  TYPE                                  DATA   AGE
+default-token-4gwfx   kubernetes.io/service-account-token   <span style="color:#bd93f9">3</span>      31s</code></pre></div>
+<p>我们可以看到并没有生成对应的 Secret 对象，查看下 SealedSecret 对象是否创建成功：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get sealedsecret -n <span style="color:#8be9fd;font-style:italic">test</span>
+NAME       AGE
+mysecret   104s</code></pre></div>
+<p>可以看到 SealedSecret 对象是存在的，但是没有生成对应的 Secret，我们去查看下控制器的日志：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get pods -n kube-system -l <span style="color:#8be9fd;font-style:italic">name</span><span style="color:#ff79c6">=</span>sealed-secrets-controller
+NAME                                         READY   STATUS    RESTARTS   AGE
+sealed-secrets-controller-6bf8c44ff9-fqhgt   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          28m
+$ kubectl logs -f sealed-secrets-controller-6bf8c44ff9-fqhgt -n kube-system
+......
+<span style="color:#bd93f9">2020</span>/06/20 <span style="color:#bd93f9">02</span>:59:50 Event<span style="color:#ff79c6">(</span>v1.ObjectReference<span style="color:#ff79c6">{</span>Kind:<span style="color:#f1fa8c">&#34;SealedSecret&#34;</span>, Namespace:<span style="color:#f1fa8c">&#34;test&#34;</span>, Name:<span style="color:#f1fa8c">&#34;mysecret&#34;</span>, UID:<span style="color:#f1fa8c">&#34;78caa14b-c496-405b-91f8-652b2e4cef15&#34;</span>, APIVersion:<span style="color:#f1fa8c">&#34;bitnami.com/v1alpha1&#34;</span>, ResourceVersion:<span style="color:#f1fa8c">&#34;81242729&#34;</span>, FieldPath:<span style="color:#f1fa8c">&#34;&#34;</span><span style="color:#ff79c6">})</span>: type: <span style="color:#f1fa8c">&#39;Warning&#39;</span> reason: <span style="color:#f1fa8c">&#39;ErrUnsealFailed&#39;</span> Failed to unseal: no key could decrypt secret <span style="color:#ff79c6">(</span>secret<span style="color:#ff79c6">)</span>
+<span style="color:#bd93f9">2020</span>/06/20 <span style="color:#bd93f9">02</span>:59:50 Updating test/mysecret
+<span style="color:#bd93f9">2020</span>/06/20 <span style="color:#bd93f9">02</span>:59:50 Error updating test/mysecret, giving up: no key could decrypt secret <span style="color:#ff79c6">(</span>secret<span style="color:#ff79c6">)</span>
+E0620 <span style="color:#bd93f9">02</span>:59:50.151844       <span style="color:#bd93f9">1</span> controller.go:196<span style="color:#ff79c6">]</span> no key could decrypt secret <span style="color:#ff79c6">(</span>secret<span style="color:#ff79c6">)</span>
+<span style="color:#bd93f9">2020</span>/06/20 <span style="color:#bd93f9">02</span>:59:50 Event<span style="color:#ff79c6">(</span>v1.ObjectReference<span style="color:#ff79c6">{</span>Kind:<span style="color:#f1fa8c">&#34;SealedSecret&#34;</span>, Namespace:<span style="color:#f1fa8c">&#34;test&#34;</span>, Name:<span style="color:#f1fa8c">&#34;mysecret&#34;</span>, UID:<span style="color:#f1fa8c">&#34;78caa14b-c496-405b-91f8-652b2e4cef15&#34;</span>, APIVersion:<span style="color:#f1fa8c">&#34;bitnami.com/v1alpha1&#34;</span>, ResourceVersion:<span style="color:#f1fa8c">&#34;81242729&#34;</span>, FieldPath:<span style="color:#f1fa8c">&#34;&#34;</span><span style="color:#ff79c6">})</span>: type: <span style="color:#f1fa8c">&#39;Warning&#39;</span> reason: <span style="color:#f1fa8c">&#39;ErrUnsealFailed&#39;</span> Failed to unseal: no key could decrypt secret <span style="color:#ff79c6">(</span>secret<span style="color:#ff79c6">)</span></code></pre></div>
+<p>可以看到了出现了 <code>no key could decrypt secret (secret)</code> 这样的错误信息，这是因为我们使用的默认的 strict 作用域，所以更改 SealedSecret 的命名空间是不生效的。</p>
+
+<h3 id="修改-secret-名称">修改 Secret 名称</h3>
+
+<p>同样我们来测试下在 Secret 的命名空间下面来修改 Secret 的名称看看会是什么效果：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ cp -a sealedsecret.yaml sealedsecret-anothersecret.yaml
+$ sed -i <span style="color:#f1fa8c">&#39;s/mysecret/anothersecret/g&#39;</span> sealedsecret-anothersecret.yaml
+$ kubectl apply -f sealedsecret-anothersecret.yaml
+sealedsecret.bitnami.com/anothersecret created</code></pre></div>
+<p>创建完成后查看 Secret 是否生成新的名称：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get secret
+NAME                                    TYPE                                  DATA   AGE
+default-token-5tsh4                     kubernetes.io/service-account-token   <span style="color:#bd93f9">3</span>      224d
+mysecret                                Opaque                                <span style="color:#bd93f9">1</span>      18m</code></pre></div>
+<p>可以看到也没有生成修改过的名为 anothersecret 的 Secret 对象，同样可以查看 Controller 的日志信息：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl logs -f sealed-secrets-controller-6bf8c44ff9-fqhgt -n kube-system
+......
+<span style="color:#bd93f9">2020</span>/06/20 <span style="color:#bd93f9">03</span>:07:52 Updating default/anothersecret
+<span style="color:#bd93f9">2020</span>/06/20 <span style="color:#bd93f9">03</span>:07:53 Error updating default/anothersecret, will retry: no key could decrypt secret <span style="color:#ff79c6">(</span>secret<span style="color:#ff79c6">)</span>
+<span style="color:#bd93f9">2020</span>/06/20 <span style="color:#bd93f9">03</span>:07:53 Event<span style="color:#ff79c6">(</span>v1.ObjectReference<span style="color:#ff79c6">{</span>Kind:<span style="color:#f1fa8c">&#34;SealedSecret&#34;</span>, Namespace:<span style="color:#f1fa8c">&#34;default&#34;</span>, Name:<span style="color:#f1fa8c">&#34;anothersecret&#34;</span>, UID:<span style="color:#f1fa8c">&#34;b3467b24-b8d3-4c49-8de4-d8399875f8d5&#34;</span>, APIVersion:<span style="color:#f1fa8c">&#34;bitnami.com/v1alpha1&#34;</span>, ResourceVersion:<span style="color:#f1fa8c">&#34;81244607&#34;</span>, FieldPath:<span style="color:#f1fa8c">&#34;&#34;</span><span style="color:#ff79c6">})</span>: type: <span style="color:#f1fa8c">&#39;Warning&#39;</span> reason: <span style="color:#f1fa8c">&#39;ErrUnsealFailed&#39;</span> Failed to unseal: no key could decrypt secret <span style="color:#ff79c6">(</span>secret<span style="color:#ff79c6">)</span></code></pre></div>
+<p>和上面修改命名空间出现的错误基本上是一致的，这也是符合我们的预期的，这是因为我们创建的是一个严格模式下的 Secret，所以不能跨命名空间也不能修改名称。我们可以来创建一个集群范围的 Secret 对象，看看是什么效果。</p>
+
+<h3 id="创建集群范围的-sealedsecrets">创建集群范围的 SealedSecrets</h3>
+
+<p>使用如下所示命令生成一个 Secret 对象资源清单：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ <span style="color:#8be9fd;font-style:italic">echo</span> -n <span style="color:#f1fa8c">&#34;This is a secret&#34;</span> | kubectl create secret generic mycwsecret --dry-run --from-file<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">secret</span><span style="color:#ff79c6">=</span>/dev/stdin -o yaml &gt; secret-cw.yaml</code></pre></div>
+<p>然后使用 <code>cluster-wide</code> 作用域来加密这个 Secret 对象到 test 命名空间下面去：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubeseal --format yaml --scope cluster-wide &lt;secret-cw.yaml &gt;sealedsecret-cw.yaml
+$ kubectl apply -n <span style="color:#8be9fd;font-style:italic">test</span> -f sealedsecret-cw.yaml
+sealedsecret.bitnami.com/mycwsecret created
+$ kubectl get secret -n <span style="color:#8be9fd;font-style:italic">test</span>
+NAME                  TYPE                                  DATA   AGE
+default-token-4gwfx   kubernetes.io/service-account-token   <span style="color:#bd93f9">3</span>      16m
+mycwsecret            Opaque                                <span style="color:#bd93f9">1</span>      30s</code></pre></div>
+<p>我们可以看到对应的 Secret 对象也创建成功了。</p>
+
+<p>现在我们来重命名这个 Secret，重新创建后看还能否生效：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ cp -a sealedsecret-cw.yaml sealedsecret-anothercwsecret.yaml
+$ sed -i <span style="color:#f1fa8c">&#39;s/mycwsecret/anothercwsecret/g&#39;</span> sealedsecret-anothercwsecret.yaml
+$ kubectl apply -n <span style="color:#8be9fd;font-style:italic">test</span> -f sealedsecret-anothercwsecret.yaml
+sealedsecret.bitnami.com/anothercwsecret created</code></pre></div>
+<p>创建完成后我们可以看成重命名后面的 Secret 也自动生成了：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get secret anothercwsecret -n <span style="color:#8be9fd;font-style:italic">test</span>
+NAME              TYPE     DATA   AGE
+anothercwsecret   Opaque   <span style="color:#bd93f9">1</span>      36s</code></pre></div>
+<p>那么修改命名空间呢？比如我们将上面加密后的 Secret 对象创建在 default 命名空间下面：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl apply -n default -f sealedsecret-cw.yaml
+sealedsecret.bitnami.com/mycwsecret created</code></pre></div>
+<p>创建成功后，同样我们可以看到在默认的命名空间下面创建了对应的 Secret 对象：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get secret mycwsecret
+NAME         TYPE     DATA   AGE
+mycwsecret   Opaque   <span style="color:#bd93f9">1</span>      17s</code></pre></div>
+<p>这也是符合我们的预期的，因为我们创建的是一个 cluster-wide 作用域的 SealedSecrets，所以可以随意的修改命名空间和名称。</p>
+
+<p>关于 SealedSecrets 的更多使用可以参考<a href="https://www.notion.so/cnych/Sealed-Secrets-Kubernetes-Secrets-bb45266d99ce46879d9475e72de905ed#e852a4220d2c4841a4ccc191e34ed47a">官方文档</a>了解更多信息。</p>
+
+<h2 id="参考链接">参考链接</h2>
+
+<ul>
+<li><a href="https://github.com/bitnami-labs/sealed-secrets">https://github.com/bitnami-labs/sealed-secrets</a></li>
+<li><a href="https://medium.com/better-programming/encrypting-kubernetes-secrets-with-sealed-secrets-fe363149a211">https://medium.com/better-programming/encrypting-kubernetes-secrets-with-sealed-secrets-fe363149a211</a></li>
+</ul>
+
+<p><a href="https://youdianzhishi.com/web/course/1012" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+
+
+          <h2>微信公众号</h2>
+<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
+<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/gitops-devops-on-k8s/">GitOps - 在 Kubernetes 中进行 DevOps 的方式</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/status-in-pv-pvc/">Kubernetes 中 PV 和 PVC 的状态变化</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-in-k8s/">在 Kubernetes 中运行 Kubernetes</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/deploy-k8s-on-win-use-wsl2/">在 Windows 下使用 WSL2 搭建 Kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-loki-monitor-alert/">使用 Loki 进行日志监控和报警</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/create-ci-pipeline-with-tekton-3/">使用 Tekton 创建 CI/CD 流水线（3/4）</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/resolve-coredns-hosts-invalid/">解决 CoreDNS 自定义域名失效的问题</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/record-log-as-json/">请使用 JSON 格式记录日志[译]</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/remote-deploy-env-with-okteto/">使用 PyCharm、Okteto 和 Kubernetes 搭建远程开发环境</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/visualize-kubernetes-app/">可视化创建 Kubernetes 微服务应用</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/status-in-pv-pvc/" data-toggle="tooltip" data-placement="top" title="Kubernetes 中 PV 和 PVC 的状态变化">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/devops-base-on-jenkins/" data-toggle="tooltip" data-placement="top" title="基于 Jenkins 的 DevOps 流水线实践">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '使用 Sealed Secrets 加密 Kubernetes Secrets',
+        createIssueManually: true,
+        id: 'encrypt-k8s-secrets-with-sealed-secrets',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          <script src="https://my.openwrite.cn/js/readmore.js" type="text/javascript"></script>
+<script>
+    const btw = new BTWPlugin();
+    btw.init({
+        id: 'content',
+        blogId: '22060-1589096201113-901',
+        name: 'k8s技术圈',
+        qrcode: 'https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode_for_gh_d6dd87b6ceb4_344.jpg',
+        keyword: 'vip',
+    });
+</script>
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2020
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="http://www.beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
+  </body>
+</html>
+

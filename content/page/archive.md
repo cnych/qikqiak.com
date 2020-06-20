@@ -9,6 +9,7 @@ noreadmore: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [使用 Sealed Secrets 加密 Kubernetes Secrets](https://www.qikqiak.com/post/encrypt-k8s-secrets-with-sealed-secrets/)
  * [Kubernetes 中 PV 和 PVC 的状态变化](https://www.qikqiak.com/post/status-in-pv-pvc/)
  * [在 Kubernetes 中运行 Kubernetes](https://www.qikqiak.com/post/k8s-in-k8s/)
  * [在 Windows 下使用 WSL2 搭建 Kubernetes 集群](https://www.qikqiak.com/post/deploy-k8s-on-win-use-wsl2/)
