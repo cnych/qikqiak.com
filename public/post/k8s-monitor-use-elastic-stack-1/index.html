@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>使用 Elastic 技术栈构建 K8S 全栈监控(1/4)-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="使用 Elastic 技术栈构建 K8S 全栈监控(1/4)" />
+  <meta name="twitter:title" content="使用 Elastic 技术栈构建 K8S 全栈监控(1/4)" />
+
+  <meta name="description" content="搭建 ElasticSearch 集群环境">
+  <meta property="og:description" content="搭建 ElasticSearch 集群环境">
+  <meta name="twitter:description" content="搭建 ElasticSearch 集群环境">
+  <meta name="author" content=""/>
+  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-1/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.55.6" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-1/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
+
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
+    <!--[if lt IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <![endif]-->
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="elastic, kubernetes">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="首页" href="https://www.qikqiak.com/">首页</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200709104733.png" data-img-desc-1="https://unsplash.com/photos/bK1hmAK3D78"></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>使用 Elastic 技术栈构建 K8S 全栈监控(1/4)</h1>
+                  
+                    
+                      <h2 class="post-subheading">搭建 ElasticSearch 集群环境</h2>
+                    
+                  
+                  
+                    <span class="post-meta">
+  
+    发表于 July 9, 2020
+  
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>使用 Elastic 技术栈构建 K8S 全栈监控(1/4)</h1>
+                
+                  
+                    <h2 class="post-subheading">搭建 ElasticSearch 集群环境</h2>
+                  
+                
+                
+                  <span class="post-meta">
+  
+    发表于 July 9, 2020
+  
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/elastic/">elastic</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/kibana/">kibana</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#1-示例应用">1. 示例应用</a></li>
+<li><a href="#2-elasticsearch-集群">2. ElasticSearch 集群</a>
+<ul>
+<li><a href="#2-1-安装-elasticsearch-主节点">2.1 安装 ElasticSearch 主节点</a></li>
+<li><a href="#2-2-安装-elasticsearch-数据节点">2.2 安装 ElasticSearch 数据节点</a></li>
+<li><a href="#2-3-安装-elasticsearch-客户端节点">2.3 安装 ElasticSearch 客户端节点</a></li>
+<li><a href="#2-4-生成密码">2.4 生成密码</a></li>
+</ul></li>
+<li><a href="#3-kibana">3. Kibana</a></li>
+</ul></li>
+</ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>在本系列文章中，我们将学习如何使用 Elastic 技术栈来为 Kubernetes 构建监控环境。可观测性的目标是为生产环境提供运维工具来检测服务不可用的情况（比如服务宕机、错误或者响应变慢等），并且保留一些可以排查的信息，以帮助我们定位问题。总的来说主要包括3个方面：</p>
+
+<ul>
+<li>监控指标提供系统各个组件的时间序列数据，比如 CPU、内存、磁盘、网络等信息，通常可以用来显示系统的整体状况以及检测某个时间的异常行为</li>
+<li>日志为运维人员提供了一个数据来分析系统的一些错误行为，通常将系统、服务和应用的日志集中收集在同一个数据库中</li>
+<li>追踪或者 APM（应用性能监控）提供了一个更加详细的应用视图，可以将服务执行的每一个请求和步骤都记录下来（比如 HTTP 调用、数据库查询等），通过追踪这些数据，我们可以检测到服务的性能，并相应地改进或修复我们的系统。</li>
+</ul>
+
+<p><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200626091556.png" alt="" /></p>
+
+<p>本文我们就将在 Kubernetes 集群中使用由 ElasticSearch、Kibana、Filebeat、Metricbeat 和 APM-Server 组成的 Elastic 技术栈来监控系统环境。为了更好地去了解这些组件的配置，我们这里将采用手写资源清单文件的方式来安装这些组件，当然我们也可以使用 Helm 等其他工具来快速安装配置。</p>
+
+<p><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/elastic-stack-arch.png" alt="" /></p>
+
+<p>接下来我们就来学习下如何使用 Elastic 技术构建 Kubernetes 监控栈。我们这里的试验环境是 Kubernetes v1.16.2 版本的集群，为方便管理，我们将所有的资源对象都部署在一个名为 elastic 的命名空间中：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl create ns elastic
+namespace/elastic created</code></pre></div>
+<h2 id="1-示例应用">1. 示例应用</h2>
+
+<p>这里我们先部署一个使用 SpringBoot 和 MongoDB 开发的示例应用。首先部署一个 MongoDB 应用，对应的资源清单文件如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># mongo.yml</span>
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+  namespace: elastic
+  labels:
+    app: mongo
+spec:
+  ports:
+  - port: <span style="color:#bd93f9">27017</span>
+    protocol: TCP
+  selector:
+    app: mongo
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: elastic
+  name: mongo
+  labels:
+    app: mongo
+spec:
+  serviceName: <span style="color:#f1fa8c">&#34;mongo&#34;</span>
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+      - name: mongo
+        image: mongo
+        ports:
+        - containerPort: <span style="color:#bd93f9">27017</span>
+        volumeMounts:
+        - name: data
+          mountPath: /data/db
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ <span style="color:#f1fa8c">&#34;ReadWriteOnce&#34;</span> ]
+      storageClassName: rook-ceph-block  <span style="color:#6272a4"># 使用支持 RWO 的 StorageClass</span>
+      resources:
+        requests:
+          storage: 1Gi</code></pre></div>
+<p>这里我们使用了一个名为 rook-ceph-block 的 StorageClass 对象来自动创建 PV，可以替换成自己集群中支持 RWO 的 StorageClass 对象即可。直接使用上面的资源清单创建即可：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl apply -f mongo.yml
+service/mongo created
+statefulset.apps/mongo created
+$ kubectl get pods -n elastic -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>mongo             
+NAME      READY   STATUS    RESTARTS   AGE
+mongo-0   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          34m</code></pre></div>
+<p>直到 Pod 变成 Running 状态证明 mongodb 部署成功了。接下来部署 SpringBoot 的 API 应用，这里我们通过 NodePort 类型的 Service 服务来暴露该服务，对应的资源清单文件如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># spring-boot-simple.yml</span>
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: elastic
+  name: spring-boot-simple
+  labels:
+    app: spring-boot-simple
+spec:
+  type: NodePort
+  ports:
+  - port: <span style="color:#bd93f9">8080</span>
+    protocol: TCP
+  selector:
+    app: spring-boot-simple
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: elastic
+  name: spring-boot-simple
+  labels:
+    app: spring-boot-simple
+spec:
+  replicas: <span style="color:#bd93f9">1</span>
+  selector:
+    matchLabels:
+      app: spring-boot-simple
+  template:
+    metadata:
+      labels:
+        app: spring-boot-simple
+    spec:
+      containers:
+      - image: cnych/spring-boot-simple:<span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">1</span>-SNAPSHOT
+        name: spring-boot-simple
+        env:
+        - name: SPRING_DATA_MONGODB_HOST  <span style="color:#6272a4"># 指定MONGODB地址</span>
+          value: mongo
+        ports:
+        - containerPort: <span style="color:#bd93f9">8080</span></code></pre></div>
+<p>同样直接创建上面的应用的应用即可：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl apply -f spring-boot-simple.yaml 
+service/spring-boot-simple created
+deployment.apps/spring-boot-simple created
+$ kubectl get pods -n elastic -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>spring-boot-simple
+NAME                                  READY   STATUS    RESTARTS   AGE
+spring-boot-simple-64795494bf-hqpcj   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          24m
+$ kubectl get svc -n elastic -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>spring-boot-simple
+NAME                 TYPE       CLUSTER-IP      EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>          AGE
+spring-boot-simple   NodePort   <span style="color:#bd93f9">10</span>.109.55.134   &lt;none&gt;        <span style="color:#bd93f9">8080</span>:31847/TCP   84s</code></pre></div>
+<p>当应用部署完成后，我们就可以通过地址 http://<nodeip>:31847 访问应用，可以通过如下命令进行简单测试：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ curl -X GET  http://k8s.qikqiak.com:31847/
+Greetings from Spring Boot!</code></pre></div>
+<p>发送一个 POST 请求：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">$ curl -X POST http://k8s.qikqiak.com:31847/message -d &#39;hello world&#39;
+{&#34;id&#34;:&#34;5ef55c130d53190001bf74d2&#34;,&#34;message&#34;:&#34;hello+world=&#34;,&#34;postedAt&#34;:&#34;2020-06-26T02:23:15.860+0000&#34;}</pre></div>
+<p>获取所以消息数据：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">$ curl -X GET http://k8s.qikqiak.com:31847/message
+[{&#34;id&#34;:&#34;5ef55c130d53190001bf74d2&#34;,&#34;message&#34;:&#34;hello+world=&#34;,&#34;postedAt&#34;:&#34;2020-06-26T02:23:15.860+0000&#34;}]</pre></div>
+<h2 id="2-elasticsearch-集群">2. ElasticSearch 集群</h2>
+
+<p>要建立一个 Elastic 技术的监控栈，当然首先我们需要部署 ElasticSearch，它是用来存储所有的指标、日志和追踪的数据库，这里我们通过3个不同角色的可扩展的节点组成一个集群。</p>
+
+<h3 id="2-1-安装-elasticsearch-主节点">2.1 安装 ElasticSearch 主节点</h3>
+
+<p>设置集群的第一个节点为 Master 主节点，来负责控制整个集群。首先创建一个 ConfigMap 对象，用来描述集群的一些配置信息，以方便将 ElasticSearch 的主节点配置到集群中并开启安全认证功能。对应的资源清单文件如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># elasticsearch-master.configmap.yaml</span>
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: elastic
+  name: elasticsearch-master-config
+  labels:
+    app: elasticsearch
+    role: master
+data:
+  elasticsearch.yml: |<span style="color:#f1fa8c">-
+</span><span style="color:#f1fa8c">    cluster.name: ${CLUSTER_NAME}</span>
+    node.name: ${NODE_NAME}
+    discovery.seed_hosts: ${NODE_LIST}
+    cluster.initial_master_nodes: ${MASTER_NODES}
+
+    network.host: <span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">0.0</span>
+
+    node:
+      master: <span style="color:#ff79c6">true</span>
+      data: <span style="color:#ff79c6">false</span>
+      ingest: <span style="color:#ff79c6">false</span>
+
+    xpack.security.enabled: <span style="color:#ff79c6">true</span>
+    xpack.monitoring.collection.enabled: <span style="color:#ff79c6">true</span>
+---</code></pre></div>
+<p>然后创建一个 Service 对象，在 Master 节点下，我们只需要通过用于集群通信的 9300 端口进行通信。资源清单文件如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># elasticsearch-master.service.yaml</span>
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: elastic
+  name: elasticsearch-master
+  labels:
+    app: elasticsearch
+    role: master
+spec:
+  ports:
+  - port: <span style="color:#bd93f9">9300</span>
+    name: transport
+  selector:
+    app: elasticsearch
+    role: master
+---</code></pre></div>
+<p>最后使用一个 Deployment 对象来定义 Master 节点应用，资源清单文件如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># elasticsearch-master.deployment.yaml</span>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: elastic
+  name: elasticsearch-master
+  labels:
+    app: elasticsearch
+    role: master
+spec:
+  replicas: <span style="color:#bd93f9">1</span>
+  selector:
+    matchLabels:
+      app: elasticsearch
+      role: master
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+        role: master
+    spec:
+      containers:
+      - name: elasticsearch-master
+        image: docker.elastic.co/elasticsearch/elasticsearch:<span style="color:#bd93f9">7.8</span>.<span style="color:#bd93f9">0</span>
+        env:
+        - name: CLUSTER_NAME
+          value: elasticsearch
+        - name: NODE_NAME
+          value: elasticsearch-master
+        - name: NODE_LIST
+          value: elasticsearch-master,elasticsearch-data,elasticsearch-client
+        - name: MASTER_NODES
+          value: elasticsearch-master
+        - name: <span style="color:#f1fa8c">&#34;ES_JAVA_OPTS&#34;</span>
+          value: <span style="color:#f1fa8c">&#34;-Xms512m -Xmx512m&#34;</span>
+        ports:
+        - containerPort: <span style="color:#bd93f9">9300</span>
+          name: transport
+        volumeMounts:
+        - name: config
+          mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          readOnly: <span style="color:#ff79c6">true</span>
+          subPath: elasticsearch.yml
+        - name: storage
+          mountPath: /data
+      volumes:
+      - name: config
+        configMap:
+          name: elasticsearch-master-config
+      - name: <span style="color:#f1fa8c">&#34;storage&#34;</span>
+        emptyDir:
+          medium: <span style="color:#f1fa8c">&#34;&#34;</span>
+---</code></pre></div>
+<p>直接创建上面的3个资源对象即可：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply  -f elasticsearch-master.configmap.yaml <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>                 -f elasticsearch-master.service.yaml <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>                 -f elasticsearch-master.deployment.yaml
+
+configmap/elasticsearch-master-config created
+service/elasticsearch-master created
+deployment.apps/elasticsearch-master created
+$ kubectl get pods -n elastic -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>elasticsearch
+NAME                                    READY   STATUS    RESTARTS   AGE
+elasticsearch-master-6f666cbbd-r9vtx    <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          111m</code></pre></div>
+<p>直到 Pod 变成 Running 状态就表明 master 节点安装成功。</p>
+
+<h3 id="2-2-安装-elasticsearch-数据节点">2.2 安装 ElasticSearch 数据节点</h3>
+
+<p>现在我们需要安装的是集群的数据节点，它主要来负责集群的数据托管和执行查询。
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5376999672787220"
+     data-ad-slot="9165834656"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+和 master 节点一样，我们使用一个 ConfigMap 对象来配置我们的数据节点：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># elasticsearch-data.configmap.yaml</span>
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: elastic
+  name: elasticsearch-data-config
+  labels:
+    app: elasticsearch
+    role: data
+data:
+  elasticsearch.yml: |<span style="color:#f1fa8c">-
+</span><span style="color:#f1fa8c">    cluster.name: ${CLUSTER_NAME}</span>
+    node.name: ${NODE_NAME}
+    discovery.seed_hosts: ${NODE_LIST}
+    cluster.initial_master_nodes: ${MASTER_NODES}
+
+    network.host: <span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">0.0</span>
+
+    node:
+      master: <span style="color:#ff79c6">false</span>
+      data: <span style="color:#ff79c6">true</span>
+      ingest: <span style="color:#ff79c6">false</span>
+
+    xpack.security.enabled: <span style="color:#ff79c6">true</span>
+    xpack.monitoring.collection.enabled: <span style="color:#ff79c6">true</span>
+---</code></pre></div>
+<p>可以看到和上面的 master 配置非常类似，不过需要注意的是属性 node.data=true。</p>
+
+<p>同样只需要通过 9300 端口和其他节点进行通信：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># elasticsearch-data.service.yaml</span>
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: elastic
+  name: elasticsearch-data
+  labels:
+    app: elasticsearch
+    role: data
+spec:
+  ports:
+  - port: <span style="color:#bd93f9">9300</span>
+    name: transport
+  selector:
+    app: elasticsearch
+    role: data
+---</code></pre></div>
+<p>最后创建一个 StatefulSet 的控制器，因为可能会有多个数据节点，每一个节点的数据不是一样的，需要单独存储，所以也使用了一个 volumeClaimTemplates 来分别创建存储卷，对应的资源清单文件如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># elasticsearch-data.statefulset.yaml</span>
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: elastic
+  name: elasticsearch-data
+  labels:
+    app: elasticsearch
+    role: data
+spec:
+  serviceName: <span style="color:#f1fa8c">&#34;elasticsearch-data&#34;</span>
+  selector:
+    matchLabels:
+      app: elasticsearch
+      role: data
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+        role: data
+    spec:
+      containers:
+      - name: elasticsearch-data
+        image: docker.elastic.co/elasticsearch/elasticsearch:<span style="color:#bd93f9">7.8</span>.<span style="color:#bd93f9">0</span>
+        env:
+        - name: CLUSTER_NAME
+          value: elasticsearch
+        - name: NODE_NAME
+          value: elasticsearch-data
+        - name: NODE_LIST
+          value: elasticsearch-master,elasticsearch-data,elasticsearch-client
+        - name: MASTER_NODES
+          value: elasticsearch-master
+        - name: <span style="color:#f1fa8c">&#34;ES_JAVA_OPTS&#34;</span>
+          value: <span style="color:#f1fa8c">&#34;-Xms1024m -Xmx1024m&#34;</span>
+        ports:
+        - containerPort: <span style="color:#bd93f9">9300</span>
+          name: transport
+        volumeMounts:
+        - name: config
+          mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          readOnly: <span style="color:#ff79c6">true</span>
+          subPath: elasticsearch.yml
+        - name: elasticsearch-data-persistent-storage
+          mountPath: /data/db
+      volumes:
+      - name: config
+        configMap:
+          name: elasticsearch-data-config
+  volumeClaimTemplates:
+  - metadata:
+      name: elasticsearch-data-persistent-storage
+    spec:
+      accessModes: [ <span style="color:#f1fa8c">&#34;ReadWriteOnce&#34;</span> ]
+      storageClassName: rook-ceph-block
+      resources:
+        requests:
+          storage: 50Gi
+---</code></pre></div>
+<p>直接创建上面的资源对象即可：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl apply -f elasticsearch-data.configmap.yaml <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>                -f elasticsearch-data.service.yaml <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>                -f elasticsearch-data.statefulset.yaml
+
+configmap/elasticsearch-data-config created
+service/elasticsearch-data created
+statefulset.apps/elasticsearch-data created</code></pre></div>
+<p>直到 Pod 变成 Running 状态证明节点启动成功：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get pods -n elastic -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>elasticsearch
+NAME                                    READY   STATUS    RESTARTS   AGE
+elasticsearch-data-0                    <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          90m
+elasticsearch-master-6f666cbbd-r9vtx    <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          111m</code></pre></div>
+<h3 id="2-3-安装-elasticsearch-客户端节点">2.3 安装 ElasticSearch 客户端节点</h3>
+
+<p>最后来安装配置 ElasticSearch 的客户端节点，该节点主要负责暴露一个 HTTP 接口将查询数据传递给数据节点获取数据。</p>
+
+<p>同样使用一个 ConfigMap 对象来配置该节点：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># elasticsearch-client.configmap.yaml</span>
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: elastic
+  name: elasticsearch-client-config
+  labels:
+    app: elasticsearch
+    role: client
+data:
+  elasticsearch.yml: |<span style="color:#f1fa8c">-
+</span><span style="color:#f1fa8c">    cluster.name: ${CLUSTER_NAME}</span>
+    node.name: ${NODE_NAME}
+    discovery.seed_hosts: ${NODE_LIST}
+    cluster.initial_master_nodes: ${MASTER_NODES}
+
+    network.host: <span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">0.0</span>
+
+    node:
+      master: <span style="color:#ff79c6">false</span>
+      data: <span style="color:#ff79c6">false</span>
+      ingest: <span style="color:#ff79c6">true</span>
+
+    xpack.security.enabled: <span style="color:#ff79c6">true</span>
+    xpack.monitoring.collection.enabled: <span style="color:#ff79c6">true</span>
+---</code></pre></div>
+<p>客户端节点需要暴露两个端口，9300端口用于与集群的其他节点进行通信，9200端口用于 HTTP API。对应的 Service 对象如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># elasticsearch-client.service.yaml</span>
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: elastic
+  name: elasticsearch-client
+  labels:
+    app: elasticsearch
+    role: client
+spec:
+  ports:
+  - port: <span style="color:#bd93f9">9200</span>
+    name: client
+  - port: <span style="color:#bd93f9">9300</span>
+    name: transport
+  selector:
+    app: elasticsearch
+    role: client
+---</code></pre></div>
+<p>使用一个 Deployment 对象来描述客户端节点：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># elasticsearch-client.deployment.yaml</span>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: elastic
+  name: elasticsearch-client
+  labels:
+    app: elasticsearch
+    role: client
+spec:
+  selector:
+    matchLabels:
+      app: elasticsearch
+      role: client
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+        role: client
+    spec:
+      containers:
+      - name: elasticsearch-client
+        image: docker.elastic.co/elasticsearch/elasticsearch:<span style="color:#bd93f9">7.8</span>.<span style="color:#bd93f9">0</span>
+        env:
+        - name: CLUSTER_NAME
+          value: elasticsearch
+        - name: NODE_NAME
+          value: elasticsearch-client
+        - name: NODE_LIST
+          value: elasticsearch-master,elasticsearch-data,elasticsearch-client
+        - name: MASTER_NODES
+          value: elasticsearch-master
+        - name: <span style="color:#f1fa8c">&#34;ES_JAVA_OPTS&#34;</span>
+          value: <span style="color:#f1fa8c">&#34;-Xms256m -Xmx256m&#34;</span>
+        ports:
+        - containerPort: <span style="color:#bd93f9">9200</span>
+          name: client
+        - containerPort: <span style="color:#bd93f9">9300</span>
+          name: transport
+        volumeMounts:
+        - name: config
+          mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          readOnly: <span style="color:#ff79c6">true</span>
+          subPath: elasticsearch.yml
+        - name: storage
+          mountPath: /data
+      volumes:
+      - name: config
+        configMap:
+          name: elasticsearch-client-config
+      - name: <span style="color:#f1fa8c">&#34;storage&#34;</span>
+        emptyDir:
+          medium: <span style="color:#f1fa8c">&#34;&#34;</span>
+---</code></pre></div>
+<p>同样直接创建上面的资源对象来部署 client 节点：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl apply  -f elasticsearch-client.configmap.yaml <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>                 -f elasticsearch-client.service.yaml <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>                 -f elasticsearch-client.deployment.yaml
+
+configmap/elasticsearch-client-config created
+service/elasticsearch-client created
+deployment.apps/elasticsearch-client created</code></pre></div>
+<p>直到所有的节点都部署成功后证明集群安装成功：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get pods -n elastic -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>elasticsearch
+NAME                                    READY   STATUS    RESTARTS   AGE
+elasticsearch-client-788bffcc98-hh2s8   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          83m
+elasticsearch-data-0                    <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          91m
+elasticsearch-master-6f666cbbd-r9vtx    <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          112m</code></pre></div>
+<p>可以通过如下所示的命令来查看集群的状态变化：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl logs -f -n elastic <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  <span style="color:#ff79c6">$(</span>kubectl get pods -n elastic | grep elasticsearch-master | sed -n 1p | awk <span style="color:#f1fa8c">&#39;{print $1}&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  | grep <span style="color:#f1fa8c">&#34;Cluster health status changed from&#34;</span>
+
+<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;server&#34;</span>, <span style="color:#f1fa8c">&#34;timestamp&#34;</span>: <span style="color:#f1fa8c">&#34;2020-06-26T03:31:21,353Z&#34;</span>, <span style="color:#f1fa8c">&#34;level&#34;</span>: <span style="color:#f1fa8c">&#34;INFO&#34;</span>, <span style="color:#f1fa8c">&#34;component&#34;</span>: <span style="color:#f1fa8c">&#34;o.e.c.r.a.AllocationService&#34;</span>, <span style="color:#f1fa8c">&#34;cluster.name&#34;</span>: <span style="color:#f1fa8c">&#34;elasticsearch&#34;</span>, <span style="color:#f1fa8c">&#34;node.name&#34;</span>: <span style="color:#f1fa8c">&#34;elasticsearch-master&#34;</span>, <span style="color:#f1fa8c">&#34;message&#34;</span>: <span style="color:#f1fa8c">&#34;Cluster health status changed from [RED] to [GREEN] (reason: [shards started [[.monitoring-es-7-2020.06.26][0]]]).&#34;</span>, <span style="color:#f1fa8c">&#34;cluster.uuid&#34;</span>: <span style="color:#f1fa8c">&#34;SS_nyhNiTDSCE6gG7z-J4w&#34;</span>, <span style="color:#f1fa8c">&#34;node.id&#34;</span>: <span style="color:#f1fa8c">&#34;BdVScO9oQByBHR5rfw-KDA&#34;</span>  <span style="color:#ff79c6">}</span></code></pre></div>
+<h3 id="2-4-生成密码">2.4 生成密码</h3>
+
+<p>我们启用了 xpack 安全模块来保护我们的集群，所以我们需要一个初始化的密码。我们可以执行如下所示的命令，在客户端节点容器内运行 <code>bin/elasticsearch-setup-passwords</code> 命令来生成默认的用户名和密码：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> <span style="color:#ff79c6">$(</span>kubectl get pods -n elastic | grep elasticsearch-client | sed -n 1p | awk <span style="color:#f1fa8c">&#39;{print $1}&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    -n elastic <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    -- bin/elasticsearch-setup-passwords auto -b
+
+Changed password <span style="color:#ff79c6">for</span> user apm_system
+PASSWORD <span style="color:#8be9fd;font-style:italic">apm_system</span> <span style="color:#ff79c6">=</span> 3Lhx61s6woNLvoL5Bb7t
+
+Changed password <span style="color:#ff79c6">for</span> user kibana_system
+PASSWORD <span style="color:#8be9fd;font-style:italic">kibana_system</span> <span style="color:#ff79c6">=</span> NpZv9Cvhq4roFCMzpja3
+
+Changed password <span style="color:#ff79c6">for</span> user kibana
+PASSWORD <span style="color:#8be9fd;font-style:italic">kibana</span> <span style="color:#ff79c6">=</span> NpZv9Cvhq4roFCMzpja3
+
+Changed password <span style="color:#ff79c6">for</span> user logstash_system
+PASSWORD <span style="color:#8be9fd;font-style:italic">logstash_system</span> <span style="color:#ff79c6">=</span> nNnGnwxu08xxbsiRGk2C
+
+Changed password <span style="color:#ff79c6">for</span> user beats_system
+PASSWORD <span style="color:#8be9fd;font-style:italic">beats_system</span> <span style="color:#ff79c6">=</span> fen759y5qxyeJmqj6UPp
+
+Changed password <span style="color:#ff79c6">for</span> user remote_monitoring_user
+PASSWORD <span style="color:#8be9fd;font-style:italic">remote_monitoring_user</span> <span style="color:#ff79c6">=</span> mCP77zjCATGmbcTFFgOX
+
+Changed password <span style="color:#ff79c6">for</span> user elastic
+PASSWORD <span style="color:#8be9fd;font-style:italic">elastic</span> <span style="color:#ff79c6">=</span> wmxhvsJFeti2dSjbQEAH</code></pre></div>
+<p>注意需要将 elastic 用户名和密码也添加到 Kubernetes 的 Secret 对象中：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl create secret generic elasticsearch-pw-elastic <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    -n elastic <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    --from-literal <span style="color:#8be9fd;font-style:italic">password</span><span style="color:#ff79c6">=</span>wmxhvsJFeti2dSjbQEAH
+secret/elasticsearch-pw-elastic created</code></pre></div>
+<h2 id="3-kibana">3. Kibana</h2>
+
+<p>ElasticSearch 集群安装完成后，接着我们可以来部署 Kibana，这是 ElasticSearch 的数据可视化工具，它提供了管理 ElasticSearch 集群和可视化数据的各种功能。</p>
+
+<p>同样首先我们使用 ConfigMap 对象来提供一个文件文件，其中包括对 ElasticSearch 的访问（主机、用户名和密码），这些都是通过环境变量配置的。对应的资源清单文件如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># kibana.configmap.yaml</span>
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: elastic
+  name: kibana-config
+  labels:
+    app: kibana
+data:
+  kibana.yml: |<span style="color:#f1fa8c">-
+</span><span style="color:#f1fa8c">    server.host: 0.0.0.0</span>
+
+    elasticsearch:
+      hosts: ${ELASTICSEARCH_HOSTS}
+      username: ${ELASTICSEARCH_USER}
+      password: ${ELASTICSEARCH_PASSWORD}
+---</code></pre></div>
+<p>然后通过一个 NodePort 类型的服务来暴露 Kibana 服务：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># kibana.service.yaml</span>
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: elastic
+  name: kibana
+  labels:
+    app: kibana
+spec:
+  type: NodePort
+  ports:
+  - port: <span style="color:#bd93f9">5601</span>
+    name: webinterface
+  selector:
+    app: kibana
+---</code></pre></div>
+<p>最后通过 Deployment 来部署 Kibana 服务，由于需要通过环境变量提供密码，这里我们使用上面创建的 Secret 对象来引用：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># kibana.deployment.yaml</span>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: elastic
+  name: kibana
+  labels:
+    app: kibana
+spec:
+  selector:
+    matchLabels:
+      app: kibana
+  template:
+    metadata:
+      labels:
+        app: kibana
+    spec:
+      containers:
+      - name: kibana
+        image: docker.elastic.co/kibana/kibana:<span style="color:#bd93f9">7.8</span>.<span style="color:#bd93f9">0</span>
+        ports:
+        - containerPort: <span style="color:#bd93f9">5601</span>
+          name: webinterface
+        env:
+        - name: ELASTICSEARCH_HOSTS
+          value: <span style="color:#f1fa8c">&#34;http://elasticsearch-client.elastic.svc.cluster.local:9200&#34;</span>
+        - name: ELASTICSEARCH_USER
+          value: <span style="color:#f1fa8c">&#34;elastic&#34;</span>
+        - name: ELASTICSEARCH_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: elasticsearch-pw-elastic
+              key: password
+        volumeMounts:
+        - name: config
+          mountPath: /usr/share/kibana/config/kibana.yml
+          readOnly: <span style="color:#ff79c6">true</span>
+          subPath: kibana.yml
+      volumes:
+      - name: config
+        configMap:
+          name: kibana-config
+---</code></pre></div>
+<p>同样直接创建上面的资源清单即可部署：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl apply  -f kibana.configmap.yaml <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>                 -f kibana.service.yaml <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>                 -f kibana.deployment.yaml
+
+configmap/kibana-config created
+service/kibana created
+deployment.apps/kibana created</code></pre></div>
+<p>部署成功后，可以通过查看 Pod 的日志来了解 Kibana 的状态：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl logs -f -n elastic <span style="color:#ff79c6">$(</span>kubectl get pods -n elastic | grep kibana | sed -n 1p | awk <span style="color:#f1fa8c">&#39;{print $1}&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>     | grep <span style="color:#f1fa8c">&#34;Status changed from yellow to green&#34;</span>
+
+<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;type&#34;</span>:<span style="color:#f1fa8c">&#34;log&#34;</span>,<span style="color:#f1fa8c">&#34;@timestamp&#34;</span>:<span style="color:#f1fa8c">&#34;2020-06-26T04:20:38Z&#34;</span>,<span style="color:#f1fa8c">&#34;tags&#34;</span>:<span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;status&#34;</span>,<span style="color:#f1fa8c">&#34;plugin:elasticsearch@7.8.0&#34;</span>,<span style="color:#f1fa8c">&#34;info&#34;</span><span style="color:#ff79c6">]</span>,<span style="color:#f1fa8c">&#34;pid&#34;</span>:6,<span style="color:#f1fa8c">&#34;state&#34;</span>:<span style="color:#f1fa8c">&#34;green&#34;</span>,<span style="color:#f1fa8c">&#34;message&#34;</span>:<span style="color:#f1fa8c">&#34;Status changed from yellow to green - Ready&#34;</span>,<span style="color:#f1fa8c">&#34;prevState&#34;</span>:<span style="color:#f1fa8c">&#34;yellow&#34;</span>,<span style="color:#f1fa8c">&#34;prevMsg&#34;</span>:<span style="color:#f1fa8c">&#34;Waiting for Elasticsearch&#34;</span><span style="color:#ff79c6">}</span></code></pre></div>
+<p>当状态变成 <code>green</code> 后，我们就可以通过 NodePort 端口 30474 去浏览器中访问 Kibana 服务了：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get svc kibana -n elastic   
+NAME     TYPE       CLUSTER-IP      EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>          AGE
+kibana   NodePort   <span style="color:#bd93f9">10</span>.101.121.31   &lt;none&gt;        <span style="color:#bd93f9">5601</span>:30474/TCP   8m18s</code></pre></div>
+<p>如下图所示，使用上面我们创建的 Secret 对象的 elastic 用户和生成的密码即可登录：</p>
+
+<p><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200626122305.png" alt="" /></p>
+
+<p>登录成功后会自动跳转到 Kibana 首页：</p>
+
+<p><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200626122502.png" alt="" /></p>
+
+<p>同样也可以自己创建一个新的超级用户，Management → Stack Management → Create User：</p>
+
+<p><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200626122705.png" alt="" /></p>
+
+<p>使用新的用户名和密码，选择 <code>superuser</code> 这个角色来创建新的用户：</p>
+
+<p><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200626122835.png" alt="" /></p>
+
+<p>创建成功后就可以使用上面新建的用户登录 Kibana，最后还可以通过 Management → Stack Monitoring 页面查看整个集群的健康状态：</p>
+
+<p><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200626123104.png" alt="" /></p>
+
+<p>到这里我们就安装成功了 ElasticSearch 与 Kibana，它们将为我们来存储和可视化我们的应用数据（监控指标、日志和追踪）服务。</p>
+
+<p>在下一篇文章中，我们将来学习如何安装和配置 Metricbeat，通过 Elastic Metribeat 来收集指标监控 Kubernetes 集群。</p>
+
+<p><a href="https://youdianzhishi.com/web/course/1012" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+
+
+          <h2>微信公众号</h2>
+<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
+<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-2/">使用 Elastic 技术栈构建 K8S 全栈监控(2/4)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-3/">使用 Elastic 技术栈构建 K8S 全栈监控(3/4)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-4/">使用 Elastic 技术栈构建 K8S 全栈监控(4/4)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/elastic-cloud-on-k8s/">使用Elasticsearch Operator快速部署Elasticsearch集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/monitor-external-k8s-on-prometheus/">Prometheus 监控外部 Kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/encrypt-k8s-secrets-with-sealed-secrets/">使用 Sealed Secrets 加密 Kubernetes Secrets</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/status-in-pv-pvc/">Kubernetes 中 PV 和 PVC 的状态变化</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-in-k8s/">在 Kubernetes 中运行 Kubernetes</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/deploy-k8s-on-win-use-wsl2/">在 Windows 下使用 WSL2 搭建 Kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-loki-monitor-alert/">使用 Loki 进行日志监控和报警</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-2/" data-toggle="tooltip" data-placement="top" title="使用 Elastic 技术栈构建 K8S 全栈监控(2/4)">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/devops-base-on-jenkins/" data-toggle="tooltip" data-placement="top" title="基于 Jenkins 的 DevOps 流水线实践">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '使用 Elastic 技术栈构建 K8S 全栈监控(1\/4)',
+        createIssueManually: true,
+        id: 'k8s-monitor-use-elastic-stack-1',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2020
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="http://www.beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
+  </body>
+</html>
+
