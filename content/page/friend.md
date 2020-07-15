@@ -20,3 +20,4 @@ noreadmore: true
 * [运维咖啡吧](https://ops-coffee.cn?utm_source=qikqiak)
 * [abcdocker 运维博客](https://i4t.com/?utm_source=qikqiak)
 * [鸡书之家](https://dbawsp.com/?utm_source=qikqiak)
+* [anonym0x1](https://www.anonym0x1.com/?utm_source=qikqiak)
