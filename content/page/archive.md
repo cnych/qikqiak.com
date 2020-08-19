@@ -9,6 +9,7 @@ noreadmore: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [Grafana Loki 简明教程](https://www.qikqiak.com/post/grafana-loki-usage/)
  * [使用 GitLab CI 与 Argo CD 进行 GitOps 实践](https://www.qikqiak.com/post/gitlab-ci-argo-cd-gitops/)
  * [使用 Elastic 技术栈构建 K8S 全栈监控(4/4)](https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-4/)
  * [使用 Elastic 技术栈构建 K8S 全栈监控(3/4)](https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-3/)
