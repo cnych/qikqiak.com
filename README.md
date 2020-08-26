@@ -12,6 +12,7 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [更新一个10年有效期的 Kubernetes 证书](https://www.qikqiak.com/post/update-k8s-10y-expire-certs/)
  * [Grafana Loki 简明教程](https://www.qikqiak.com/post/grafana-loki-usage/)
  * [使用 GitLab CI 与 Argo CD 进行 GitOps 实践](https://www.qikqiak.com/post/gitlab-ci-argo-cd-gitops/)
  * [使用 Elastic 技术栈构建 K8S 全栈监控(4/4)](https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-4/)

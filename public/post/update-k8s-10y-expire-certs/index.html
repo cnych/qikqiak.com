@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>更新一个10年有效期的 Kubernetes 证书-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="更新一个10年有效期的 Kubernetes 证书" />
+  <meta name="twitter:title" content="更新一个10年有效期的 Kubernetes 证书" />
+
+  <meta name="description" content="使用 kubeadm 安装 kubernetes 集群非常方便，但是也有一个比较烦人的问题就是默认的证书有效期只有一年时间，所以需要考虑证书升级的问题，本文的演示集群版本为 v1.16.2 版本，不保证下面的操作对其他版本也适用，在操作之前一定要先对证书目录进行备份，防止操作错误进行回滚。本文主要介绍两种方式来更新集群证书。">
+  <meta property="og:description" content="使用 kubeadm 安装 kubernetes 集群非常方便，但是也有一个比较烦人的问题就是默认的证书有效期只有一年时间，所以需要考虑证书升级的问题，本文的演示集群版本为 v1.16.2 版本，不保证下面的操作对其他版本也适用，在操作之前一定要先对证书目录进行备份，防止操作错误进行回滚。本文主要介绍两种方式来更新集群证书。">
+  <meta name="twitter:description" content="使用 kubeadm 安装 kubernetes 集群非常方便，但是也有一个比较烦人的问题就是默认的证书有效期只有一年时间，所以需要考虑证书升级的问题，本文的演示集群版本为 v1.16.2 版本，不保证下面的操作对其他版本也适用，在操作之前一定要先对证书目录进行备份，防止操作错误进行回滚。本文主要介绍两种方式来更新集群证书。">
+  <meta name="author" content=""/>
+  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/update-k8s-10y-expire-certs/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.55.6" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/update-k8s-10y-expire-certs/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
+
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
+    <!--[if lt IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <![endif]-->
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, kubeadm, 证书, 10年, 有效期">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="首页" href="https://www.qikqiak.com/">首页</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200826182354.png" data-img-desc-1="https://unsplash.com/photos/a4fbQDXh5Mc"></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>更新一个10年有效期的 Kubernetes 证书</h1>
+                  
+                  
+                    <span class="post-meta">
+  
+    发表于 August 26, 2020
+  
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>更新一个10年有效期的 Kubernetes 证书</h1>
+                
+                
+                  <span class="post-meta">
+  
+    发表于 August 26, 2020
+  
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/kubeadm/">kubeadm</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/%E8%AF%81%E4%B9%A6/">证书</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>使用 kubeadm 安装 kubernetes 集群非常方便，但是也有一个比较烦人的问题就是默认的证书有效期只有一年时间，所以需要考虑证书升级的问题，本文的演示集群版本为 v1.16.2 版本，不保证下面的操作对其他版本也适用，<strong>在操作之前一定要先对证书目录进行备份，防止操作错误进行回滚</strong>。本文主要介绍两种方式来更新集群证书。</p>
+
+<h3 id="手动更新证书">手动更新证书</h3>
+
+<p>由 kubeadm 生成的客户端证书默认只有一年有效期，我们可以通过 <code>check-expiration</code> 命令来检查证书是否过期：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubeadm alpha certs check-expiration
+CERTIFICATE                EXPIRES                  RESIDUAL TIME   EXTERNALLY MANAGED
+admin.conf                 Nov <span style="color:#bd93f9">07</span>, <span style="color:#bd93f9">2020</span> <span style="color:#bd93f9">11</span>:59 UTC   73d             no
+apiserver                  Nov <span style="color:#bd93f9">07</span>, <span style="color:#bd93f9">2020</span> <span style="color:#bd93f9">11</span>:59 UTC   73d             no
+apiserver-etcd-client      Nov <span style="color:#bd93f9">07</span>, <span style="color:#bd93f9">2020</span> <span style="color:#bd93f9">11</span>:59 UTC   73d             no
+apiserver-kubelet-client   Nov <span style="color:#bd93f9">07</span>, <span style="color:#bd93f9">2020</span> <span style="color:#bd93f9">11</span>:59 UTC   73d             no
+controller-manager.conf    Nov <span style="color:#bd93f9">07</span>, <span style="color:#bd93f9">2020</span> <span style="color:#bd93f9">11</span>:59 UTC   73d             no
+etcd-healthcheck-client    Nov <span style="color:#bd93f9">07</span>, <span style="color:#bd93f9">2020</span> <span style="color:#bd93f9">11</span>:59 UTC   73d             no
+etcd-peer                  Nov <span style="color:#bd93f9">07</span>, <span style="color:#bd93f9">2020</span> <span style="color:#bd93f9">11</span>:59 UTC   73d             no
+etcd-server                Nov <span style="color:#bd93f9">07</span>, <span style="color:#bd93f9">2020</span> <span style="color:#bd93f9">11</span>:59 UTC   73d             no
+front-proxy-client         Nov <span style="color:#bd93f9">07</span>, <span style="color:#bd93f9">2020</span> <span style="color:#bd93f9">11</span>:59 UTC   73d             no
+scheduler.conf             Nov <span style="color:#bd93f9">07</span>, <span style="color:#bd93f9">2020</span> <span style="color:#bd93f9">11</span>:59 UTC   73d             no</code></pre></div>
+<p>该命令显示 <code>/etc/kubernetes/pki</code> 文件夹中的客户端证书以及 kubeadm 使用的 <code>KUBECONFIG</code> 文件中嵌入的客户端证书的到期时间/剩余时间。</p>
+
+<blockquote>
+<p><code>kubeadm</code> 不能管理由外部 CA 签名的证书，如果是外部得证书，需要自己手动去管理证书的更新。</p>
+</blockquote>
+
+<p>另外需要说明的是上面的列表中没有包含 <code>kubelet.conf</code>，因为 kubeadm 将 kubelet 配置为自动更新证书。</p>
+
+<p>另外 kubeadm 会在控制面板升级的时候自动更新所有证书，所以使用 kubeadm 搭建得集群最佳的做法是经常升级集群，这样可以确保你的集群保持最新状态并保持合理的安全性。但是对于实际的生产环境我们可能并不会去频繁得升级集群，所以这个时候我们就需要去手动更新证书。</p>
+
+<p>要手动更新证书也非常方便，我们只需要通过 <code>kubeadm alpha certs renew</code> 命令即可更新你的证书，这个命令用 CA（或者 front-proxy-CA ）证书和存储在 <code>/etc/kubernetes/pki</code> 中的密钥执行更新。</p>
+
+<blockquote>
+<p>如果你运行了一个高可用的集群，这个命令需要在所有控制面板节点上执行。</p>
+</blockquote>
+
+<p>接下来我们来更新我们的集群证书，下面的操作都是在 master 节点上进行，首先备份原有证书：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ mkdir /etc/kubernetes.bak
+$ cp -r /etc/kubernetes/pki/ /etc/kubernetes.bak
+$ cp /etc/kubernetes/*.conf /etc/kubernetes.bak</code></pre></div>
+<p>然后备份 etcd 数据目录：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ cp -r /var/lib/etcd /var/lib/etcd.bak</code></pre></div>
+<p>接下来执行更新证书的命令：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubeadm alpha certs renew all --config<span style="color:#ff79c6">=</span>kubeadm.yaml
+kubeadm alpha certs renew all --config<span style="color:#ff79c6">=</span>kubeadm.yaml
+certificate embedded in the kubeconfig file <span style="color:#ff79c6">for</span> the admin to use and <span style="color:#ff79c6">for</span> kubeadm itself renewed
+certificate <span style="color:#ff79c6">for</span> serving the Kubernetes API renewed
+certificate the apiserver uses to access etcd renewed
+certificate <span style="color:#ff79c6">for</span> the API server to connect to kubelet renewed
+certificate embedded in the kubeconfig file <span style="color:#ff79c6">for</span> the controller manager to use renewed
+certificate <span style="color:#ff79c6">for</span> liveness probes to healthcheck etcd renewed
+certificate <span style="color:#ff79c6">for</span> etcd nodes to communicate with each other renewed
+certificate <span style="color:#ff79c6">for</span> serving etcd renewed
+certificate <span style="color:#ff79c6">for</span> the front proxy client renewed
+certificate embedded in the kubeconfig file <span style="color:#ff79c6">for</span> the scheduler manager to use renewed</code></pre></div>
+<p>通过上面的命令证书就一键更新完成了，这个时候查看上面的证书可以看到过期时间已经是一年后的时间了：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubeadm alpha certs check-expiration
+CERTIFICATE                EXPIRES                  RESIDUAL TIME   EXTERNALLY MANAGED
+admin.conf                 Aug <span style="color:#bd93f9">26</span>, <span style="color:#bd93f9">2021</span> <span style="color:#bd93f9">03</span>:47 UTC   364d            no
+apiserver                  Aug <span style="color:#bd93f9">26</span>, <span style="color:#bd93f9">2021</span> <span style="color:#bd93f9">03</span>:47 UTC   364d            no
+apiserver-etcd-client      Aug <span style="color:#bd93f9">26</span>, <span style="color:#bd93f9">2021</span> <span style="color:#bd93f9">03</span>:47 UTC   364d            no
+apiserver-kubelet-client   Aug <span style="color:#bd93f9">26</span>, <span style="color:#bd93f9">2021</span> <span style="color:#bd93f9">03</span>:47 UTC   364d            no
+controller-manager.conf    Aug <span style="color:#bd93f9">26</span>, <span style="color:#bd93f9">2021</span> <span style="color:#bd93f9">03</span>:47 UTC   364d            no
+etcd-healthcheck-client    Aug <span style="color:#bd93f9">26</span>, <span style="color:#bd93f9">2021</span> <span style="color:#bd93f9">03</span>:47 UTC   364d            no
+etcd-peer                  Aug <span style="color:#bd93f9">26</span>, <span style="color:#bd93f9">2021</span> <span style="color:#bd93f9">03</span>:47 UTC   364d            no
+etcd-server                Aug <span style="color:#bd93f9">26</span>, <span style="color:#bd93f9">2021</span> <span style="color:#bd93f9">03</span>:47 UTC   364d            no
+front-proxy-client         Aug <span style="color:#bd93f9">26</span>, <span style="color:#bd93f9">2021</span> <span style="color:#bd93f9">03</span>:47 UTC   364d            no
+scheduler.conf             Aug <span style="color:#bd93f9">26</span>, <span style="color:#bd93f9">2021</span> <span style="color:#bd93f9">03</span>:47 UTC   364d            no</code></pre></div>
+<p>然后记得更新下 kubeconfig 文件：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubeadm init phase kubeconfig all --config kubeadm.yaml
+<span style="color:#ff79c6">[</span>kubeconfig<span style="color:#ff79c6">]</span> Using kubeconfig folder <span style="color:#f1fa8c">&#34;/etc/kubernetes&#34;</span>
+<span style="color:#ff79c6">[</span>kubeconfig<span style="color:#ff79c6">]</span> Using existing kubeconfig file: <span style="color:#f1fa8c">&#34;/etc/kubernetes/admin.conf&#34;</span>
+<span style="color:#ff79c6">[</span>kubeconfig<span style="color:#ff79c6">]</span> Using existing kubeconfig file: <span style="color:#f1fa8c">&#34;/etc/kubernetes/kubelet.conf&#34;</span>
+<span style="color:#ff79c6">[</span>kubeconfig<span style="color:#ff79c6">]</span> Using existing kubeconfig file: <span style="color:#f1fa8c">&#34;/etc/kubernetes/controller-manager.conf&#34;</span>
+<span style="color:#ff79c6">[</span>kubeconfig<span style="color:#ff79c6">]</span> Using existing kubeconfig file: <span style="color:#f1fa8c">&#34;/etc/kubernetes/scheduler.conf&#34;</span></code></pre></div>
+<p>将新生成的 admin 配置文件覆盖掉原本的 admin 文件:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ mv <span style="color:#8be9fd;font-style:italic">$HOME</span>/.kube/config <span style="color:#8be9fd;font-style:italic">$HOME</span>/.kube/config.old
+$ cp -i /etc/kubernetes/admin.conf <span style="color:#8be9fd;font-style:italic">$HOME</span>/.kube/config
+$ chown <span style="color:#ff79c6">$(</span>id -u<span style="color:#ff79c6">)</span>:<span style="color:#ff79c6">$(</span>id -g<span style="color:#ff79c6">)</span> <span style="color:#8be9fd;font-style:italic">$HOME</span>/.kube/config</code></pre></div>
+<p>完成后重启 kube-apiserver、kube-controller、kube-scheduler、etcd 这4个容器即可，我们可以查看 apiserver 的证书的有效期来验证是否更新成功：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ <span style="color:#8be9fd;font-style:italic">echo</span> | openssl s_client -showcerts -connect <span style="color:#bd93f9">127</span>.0.0.1:6443 -servername api <span style="color:#bd93f9">2</span>&gt;/dev/null | openssl x509 -noout -enddate
+<span style="color:#8be9fd;font-style:italic">notAfter</span><span style="color:#ff79c6">=</span>Aug <span style="color:#bd93f9">26</span> <span style="color:#bd93f9">03</span>:47:23 <span style="color:#bd93f9">2021</span> GMT</code></pre></div>
+<p>可以看到现在的有效期是一年过后的，证明已经更新成功了。</p>
+
+<h3 id="用-kubernetes-证书-api-更新证书">用 Kubernetes 证书 API 更新证书</h3>
+
+<p>除了上述的一键手动更新证书之外，还可以使用 Kubernetes 证书 API 执行手动证书更新。对于线上环境我们可能并不会去冒险经常更新集群或者去更新证书，这些毕竟是有风险的，所以我们希望生成的证书有效期足够长，虽然从安全性角度来说不推荐这样做，但是对于某些场景下一个足够长的证书有效期也是非常有必要的。有很多管理员就是去手动更改 kubeadm 的源码为10年，然后重新编译来创建集群，这种方式虽然可以达到目的，但是不推荐使用这种方式，特别是当你想要更新集群的时候，还得用新版本进行更新。其实 Kubernetes 提供了一种 API 的方式可以来帮助我们生成一个足够长证书有效期。
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5376999672787220"
+     data-ad-slot="9165834656"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+要使用内置的 API 方式来签名，首先我们需要配置 kube-controller-manager 组件的 <code>--experimental-cluster-signing-duration</code> 参数，将其调整为10年，我们这里是 kubeadm 安装的集群，所以直接修改静态 Pod 的 yaml 文件即可:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ vi /etc/kubernetes/manifests/kube-controller-manager.yaml
+......
+spec:
+  containers:
+  - command:
+    - kube-controller-manager
+    <span style="color:#6272a4"># 设置证书有效期为 10 年</span>
+    - --experimental-cluster-signing-duration<span style="color:#ff79c6">=</span>87600h 
+    - --client-ca-file<span style="color:#ff79c6">=</span>/etc/kubernetes/pki/ca.crt
+......</code></pre></div>
+<p>修改完成后 kube-controller-manager 会自动重启生效。然后我们需要使用下面的命令为 Kubernetes 证书 API 创建一个证书签名请求。如果您设置例如 <code>cert-manager</code> 等外部签名者，则会自动批准证书签名请求（CSRs）。否者，您必须使用 <code>kubectl certificate</code> 命令手动批准证书。以下 kubeadm 命令输出要批准的证书名称，然后等待批准发生：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubeadm alpha certs renew all --use-api --config kubeadm.yaml &amp;</code></pre></div>
+<p>输出类似于以下内容：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#ff79c6">[</span><span style="color:#bd93f9">1</span><span style="color:#ff79c6">]</span> <span style="color:#bd93f9">2890</span>
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Certificate request <span style="color:#f1fa8c">&#34;kubeadm-cert-kubernetes-admin-pn99f&#34;</span> created</code></pre></div>
+<p>然后接下来我们需要去手动批准证书：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get csr
+NAME                                  AGE   REQUESTOR          CONDITION
+kubeadm-cert-kubernetes-admin-pn99f   64s   kubernetes-admin   Pending
+<span style="color:#6272a4"># 手动批准证书</span>
+$ kubectl certificate approve kubeadm-cert-kubernetes-admin-pn99f
+certificatesigningrequest.certificates.k8s.io/kubeadm-cert-kubernetes-admin-pn99f approved</code></pre></div>
+<p>用同样的方式为处于 Pending 状态的 csr 执行批准操作，直到所有的 csr 都批准完成为止。最后所有的 csr 列表状态如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get csr
+NAME                                                AGE     REQUESTOR          CONDITION
+kubeadm-cert-front-proxy-client-llhrj               30s     kubernetes-admin   Approved,Issued
+kubeadm-cert-kube-apiserver-2s6kf                   2m43s   kubernetes-admin   Approved,Issued
+kubeadm-cert-kube-apiserver-etcd-client-t9pkx       2m7s    kubernetes-admin   Approved,Issued
+kubeadm-cert-kube-apiserver-kubelet-client-pjbjm    108s    kubernetes-admin   Approved,Issued
+kubeadm-cert-kube-etcd-healthcheck-client-8dcn8     64s     kubernetes-admin   Approved,Issued
+kubeadm-cert-kubernetes-admin-pn99f                 4m29s   kubernetes-admin   Approved,Issued
+kubeadm-cert-system:kube-controller-manager-mr86h   79s     kubernetes-admin   Approved,Issued
+kubeadm-cert-system:kube-scheduler-t8lnw            17s     kubernetes-admin   Approved,Issued
+kubeadm-cert-ydzs-master-cqh4s                      52s     kubernetes-admin   Approved,Issued
+kubeadm-cert-ydzs-master-lvbr5                      41s     kubernetes-admin   Approved,Issued</code></pre></div>
+<p>批准完成后检查证书的有效期：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubeadm alpha certs check-expiration
+CERTIFICATE                EXPIRES                  RESIDUAL TIME   EXTERNALLY MANAGED
+admin.conf                 Nov <span style="color:#bd93f9">05</span>, <span style="color:#bd93f9">2029</span> <span style="color:#bd93f9">11</span>:53 UTC   9y              no
+apiserver                  Nov <span style="color:#bd93f9">05</span>, <span style="color:#bd93f9">2029</span> <span style="color:#bd93f9">11</span>:54 UTC   9y              no
+apiserver-etcd-client      Nov <span style="color:#bd93f9">05</span>, <span style="color:#bd93f9">2029</span> <span style="color:#bd93f9">11</span>:53 UTC   9y              no
+apiserver-kubelet-client   Nov <span style="color:#bd93f9">05</span>, <span style="color:#bd93f9">2029</span> <span style="color:#bd93f9">11</span>:54 UTC   9y              no
+controller-manager.conf    Nov <span style="color:#bd93f9">05</span>, <span style="color:#bd93f9">2029</span> <span style="color:#bd93f9">11</span>:54 UTC   9y              no
+etcd-healthcheck-client    Nov <span style="color:#bd93f9">05</span>, <span style="color:#bd93f9">2029</span> <span style="color:#bd93f9">11</span>:53 UTC   9y              no
+etcd-peer                  Nov <span style="color:#bd93f9">05</span>, <span style="color:#bd93f9">2029</span> <span style="color:#bd93f9">11</span>:53 UTC   9y              no
+etcd-server                Nov <span style="color:#bd93f9">05</span>, <span style="color:#bd93f9">2029</span> <span style="color:#bd93f9">11</span>:54 UTC   9y              no
+front-proxy-client         Nov <span style="color:#bd93f9">05</span>, <span style="color:#bd93f9">2029</span> <span style="color:#bd93f9">11</span>:54 UTC   9y              no
+scheduler.conf             Nov <span style="color:#bd93f9">05</span>, <span style="color:#bd93f9">2029</span> <span style="color:#bd93f9">11</span>:53 UTC   9y              no</code></pre></div>
+<p>我们可以看到已经延长小10年了，这是因为 ca 证书的有效期只有10年。</p>
+
+<p>但是现在我们还不能直接重启控制面板的几个组件，这是因为使用 kubeadm 安装的集群对应的 etcd 默认是使用的 <code>/etc/kubernetes/pki/etcd/ca.crt</code> 这个证书进行前面的，而上面我们用命令 <code>kubectl certificate approve</code> 批准过后的证书是使用的默认的 <code>/etc/kubernetes/pki/ca.crt</code> 证书进行签发的，所以我们需要替换 etcd 中的 ca 机构证书:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># 先拷贝静态 Pod 资源清单</span>
+$ cp -r /etc/kubernetes/manifests/ /etc/kubernetes/manifests.bak
+$ vi /etc/kubernetes/manifests/etcd.yaml
+......
+spec:
+  containers:
+  - command:
+    - etcd
+    <span style="color:#6272a4"># 修改为 CA 文件</span>
+    - --peer-trusted-ca-file<span style="color:#ff79c6">=</span>/etc/kubernetes/pki/ca.crt
+    - --trusted-ca-file<span style="color:#ff79c6">=</span>/etc/kubernetes/pki/ca.crt
+......
+    volumeMounts:
+    - mountPath: /var/lib/etcd
+      name: etcd-data
+    - mountPath: /etc/kubernetes/pki  <span style="color:#6272a4"># 更改证书目录</span>
+      name: etcd-certs
+  volumes:
+  - hostPath:
+      path: /etc/kubernetes/pki  <span style="color:#6272a4"># 将 pki 目录挂载到 etcd 中去</span>
+      type: DirectoryOrCreate
+    name: etcd-certs
+  - hostPath:
+      path: /var/lib/etcd 
+      type: DirectoryOrCreate
+    name: etcd-data
+......</code></pre></div>
+<p>由于 kube-apiserver 要连接 etcd 集群，所以也需要重新修改对应的 etcd ca 文件：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ vi /etc/kubernetes/manifests/kube-apiserver.yaml
+......
+spec:
+  containers:
+  - command:
+    - kube-apiserver
+    <span style="color:#6272a4"># 将etcd ca文件修改为默认的ca.crt文件</span>
+    - --etcd-cafile<span style="color:#ff79c6">=</span>/etc/kubernetes/pki/ca.crt
+......</code></pre></div>
+<p>除此之外还需要替换 <code>requestheader-client-ca-file</code> 文件，默认是 <code>/etc/kubernetes/pki/front-proxy-ca.crt</code> 文件，现在也需要替换成默认的 CA 文件，否则使用聚合 API，比如安装了 metrics-server 后执行 <code>kubectl top</code> 命令就会报错：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ cp /etc/kubernetes/pki/ca.crt /etc/kubernetes/pki/front-proxy-ca.crt
+$ cp /etc/kubernetes/pki/ca.key /etc/kubernetes/pki/front-proxy-ca.key</code></pre></div>
+<p>由于是静态 Pod，修改完成后上面的组件都会自动重启生效。由于我们当前版本的 kubelet 默认开启了证书自动轮转，所以 kubelet 的证书也不用再去管理了，这样我就将证书更新成10有效期了。<strong>在操作之前一定要先对证书目录进行备份，防止操作错误进行回滚</strong>。</p>
+
+<p><a href="https://youdianzhishi.com/web/course/1012" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+
+
+          <h2>微信公众号</h2>
+<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
+<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/setup-psp-in-k8s/">Kubernetes Pod 安全策略(PSP)配置</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-kubeadm-install-kubernetes-1.15.3/">使用 kubeadm 搭建 v1.15.3 版本 Kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-kubeadm-upgrade-k8s/">使用 kubeadm 更新 kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-kubeadm-install-kubernetes-1.10/">使用kubeadm搭建kubernetes1.10集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/how-to-use-ipvs-in-kubernetes/">ipvs 基本介绍</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/grafana-loki-usage/">Grafana Loki 简明教程</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-1/">使用 Elastic 技术栈构建 K8S 全栈监控(1/4)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-2/">使用 Elastic 技术栈构建 K8S 全栈监控(2/4)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-3/">使用 Elastic 技术栈构建 K8S 全栈监控(3/4)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-4/">使用 Elastic 技术栈构建 K8S 全栈监控(4/4)</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/grafana-loki-usage/" data-toggle="tooltip" data-placement="top" title="Grafana Loki 简明教程">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/devops-base-on-jenkins/" data-toggle="tooltip" data-placement="top" title="基于 Jenkins 的 DevOps 流水线实践">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '更新一个10年有效期的 Kubernetes 证书',
+        createIssueManually: true,
+        id: 'update-k8s-10y-expire-certs',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2020
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="http://www.beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
+  </body>
+</html>
+
