@@ -9,6 +9,7 @@ noreadmore: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [使用 Kustomize 定制 Helm Charts](https://www.qikqiak.com/post/use-kustomize-custom-helm-charts/)
  * [更新一个10年有效期的 Kubernetes 证书](https://www.qikqiak.com/post/update-k8s-10y-expire-certs/)
  * [Grafana Loki 简明教程](https://www.qikqiak.com/post/grafana-loki-usage/)
  * [使用 GitLab CI 与 Argo CD 进行 GitOps 实践](https://www.qikqiak.com/post/gitlab-ci-argo-cd-gitops/)
