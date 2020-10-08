@@ -9,6 +9,7 @@ noreadmore: true
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 #### Kubernetes/Docker
+ * [使用 KinD 加速 CI/CD 流水线](https://www.qikqiak.com/post/accelerate-ci-cd-pipelines-with-kind/)
  * [使用 Kustomize 定制 Helm Charts](https://www.qikqiak.com/post/use-kustomize-custom-helm-charts/)
  * [更新一个10年有效期的 Kubernetes 证书](https://www.qikqiak.com/post/update-k8s-10y-expire-certs/)
  * [Grafana Loki 简明教程](https://www.qikqiak.com/post/grafana-loki-usage/)
