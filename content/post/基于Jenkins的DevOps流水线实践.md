@@ -7,7 +7,7 @@ keywords: ["kubernetes", "课程", "优惠", "jenkins", "devops", "流水线"]
 slug: devops-base-on-jenkins
 landing: true
 gitcomment: true
-weight: 2
+# weight: 2
 category: "kubernetes"
 ---
 

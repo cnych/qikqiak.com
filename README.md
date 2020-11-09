@@ -12,6 +12,10 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [自己动手写一个 Kubernetes YAML 模板化工具](https://www.qikqiak.com/post/code-k8s-yaml-templating/)
+ * [图解 Kubernetes Ingress](https://www.qikqiak.com/post/visually-explained-k8s-ingress/)
+ * [图解 Kubernetes Service](https://www.qikqiak.com/post/visually-explained-k8s-service/)
+ * [在 Kubernetes 上运行高可用的 Kafka 集群](https://www.qikqiak.com/post/deploy-kafka-ha-on-k8s/)
  * [使用 KinD 加速 CI/CD 流水线](https://www.qikqiak.com/post/accelerate-ci-cd-pipelines-with-kind/)
  * [使用 Kustomize 定制 Helm Charts](https://www.qikqiak.com/post/use-kustomize-custom-helm-charts/)
  * [更新一个10年有效期的 Kubernetes 证书](https://www.qikqiak.com/post/update-k8s-10y-expire-certs/)
