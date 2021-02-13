@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>通过 Traefik 使用 Kubernetes Service APIs 进行流量路由-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="通过 Traefik 使用 Kubernetes Service APIs 进行流量路由" />
+  <meta name="twitter:title" content="通过 Traefik 使用 Kubernetes Service APIs 进行流量路由" />
+
+  <meta name="description" content="
+
+前面我们已经介绍了 Kubernetes 社区内部为 Kubernetes 开发了一种改进的定义和管理入口流量的新接口，也就是新的 Kubernetes Service APIs。Traefik 在2.4 版本中引入了对 Service APIs 的初始支持。本文我们将演示如何通过 Traefik 来使用新的 Gateway、GatewayClass 和 HTTPRoute API 将请求路由到后端的服务 Pod。">
+  <meta property="og:description" content="
+
+前面我们已经介绍了 Kubernetes 社区内部为 Kubernetes 开发了一种改进的定义和管理入口流量的新接口，也就是新的 Kubernetes Service APIs。Traefik 在2.4 版本中引入了对 Service APIs 的初始支持。本文我们将演示如何通过 Traefik 来使用新的 Gateway、GatewayClass 和 HTTPRoute API 将请求路由到后端的服务 Pod。">
+  <meta name="twitter:description" content="
+
+前面我们已经介绍了 Kubernetes 社区内部为 Kubernetes 开发了一种改进的定义和管理入口流量的新接口，也就是新的 Kubernetes Service APIs。Traefik 在2.4 版本中引入了对 Service APIs 的初始支持。本文我们将演示如何通过 Traefik 来使用新的 Gateway、GatewayClass 和 HTTPRoute API 将请求路由 …">
+  <meta name="author" content=""/>
+  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/use-kubernetes-service-apis-with-traefik/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.55.6" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/use-kubernetes-service-apis-with-traefik/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
+
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
+    <!--[if lt IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <![endif]-->
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, traefik, ingress, ingressroute, Service API">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="首页" href="https://www.qikqiak.com/">首页</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>通过 Traefik 使用 Kubernetes Service APIs 进行流量路由</h1>
+                
+                
+                  <span class="post-meta">
+  
+    发表于 February 13, 2021
+  
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/traefik/">traefik</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/service-api/">Service API</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210212151242.png" alt="" /></p>
+
+<p><a href="* [Kubernetes Service APIs 简介](/post/kubernetes-service-apis-intro/)">前面我们已经介绍了 Kubernetes 社区内部为 Kubernetes 开发了一种改进的定义和管理入口流量的新接口</a>，也就是新的 <code>Kubernetes Service APIs</code>。Traefik 在2.4 版本中引入了对 Service APIs 的初始支持。本文我们将演示如何通过 Traefik 来使用新的 <code>Gateway</code>、<code>GatewayClass</code> 和 <code>HTTPRoute API</code> 将请求路由到后端的服务 Pod。</p>
+
+<h2 id="环境">环境</h2>
+
+<p>在开始使用之前我们需要先准备相关的环境：</p>
+
+<ul>
+<li>一个运行的 Kubernetes 集群，本文会假设它运行在 <a href="http://localhost">localhost</a> 上。</li>
+<li>kubectl 命令行工具，并配置成访问你的集群。</li>
+</ul>
+
+<p>本文涉及的相关配置文件可以通过下面的 GitHub 仓库获取：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone https://github.com/traefik-tech-blog/k8s-service-apis</code></pre></div>
+<h3 id="安装-crd">安装 CRD</h3>
+
+<p>由于目前 Kubernetes 集群上默认没有安装 Service APIs，所以我们需要先安装一组支持他们的 CRD 资源，需要保证在 Traefik 中启用 Service APIs 支持之前安装这些资源。</p>
+
+<p>目前我们可以直接使用 0.10 版本进行安装：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl apply -k <span style="color:#f1fa8c">&#34;github.com/kubernetes-sigs/service-apis/config/crd?ref=v0.1.0&#34;</span></code></pre></div>
+<h3 id="安装配置-traefik">安装配置 Traefik</h3>
+
+<p>目前需要 Traefik 2.4+ 版本才支持 Service APIs，所以我们需要安装 Traefik v2.4（或更高版本）并配置启用新的 Provider，这里我们可以直接使用官方的 Helm Chart 包进行安装：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">helm repo add traefik https://helm.traefik.io/traefik
+helm repo update
+helm install traefik --set experimental.kubernetesGateway.enabled<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">true</span> traefik/traefik</code></pre></div>
+<p>注意上面我们设置的 <code>--set experimental.kubernetesGateway.enabled=true</code>参数，上面的命令会安装 Traefik 2.4，并启用新的 Service APIs Provider，还将创建 <code>GatewayClasses</code> 和一个 <code>Gateway</code> 实例。如果还有更多的定制安装需求，我们可以直接通过覆盖 Chart 包的 Values 值，比如可以配置 label selector 或者 TLS 证书等等。</p>
+
+<p>要验证新功能是否已经被启用，这里我们使用端口转发来直接暴露 Traefik 的 Dashboard。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl port-forward <span style="color:#ff79c6">$(</span>kubectl get pods --selector <span style="color:#f1fa8c">&#34;app.kubernetes.io/name=traefik&#34;</span> --output<span style="color:#ff79c6">=</span>name<span style="color:#ff79c6">)</span> <span style="color:#bd93f9">9000</span>:9000</code></pre></div>
+<p>然后使用浏览器通过 <a href="http://localhost:9000/dashboard/">http://localhost:9000/dashboard/</a> 访问 Dashboard，正常应该看到 <code>KubernetesGateway</code> 这个 Provider 已经激活并准备好了服务。</p>
+
+<p><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210212145525.png" alt="" /></p>
+
+<h2 id="测试">测试</h2>
+
+<p>下面我们安装 whoami 服务来进行测试，直接使用下面的资源清单创建对应的服务即可：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># 01-whoami.yaml</span>
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: whoami
+spec:
+  replicas: <span style="color:#bd93f9">2</span>
+  selector:
+    matchLabels:
+      app: whoami
+  template:
+    metadata:
+      labels:
+        app: whoami
+    spec:
+      containers:
+        - name: whoami
+          image: traefik/whoami:v1.<span style="color:#bd93f9">6.0</span>
+          ports:
+            - containerPort: <span style="color:#bd93f9">80</span>
+              name: http
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: whoami
+spec:
+  ports:
+    - protocol: TCP
+      port: <span style="color:#bd93f9">80</span>
+      targetPort: http
+  selector:
+    app: whoami</code></pre></div>
+<p>当测试服务部署完成后，我们就可以使用 Service API 的方式来进行流量配置了。</p>
+
+<h3 id="部署一个简单的-host-主机">部署一个简单的 Host 主机</h3>
+
+<p>在以前的方式中我们会创建一个 Ingress 或 IngressRoute 资源对象，这里我们将部署第一个简单呃 HTTPRoute 对象。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># 02-whoami-httproute.yaml  </span>
+---
+kind: HTTPRoute
+apiVersion: networking.x-k8s.io/v1alpha1
+metadata:
+  name: http-app-<span style="color:#bd93f9">1</span>
+  namespace: default
+  labels:
+    app: traefik
+spec:
+  hostnames:
+    - <span style="color:#f1fa8c">&#34;whoami&#34;</span>
+  rules:
+    - matches:
+        - path:
+            type: Exact
+            value: /
+      forwardTo:
+        - serviceName: whoami
+          port: <span style="color:#bd93f9">80</span>
+          weight: <span style="color:#bd93f9">1</span></code></pre></div>
+<p>这个 HTTPRoute 资源会捕捉到向 whoami 主机名发出的请求，并将其转发到之前部署的 whoami 服务，如果你现在对这个主机名进行请求，你会看到典型的 whoami 输出。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -H <span style="color:#f1fa8c">&#34;Host: whoami&#34;</span> http://localhost
+Hostname: whoami-9cdc57b6d-pfpxs
+IP: <span style="color:#bd93f9">127</span>.0.0.1
+IP: ::1
+IP: <span style="color:#bd93f9">10</span>.42.0.13
+IP: fe80::9c1a:a1ff:fead:2663
+RemoteAddr: <span style="color:#bd93f9">10</span>.42.0.11:33658
+GET / HTTP/1.1
+Host: whoami
+User-Agent: curl/7.64.1
+Accept: */*
+Accept-Encoding: gzip
+X-Forwarded-For: <span style="color:#bd93f9">10</span>.42.0.1
+X-Forwarded-Host: whoami
+X-Forwarded-Port: <span style="color:#bd93f9">80</span>
+X-Forwarded-Proto: http
+X-Forwarded-Server: traefik-74d7f586dd-xxr7r
+X-Real-Ip: <span style="color:#bd93f9">10</span>.42.0.1</code></pre></div>
+<p>注意<code>app：traefik</code>标签选择器，它确保请求被路由到你的 Traefik 实例，这是上面通过 Helm Chart 包安装的默认标签，当然也可以进行自定义。
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5376999672787220"
+     data-ad-slot="9165834656"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</p>
+
+<h3 id="带路径的-host-主机">带路径的 Host 主机</h3>
+
+<p>上面的例子可以很容易地限制流量只在一个给定的子路径上进行路由。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># 03-whoami-httproute-paths.yaml</span>
+--<span style="color:#f1fa8c">- 
+</span><span style="color:#f1fa8c">apiVersion: networking.x-k8s.io/v1alpha1</span>
+kind: HTTPRoute
+metadata: 
+  labels: 
+    app: traefik
+  name: http-app-<span style="color:#bd93f9">1</span>
+  namespace: default
+spec: 
+  hostnames: 
+    - whoami
+  rules: 
+    <span style="color:#f1fa8c">- 
+</span><span style="color:#f1fa8c">      forwardTo: </span>
+        <span style="color:#f1fa8c">- 
+</span><span style="color:#f1fa8c">          port: 80</span>
+          serviceName: whoami
+          weight: <span style="color:#bd93f9">1</span>
+      matches: 
+        <span style="color:#f1fa8c">- 
+</span><span style="color:#f1fa8c">          path: </span>
+            type: Exact
+            value: /foo</code></pre></div>
+<p>创建上面修改后的 HTTPRoute，你会发现之前的请求现在返回404错误，而请求 <code>/foo</code> 路径后缀则返回成功。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -H <span style="color:#f1fa8c">&#34;Host: whoami&#34;</span> http://localhost/foo
+Hostname: whoami-9cdc57b6d-pfpxs
+IP: <span style="color:#bd93f9">127</span>.0.0.1
+IP: ::1
+IP: <span style="color:#bd93f9">10</span>.42.0.13
+IP: fe80::9c1a:a1ff:fead:2663
+RemoteAddr: <span style="color:#bd93f9">10</span>.42.0.11:34424
+GET /foo HTTP/1.1
+Host: whoami
+User-Agent: curl/7.64.1
+Accept: */*
+Accept-Encoding: gzip
+X-Forwarded-For: <span style="color:#bd93f9">10</span>.42.0.1
+X-Forwarded-Host: whoami
+X-Forwarded-Port: <span style="color:#bd93f9">80</span>
+X-Forwarded-Proto: http
+X-Forwarded-Server: traefik-74d7f586dd-xxr7r
+X-Real-Ip: <span style="color:#bd93f9">10</span>.42.0.1</code></pre></div>
+<p>关于请求的哪些部分可以被匹配的更多信息可以在官方 Service APIs 文档（<a href="https://kubernetes-sigs.github.io/service-apis/httproute/">https://kubernetes-sigs.github.io/service-apis/httproute/</a>）中找到。</p>
+
+<h3 id="使用静态证书的-tls">使用静态证书的 TLS</h3>
+
+<p>到目前为止，我们已经创建了一个简单的 HTTPRoute，下一步，我们需要通过 TLS 来保证这个路由的安全，首先需要先用一个证书创建一个Kubernetes Secret，如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># 04-tls-dummy-cert.yaml</span>
+--<span style="color:#f1fa8c">- 
+</span><span style="color:#f1fa8c">apiVersion: v1</span>
+data: 
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVVVENDQXJtZ0F3SUJBZ0lRV2pNZ2Q4OUxOUXIwVC9WMDdGR1pEREFOQmdrcWhraUc5dzBCQVFzRkFEQ0IKaFRFZU1Cd0dBMVVFQ2hNVmJXdGpaWEowSUdSbGRtVnNiM0J0Wlc1MElFTkJNUzB3S3dZRFZRUUxEQ1JxWW1SQQpaSEpwZW5wMElDaEtaV0Z1TFVKaGNIUnBjM1JsSUVSdmRXMWxibXB2ZFNreE5EQXlCZ05WQkFNTUsyMXJZMlZ5CmRDQnFZbVJBWkhKcGVucDBJQ2hLWldGdUxVSmhjSFJwYzNSbElFUnZkVzFsYm1wdmRTa3dIaGNOTWpBeE1qQTAKTVRReE1qQXpXaGNOTWpNd016QTBNVFF4TWpBeldqQllNU2N3SlFZRFZRUUtFeDV0YTJObGNuUWdaR1YyWld4dgpjRzFsYm5RZ1kyVnlkR2xtYVdOaGRHVXhMVEFyQmdOVkJBc01KR3BpWkVCa2NtbDZlblFnS0VwbFlXNHRRbUZ3CmRHbHpkR1VnUkc5MWJXVnVhbTkxS1RDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUIKQU12bEc5d0ZKZklRSWRreDRXUy9sNGhQTVRQcmVUdmVQOS9MZlBYK2h2ekFtVC90V1BJbGxGY2JJNnZzemp0NQpEWlZUMFFuQzhHYzg0K1lPZXZHcFpNaTg0M20zdTdFSUlmY3dETUF4WWQ0ZjJJcENLVW9jSFNtVGpOaVhDSnhwCjVNd2tlVXdEc1dvVVZza1RxeVpOcWp0RWVIbGNuQTFHaGZSa3dEUkZxd1QxeVhaUTBoZHpkQzRCeFhhaVk0VEQKaFQ1dnFXQmlnUlh0M1VwSkhEL1NXUG4wTEVQOHM3ckhjUkZPY0RhV3ZWMW1jTkxNZUpveWNYUTJ0M2Z1Q0Fsegp3UWZOSjFQSk45QWlLalFJcXJ1MGFnMC9wU0kyQ3NkbEUzUTFpM29tZGpCQkZDcmxNMTZyY0wwNDdtWXZKOEVvCjFMdDVGQkxnVURBZktIOFRsaXU0ZG9jQ0F3RUFBYU5wTUdjd0RnWURWUjBQQVFIL0JBUURBZ1dnTUJNR0ExVWQKSlFRTU1Bb0dDQ3NHQVFVRkJ3TUJNQXdHQTFVZEV3RUIvd1FDTUFBd0h3WURWUjBqQkJnd0ZvQVV5cWNiZGhDego3Nm4xZjFtR3BaemtNb2JOYnJ3d0VRWURWUjBSQkFvd0NJSUdkMmh2WVcxcE1BMEdDU3FHU0liM0RRRUJDd1VBCkE0SUJnUUFzWlBndW1EdkRmNm13bXR1TExkWlZkZjdYWk13TjVNSkk5SlpUQ1NaRFRQRjRsdG91S2RCV0gxYm0Kd003VUE0OXVWSHplNVNDMDNlQ294Zk9Ddlczby94SFZjcDZGei9qSldlYlY4SWhJRi9JbGNRRyszTVRRMVJaVApwNkZOa3kvOEk3anF1R2V2b0xsbW9KamVRV2dxWGtFL0d1MFloVCtudVBJY1pGa0hsKzFWOThEUG5WaTJ3U0hHCkIwVU9RaFdxVkhRU0RzcjJLVzlPbmhTRzdKdERBcFcwVEltYmNCaWlXOTlWNG9Ga3VNYmZQOE9FTUY2ZXUzbW0KbUVuYk1pWFFaRHJUMWllMDhwWndHZVNhcTh1Rk82djRwOVVoWHVuc3Vpc01YTHJqQzFwNmlwaDdpMTYwZzRWawpmUXlYT09KY0o2WTl2a2drYzRLYUxBZVNzVUQvRDR1bmd6emVWQ3k0ZXhhMmlBakpzVHVRS3JkOFNUTGNNbUJkCnhtcXVKZXFWSEpoZEVMNDBMVGtEY1FPM1NzOUJpbjRaOEFXeTJkdkR1a1gwa084dm9IUnN4bWVKcnVyZ09MVmIKamVvbTVQMTVsMkkwY3FKd2lNNHZ3SlBsb25wMTdjamJUb0IzQTU5RjZqekdONWtCbjZTaWVmR3VLM21hVWdKegoxWndjamFjPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0t
+  tls.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2Z0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktnd2dnU2tBZ0VBQW9JQkFRREw1UnZjQlNYeUVDSFoKTWVGa3Y1ZUlUekV6NjNrNzNqL2Z5M3oxL29iOHdKay83Vmp5SlpSWEd5T3I3TTQ3ZVEyVlU5RUp3dkJuUE9QbQpEbnJ4cVdUSXZPTjV0N3V4Q0NIM01BekFNV0hlSDlpS1FpbEtIQjBwazR6WWx3aWNhZVRNSkhsTUE3RnFGRmJKCkU2c21UYW83UkhoNVhKd05Sb1gwWk1BMFJhc0U5Y2wyVU5JWGMzUXVBY1Yyb21PRXc0VStiNmxnWW9FVjdkMUsKU1J3LzBsajU5Q3hEL0xPNngzRVJUbkEybHIxZFpuRFN6SGlhTW5GME5yZDM3Z2dKYzhFSHpTZFR5VGZRSWlvMApDS3E3dEdvTlA2VWlOZ3JIWlJOME5ZdDZKbll3UVJRcTVUTmVxM0M5T081bUx5ZkJLTlM3ZVJRUzRGQXdIeWgvCkU1WXJ1SGFIQWdNQkFBRUNnZ0VCQUl5SWpvbzQxaTJncHVQZitIMkxmTE5MK2hyU0cwNkRZajByTVNjUVZ4UVEKMzgvckZOcFp3b1BEUmZQekZUWnl1a1VKYjFRdUU2cmtraVA0S1E4MTlTeFMzT3NCRTVIeWpBNm5CTExYbHFBVwpEUmRHZ05UK3lhN2xiemU5NmdaOUNtRVdackJZLzBpaFdpdmZyYUNKK1dJK1VGYzkyS1ZoeldSa3FRR2VYMERiCnVSRXRpclJzUXVRb1hxNkhQS1FIeUVITHo2aWVVMHJsV3IyN0VyQkJ4RlRKTm51MnJ1MHV1Ly8wdG1SYjgzZWwKSUpXQnY1V1diSnl4dXNnMkhkc0tzTUh0eEVaYWh1UlpTNHU2TURQR3dSdjRaU0xpQm1FVVc3RUMwUEg3dCtGaAoxUDcrL0Yyd1pGSDAvSzl6eXUyc0lOMDJIbTBmSWtGejBxb09BSzQ5OXhrQ2dZRUE2SC9nVUJoOG9GUSt2cmZKCnQvbXdMeFBHZHhWb3FWR1hFVjhlQzNWbmxUSXJlREpNWm81b1hKZHNuQ0d2S1NaWUhXZ3o3SVpwLzRCL29vSWsKTDl4TEJSVTJwS0d1OGxBT1ZhYnpaVDk0TTZYSE1PTGQ0ZlUrS3ZqK1lLVm5laEM3TVNQL3RSOWhFMjN1MnRKZwp1eUdPRklFVlptNHZxS1hEelU3TTNnU0R5WXNDZ1lFQTRJRVFyZDl2MXp0T2k5REZ6WEdnY05LVmpuYmFTWnNXCm9JNm1WWFJZS1VNM1FyWUw4RjJTVmFFM0Y0QUZjOXRWQjhzV0cxdDk4T09Db0xrWTY2NjZqUFkwMXBWTDdXeTMKZXpwVEFaei9tRnc2czdic3N3VEtrTW5MejVaNW5nS3dhd3pRTXVoRGxLTmJiUi90enRZSEc0NDRrQ2tQS3JEbQphOG40bUt6ZlRuVUNnWUFTTWhmVERPZU1BS3ZjYnpQSlF6QkhydXVFWEZlUmtNSWE2Ty9JQThzMGdQV245WC9ICk12UDE4eC9iNUVMNkhIY2U3ZzNLUUFiQnFVUFQ2dzE3OVdpbG9EQmptQWZDRFFQaUxpdTBTOUJUY25EeFlYL3QKOUN5R1huQkNEZy9ZSE1FWnFuQ1RzejM4c0VqV05VcSt1blNOSkVFUmdDUVl0Y2hxSS9XaWxvWGQyd0tCZ1FEQworTlBYYlBqZ1h5MHoxN2d4VjhFU3VwQVFEY0E5dEdiT1FaVExHaU9Ha2sxbnJscG9BWnVZcWs0Q0pyaVZpYUlyCkJvREllWWpDcjVNK3FnR3VqU3lPUnpSVU40eWRRWkdIZjN1Zkp3NEM3L1k3SlY0amlzR3hSTSt3Rk9yQ0EydmIKVEdGMEZLcThaN0o2N3dQRVliUUNobDB4TmJkcVIvK1ZGTzdGQ1QxV0VRS0JnQThUaE9hZmNEUmdpd0IxRFdyRgozZ1lmT3I0dERENExrNjRYZlF6ajdtRXQyYlJzOFNEYXYwVGZPclVUUlpFTTkyTVFZMnlrbzhyMDJDbmpndmxCCm1aYnZCTEFYaVZLa0laai9TTkNYUnhzOFZkZ3psTkpzYVNZTUtsNloxK1Z3MnZUdDNQSnI0TXlhRWpHYUxlSmMKRGRTQjdYOU9ESk5acW10bGpoRzc5eXpQCi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0=
+kind: Secret
+metadata: 
+  name: mysecret
+  namespace: default
+type: kubernetes.io/tls</code></pre></div>
+<p>有了这个 Secret 资源后，就可以开始进行安全配置了。首先，必须重新配置 Gateway，以创建一个带有 mysecret 证书的 TLS 监听器，可以通过使用 Helm Chart 的升级选项来进行更新，以便在 Traefik 配置中添加证书部分。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">helm upgrade traefik -f <span style="color:#bd93f9">05</span>-values.yaml traefik/traefik</code></pre></div>
+<p>其中 <code>05-values.yaml</code> 的内容如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># 05-values.yaml</span>
+--<span style="color:#f1fa8c">- 
+</span><span style="color:#f1fa8c">experimental: </span>
+  kubernetesGateway: 
+    appLabelSelector: traefik
+    certificates:
+      <span style="color:#f1fa8c">- 
+</span><span style="color:#f1fa8c">        group: &#34;core&#34;</span>
+        kind: <span style="color:#f1fa8c">&#34;Secret&#34;</span>
+        name: <span style="color:#f1fa8c">&#34;mysecret&#34;</span>
+    enabled: <span style="color:#ff79c6">true</span></code></pre></div>
+<p>Traefik 重启后，我们可以发现 HTTPRoute 仍然有效，只是现在我们可以用 HTTPS 访问它了。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --insecure -H <span style="color:#f1fa8c">&#34;Host: whoami&#34;</span> https://localhost/foo
+Hostname: whoami-9cdc57b6d-pfpxs
+IP: <span style="color:#bd93f9">127</span>.0.0.1
+IP: ::1
+IP: <span style="color:#bd93f9">10</span>.42.0.13
+IP: fe80::9c1a:a1ff:fead:2663
+RemoteAddr: <span style="color:#bd93f9">10</span>.42.0.11:53158
+GET /foo HTTP/1.1
+Host: whoami
+User-Agent: curl/7.64.1
+Accept: */*
+Accept-Encoding: gzip
+X-Forwarded-For: <span style="color:#bd93f9">10</span>.42.0.1
+X-Forwarded-Host: whoami
+X-Forwarded-Port: <span style="color:#bd93f9">443</span>
+X-Forwarded-Proto: https
+X-Forwarded-Server: traefik-74d7f586dd-xxr7r
+X-Real-Ip: <span style="color:#bd93f9">10</span>.42.0.1</code></pre></div>
+<h3 id="金丝雀发布">金丝雀发布</h3>
+
+<p>Traefik 2.4 通过 Service APIs 规范可以支持的另一个功能是<strong>金丝雀发布</strong>。假设你想在一个端点上运行两个不同的服务（或同一服务的两个版本），并将一部分请求路由到每个端点，你可以通过修改你的 HTTPRoute 来实现。</p>
+
+<p>首先，我们需要运行第二个服务，这里我们快速生成一个 Nginx 的实例来进行测试。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># 06-nginx.yaml</span>
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: nginx
+spec:
+  replicas: <span style="color:#bd93f9">2</span>
+  selector:
+    matchLabels:
+      app: whoami
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: whoami
+          image: nginx
+          ports:
+            - containerPort: <span style="color:#bd93f9">80</span>
+              name: http
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: whoami
+spec:
+  ports:
+    - protocol: TCP
+      port: <span style="color:#bd93f9">80</span>
+      targetPort: http
+  selector:
+    app: nginx</code></pre></div>
+<p>HTTPRoute 资源有一个 <code>weight</code> 选项，可以为两个服务分别分配不同的值。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># 07-whoami-nginx-canary.yaml</span>
+--<span style="color:#f1fa8c">- 
+</span><span style="color:#f1fa8c">apiVersion: networking.x-k8s.io/v1alpha1</span>
+kind: HTTPRoute
+metadata: 
+  labels: 
+    app: traefik
+  name: http-app-<span style="color:#bd93f9">1</span>
+  namespace: default
+spec: 
+  hostnames: 
+    - whoami
+  rules: 
+    - forwardTo: 
+        - port: <span style="color:#bd93f9">80</span>
+          serviceName: whoami
+          weight: <span style="color:#bd93f9">3</span>
+        - port: <span style="color:#bd93f9">80</span>
+          serviceName: nginx
+          weight: <span style="color:#bd93f9">1</span></code></pre></div>
+<p>创建上面的 HTTPRoute 后，现在我们可以再次访问 whoami 服务 <a href="http://localhost（没有">http://localhost（没有</a> <code>foo/</code> 路径后缀），正常我们可以看到有大约25%的时间会看到 Nginx 的响应，而不是 whoami 的响应。</p>
+
+<p>目前，Traefik 对 Service APIs 的实现只集中在 HTTP 和 HTTPS 上。然而，该规范还具有 TCP 功能，未来可能也会支持 UDP，这些都是后续需要实现的功能。当然现在开始你就可以使用 Traefik 2.4 来使用 Kubernetes Service APIs。</p>
+
+<h2 id="总结">总结</h2>
+
+<p>到这里我们就使用 Traefik 2.4 来测试使用了 Kubernetes Service APIs 的使用。目前，Traefik 对 Service APIs 的实现只集中在 HTTP 和 HTTPS 上，然而，该规范还具有 TCP 功能，未来可能也会支持 UDP，这些都是后续需要实现的功能。</p>
+
+<p><a href="https://youdianzhishi.com/web/course/1012" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+
+
+          <h2>微信公众号</h2>
+<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
+<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-service-apis-intro/">Kubernetes Service APIs 简介</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/url-rewrite-on-traefik2.x/">Traefik2.X 版本 中 URL Rewrite 的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/traefik-2.1-101/">一文搞懂 Traefik2.1 的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/install-nginx-ingress/">nginx-ingress 的安装使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/how-to-protect-exposed-k8s-server/">如何保护对外暴露的 Kubernetes 服务</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/automatic-kubernetes-ingress-https-with-lets-encrypt/">Kubernetes Ingress 自动化 HTTPS</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/ingress-traefik2/">外部服务发现之 ingress(二)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/ingress-traefik1/">外部服务发现之 ingress(一)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/deploy-k8s-app-with-oam/">使用 OAM 部署 Kubernetes 应用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/custom-k8s-ingress-controller-with-go/">使用 Golang 自定义 Kubernetes Ingress Controller</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/kubernetes-service-apis-intro/" data-toggle="tooltip" data-placement="top" title="Kubernetes Service APIs 简介">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/promotion-51/" data-toggle="tooltip" data-placement="top" title="Kubernetes 进阶训练营">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '通过 Traefik 使用 Kubernetes Service APIs 进行流量路由',
+        createIssueManually: true,
+        id: 'use-kubernetes-service-apis-with-traefik',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2021
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="http://www.beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
+  </body>
+</html>
+

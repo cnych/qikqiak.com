@@ -12,6 +12,10 @@
 下面是博客中主要的一些文章目录
 
 #### Kubernetes/Docker
+ * [通过 Traefik 使用 Kubernetes Service APIs 进行流量路由](https://www.qikqiak.com/post/use-kubernetes-service-apis-with-traefik/)
+ * [Kubernetes Service APIs 简介](https://www.qikqiak.com/post/kubernetes-service-apis-intro/)
+ * [给 Pod 添加 DNS 记录](https://www.qikqiak.com/post/add-dns-record-for-pod/)
+ * [理解 Linux 网络命名空间](https://www.qikqiak.com/post/learn-linux-net-namespace/)
  * [自己动手写一个 Kubernetes YAML 模板化工具](https://www.qikqiak.com/post/code-k8s-yaml-templating/)
  * [图解 Kubernetes Ingress](https://www.qikqiak.com/post/visually-explained-k8s-ingress/)
  * [图解 Kubernetes Service](https://www.qikqiak.com/post/visually-explained-k8s-service/)
