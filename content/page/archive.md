@@ -185,6 +185,7 @@ noreadmore: true
  * [Kubernetes使用Prometheus搭建监控平台](https://www.qikqiak.com/post/kubernetes-monitor-prometheus-grafana/)
 
 #### Golang
+ * [Go1.16 使用 Embed 嵌入静态资源（视频）](https://www.qikqiak.com/post/go1.16-embed/)
  * [真香！使用 VSCode 远程开发调试](https://www.qikqiak.com/post/use-vscode-remote-dev-debug/)
  * [在 Golang 中使用 Cobra 创建 CLI 应用](https://www.qikqiak.com/post/create-cli-app-with-cobra/)
  * [Go Modules 基本使用](https://www.qikqiak.com/post/go-modules-usage/)
