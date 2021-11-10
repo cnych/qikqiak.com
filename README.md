@@ -14,6 +14,7 @@
 
 #### Kubernetes/Docker
 
+- [Helm Chart 兼容不同 Kubernetes 版本](https://www.qikqiak.com/post/helm-chart-compatible-different-kube-version/)
 - [Gitlab CI 在 Kubernetes 中的 Docker 缓存](https://www.qikqiak.com/post/gitlab-ci-docker-layer-cache-for-k8s-executor/)
 - [一文搞懂容器运行时 Containerd](https://www.qikqiak.com/post/containerd-usage/)
 - [使用 kube-vip 搭建高可用 Kubernetes 集群](https://www.qikqiak.com/post/use-kube-vip-ha-k8s-lb/)

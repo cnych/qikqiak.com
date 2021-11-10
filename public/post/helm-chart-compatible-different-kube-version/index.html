@@ -6,25 +6,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
 
-  <title>Gitlab CI 在 Kubernetes 中的 Docker 缓存-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
-  <meta property="og:title" content="Gitlab CI 在 Kubernetes 中的 Docker 缓存" />
-  <meta name="twitter:title" content="Gitlab CI 在 Kubernetes 中的 Docker 缓存" />
+  <title>Helm Chart 兼容不同 Kubernetes 版本-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="Helm Chart 兼容不同 Kubernetes 版本" />
+  <meta name="twitter:title" content="Helm Chart 兼容不同 Kubernetes 版本" />
 
-  <meta name="description" content="前面我们有文章介绍过如何在 Kubernetes 集群中使用 GitLab CI 来实现 CI/CD，在构建镜像的环节我们基本上都是使用的 Docker On Docker 的模式，这是因为 Kubernetes 集群使用的是 Docker 这种容器运行时，所以我们可以将宿主机的 docker.sock 文件挂载到容器中构建镜像，而最近我们在使用 Kubernetes 1.22.X 版本后将容器运行时更改为了 Containerd，这样节点上没有可用的 Docker 服务了，这个时候就需要更改构建镜像的模式了，当然要实现构建镜像的方式有很多，我们这里还是选择使用 Docker 来构建我们的 Docker 镜像，也就是使用 Docker IN Docker 的模式。">
-  <meta property="og:description" content="前面我们有文章介绍过如何在 Kubernetes 集群中使用 GitLab CI 来实现 CI/CD，在构建镜像的环节我们基本上都是使用的 Docker On Docker 的模式，这是因为 Kubernetes 集群使用的是 Docker 这种容器运行时，所以我们可以将宿主机的 docker.sock 文件挂载到容器中构建镜像，而最近我们在使用 Kubernetes 1.22.X 版本后将容器运行时更改为了 Containerd，这样节点上没有可用的 Docker 服务了，这个时候就需要更改构建镜像的模式了，当然要实现构建镜像的方式有很多，我们这里还是选择使用 Docker 来构建我们的 Docker 镜像，也就是使用 Docker IN Docker 的模式。">
-  <meta name="twitter:description" content="前面我们有文章介绍过如何在 Kubernetes 集群中使用 GitLab CI 来实现 CI/CD，在构建镜像的环节我们基本上都是使用的 Docker On Docker 的模式，这是因为 Kubernetes 集群使用的是 Docker 这种容器运行时，所以我们可以将宿主机的 docker.sock 文件挂载到容器中构建镜像，而最近我们在使用 Kubernetes 1.22.X 版本后将容器运 …">
+  <meta name="description" content="随着 Kubernetes 的版本不断迭代发布，很多 Helm Chart 包压根跟不上更新的进度，导致在使用较新版本的 Kubernetes 的时候很多 Helm Chart 包不兼容，所以我们在开发 Helm Chart 包的时候有必要考虑到对不同版本的 Kubernetes 进行兼容。">
+  <meta property="og:description" content="随着 Kubernetes 的版本不断迭代发布，很多 Helm Chart 包压根跟不上更新的进度，导致在使用较新版本的 Kubernetes 的时候很多 Helm Chart 包不兼容，所以我们在开发 Helm Chart 包的时候有必要考虑到对不同版本的 Kubernetes 进行兼容。">
+  <meta name="twitter:description" content="随着 Kubernetes 的版本不断迭代发布，很多 Helm Chart 包压根跟不上更新的进度，导致在使用较新版本的 Kubernetes 的时候很多 Helm Chart 包不兼容，所以我们在开发 Helm Chart 包的时候有必要考虑到对不同版本的 Kubernetes 进行兼容。">
   <meta name="author" content=""/>
   <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
   <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
   <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
   <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
   <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://www.qikqiak.com/post/gitlab-ci-docker-layer-cache-for-k8s-executor/" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/helm-chart-compatible-different-kube-version/" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="阳明的博客" />
 
   <meta name="generator" content="Hugo 0.55.6" />
-  <link rel="canonical" href="https://www.qikqiak.com/post/gitlab-ci-docker-layer-cache-for-k8s-executor/" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/helm-chart-compatible-different-kube-version/" />
   <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
   
@@ -46,7 +46,7 @@
     <![endif]-->
 <meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
 <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-<meta name="keywords" content="kubernetes, gitlab-ci, docker, 缓存">
+<meta name="keywords" content="kubernetes, helm, chart, template, 兼容">
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -226,7 +226,7 @@ autocomplete('#aa-search-input',
 
 
   
-    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20211109172525.png" data-img-desc-1="https://unsplash.com/photos/Zyv7Dc-lOjw"></div>
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20211110192940.png" data-img-desc-1="图片来源 -&gt; https://unsplash.com/photos/sf99zPcy8dQ"></div>
   
 
   <header class="header-section has-img">
@@ -237,12 +237,12 @@ autocomplete('#aa-search-input',
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
-                <h1>Gitlab CI 在 Kubernetes 中的 Docker 缓存</h1>
+                <h1>Helm Chart 兼容不同 Kubernetes 版本</h1>
                   
                   
                     <span class="post-meta">
   
-    发表于 November 9, 2021
+    发表于 November 10, 2021
   
   
 </span>
@@ -264,12 +264,12 @@ autocomplete('#aa-search-input',
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
             <div class="post-heading">
-              <h1>Gitlab CI 在 Kubernetes 中的 Docker 缓存</h1>
+              <h1>Helm Chart 兼容不同 Kubernetes 版本</h1>
                 
                 
                   <span class="post-meta">
   
-    发表于 November 9, 2021
+    发表于 November 10, 2021
   
   
 </span>
@@ -302,9 +302,9 @@ autocomplete('#aa-search-input',
               
                   <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
               
-                  <a href="https://www.qikqiak.com/tags/gitlab-ci/">gitlab-ci</a> &nbsp;
+                  <a href="https://www.qikqiak.com/tags/helm/">helm</a> &nbsp;
               
-                  <a href="https://www.qikqiak.com/tags/docker/">docker</a> &nbsp;
+                  <a href="https://www.qikqiak.com/tags/chart/">chart</a> &nbsp;
               
             </h5>
             
@@ -325,156 +325,129 @@ autocomplete('#aa-search-input',
           
           
 
-          <p>前面我们有文章介绍过如何在 Kubernetes 集群中使用 GitLab CI 来实现 CI/CD，在构建镜像的环节我们基本上都是使用的 <code>Docker On Docker</code> 的模式，这是因为 Kubernetes 集群使用的是 Docker 这种容器运行时，所以我们可以将宿主机的 <code>docker.sock</code> 文件挂载到容器中构建镜像，而最近我们在使用 Kubernetes 1.22.X 版本后将容器运行时更改为了 Containerd，这样节点上没有可用的 Docker 服务了，这个时候就需要更改构建镜像的模式了，当然要实现构建镜像的方式有很多，我们这里还是选择使用 Docker 来构建我们的 Docker 镜像，也就是使用 <code>Docker IN Docker</code> 的模式。</p>
+          <p>随着 Kubernetes 的版本不断迭代发布，很多 Helm Chart 包压根跟不上更新的进度，导致在使用较新版本的 Kubernetes 的时候很多 Helm Chart 包不兼容，所以我们在开发 Helm Chart 包的时候有必要考虑到对不同版本的 Kubernetes 进行兼容。</p>
 
-<p>在每次构建镜像的时候，GitLab Runner 都会启动一个包含3个容器的 Pod，其中一个就是运行 Docker 守护进程的 Docker DIND 容器，构建的容器会去连接到运行在同一个 Pod 上的 Docker 守护进程，由于 Pod 中的所有容器共享同一个 network namespace，构建镜像的 Docker CLI 能够通过 localhost 直接连接到 Docker 守护进程进行构建。但是这种方式最大的一个问题是每次构建都是启动一个全新的 Docker 守护进程，造成没有缓存 Docker layer 层，这会显著增加我们的构建时间。</p>
+<p>要实现对不同版本的兼容核心就是利用 Helm Chart 模板提供的内置对象 <code>Capabilities</code>，该对象提供了关于 Kubernetes 集群支持功能的信息，包括如下特性：</p>
 
-<p>这个问题的解决方法非常简单，与其为每个 Pod 运行一个 Docker DIND 服务的 sidecar 容器，不如让我们运行一个独立的 Docker DIND 容器，构建容器的所有 Docker CLI 都连接到这个一个 Docker 守护进程上，这个时候我们将 Docker layer 层进行持久化，也就起到了缓存的作用了。</p>
+<ul>
+<li><code>Capabilities.APIVersions</code> 获取集群版本集合</li>
+<li><code>Capabilities.APIVersions.Has $version</code> 判断集群中的某个版本 (e.g., batch/v1) 或是资源 (e.g., apps/v1/Deployment) 是否可用</li>
+<li><code>Capabilities.KubeVersion</code> 和 <code>Capabilities.KubeVersion.Version</code> 可以获取 Kubernetes 版本号</li>
+<li><code>Capabilities.KubeVersion.Major</code> 获取 Kubernetes 的主版本</li>
+<li><code>Capabilities.KubeVersion.Minor</code> 获取 Kubernetes 的次版本</li>
+<li><code>Capabilities.HelmVersion</code> 包含 Helm 版本详细信息的对象，和 <code>helm version</code> 的输出一致</li>
+<li><code>Capabilities.HelmVersion.Version</code> 是当前 Helm 版本的语义格式</li>
+<li><code>Capabilities.HelmVersion.GitCommit</code> Helm 的 <code>git sha1</code> 值</li>
+<li><code>Capabilities.HelmVersion.GitTreeState</code> 是 Helm git 树的状态</li>
+<li><code>Capabilities.HelmVersion.GoVersion</code> 使用的 Go 编译器版本</li>
+</ul>
 
-<p>首先创建一个 PVC 来存储 Docker 的持久化数据，为了性能考虑，这里我们使用的是一个 Local PV：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: storage.k8s.io/v1
-kind: StorageClass
+<p>利用上面的几个对象我们可以判断资源对象需要使用的 API 版本或者属性，下面我们以 Ingress 资源对象为例进行说明。</p>
+
+<p>Kubernetes 在 1.19 版本为 Ingress 资源引入了一个新的 API：<code>networking.k8s.io/v1</code>，这与之前的 <code>networking.k8s.io/v1beta1</code> beta 版本使用方式基本一致，但是和前面的 <code>extensions/v1beta1</code> 这个版本在使用上有很大的不同，资源对象的属性上有一定的区别，所以要兼容不同的版本，我们就需要对模板中的 Ingress 对象做兼容处理。</p>
+
+<p>新版本的资源对象格式如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
-  name: local-volume
-provisioner: kubernetes.io/no-provisioner
-reclaimPolicy: Delete
-volumeBindingMode: WaitForFirstConsumer
-
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: docker-pv
+  name: minimal-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
-  capacity:
-    storage: 5Gi
-  accessModes:
-  - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-volume
-  local:
-    path: /mnt/k8s/docker  <span style="color:#6272a4"># 数据存储的目录</span>
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - key: kubernetes.io/hostname
-          operator: In
-          values:
-          - node1  <span style="color:#6272a4"># 运行在node1节点</span>
----
-apiVersion: v1
-kind: PersistentVolumeClaim
+  rules:
+  - http:
+      paths:
+      - path: /testpath
+        pathType: Prefix
+        backend:
+          service:
+            name: test
+            port:
+              number: <span style="color:#bd93f9">80</span></code></pre></div>
+<p>而旧版本的资源对象格式如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: extensions/v1beta1
+kind: Ingress
 metadata:
+  name: minimal-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /testpath
+        backend:
+          serviceName: test
+          servicePort: <span style="color:#bd93f9">80</span></code></pre></div>
+<p>具体使用哪种格式的资源对象需要依赖我们的集群版本，首先我们在 Chart 包的 <code>_helpers.tpl</code> 文件中添加几个用于判断集群版本或 API 的命名模板：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">{{<span style="color:#6272a4">/* Allow KubeVersion to be overridden. */</span>}}
+{{<span style="color:#ff79c6">-</span> define <span style="color:#f1fa8c">&#34;ydzs.kubeVersion&#34;</span> <span style="color:#ff79c6">-</span>}}
+  {{<span style="color:#ff79c6">-</span> <span style="color:#ff79c6">default</span> .Capabilities.KubeVersion.Version .Values.kubeVersionOverride <span style="color:#ff79c6">-</span>}}
+{{<span style="color:#ff79c6">-</span> end <span style="color:#ff79c6">-</span>
+
+{{<span style="color:#6272a4">/* Get Ingress API Version */</span>}}
+{{<span style="color:#ff79c6">-</span> define <span style="color:#f1fa8c">&#34;ydzs.ingress.apiVersion&#34;</span> <span style="color:#ff79c6">-</span>}}
+  {{<span style="color:#ff79c6">-</span> <span style="color:#ff79c6">if</span> <span style="color:#50fa7b">and</span> (.Capabilities.APIVersions.Has <span style="color:#f1fa8c">&#34;networking.k8s.io/v1&#34;</span>) (semverCompare <span style="color:#f1fa8c">&#34;&gt;= 1.19-0&#34;</span> (include <span style="color:#f1fa8c">&#34;ydzs.kubeVersion&#34;</span> .)) <span style="color:#ff79c6">-</span>}}
+      {{<span style="color:#ff79c6">-</span> print <span style="color:#f1fa8c">&#34;networking.k8s.io/v1&#34;</span> <span style="color:#ff79c6">-</span>}}
+  {{<span style="color:#ff79c6">-</span> <span style="color:#ff79c6">else</span> <span style="color:#ff79c6">if</span> .Capabilities.APIVersions.Has <span style="color:#f1fa8c">&#34;networking.k8s.io/v1beta1&#34;</span> <span style="color:#ff79c6">-</span>}}
+    {{<span style="color:#ff79c6">-</span> print <span style="color:#f1fa8c">&#34;networking.k8s.io/v1beta1&#34;</span> <span style="color:#ff79c6">-</span>}}
+  {{<span style="color:#ff79c6">-</span> <span style="color:#ff79c6">else</span> <span style="color:#ff79c6">-</span>}}
+    {{<span style="color:#ff79c6">-</span> print <span style="color:#f1fa8c">&#34;extensions/v1beta1&#34;</span> <span style="color:#ff79c6">-</span>}}
+  {{<span style="color:#ff79c6">-</span> end <span style="color:#ff79c6">-</span>}}
+{{<span style="color:#ff79c6">-</span> end <span style="color:#ff79c6">-</span>}}
+
+{{<span style="color:#6272a4">/* Check Ingress stability */</span>}}
+{{<span style="color:#ff79c6">-</span> define <span style="color:#f1fa8c">&#34;ydzs.ingress.isStable&#34;</span> <span style="color:#ff79c6">-</span>}}
+  {{<span style="color:#ff79c6">-</span> <span style="color:#50fa7b">eq</span> (include <span style="color:#f1fa8c">&#34;ydzs.ingress.apiVersion&#34;</span> .) <span style="color:#f1fa8c">&#34;networking.k8s.io/v1&#34;</span> <span style="color:#ff79c6">-</span>}}
+{{<span style="color:#ff79c6">-</span> end <span style="color:#ff79c6">-</span>}}
+
+{{<span style="color:#6272a4">/* Check Ingress supports pathType */</span>}}
+{{<span style="color:#6272a4">/* pathType was added to networking.k8s.io/v1beta1 in Kubernetes 1.18 */</span>}}
+{{<span style="color:#ff79c6">-</span> define <span style="color:#f1fa8c">&#34;ydzs.ingress.supportsPathType&#34;</span> <span style="color:#ff79c6">-</span>}}
+  {{<span style="color:#ff79c6">-</span> <span style="color:#50fa7b">or</span> (<span style="color:#50fa7b">eq</span> (include <span style="color:#f1fa8c">&#34;ydzs.ingress.isStable&#34;</span> .) <span style="color:#f1fa8c">&#34;true&#34;</span>) (<span style="color:#50fa7b">and</span> (<span style="color:#50fa7b">eq</span> (include <span style="color:#f1fa8c">&#34;ydzs.ingress.apiVersion&#34;</span> .) <span style="color:#f1fa8c">&#34;networking.k8s.io/v1beta1&#34;</span>) (semverCompare <span style="color:#f1fa8c">&#34;&gt;= 1.18-0&#34;</span> (include <span style="color:#f1fa8c">&#34;ydzs.kubeVersion&#34;</span> .))) <span style="color:#ff79c6">-</span>}}
+{{<span style="color:#ff79c6">-</span> end <span style="color:#ff79c6">-</span>}}</code></pre></div>
+<p>上面我们通过 <code>.Capabilities.APIVersions.Has</code> 来判断我们应该使用的 APIVersion，如果版本为 <code>networking.k8s.io/v1</code>，则定义为 <code>isStable</code>，此外还根据版本来判断是否需要支持 <code>pathType</code> 属性，然后在 Ingress 对象模板中就可以使用上面定义的命名模板来决定应该使用哪些属性，如下 <code>ingress.yaml</code> 文件所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">{{- $apiIsStable := eq (include <span style="color:#f1fa8c">&#34;ydzs.ingress.isStable&#34;</span> .) <span style="color:#f1fa8c">&#34;true&#34;</span> -}}
+{{- $ingressSupportsPathType := eq (include <span style="color:#f1fa8c">&#34;ydzs.ingress.supportsPathType&#34;</span> .) <span style="color:#f1fa8c">&#34;true&#34;</span> -}}
+{{- $ingressClass := index .Values <span style="color:#f1fa8c">&#34;ingress-nginx&#34;</span> <span style="color:#f1fa8c">&#34;controller&#34;</span> <span style="color:#f1fa8c">&#34;ingressClass&#34;</span> }}
+apiVersion: {{ include <span style="color:#f1fa8c">&#34;ydzs.ingress.apiVersion&#34;</span> . }}
+kind: Ingress
+metadata:
+  name: portal-ingress
+  annotations:
+    {{- if $ingressClass }}
+    kubernetes.io/ingress.class: {{ $ingressClass }}
+    {{- end }}
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: <span style="color:#f1fa8c">&#34;120&#34;</span>
+    nginx.ingress.kubernetes.io/proxy-read-timeout: <span style="color:#f1fa8c">&#34;3600&#34;</span>
+    nginx.ingress.kubernetes.io/proxy-send-timeout: <span style="color:#f1fa8c">&#34;3600&#34;</span>
+    nginx.ingress.kubernetes.io/ssl-redirect: <span style="color:#f1fa8c">&#34;false&#34;</span>
   labels:
-    app: docker-dind
-  name: docker-dind-data
-  namespace: kube-ops
+    {{- include <span style="color:#f1fa8c">&#34;ydzs.labels&#34;</span> . | nindent <span style="color:#bd93f9">4</span> }}
 spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: local-volume
-  resources:
-    requests:
-      storage: 5Gi</code></pre></div>
-<p>然后使用 Deployment 部署一个 Docker DIND 服务：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: docker-dind
-  namespace: kube-ops
-  labels:
-    app: docker-dind
-spec:
-  selector:
-    matchLabels:
-      app: docker-dind
-  template:
-    metadata:
-      labels:
-        app: docker-dind
-    spec:
-      containers:
-        - image: docker:dind
-          name: docker-dind
-          args:
-          - --registry-mirror=https://ot2k4d59.mirror.aliyuncs.com/  <span style="color:#6272a4"># 指定一个镜像加速器地址</span>
-          env:
-            - name: DOCKER_DRIVER
-              value: overlay2
-            - name: DOCKER_HOST
-              value: tcp://<span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">0.0</span>:<span style="color:#bd93f9">2375</span>
-            - name: DOCKER_TLS_CERTDIR   <span style="color:#6272a4"># 禁用 TLS </span>
-              value: <span style="color:#f1fa8c">&#34;&#34;</span>
-          volumeMounts:
-            - name: docker-dind-data-vol <span style="color:#6272a4"># 持久化docker根目录</span>
-              mountPath: /var/lib/docker/
-          ports:
-            - name: daemon-port
-              containerPort: <span style="color:#bd93f9">2375</span>
-          securityContext:
-            privileged: <span style="color:#ff79c6">true</span> <span style="color:#6272a4"># 需要设置成特权模式</span>
-      volumes:
-        - name: docker-dind-data-vol
-          persistentVolumeClaim:
-            claimName: docker-dind-data</code></pre></div>
-<p>然后创建一个 Service 以方便构建的 Docker CLI 与其连接：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
-kind: Service
-metadata:
-  name: docker-dind
-  namespace: kube-ops
-  labels:
-    app: docker-dind
-spec:
-  ports:
-    - port: <span style="color:#bd93f9">2375</span>
-      targetPort: <span style="color:#bd93f9">2375</span>
-  selector:
-    app: docker-dind</code></pre></div>
-<p>将 Docker DIND 服务部署完成后，我们就可以在 Gitlab CI 中使用这个守护程序来构建镜像了，如下所示：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">tages:
-  - image
-
-build_image:
-  stage: image
-  image: docker:latest
-  variables:
-    DOCKER_HOST: tcp://docker-dind:<span style="color:#bd93f9">2375</span>  <span style="color:#6272a4"># 通过 service dns 形式连接 docker dind 服务</span>
-  script:
-    - docker info
-    - docker build -t xxxx .
-    - docker push xxxx
-  only:
-    - tags</code></pre></div>
-<p>由于我们缓存了 Docker layer 层，这个时候构建的速度会明显提升。最后随着镜像的大量构建会产生很多镜像数据，我们可以写一个 Cronjob 用来定时清除缓存：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: docker-dind-clear-cache
-  namespace: kube-ops
-spec:
-  schedule: <span style="color:#bd93f9">0</span> <span style="color:#bd93f9">0</span> * * <span style="color:#bd93f9">0</span>  <span style="color:#6272a4"># 每周清理一次</span>
-  jobTemplate:
-    metadata:
-      labels:
-        app: docker-dind
-      name: docker-dind-clear-cache
-    spec:
-      template:
-        spec:
-          restartPolicy: OnFailure
-          containers:
-            - name: clear-cache
-              image: docker:latest
-              command:
-                - docker
-                - system
-                - prune
-                - -af
-              env:
-                - name: DOCKER_HOST
-                  value: tcp://docker-dind:<span style="color:#bd93f9">2375</span></code></pre></div>
+  rules:
+  {{- if eq .Values.endpoint.type <span style="color:#f1fa8c">&#34;FQDN&#34;</span> }}
+  - host: {{ required <span style="color:#f1fa8c">&#34;.Values.endpoint.FQDN is required for FQDN&#34;</span> .Values.endpoint.FQDN }}
+    http:
+  {{- else }}
+  - http:
+  {{- end }}
+      paths:
+      - path: /
+        {{- if $ingressSupportsPathType }}
+        pathType: Prefix
+        {{- end }}
+        backend:
+          {{- if $apiIsStable }}
+          service:
+            name: portal
+            port:
+              number: <span style="color:#bd93f9">80</span>
+          {{- else }}
+          serviceName: portal
+          servicePort: <span style="color:#bd93f9">80</span>
+          {{- end }}</code></pre></div>
+<p>在 Ingress 模板中使用命名模板中的变量来判断应该使用哪些属性，这样我们定义的这个 Chart 模板就可以兼容 Kubernetes 的不同版本了，如果还有其他版本之间的差异，我们也可以分别判断进行定义即可，对于其他的资源对象，比如 Deployment 也可以用同样的方式进行兼容。</p>
 
           <h2>微信公众号</h2>
 <p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
@@ -538,25 +511,25 @@ spec:
 <h3>相关文章</h3>
 <ul style="margin-bottom: 25px;">
     
-    <li><a href="https://www.qikqiak.com/post/containerd-usage/">一文搞懂容器运行时 Containerd</a></li>
+    <li><a href="https://www.qikqiak.com/post/helm-chart-tips-and-tricks/">Helm Chart 模板开发技巧</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/k8s-10-secruity-context-settings/">你应该了解的10个 Kubernetes 安全上下文设置[译]</a></li>
+    <li><a href="https://www.qikqiak.com/post/migrate-helm-to-v3/">Helm V2 迁移到 V3 版本</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/accelerate-ci-cd-pipelines-with-kind/">使用 KinD 加速 CI/CD 流水线</a></li>
+    <li><a href="https://www.qikqiak.com/post/code-k8s-yaml-templating/">自己动手写一个 Kubernetes YAML 模板化工具</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/speed-up-develop-flow-dockerfile-best-practices/">加速开发流程的 Dockerfile 最佳实践</a></li>
+    <li><a href="https://www.qikqiak.com/post/gitops-devops-on-k8s/">GitOps - 在 Kubernetes 中进行 DevOps 的方式</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/get-client-realip/">获取客户端访问真实 IP</a></li>
+    <li><a href="https://www.qikqiak.com/post/use-cdk8s-define-k8s-apps/">使用编程语言描述 Kubernetes 应用 - cdk8s</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/capabilities-on-k8s/">在 Kubernetes 中配置 Container Capabilities</a></li>
+    <li><a href="https://www.qikqiak.com/post/install-kafka-in-kubernetes/">在 Kubernetes 集群上部署 Kafka</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/">在 Kubernetes 上安装 Gitlab</a></li>
+    <li><a href="https://www.qikqiak.com/post/deploy-vault-on-k8s/">在 Kubernetes 上部署 Vault</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/harbor-quick-install/">在 Kubernetes 在快速安装 Harbor</a></li>
+    <li><a href="https://www.qikqiak.com/post/deploy-spinnaker-on-k8s/">在 Kubernetes 上部署 Spinnaker</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/harbor-code-analysis/">Harbor 源码浅析</a></li>
+    <li><a href="https://www.qikqiak.com/post/kustomize-101/">使用 Kustomize 配置 Kubernetes 应用</a></li>
     
-    <li><a href="https://www.qikqiak.com/post/dockerfile-best-practice/">Dockerfile 最佳实践</a></li>
+    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-3/">Drone 结合 Helm 部署 Kubernetes 应用</a></li>
     
 </ul>
 
@@ -566,12 +539,12 @@ spec:
         <ul class="pager blog-pager">
           
             <li class="previous">
-              <a href="https://www.qikqiak.com/post/containerd-usage/" data-toggle="tooltip" data-placement="top" title="一文搞懂容器运行时 Containerd">&larr; 前一篇</a>
+              <a href="https://www.qikqiak.com/post/gitlab-ci-docker-layer-cache-for-k8s-executor/" data-toggle="tooltip" data-placement="top" title="Gitlab CI 在 Kubernetes 中的 Docker 缓存">&larr; 前一篇</a>
             </li>
           
           
             <li class="next">
-              <a href="https://www.qikqiak.com/post/helm-chart-compatible-different-kube-version/" data-toggle="tooltip" data-placement="top" title="Helm Chart 兼容不同 Kubernetes 版本">后一篇 &rarr;</a>
+              <a href="https://www.qikqiak.com/post/promotion-51/" data-toggle="tooltip" data-placement="top" title="Kubernetes 进阶训练营">后一篇 &rarr;</a>
             </li>
           
         </ul>
@@ -601,9 +574,9 @@ spec:
         owner: 'cnych',
         admin: ['cnych'],
         labels: ['gitment'],
-        title: 'Gitlab CI 在 Kubernetes 中的 Docker 缓存',
+        title: 'Helm Chart 兼容不同 Kubernetes 版本',
         createIssueManually: true,
-        id: 'gitlab-ci-docker-layer-cache-for-k8s-executor',      
+        id: 'helm-chart-compatible-different-kube-version',      
         distractionFreeMode: true  
     });
     gitalk.render('gitalk-container');
