@@ -14,6 +14,7 @@
 
 #### Kubernetes/Docker
 
+- [Docker 创始人的新产品 Dagger 好用吗？](https://www.qikqiak.com/post/dagger/)
 - [Prometheus 监控 Kubernetes Job 资源误报的坑](https://www.qikqiak.com/post/prometheus-monitor-k8s-job-trap/)
 - [自定义 Traefik（本地）插件](https://www.qikqiak.com/post/custom-traefik-local-middleware/)
 - [Helm Chart 兼容不同 Kubernetes 版本](https://www.qikqiak.com/post/helm-chart-compatible-different-kube-version/)
