@@ -10,6 +10,7 @@ noreadmore: true
 
 #### Kubernetes/Docker
 
+- [本地集群使用 OpenELB 实现 Load Balancer 负载均衡](https://www.qikqiak.com/post/service-use-openelb/)
 - [Docker 创始人的新产品 Dagger 好用吗？](https://www.qikqiak.com/post/dagger/)
 - [Prometheus 监控 Kubernetes Job 资源误报的坑](https://www.qikqiak.com/post/prometheus-monitor-k8s-job-trap/)
 - [自定义 Traefik（本地）插件](https://www.qikqiak.com/post/custom-traefik-local-middleware/)
