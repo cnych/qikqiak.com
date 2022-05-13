@@ -3,7 +3,7 @@ title: 本地集群使用 OpenELB 实现 Load Balancer 负载均衡
 date: 2022-04-10
 tags: ["kubernetes", "openelb"]
 keywords: ["kubernetes", "metalb", "openelb", "LoadBalancer", "负载均衡"]
-slug: service-use-openelb
+sluearg: service-use-openelb
 gitcomment: true
 bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20220410201040.png", desc: "OpenELB & CNCF"}]
 category: "kubernetes"

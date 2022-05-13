@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+
+  <title>如何修改 Kubernetes 节点 IP 地址?-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="如何修改 Kubernetes 节点 IP 地址?" />
+  <meta name="twitter:title" content="如何修改 Kubernetes 节点 IP 地址?" />
+
+  <meta name="description" content="昨天网络环境出了点问题，本地的虚拟机搭建的 Kubernetes 环境没有固定 IP，结果节点 IP 变了，当然最简单的方式是将节点重新固定回之前的 IP 地址，但是自己头铁想去修改下集群的 IP 地址，结果一路下来踩了好多坑，压根就没那么简单~">
+  <meta property="og:description" content="昨天网络环境出了点问题，本地的虚拟机搭建的 Kubernetes 环境没有固定 IP，结果节点 IP 变了，当然最简单的方式是将节点重新固定回之前的 IP 地址，但是自己头铁想去修改下集群的 IP 地址，结果一路下来踩了好多坑，压根就没那么简单~">
+  <meta name="twitter:description" content="昨天网络环境出了点问题，本地的虚拟机搭建的 Kubernetes 环境没有固定 IP，结果节点 IP 变了，当然最简单的方式是将节点重新固定回之前的 IP 地址，但是自己头铁想去修改下集群的 IP 地址，结果一路下来踩了好多坑，压根就没那么简单~">
+  <meta name="author" content=""/>
+  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/how-to-change-k8s-node-ip/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
+
+  <meta name="generator" content="Hugo 0.55.6" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/how-to-change-k8s-node-ip/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
+
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
+    <!--[if lt IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <![endif]-->
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, kubeadm, IP, 修改IP地址">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="首页" href="https://www.qikqiak.com/">首页</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
+              <div class="navlinks-children">
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
+            </li>
+          
+        
+
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
+        </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
+
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20220513204237.png" data-img-desc-1="https://unsplash.com/photos/SJAmTkWXuyM"></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>如何修改 Kubernetes 节点 IP 地址?</h1>
+                  
+                  
+                    <span class="post-meta">
+  
+    发表于 May 13, 2022
+  
+  
+</span>
+
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>如何修改 Kubernetes 节点 IP 地址?</h1>
+                
+                
+                  <span class="post-meta">
+  
+    发表于 May 13, 2022
+  
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/kubeadm/">kubeadm</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#环境">环境</a></li>
+<li><a href="#操作">操作</a>
+<ul>
+<li><a href="#master-节点">master 节点</a></li>
+<li><a href="#node-节点">node 节点</a></li>
+</ul></li>
+<li><a href="#推荐操作">推荐操作</a></li>
+<li><a href="#总结">总结</a></li>
+</ul></li>
+</ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>昨天网络环境出了点问题，本地的虚拟机搭建的 Kubernetes 环境没有固定 IP，结果节点 IP 变了，当然最简单的方式是将节点重新固定回之前的 IP 地址，但是自己头铁想去修改下集群的 IP 地址，结果一路下来踩了好多坑，压根就没那么简单~</p>
+
+<h2 id="环境">环境</h2>
+
+<p>首先看下之前的环境：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜  ~ cat /etc/hosts
+<span style="color:#bd93f9">192</span>.168.0.111 master1
+<span style="color:#bd93f9">192</span>.168.0.109 node1
+<span style="color:#bd93f9">192</span>.168.0.110 node2</code></pre></div>
+<p>新的 IP 地址：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜  ~ cat /etc/hosts
+<span style="color:#bd93f9">192</span>.168.0.106 master1
+<span style="color:#bd93f9">192</span>.168.0.101 node1
+<span style="color:#bd93f9">192</span>.168.0.105 node2</code></pre></div>
+<p>所以我们需要修改所有节点的 IP 地址。</p>
+
+<h2 id="操作">操作</h2>
+
+<p>首先将所有节点的 <code>/etc/hosts</code> 更改为新的地址。</p>
+
+<blockquote>
+<p>提示：在操作任何文件之前<strong>强烈建议先备份</strong>。</p>
+</blockquote>
+
+<h3 id="master-节点">master 节点</h3>
+
+<p>1.备份 <code>/etc/kubernetes</code> 目录。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ cp -Rf /etc/kubernetes/ /etc/kubernetes-bak</code></pre></div>
+<p>2.替换 <code>/etc/kubernetes</code> 中所有配置文件的 APIServer 地址。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ <span style="color:#8be9fd;font-style:italic">oldip</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">192</span>.168.0.111
+➜ <span style="color:#8be9fd;font-style:italic">newip</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">192</span>.168.0.106
+<span style="color:#6272a4"># 查看之前的</span>
+➜ find . -type f | xargs grep <span style="color:#8be9fd;font-style:italic">$oldip</span>
+<span style="color:#6272a4"># 替换IP地址</span>
+➜ find . -type f | xargs sed -i <span style="color:#f1fa8c">&#34;s/</span><span style="color:#8be9fd;font-style:italic">$oldip</span><span style="color:#f1fa8c">/</span><span style="color:#8be9fd;font-style:italic">$newip</span><span style="color:#f1fa8c">/&#34;</span>
+<span style="color:#6272a4"># 检查更新后的</span>
+➜ find . -type f | xargs grep <span style="color:#8be9fd;font-style:italic">$newip</span></code></pre></div>
+<p>3.识别 <code>/etc/kubernetes/pki</code> 中以旧的 IP 地址作为 <code>alt name</code> 的证书。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ <span style="color:#8be9fd;font-style:italic">cd</span> /etc/kubernetes/pki
+➜ <span style="color:#ff79c6">for</span> f in <span style="color:#ff79c6">$(</span>find -name <span style="color:#f1fa8c">&#34;*.crt&#34;</span><span style="color:#ff79c6">)</span>; <span style="color:#ff79c6">do</span>
+  openssl x509 -in <span style="color:#8be9fd;font-style:italic">$f</span> -text -noout &gt; <span style="color:#8be9fd;font-style:italic">$f</span>.txt;
+<span style="color:#ff79c6">done</span>
+➜ grep -Rl <span style="color:#8be9fd;font-style:italic">$oldip</span> .
+➜ <span style="color:#ff79c6">for</span> f in <span style="color:#ff79c6">$(</span>find -name <span style="color:#f1fa8c">&#34;*.crt&#34;</span><span style="color:#ff79c6">)</span>; <span style="color:#ff79c6">do</span> rm <span style="color:#8be9fd;font-style:italic">$f</span>.txt; <span style="color:#ff79c6">done</span></code></pre></div>
+<p>4.找到 <code>kube-system</code> 命名空间中引用旧 IP 的 ConfigMap。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># 获取所有的 kube-system 命名空间下面所有的 ConfigMap</span>
+➜ <span style="color:#8be9fd;font-style:italic">configmaps</span><span style="color:#ff79c6">=</span><span style="color:#ff79c6">$(</span>kubectl -n kube-system get cm -o name | <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  awk <span style="color:#f1fa8c">&#39;{print $1}&#39;</span> | <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  cut -d <span style="color:#f1fa8c">&#39;/&#39;</span> -f <span style="color:#bd93f9">2</span><span style="color:#ff79c6">)</span>
+
+<span style="color:#6272a4"># 获取所有的ConfigMap资源清单</span>
+➜ <span style="color:#8be9fd;font-style:italic">dir</span><span style="color:#ff79c6">=</span><span style="color:#ff79c6">$(</span>mktemp -d<span style="color:#ff79c6">)</span>
+➜ <span style="color:#ff79c6">for</span> cf in <span style="color:#8be9fd;font-style:italic">$configmaps</span>; <span style="color:#ff79c6">do</span>
+  kubectl -n kube-system get cm <span style="color:#8be9fd;font-style:italic">$cf</span> -o yaml &gt; <span style="color:#8be9fd;font-style:italic">$dir</span>/<span style="color:#8be9fd;font-style:italic">$cf</span>.yaml
+<span style="color:#ff79c6">done</span>
+
+<span style="color:#6272a4"># 找到所有包含旧 IP 的 ConfigMap</span>
+➜ grep -Hn <span style="color:#8be9fd;font-style:italic">$dir</span>/* -e <span style="color:#8be9fd;font-style:italic">$oldip</span>
+
+<span style="color:#6272a4"># 然后编辑这些 ConfigMap，将旧 IP 替换成新的 IP</span>
+➜ kubectl -n kube-system edit cm kubeadm-config
+➜ kubectl -n kube-system edit cm kube-proxy</code></pre></div>
+<p>这一步非常非常重要，我在操作的时候忽略了这一步，导致 Flannel CNI 启动不起来，一直报错，类似下面的日志信息：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ kubectl logs -f kube-flannel-ds-pspzf -n kube-system
+I0512 <span style="color:#bd93f9">14</span>:46:26.044229       <span style="color:#bd93f9">1</span> main.go:205<span style="color:#ff79c6">]</span> CLI flags config: <span style="color:#ff79c6">{</span>etcdEndpoints:http://127.0.0.1:4001,http://127.0.0.1:2379 etcdPrefix:/coreos.com/network etcdKeyfile: etcdCertfile: etcdCAFile: etcdUsername: etcdPassword: version:false kubeSubnetMgr:true kubeApiUrl: kubeAnnotationPrefix:flannel.alpha.coreos.com kubeConfigFile: iface:<span style="color:#ff79c6">[</span>ens33<span style="color:#ff79c6">]</span> ifaceRegex:<span style="color:#ff79c6">[]</span> ipMasq:true subnetFile:/run/flannel/subnet.env publicIP: publicIPv6: subnetLeaseRenewMargin:60 healthzIP:0.0.0.0 healthzPort:0 iptablesResyncSeconds:5 iptablesForwardRules:true netConfPath:/etc/kube-flannel/net-conf.json setNodeNetworkUnavailable:true<span style="color:#ff79c6">}</span>
+W0512 <span style="color:#bd93f9">14</span>:46:26.044617       <span style="color:#bd93f9">1</span> client_config.go:614<span style="color:#ff79c6">]</span> Neither --kubeconfig nor --master was specified.  Using the inClusterConfig.  This might not work.
+E0512 <span style="color:#bd93f9">14</span>:46:56.142921       <span style="color:#bd93f9">1</span> main.go:222<span style="color:#ff79c6">]</span> Failed to create SubnetManager: error retrieving pod spec <span style="color:#ff79c6">for</span> <span style="color:#f1fa8c">&#39;kube-system/kube-flannel-ds-pspzf&#39;</span>: Get <span style="color:#f1fa8c">&#34;https://10.96.0.1:443/api/v1/namespaces/kube-system/pods/kube-flannel-ds-pspzf&#34;</span>: dial tcp <span style="color:#bd93f9">10</span>.96.0.1:443: i/o timeout</code></pre></div>
+<p>其实就是连不上 apiserver，排查了好久才想起来查看 <code>kube-proxy</code> 的日志，其中出现了如下所示的错误信息：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">E0512 <span style="color:#bd93f9">14</span>:53:03.260817       <span style="color:#bd93f9">1</span> reflector.go:138<span style="color:#ff79c6">]</span> k8s.io/client-go/informers/factory.go:134: Failed to watch *v1.EndpointSlice: failed to list *v1.EndpointSlice: Get <span style="color:#f1fa8c">&#34;https://192.168.0.111:6443/apis/discovery.k8s.io/v1/endpointslices?labelSelector=%21service.kubernetes.io%2Fheadless%2C%21service.kubernetes.io%2Fservice-proxy-name&amp;limit=500&amp;resourceVersion=0&#34;</span>: dial tcp <span style="color:#bd93f9">192</span>.168.0.111:6443: connect: no route to host</code></pre></div>
+<p>这就是因为 kube-proxy 的 ConfigMap 中配置的 apiserver 地址是旧的 IP 地址，所以一定要将其替换成新的。</p>
+
+<p>5.删除第3步中 grep 出的证书和私钥，重新生成这些证书。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ <span style="color:#8be9fd;font-style:italic">cd</span> /etc/kubernetes/pki
+➜ rm apiserver.crt apiserver.key
+➜ kubeadm init phase certs apiserver
+
+➜ rm etcd/peer.crt etcd/peer.key
+➜ kubeadm init phase certs etcd-peer</code></pre></div>
+<p>当然也可以全部重新生成：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ kubeadm init phase certs all</code></pre></div>
+<p>6.生成新的 kubeconfig 文件。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ <span style="color:#8be9fd;font-style:italic">cd</span> /etc/kubernetes
+➜ rm -f admin.conf kubelet.conf controller-manager.conf scheduler.conf
+➜ kubeadm init phase kubeconfig all
+I0513 <span style="color:#bd93f9">15</span>:33:34.404780   <span style="color:#bd93f9">52280</span> version.go:255<span style="color:#ff79c6">]</span> remote version is much newer: v1.24.0; falling back to: stable-1.22
+<span style="color:#ff79c6">[</span>kubeconfig<span style="color:#ff79c6">]</span> Using kubeconfig folder <span style="color:#f1fa8c">&#34;/etc/kubernetes&#34;</span>
+<span style="color:#ff79c6">[</span>kubeconfig<span style="color:#ff79c6">]</span> Writing <span style="color:#f1fa8c">&#34;admin.conf&#34;</span> kubeconfig file
+<span style="color:#ff79c6">[</span>kubeconfig<span style="color:#ff79c6">]</span> Writing <span style="color:#f1fa8c">&#34;kubelet.conf&#34;</span> kubeconfig file
+<span style="color:#ff79c6">[</span>kubeconfig<span style="color:#ff79c6">]</span> Writing <span style="color:#f1fa8c">&#34;controller-manager.conf&#34;</span> kubeconfig file
+<span style="color:#ff79c6">[</span>kubeconfig<span style="color:#ff79c6">]</span> Writing <span style="color:#f1fa8c">&#34;scheduler.conf&#34;</span> kubeconfig file
+<span style="color:#6272a4"># 覆盖默认的 kubeconfig 文件</span>
+➜ cp /etc/kubernetes/admin.conf <span style="color:#8be9fd;font-style:italic">$HOME</span>/.kube/config</code></pre></div>
+<p>7.重启 kubelet。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ systemctl restart containerd
+➜ systemctl restart kubelet</code></pre></div>
+<p>正常现在可以访问的 Kubernetes 集群了。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ kubectl get nodes
+NAME      STATUS     ROLES                  AGE   VERSION
+master1   Ready      control-plane,master   48d   v1.22.8
+node1     NotReady   &lt;none&gt;                 48d   v1.22.8
+node2     NotReady   &lt;none&gt;                 48d   v1.22.8</code></pre></div>
+<h3 id="node-节点">node 节点</h3>
+
+<p>虽然现在可以访问集群了，但是我们可以看到 Node 节点现在处于 <code>NotReady</code> 状态，我们可以去查看 node2 节点的 kubelet 日志：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ journalctl -u kubelet -f
+......
+May <span style="color:#bd93f9">13</span> <span style="color:#bd93f9">15</span>:47:55 node2 kubelet<span style="color:#ff79c6">[</span><span style="color:#bd93f9">1194</span><span style="color:#ff79c6">]</span>: E0513 <span style="color:#bd93f9">15</span>:47:55.470896    <span style="color:#bd93f9">1194</span> kubelet.go:2412<span style="color:#ff79c6">]</span> <span style="color:#f1fa8c">&#34;Error getting node&#34;</span> <span style="color:#8be9fd;font-style:italic">err</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;node \&#34;node2\&#34; not found&#34;</span>
+May <span style="color:#bd93f9">13</span> <span style="color:#bd93f9">15</span>:47:55 node2 kubelet<span style="color:#ff79c6">[</span><span style="color:#bd93f9">1194</span><span style="color:#ff79c6">]</span>: E0513 <span style="color:#bd93f9">15</span>:47:55.531695    <span style="color:#bd93f9">1194</span> reflector.go:138<span style="color:#ff79c6">]</span> k8s.io/client-go/informers/factory.go:134: Failed to watch *v1.Service: failed to list *v1.Service: Get <span style="color:#f1fa8c">&#34;https://192.168.0.111:6443/api/v1/services?limit=500&amp;resourceVersion=0&#34;</span>: dial tcp <span style="color:#bd93f9">192</span>.168.0.111:6443: connect: no route to host
+May <span style="color:#bd93f9">13</span> <span style="color:#bd93f9">15</span>:47:55 node2 kubelet<span style="color:#ff79c6">[</span><span style="color:#bd93f9">1194</span><span style="color:#ff79c6">]</span>: E0513 <span style="color:#bd93f9">15</span>:47:55.571958    <span style="color:#bd93f9">1194</span> kubelet.go:2412<span style="color:#ff79c6">]</span> <span style="color:#f1fa8c">&#34;Error getting node&#34;</span> <span style="color:#8be9fd;font-style:italic">err</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;node \&#34;node2\&#34; not found&#34;</span>
+May <span style="color:#bd93f9">13</span> <span style="color:#bd93f9">15</span>:47:55 node2 kubelet<span style="color:#ff79c6">[</span><span style="color:#bd93f9">1194</span><span style="color:#ff79c6">]</span>: E0513 <span style="color:#bd93f9">15</span>:47:55.673379    <span style="color:#bd93f9">1194</span> kubelet.go:2412<span style="color:#ff79c6">]</span> <span style="color:#f1fa8c">&#34;Error getting node&#34;</span> <span style="color:#8be9fd;font-style:italic">err</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;node \&#34;node2\&#34; not found&#34;</span></code></pre></div>
+<p>可以看到仍然是在访问之前的 APIServer 地址，那么在什么地方会明确使用 APIServer 的地址呢？我们可以通过下面的命令来查看 kubelet 的启动参数：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ systemctl status kubelet
+● kubelet.service - kubelet: The Kubernetes Node Agent
+   Loaded: loaded <span style="color:#ff79c6">(</span>/usr/lib/systemd/system/kubelet.service; enabled; vendor preset: disabled<span style="color:#ff79c6">)</span>
+  Drop-In: /usr/lib/systemd/system/kubelet.service.d
+           └─10-kubeadm.conf
+   Active: active <span style="color:#ff79c6">(</span>running<span style="color:#ff79c6">)</span> since Fri <span style="color:#bd93f9">2022</span>-05-13 <span style="color:#bd93f9">14</span>:37:31 CST; 1h 13min ago
+     Docs: https://kubernetes.io/docs/
+ Main PID: <span style="color:#bd93f9">1194</span> <span style="color:#ff79c6">(</span>kubelet<span style="color:#ff79c6">)</span>
+    Tasks: <span style="color:#bd93f9">15</span>
+   Memory: <span style="color:#bd93f9">126</span>.9M
+   CGroup: /system.slice/kubelet.service
+           └─1194 /usr/bin/kubelet --bootstrap-kubeconfig<span style="color:#ff79c6">=</span>/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig<span style="color:#ff79c6">=</span>/etc/kubernetes/kub...
+
+May <span style="color:#bd93f9">13</span> <span style="color:#bd93f9">15</span>:51:08 node2 kubelet<span style="color:#ff79c6">[</span><span style="color:#bd93f9">1194</span><span style="color:#ff79c6">]</span>: E0513 <span style="color:#bd93f9">15</span>:51:08.787677    <span style="color:#bd93f9">1194</span> kubelet.go:2412<span style="color:#ff79c6">]</span> <span style="color:#f1fa8c">&#34;Error getting node&#34;</span> <span style="color:#8be9fd;font-style:italic">err</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;node \&#34;node2... found&#34;</span>
+May <span style="color:#bd93f9">13</span> <span style="color:#bd93f9">15</span>:51:08 node2 kubelet<span style="color:#ff79c6">[</span><span style="color:#bd93f9">1194</span><span style="color:#ff79c6">]</span>: E0513 <span style="color:#bd93f9">15</span>:51:08.888194    <span style="color:#bd93f9">1194</span> kubelet.go:2412<span style="color:#ff79c6">]</span> <span style="color:#f1fa8c">&#34;Error getting node&#34;</span> <span style="color:#8be9fd;font-style:italic">err</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;node \&#34;node2... found&#34;</span>
+......</code></pre></div>
+<p>其核心配置文件为 <code>/usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf</code>，内容如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ cat /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf
+<span style="color:#6272a4"># Note: This dropin only works with kubeadm and kubelet v1.11+</span>
+<span style="color:#ff79c6">[</span>Service<span style="color:#ff79c6">]</span>
+<span style="color:#8be9fd;font-style:italic">Environment</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf&#34;</span>
+<span style="color:#8be9fd;font-style:italic">Environment</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml&#34;</span>
+<span style="color:#6272a4"># This is a file that &#34;kubeadm init&#34; and &#34;kubeadm join&#34; generates at runtime, populating the KUBELET_KUBEADM_ARGS variable dynamically</span>
+<span style="color:#8be9fd;font-style:italic">EnvironmentFile</span><span style="color:#ff79c6">=</span>-/var/lib/kubelet/kubeadm-flags.env
+<span style="color:#6272a4"># This is a file that the user can use for overrides of the kubelet args as a last resort. Preferably, the user should use</span>
+<span style="color:#6272a4"># the .NodeRegistration.KubeletExtraArgs object in the configuration files instead. KUBELET_EXTRA_ARGS should be sourced from this file.</span>
+<span style="color:#8be9fd;font-style:italic">EnvironmentFile</span><span style="color:#ff79c6">=</span>-/etc/sysconfig/kubelet
+<span style="color:#8be9fd;font-style:italic">ExecStart</span><span style="color:#ff79c6">=</span>
+<span style="color:#8be9fd;font-style:italic">ExecStart</span><span style="color:#ff79c6">=</span>/usr/bin/kubelet <span style="color:#8be9fd;font-style:italic">$KUBELET_KUBECONFIG_ARGS</span> <span style="color:#8be9fd;font-style:italic">$KUBELET_CONFIG_ARGS</span> <span style="color:#8be9fd;font-style:italic">$KUBELET_KUBEADM_ARGS</span> <span style="color:#8be9fd;font-style:italic">$KUBELET_EXTRA_ARGS</span></code></pre></div>
+<p>其中有一个配置 <code>KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf</code>，这里提到了两个配置文件 <code>bootstrap-kubelet.conf</code> 与 <code>kubelet.conf</code>，其中第一个文件不存在：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ cat /etc/kubernetes/bootstrap-kubelet.conf
+cat: /etc/kubernetes/bootstrap-kubelet.conf: No such file or directory</code></pre></div>
+<p>而第二个配置文件就是一个 kubeconfig 文件的格式，这个文件中就指定了 APIServer 的地址，可以看到还是之前的 IP 地址：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ cat /etc/kubernetes/kubelet.conf
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: &lt;......&gt;
+    server: https://192.168.0.111:6443
+  name: default-cluster
+contexts:
+- context:
+    cluster: default-cluster
+    namespace: default
+    user: default-auth
+  name: default-context
+current-context: default-context
+kind: Config
+preferences: <span style="color:#ff79c6">{}</span>
+users:
+- name: default-auth
+  user:
+    client-certificate: /var/lib/kubelet/pki/kubelet-client-current.pem
+    client-key: /var/lib/kubelet/pki/kubelet-client-current.pem</code></pre></div>
+<p>所以我们最先想到的肯定就是去将这里的 APIServer 地址修改成新的 IP 地址，但是这显然是有问题的，因为相关证书还是以前的，需要重新生成，那么要怎样重新生成该文件呢？</p>
+
+<p>首先备份 kubelet 工作目录：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ cp /etc/kubernetes/kubelet.conf /etc/kubernetes/kubelet.conf.bak
+➜ cp -rf /var/lib/kubelet/ /var/lib/kubelet-bak</code></pre></div>
+<p>删除 kubelet 客户端证书：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ rm /var/lib/kubelet/pki/kubelet-client*</code></pre></div>
+<p>然后在 master1 节点（具有 <code>/etc/kubernetes/pki/ca.key</code> 文件的节点）去生成 kubelet.conf 文件：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># 在master1节点</span>
+➜ kubeadm kubeconfig user --org system:nodes --client-name system:node:node2 --config kubeadm.yaml &gt; kubelet.conf</code></pre></div>
+<p>然后将 kubelet.conf 文件复制到 node2 节点 <code>/etc/kubernetes/kubelet.conf</code>，然后重新启动 node2 节点上的 kubelet，并等待 <code>/var/lib/kubelet/pki/kubelet-client-current.pem</code> 重新创建。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ systemctl restart kubelet
+<span style="color:#6272a4"># 重启后等待重新生成 kubelet 客户端证书</span>
+➜ ll /var/lib/kubelet/pki/
+total <span style="color:#bd93f9">12</span>
+-rw------- <span style="color:#bd93f9">1</span> root root <span style="color:#bd93f9">1106</span> May <span style="color:#bd93f9">13</span> <span style="color:#bd93f9">16</span>:32 kubelet-client-2022-05-13-16-32-35.pem
+lrwxrwxrwx <span style="color:#bd93f9">1</span> root root   <span style="color:#bd93f9">59</span> May <span style="color:#bd93f9">13</span> <span style="color:#bd93f9">16</span>:32 kubelet-client-current.pem -&gt; /var/lib/kubelet/pki/kubelet-client-2022-05-13-16-32-35.pem
+-rw-r--r-- <span style="color:#bd93f9">1</span> root root <span style="color:#bd93f9">2229</span> Mar <span style="color:#bd93f9">26</span> <span style="color:#bd93f9">14</span>:39 kubelet.crt
+-rw------- <span style="color:#bd93f9">1</span> root root <span style="color:#bd93f9">1675</span> Mar <span style="color:#bd93f9">26</span> <span style="color:#bd93f9">14</span>:39 kubelet.key</code></pre></div>
+<p>最好我们可以通过手动编辑 <code>kubelet.conf</code> 的方式来指向轮转的 kubelet 客户端证书，将文件中的 <code>client-certificate-data</code> 和 <code>client-key-data</code> 替换为 <code>/var/lib/kubelet/pki/kubelet-client-current.pem</code>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">client-certificate: /var/lib/kubelet/pki/kubelet-client-current.pem
+client-key: /var/lib/kubelet/pki/kubelet-client-current.pem</code></pre></div>
+<p>再次重启 kubelet，正常现在 node2 节点就会变成 <code>Ready</code> 状态了，用同样的方法再次去配置 node1 节点即可。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ kubectl get nodes
+NAME      STATUS   ROLES                  AGE   VERSION
+master1   Ready    control-plane,master   48d   v1.22.8
+node1     Ready    &lt;none&gt;                 48d   v1.22.8
+node2     Ready    &lt;none&gt;                 48d   v1.22.8</code></pre></div>
+<h2 id="推荐操作">推荐操作</h2>
+
+<p>上面的操作方式虽然可以正常完成我们的需求，但是需要我们对相关证书有一定的了解。除了这种方式之外还有一种更简单的操作。
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5376999672787220"
+     data-ad-slot="9165834656"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+首先停止 kubelet 并备份要操作的目录：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ systemctl stop kubelet
+➜ mv /etc/kubernetes /etc/kubernetes-bak
+➜ mv /var/lib/kubelet/ /var/lib/kubelet-bak</code></pre></div>
+<p>将 pki 证书目录保留下来：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ mkdir -p /etc/kubernetes
+➜ cp -r /etc/kubernetes-bak/pki /etc/kubernetes
+➜ rm /etc/kubernetes/pki/<span style="color:#ff79c6">{</span>apiserver.*,etcd/peer.*<span style="color:#ff79c6">}</span>
+rm: remove regular file ‘/etc/kubernetes/pki/apiserver.crt’? y
+rm: remove regular file ‘/etc/kubernetes/pki/apiserver.key’? y
+rm: remove regular file ‘/etc/kubernetes/pki/etcd/peer.crt’? y
+rm: remove regular file ‘/etc/kubernetes/pki/etcd/peer.key’? y</code></pre></div>
+<p>现在我们使用下面的命令来重新初始化控制平面节点，但是最重要的一点是要<strong>使用 etcd 的数据目录</strong>，可以通过 <code>--ignore-preflight-errors=DirAvailable--var-lib-etcd</code> 标志来告诉 kubeadm 使用预先存在的 etcd 数据。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ kubeadm init --config kubeadm.yaml --ignore-preflight-errors<span style="color:#ff79c6">=</span>DirAvailable--var-lib-etcd
+<span style="color:#ff79c6">[</span>init<span style="color:#ff79c6">]</span> Using Kubernetes version: v1.22.8
+<span style="color:#ff79c6">[</span>preflight<span style="color:#ff79c6">]</span> Running pre-flight checks
+        <span style="color:#ff79c6">[</span>WARNING DirAvailable--var-lib-etcd<span style="color:#ff79c6">]</span>: /var/lib/etcd is not empty
+<span style="color:#ff79c6">[</span>preflight<span style="color:#ff79c6">]</span> Pulling images required <span style="color:#ff79c6">for</span> setting up a Kubernetes cluster
+<span style="color:#ff79c6">[</span>preflight<span style="color:#ff79c6">]</span> This might take a minute or two, depending on the speed of your internet connection
+<span style="color:#ff79c6">[</span>preflight<span style="color:#ff79c6">]</span> You can also perform this action in beforehand using <span style="color:#f1fa8c">&#39;kubeadm config images pull&#39;</span>
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Using certificateDir folder <span style="color:#f1fa8c">&#34;/etc/kubernetes/pki&#34;</span>
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Using existing ca certificate authority
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Generating <span style="color:#f1fa8c">&#34;apiserver&#34;</span> certificate and key
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> apiserver serving cert is signed <span style="color:#ff79c6">for</span> DNS names <span style="color:#ff79c6">[</span>api.k8s.local kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local master1<span style="color:#ff79c6">]</span> and IPs <span style="color:#ff79c6">[</span><span style="color:#bd93f9">10</span>.96.0.1 <span style="color:#bd93f9">192</span>.168.0.106<span style="color:#ff79c6">]</span>
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Using existing apiserver-kubelet-client certificate and key on disk
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Using existing front-proxy-ca certificate authority
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Using existing front-proxy-client certificate and key on disk
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Using existing etcd/ca certificate authority
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Using existing etcd/server certificate and key on disk
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Generating <span style="color:#f1fa8c">&#34;etcd/peer&#34;</span> certificate and key
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> etcd/peer serving cert is signed <span style="color:#ff79c6">for</span> DNS names <span style="color:#ff79c6">[</span>localhost master1<span style="color:#ff79c6">]</span> and IPs <span style="color:#ff79c6">[</span><span style="color:#bd93f9">192</span>.168.0.106 <span style="color:#bd93f9">127</span>.0.0.1 ::1<span style="color:#ff79c6">]</span>
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Using existing etcd/healthcheck-client certificate and key on disk
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Using existing apiserver-etcd-client certificate and key on disk
+<span style="color:#ff79c6">[</span>certs<span style="color:#ff79c6">]</span> Using the existing <span style="color:#f1fa8c">&#34;sa&#34;</span> key
+<span style="color:#ff79c6">[</span>kubeconfig<span style="color:#ff79c6">]</span> Using kubeconfig folder <span style="color:#f1fa8c">&#34;/etc/kubernetes&#34;</span>
+<span style="color:#ff79c6">[</span>kubeconfig<span style="color:#ff79c6">]</span> Writing <span style="color:#f1fa8c">&#34;admin.conf&#34;</span> kubeconfig file
+<span style="color:#ff79c6">[</span>kubeconfig<span style="color:#ff79c6">]</span> Writing <span style="color:#f1fa8c">&#34;kubelet.conf&#34;</span> kubeconfig file
+<span style="color:#ff79c6">[</span>kubeconfig<span style="color:#ff79c6">]</span> Writing <span style="color:#f1fa8c">&#34;controller-manager.conf&#34;</span> kubeconfig file
+<span style="color:#ff79c6">[</span>kubeconfig<span style="color:#ff79c6">]</span> Writing <span style="color:#f1fa8c">&#34;scheduler.conf&#34;</span> kubeconfig file
+<span style="color:#ff79c6">[</span>kubelet-start<span style="color:#ff79c6">]</span> Writing kubelet environment file with flags to file <span style="color:#f1fa8c">&#34;/var/lib/kubelet/kubeadm-flags.env&#34;</span>
+<span style="color:#ff79c6">[</span>kubelet-start<span style="color:#ff79c6">]</span> Writing kubelet configuration to file <span style="color:#f1fa8c">&#34;/var/lib/kubelet/config.yaml&#34;</span>
+<span style="color:#ff79c6">[</span>kubelet-start<span style="color:#ff79c6">]</span> Starting the kubelet
+<span style="color:#ff79c6">[</span>control-plane<span style="color:#ff79c6">]</span> Using manifest folder <span style="color:#f1fa8c">&#34;/etc/kubernetes/manifests&#34;</span>
+<span style="color:#ff79c6">[</span>control-plane<span style="color:#ff79c6">]</span> Creating static Pod manifest <span style="color:#ff79c6">for</span> <span style="color:#f1fa8c">&#34;kube-apiserver&#34;</span>
+<span style="color:#ff79c6">[</span>control-plane<span style="color:#ff79c6">]</span> Creating static Pod manifest <span style="color:#ff79c6">for</span> <span style="color:#f1fa8c">&#34;kube-controller-manager&#34;</span>
+<span style="color:#ff79c6">[</span>control-plane<span style="color:#ff79c6">]</span> Creating static Pod manifest <span style="color:#ff79c6">for</span> <span style="color:#f1fa8c">&#34;kube-scheduler&#34;</span>
+<span style="color:#ff79c6">[</span>etcd<span style="color:#ff79c6">]</span> Creating static Pod manifest <span style="color:#ff79c6">for</span> <span style="color:#8be9fd;font-style:italic">local</span> etcd in <span style="color:#f1fa8c">&#34;/etc/kubernetes/manifests&#34;</span>
+<span style="color:#ff79c6">[</span>wait-control-plane<span style="color:#ff79c6">]</span> Waiting <span style="color:#ff79c6">for</span> the kubelet to boot up the control plane as static Pods from directory <span style="color:#f1fa8c">&#34;/etc/kubernetes/manifests&#34;</span>. This can take up to 4m0s
+<span style="color:#ff79c6">[</span>apiclient<span style="color:#ff79c6">]</span> All control plane components are healthy after <span style="color:#bd93f9">12</span>.003599 seconds
+<span style="color:#ff79c6">[</span>upload-config<span style="color:#ff79c6">]</span> Storing the configuration used in ConfigMap <span style="color:#f1fa8c">&#34;kubeadm-config&#34;</span> in the <span style="color:#f1fa8c">&#34;kube-system&#34;</span> Namespace
+<span style="color:#ff79c6">[</span>kubelet<span style="color:#ff79c6">]</span> Creating a ConfigMap <span style="color:#f1fa8c">&#34;kubelet-config-1.22&#34;</span> in namespace kube-system with the configuration <span style="color:#ff79c6">for</span> the kubelets in the cluster
+<span style="color:#ff79c6">[</span>upload-certs<span style="color:#ff79c6">]</span> Skipping phase. Please see --upload-certs
+<span style="color:#ff79c6">[</span>mark-control-plane<span style="color:#ff79c6">]</span> Marking the node master1 as control-plane by adding the labels: <span style="color:#ff79c6">[</span>node-role.kubernetes.io/master<span style="color:#ff79c6">(</span>deprecated<span style="color:#ff79c6">)</span> node-role.kubernetes.io/control-plane node.kubernetes.io/exclude-from-external-load-balancers<span style="color:#ff79c6">]</span>
+<span style="color:#ff79c6">[</span>mark-control-plane<span style="color:#ff79c6">]</span> Marking the node master1 as control-plane by adding the taints <span style="color:#ff79c6">[</span>node-role.kubernetes.io/master:NoSchedule<span style="color:#ff79c6">]</span>
+<span style="color:#ff79c6">[</span>bootstrap-token<span style="color:#ff79c6">]</span> Using token: abcdef.0123456789abcdef
+<span style="color:#ff79c6">[</span>bootstrap-token<span style="color:#ff79c6">]</span> Configuring bootstrap tokens, cluster-info ConfigMap, RBAC Roles
+<span style="color:#ff79c6">[</span>bootstrap-token<span style="color:#ff79c6">]</span> configured RBAC rules to allow Node Bootstrap tokens to get nodes
+<span style="color:#ff79c6">[</span>bootstrap-token<span style="color:#ff79c6">]</span> configured RBAC rules to allow Node Bootstrap tokens to post CSRs in order <span style="color:#ff79c6">for</span> nodes to get long term certificate credentials
+<span style="color:#ff79c6">[</span>bootstrap-token<span style="color:#ff79c6">]</span> configured RBAC rules to allow the csrapprover controller automatically approve CSRs from a Node Bootstrap Token
+<span style="color:#ff79c6">[</span>bootstrap-token<span style="color:#ff79c6">]</span> configured RBAC rules to allow certificate rotation <span style="color:#ff79c6">for</span> all node client certificates in the cluster
+<span style="color:#ff79c6">[</span>bootstrap-token<span style="color:#ff79c6">]</span> Creating the <span style="color:#f1fa8c">&#34;cluster-info&#34;</span> ConfigMap in the <span style="color:#f1fa8c">&#34;kube-public&#34;</span> namespace
+<span style="color:#ff79c6">[</span>kubelet-finalize<span style="color:#ff79c6">]</span> Updating <span style="color:#f1fa8c">&#34;/etc/kubernetes/kubelet.conf&#34;</span> to point to a rotatable kubelet client certificate and key
+<span style="color:#ff79c6">[</span>addons<span style="color:#ff79c6">]</span> Applied essential addon: CoreDNS
+<span style="color:#ff79c6">[</span>addons<span style="color:#ff79c6">]</span> Applied essential addon: kube-proxy
+
+Your Kubernetes control-plane has initialized successfully!
+
+To start using your cluster, you need to run the following as a regular user:
+
+  mkdir -p <span style="color:#8be9fd;font-style:italic">$HOME</span>/.kube
+  sudo cp -i /etc/kubernetes/admin.conf <span style="color:#8be9fd;font-style:italic">$HOME</span>/.kube/config
+  sudo chown <span style="color:#ff79c6">$(</span>id -u<span style="color:#ff79c6">)</span>:<span style="color:#ff79c6">$(</span>id -g<span style="color:#ff79c6">)</span> <span style="color:#8be9fd;font-style:italic">$HOME</span>/.kube/config
+
+Alternatively, <span style="color:#ff79c6">if</span> you are the root user, you can run:
+
+  <span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">KUBECONFIG</span><span style="color:#ff79c6">=</span>/etc/kubernetes/admin.conf
+
+You should now deploy a pod network to the cluster.
+Run <span style="color:#f1fa8c">&#34;kubectl apply -f [podnetwork].yaml&#34;</span> with one of the options listed at:
+  https://kubernetes.io/docs/concepts/cluster-administration/addons/
+
+Then you can join any number of worker nodes by running the following on each as root:
+
+kubeadm join <span style="color:#bd93f9">192</span>.168.0.106:6443 --token abcdef.0123456789abcdef <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>        --discovery-token-ca-cert-hash sha256:27993cae9c76d18a1b82b800182c4c7ebc7a704ba1093400ed886f65e709ec04</code></pre></div>
+<p>上面的操作和我们平时去初始化集群的时候几乎是一样的，唯一不同的地方是加了一个 <code>--ignore-preflight-errors=DirAvailable--var-lib-etcd</code> 参数，意思就是使用之前 etcd 的数据。然后我们可以验证下 APIServer 的 IP 地址是否变成了新的地址：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ cp -i /etc/kubernetes/admin.conf <span style="color:#8be9fd;font-style:italic">$HOME</span>/.kube/config
+cp: overwrite ‘/root/.kube/config’? y
+➜ kubectl cluster-info
+Kubernetes control plane is running at https://192.168.0.106:6443
+CoreDNS is running at https://192.168.0.106:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+To further debug and diagnose cluster problems, use <span style="color:#f1fa8c">&#39;kubectl cluster-info dump&#39;</span>.</code></pre></div>
+<p>对于 node 节点我们可以 reset 后重新加入到集群即可：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># 在node节点操作</span>
+➜ kubeadm reset</code></pre></div>
+<p>重置后重新 join 集群即可：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># 在node节点操作</span>
+➜ kubeadm join <span style="color:#bd93f9">192</span>.168.0.106:6443 --token abcdef.0123456789abcdef <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>        --discovery-token-ca-cert-hash sha256:27993cae9c76d18a1b82b800182c4c7ebc7a704ba1093400ed886f65e709ec04</code></pre></div>
+<p>这种方式比上面的方式要简单很多。正常操作后集群也正常了。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ kubectl get nodes
+NAME      STATUS   ROLES                  AGE     VERSION
+master1   Ready    control-plane,master   48d     v1.22.8
+node1     Ready    &lt;none&gt;                 48d     v1.22.8
+node2     Ready    &lt;none&gt;                 4m50s   v1.22.8</code></pre></div>
+<h2 id="总结">总结</h2>
+
+<p>对于 Kubernetes 集群节点的 IP 地址最好使用静态 IP，避免 IP 变动对业务产生影响，如果不是静态 IP，也强烈建议增加一个自定义域名进行签名，这样当 IP 变化后还可以直接重新映射下这个域名即可，只需要在 kubeadm 配置文件中通过 <code>ClusterConfiguration</code> 配置 <code>apiServer.certSANs</code> 即可，如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: kubeadm.k8s.io/v1beta3
+apiServer:
+  timeoutForControlPlane: 4m0s
+  certSANs:
+  - api.k8s.local
+  - master1
+  - <span style="color:#bd93f9">192.168</span>.<span style="color:#bd93f9">0.106</span>
+kind: ClusterConfiguration
+......</code></pre></div>
+<p>将需要进行前面的地址加入到 <code>certSANs</code> 中，比如这里我们额外添加了一个 <code>api.k8s.local</code> 的地址，这样即使以后 IP 变了可以直接将这个域名映射到新的 IP 地址即可，同样如果你想通过外网访问 IP 访问你的集群，那么你也需要将你的外网 IP 地址加进来进行签名认证。
+<p><a href="https://youdianzhishi.com/web/course/1030" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+</p>
+
+          <h2>微信公众号</h2>
+<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
+<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/update-k8s-10y-expire-certs/">更新一个10年有效期的 Kubernetes 证书</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/setup-psp-in-k8s/">Kubernetes Pod 安全策略(PSP)配置</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-kubeadm-install-kubernetes-1.15.3/">使用 kubeadm 搭建 v1.15.3 版本 Kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-kubeadm-upgrade-k8s/">使用 kubeadm 更新 kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-kubeadm-install-kubernetes-1.10/">使用kubeadm搭建kubernetes1.10集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/accelerate-ci-cd-pipelines-with-kind/">使用 KinD 加速 CI/CD 流水线</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/how-to-use-ipvs-in-kubernetes/">ipvs 基本介绍</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/openelb/">本地集群使用 OpenELB 实现 Load Balancer 负载均衡</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/prometheus-monitor-k8s-job-trap/">Prometheus 监控 Kubernetes Job 资源误报的坑</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/custom-traefik-local-middleware/">自定义 Traefik（本地）插件</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/openelb/" data-toggle="tooltip" data-placement="top" title="本地集群使用 OpenELB 实现 Load Balancer 负载均衡">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/promotion-51/" data-toggle="tooltip" data-placement="top" title="Kubernetes 进阶训练营">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '如何修改 Kubernetes 节点 IP 地址?',
+        createIssueManually: true,
+        id: 'how-to-change-k8s-node-ip',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
+              <li>
+                <a href="mailto:icnych@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://github.com/cnych" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://weibo.com/cnych" title="微博">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+              <li>
+                <a href="https://instagram.com/cnych" title="Instagram">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;&bull;&nbsp;
+          2022
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="http://www.beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
+  </body>
+</html>
+

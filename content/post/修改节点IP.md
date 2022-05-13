@@ -5,7 +5,7 @@ tags: ["kubernetes", "kubeadm"]
 keywords: ["kubernetes", "kubeadm", "IP", "修改IP地址"]
 slug: how-to-change-k8s-node-ip
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200424115708.png", desc: "https://unsplash.com/photos/SGeLqzloJaw"}]
+bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20220513204237.png", desc: "https://unsplash.com/photos/SJAmTkWXuyM"}]
 category: "kubernetes"
 ---
 
@@ -43,14 +43,14 @@ category: "kubernetes"
 
 ### master 节点
 
-1. 备份 `/etc/kubernetes` 目录。
+1.备份 `/etc/kubernetes` 目录。
 
 ```shell
 ➜ cp -Rf /etc/kubernetes/ /etc/kubernetes-bak
 ```
 
 
-2. 替换 `/etc/kubernetes` 中所有配置文件的 APIServer 地址。
+2.替换 `/etc/kubernetes` 中所有配置文件的 APIServer 地址。
 
 ```shell
 ➜ oldip=192.168.0.111
@@ -63,7 +63,7 @@ category: "kubernetes"
 ➜ find . -type f | xargs grep $newip
 ```
 
-3. 识别 `/etc/kubernetes/pki` 中以旧的 IP 地址作为 `alt name` 的证书。
+3.识别 `/etc/kubernetes/pki` 中以旧的 IP 地址作为 `alt name` 的证书。
 
 ```shell
 ➜ cd /etc/kubernetes/pki
@@ -74,7 +74,7 @@ done
 ➜ for f in $(find -name "*.crt"); do rm $f.txt; done
 ```
 
-4. 找到 `kube-system` 命名空间中引用旧 IP 的 ConfigMap。
+4.找到 `kube-system` 命名空间中引用旧 IP 的 ConfigMap。
 
 ```shell
 # 获取所有的 kube-system 命名空间下面所有的 ConfigMap
@@ -113,7 +113,7 @@ E0512 14:53:03.260817       1 reflector.go:138] k8s.io/client-go/informers/facto
 
 这就是因为 kube-proxy 的 ConfigMap 中配置的 apiserver 地址是旧的 IP 地址，所以一定要将其替换成新的。
 
-5. 删除第3步中 grep 出的证书和私钥，重新生成这些证书。
+5.删除第3步中 grep 出的证书和私钥，重新生成这些证书。
 
 ```shell
 ➜ cd /etc/kubernetes/pki
@@ -129,7 +129,7 @@ E0512 14:53:03.260817       1 reflector.go:138] k8s.io/client-go/informers/facto
 ➜ kubeadm init phase certs all
 ```
 
-6. 生成新的 kubeconfig 文件。
+6.生成新的 kubeconfig 文件。
 
 ```shell
 ➜ cd /etc/kubernetes
@@ -145,7 +145,7 @@ I0513 15:33:34.404780   52280 version.go:255] remote version is much newer: v1.2
 ➜ cp /etc/kubernetes/admin.conf $HOME/.kube/config
 ```
 
-7. 重启 kubelet。
+7.重启 kubelet。
 
 ```shell
 ➜ systemctl restart containerd
