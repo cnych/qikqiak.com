@@ -1,25 +1,59 @@
-name: Debugging with SSH
-on: push
+name: auto-hugo # 名字自取
+
+on:
+  push:
+    branches:
+      - master  # 这里的意思是当 main分支发生push的时候，运行下面的jobs
+
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  deploy: # 任务名自取
+    runs-on: ubuntu-18.04	# 在什么环境运行任务
     steps:
-     - uses: actions/checkout@v1
+      - uses: actions/checkout@v2	# 引用actions/checkout这个action，与所在的github仓库同名
+        with:
+          submodules: true  # Fetch Hugo themes (true OR recursive) 获取submodule主题
+          fetch-depth: 0    # Fetch all history for .GitInfo and .Lastmod
 
-     - name: Try Build
-       run: ./not-exist-file.sh it bloke build
+      - name: Setup Hugo	# 步骤名自取
+        uses: peaceiris/actions-hugo@v2	# hugo官方提供的action，用于在任务环境中获取hugo
+        with:
+          hugo-version: 'latest'	# 获取最新版本的hugo
+          # extended: true
 
-     - name: Start SSH via Ngrok
-       if: ${{ failure() }}
-       run: curl -sL https://gist.githubusercontent.com/retyui/7115bb6acf151351a143ec8f96a7c561/raw/7099b9db76729dc5761da72aa8525f632d8875c9/debug-github-actions.sh | bash
-       env:
-        # After sign up on the https://ngrok.com/
-        # You can find this token here: https://dashboard.ngrok.com/get-started/setup
-        NGROK_TOKEN: ${{ secrets.NGROK_TOKEN }}
+      - name: Build
+        run: hugo --minify	# 使用hugo构建静态网页
 
-        # This password you will use when authorizing via SSH 
-        USER_PASS: ${{ secrets.USER_PASS }}
+      # - name: Deploy
+      #   uses: peaceiris/actions-gh-pages@v3	# 一个自动发布github pages的action
+      #   with:
+      #     # github_token: ${{ secrets.GITHUB_TOKEN }} 该项适用于发布到源码相同repo的情况，不能用于发布到其他repo
+      #     external_repository: tomial/tomial.github.io	# 发布到哪个repo
+      #     personal_token: ${{ secrets.ACTION_ACCESS_TOKEN }}	# 发布到其他repo需要提供上面生成的personal access token
+      #     publish_dir: ./public	# 注意这里指的是要发布哪个文件夹的内容，而不是指发布到目的仓库的什么位置，因为hugo默认生成静态网页到public文件夹，所以这里发布public文件夹里的内容
+      #     publish_branch: main	# 发布到哪个branch
 
-     - name: Don't kill instace
-       if: ${{ failure() }}
-       run: sleep 8640h # Prevent to killing instance after failure
+# name: Debugging with SSH
+# on: push
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     steps:
+#      - uses: actions/checkout@v1
+
+#      - name: Try Build
+#        run: ./not-exist-file.sh it bloke build
+
+#      - name: Start SSH via Ngrok
+#        if: ${{ failure() }}
+#        run: curl -sL https://gist.githubusercontent.com/retyui/7115bb6acf151351a143ec8f96a7c561/raw/7099b9db76729dc5761da72aa8525f632d8875c9/debug-github-actions.sh | bash
+#        env:
+#         # After sign up on the https://ngrok.com/
+#         # You can find this token here: https://dashboard.ngrok.com/get-started/setup
+#         NGROK_TOKEN: ${{ secrets.NGROK_TOKEN }}
+
+#         # This password you will use when authorizing via SSH 
+#         USER_PASS: ${{ secrets.USER_PASS }}
+
+#      - name: Don't kill instace
+#        if: ${{ failure() }}
+#        run: sleep 8640h # Prevent to killing instance after failure
