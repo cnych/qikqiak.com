@@ -5,7 +5,7 @@ tags: ["kubernetes", "devops"]
 keywords: ["kubernetes", "devops", "devstream", "工具链"]
 slug: devops-tools-chain-devstream
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20220513204237.png", desc: "https://unsplash.com/photos/SJAmTkWXuyM"}]
+bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/1658384199220.jpg", desc: "https://unsplash.com/photos/6gZDIWrsfTs"}]
 category: "kubernetes"
 ---
 
