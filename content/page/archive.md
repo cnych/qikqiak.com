@@ -8,6 +8,10 @@ noreadmore: true
 
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
+#### ChatGPT
+
+- [保姆级教程 | 手把手叫你如何开通 ChatGPT Plus 试用 GPT-4](https://www.qikqiak.com/post/how-to-subscribe-chatgpt-plus-try-gpt-4)
+
 #### Kubernetes/Docker
 
 - [DevOps 工具链管理器 DevStream 还真是神器](https://www.qikqiak.com/post/devops-tools-chain-devstream/)

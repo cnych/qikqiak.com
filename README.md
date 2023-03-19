@@ -2,7 +2,7 @@
 
 个人博客，地址：[https://www.qikqiak.com](https://www.qikqiak.com)
 
-> 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
+> 关注 ChatGPT、容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 扫描下面的二维码(或微信搜索`k8s技术圈`)关注我们的微信公众帐号，在微信公众帐号中回复 **加群** 即可加入到我们的`kubernetes`讨论群里面共同学习。
 
@@ -11,6 +11,10 @@
 ## 目录
 
 下面是博客中主要的一些文章目录
+
+#### ChatGPT
+
+- [保姆级教程 | 手把手叫你如何开通 ChatGPT Plus 试用 GPT-4](https://www.qikqiak.com/post/how-to-subscribe-chatgpt-plus-try-gpt-4)
 
 #### Kubernetes/Docker
 
