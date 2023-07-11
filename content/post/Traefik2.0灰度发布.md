@@ -2,11 +2,18 @@
 title: Traefik 2.0 实现灰度发布
 date: 2019-10-25
 tags: ["traefik", "kubernetes", "ingress", "灰度"]
-keywords: ["traefik", "kubernetes", "traefik 2.0", "Ingress", "TCP", "灰度", "金丝雀"]
+keywords:
+  ["traefik", "kubernetes", "traefik 2.0", "Ingress", "TCP", "灰度", "金丝雀"]
 slug: canary-with-traefik2
 gitcomment: true
 notoc: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/toa-heftiba-6Y6gaGnVrr4-unsplash.jpg", desc: "https://unsplash.com/photos/6Y6gaGnVrr4"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/toa-heftiba-6Y6gaGnVrr4-unsplash.jpg",
+      desc: "https://unsplash.com/photos/6Y6gaGnVrr4",
+    },
+  ]
 category: "kubernetes"
 ---
 
@@ -20,7 +27,7 @@ category: "kubernetes"
 
 灰度发布我们有时候也会称为金丝雀发布（Canary），主要就是让一部分测试的服务也参与到线上去，经过测试观察看是否符号上线要求。
 
-![canary deployment](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/RvcM4f.jpg)
+![canary deployment](https://picdn.youdianzhishi.com/images/RvcM4f.jpg)
 
 比如现在我们有两个名为 appv1 和 appv2 的 Nginx 服务，我们希望通过 Traefik 来控制我们的流量，将 3/4 的流量路由到 appv1，1/4 的流量路由到 appv2 去，这个时候就可以利用 Traefik2.0 中提供的带权重的轮询（WRR）来实现该功能，首先在 Kubernetes 集群中部署上面的两个服务。
 
@@ -43,14 +50,13 @@ spec:
         app: appv1
     spec:
       containers:
-      - name: nginx
-        image: nginx
-        ports:
-        - containerPort: 80
-          name: portv1
+        - name: nginx
+          image: nginx
+          ports:
+            - containerPort: 80
+              name: portv1
 
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -60,9 +66,9 @@ spec:
   selector:
     app: appv1
   ports:
-  - name: http
-    port: 80
-    targetPort: portv1
+    - name: http
+      port: 80
+      targetPort: portv1
 ```
 
 appv2 服务的资源清单如下所示：（appv2.yaml）
@@ -84,14 +90,13 @@ spec:
         app: appv2
     spec:
       containers:
-      - name: nginx
-        image: nginx
-        ports:
-        - containerPort: 80
-          name: portv2
+        - name: nginx
+          image: nginx
+          ports:
+            - containerPort: 80
+              name: portv2
 
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -101,9 +106,9 @@ spec:
   selector:
     app: appv2
   ports:
-  - name: http
-    port: 80
-    targetPort: portv2
+    - name: http
+      port: 80
+      targetPort: portv2
 ```
 
 直接创建上面两个服务：
@@ -154,7 +159,6 @@ appv2-645d7666b5-qjrjs   1/1     Running   0          37s
 
 > 完整的 YAML 文件可以前往 [https://github.com/cnych/kubeapp/tree/master/traefik2/canary](https://github.com/cnych/kubeapp/tree/master/traefik2/canary) 获取。
 
-
 上面是开启 `File Provider` 的配置，接下来需要创建对应的 ConfigMap 对象，首先创建一个名为 `traefik-dynamic.toml` 的文件，内容如下所示：
 
 ```toml
@@ -201,10 +205,8 @@ $ kubectl create configmap traefik-dynamic-conf --from-file=traefik-dynamic.toml
 
 在浏览器中连续访问 `nginx.qikqiak.com` 4 次，我们可以观察到 appv1 这应用会收到 3 次请求，而 appv2 这个应用只收到 1 次请求，符合上面我们的 `3:1` 的权重配置。
 
-![traefik2 wrr demo](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/traefik2-wrr-demo.png)
-
+![traefik2 wrr demo](https://picdn.youdianzhishi.com/images/traefik2-wrr-demo.png)
 
 > 不知道是否是 Traefik 的 BUG，同时将 KubernetesCRD Provider 和 File Provider 开启的时候，识别不了 File Provider 中的配置，该问题还有待验证。
-
 
 <!--adsense-self-->

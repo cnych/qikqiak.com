@@ -4,7 +4,13 @@ date: 2019-01-24
 tags: ["kubernetes", "deployment"]
 keywords: ["kubernetes", "deployment", "灰度", "蓝绿", "AB测试"]
 slug: k8s-deployment-strategies
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/cfhel.jpg", desc: "部署策略"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/cfhel.jpg",
+      desc: "部署策略",
+    },
+  ]
 gitcomment: true
 category: "kubernetes"
 ---
@@ -13,23 +19,21 @@ category: "kubernetes"
 
 选择正确的部署策略是要依赖于我们的业务需求的，下面我们列出了一些可能会使用到的策略：
 
-* 重建(recreate)：停止旧版本部署新版本
+- 重建(recreate)：停止旧版本部署新版本
 
-* 滚动更新(rolling-update)：一个接一个地以滚动更新方式发布新版本
+- 滚动更新(rolling-update)：一个接一个地以滚动更新方式发布新版本
 
-* 蓝绿(blue/green)：新版本与旧版本一起存在，然后切换流量
+- 蓝绿(blue/green)：新版本与旧版本一起存在，然后切换流量
 
-* 金丝雀(canary)：将新版本面向一部分用户发布，然后继续全量发布
+- 金丝雀(canary)：将新版本面向一部分用户发布，然后继续全量发布
 
-* A/B测(a/b testing)：以精确的方式（HTTP 头、cookie、权重等）向部分用户发布新版本。`A/B测`实际上是一种基于数据统计做出业务决策的技术。在 Kubernetes 中并不原生支持，需要额外的一些高级组件来完成改设置（比如Istio、Linkerd、Traefik、或者自定义 Nginx/Haproxy 等）。
+- A/B 测(a/b testing)：以精确的方式（HTTP 头、cookie、权重等）向部分用户发布新版本。`A/B测`实际上是一种基于数据统计做出业务决策的技术。在 Kubernetes 中并不原生支持，需要额外的一些高级组件来完成改设置（比如 Istio、Linkerd、Traefik、或者自定义 Nginx/Haproxy 等）。
 
 <!--more-->
 
 你可以在`Kubernetes`集群上来对上面的这些策略进行测试，下面的仓库中有需要使用到的资源清单：<https://github.com/ContainerSolutions/k8s-deployment-strategies>
 
 接下来我们来介绍下每种策略，看看在什么场景下面适合哪种策略。
-
-
 
 ### 重建(Recreate) - 最好在开发环境
 
@@ -42,9 +46,9 @@ spec:
     type: Recreate
 ```
 
-![Recreate](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/RCXtdC.jpg)
+![Recreate](https://picdn.youdianzhishi.com/images/RCXtdC.jpg)
 
-重新创建策略是一个虚拟部署，包括关闭版本A，然后在关闭版本A后部署版本B. 此技术意味着服务的停机时间取决于应用程序的关闭和启动持续时间。
+重新创建策略是一个虚拟部署，包括关闭版本 A，然后在关闭版本 A 后部署版本 B. 此技术意味着服务的停机时间取决于应用程序的关闭和启动持续时间。
 
 我们这里创建两个相关的资源清单文件，app-v1.yaml：
 
@@ -139,34 +143,34 @@ spec:
         prometheus.io/port: "9101"
     spec:
       containers:
-      - name: my-app
-        image: containersol/k8s-deployment-strategies
-        ports:
-        - name: http
-          containerPort: 8080
-        - name: probe
-          containerPort: 8086
-        env:
-        - name: VERSION
-          value: v2.0.0
-        livenessProbe:
-          httpGet:
-            path: /live
-            port: probe
-          initialDelaySeconds: 5
-          periodSeconds: 5
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: probe
-          periodSeconds: 5
+        - name: my-app
+          image: containersol/k8s-deployment-strategies
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: probe
+              containerPort: 8086
+          env:
+            - name: VERSION
+              value: v2.0.0
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: probe
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: probe
+            periodSeconds: 5
 ```
 
 上面两个资源清单文件中的 Deployment 定义几乎是一直的，唯一不同的是定义的环境变量`VERSION`值不同，接下来按照下面的步骤来验证`Recreate`策略：
 
-1. 版本1提供服务
-2. 删除版本1
-3. 部署版本2
+1. 版本 1 提供服务
+2. 删除版本 1
+3. 部署版本 2
 4. 等待所有副本准备就绪
 
 首先部署第一个应用：
@@ -177,7 +181,7 @@ service "my-app" created
 deployment.apps "my-app" created
 ```
 
-测试版本1是否部署成功：
+测试版本 1 是否部署成功：
 
 ```shell
 $ kubectl get pods -l app=my-app
@@ -192,19 +196,19 @@ $ curl http://127.0.0.1:32532
 Host: my-app-7b4874cd75-pc444, Version: v1.0.0
 ```
 
-可以看到版本1的应用正常运行了。为了查看部署的运行情况，打开一个新终端并运行以下命令：
+可以看到版本 1 的应用正常运行了。为了查看部署的运行情况，打开一个新终端并运行以下命令：
 
 ```shell
 $ watch kubectl get po -l app=my-app
 ```
 
-然后部署版本2的应用：
+然后部署版本 2 的应用：
 
 ```shell
 $ kubectl apply -f app-v2.yaml
 ```
 
-这个时候可以观察上面新开的终端中的 Pod 列表的变化，可以看到之前的3个 Pod 都会先处于`Terminating`状态，并且3个 Pod 都被删除后才开始创建新的 Pod。
+这个时候可以观察上面新开的终端中的 Pod 列表的变化，可以看到之前的 3 个 Pod 都会先处于`Terminating`状态，并且 3 个 Pod 都被删除后才开始创建新的 Pod。
 
 然后测试第二个版本应用的部署进度：
 
@@ -219,7 +223,7 @@ Host: my-app-f885c8d45-sp44p, Version: v2.0.0
 ......
 ```
 
-可以看到最开始的阶段服务都是处于不可访问的状态，然后到第二个版本的应用部署成功后才正常访问，可以看到现在访问的数据是版本2了。
+可以看到最开始的阶段服务都是处于不可访问的状态，然后到第二个版本的应用部署成功后才正常访问，可以看到现在访问的数据是版本 2 了。
 
 最后，可以执行下面的命令来清空上面的资源对象：
 
@@ -229,21 +233,19 @@ $ kubectl delete all -l app=my-app
 
 结论:
 
-* 应用状态全部更新
+- 应用状态全部更新
 
-- 停机时间取决于应用程序的关闭和启动消耗的时间
-
-
+* 停机时间取决于应用程序的关闭和启动消耗的时间
 
 ### 滚动更新(rolling-update)
 
 滚动更新通过逐个替换实例来逐步部署新版本的应用，直到所有实例都被替换完成为止。它通常遵循以下过程：在负载均衡器后面使用版本 A 的实例池，然后部署版本 B 的一个实例，当服务准备好接收流量时(Readiness Probe 正常)，将该实例添加到实例池中，然后从实例池中删除一个版本 A 的实例并关闭，如下图所示：
 
-![ramped](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/30iUcb.jpg)
+![ramped](https://picdn.youdianzhishi.com/images/30iUcb.jpg)
 
 下图是滚动更新过程应用接收流量的示意图：
 
-![rolling-update requests](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/OIhAqJ.jpg)
+![rolling-update requests](https://picdn.youdianzhishi.com/images/OIhAqJ.jpg)
 
 下面是 Kubernetes 中通过 Deployment 来进行滚动更新的关键参数：
 
@@ -287,38 +289,38 @@ spec:
         prometheus.io/port: "9101"
     spec:
       containers:
-      - name: my-app
-        image: containersol/k8s-deployment-strategies
-        ports:
-        - name: http
-          containerPort: 8080
-        - name: probe
-          containerPort: 8086
-        env:
-        - name: VERSION
-          value: v2.0.0
-        livenessProbe:
-          httpGet:
-            path: /live
-            port: probe
-          initialDelaySeconds: 5
-          periodSeconds: 5
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: probe
-          # 初始延迟设置高点可以更好地观察滚动更新过程
-          initialDelaySeconds: 15
-          periodSeconds: 5
+        - name: my-app
+          image: containersol/k8s-deployment-strategies
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: probe
+              containerPort: 8086
+          env:
+            - name: VERSION
+              value: v2.0.0
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: probe
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: probe
+            # 初始延迟设置高点可以更好地观察滚动更新过程
+            initialDelaySeconds: 15
+            periodSeconds: 5
 ```
 
-上面的资源清单中我们在环境变量中定义了版本2，然后通过设置`strategy.type=RollingUpdate`来定义该 Deployment 使用滚动更新的策略来更新应用，接下来我们按下面的步骤来验证滚动更新策略：
+上面的资源清单中我们在环境变量中定义了版本 2，然后通过设置`strategy.type=RollingUpdate`来定义该 Deployment 使用滚动更新的策略来更新应用，接下来我们按下面的步骤来验证滚动更新策略：
 
-1. 版本1提供服务
-2. 部署版本2
-3. 等待直到所有副本都被版本2替换完成
+1. 版本 1 提供服务
+2. 部署版本 2
+3. 等待直到所有副本都被版本 2 替换完成
 
-同样，首先部署版本1应用：
+同样，首先部署版本 1 应用：
 
 ```shell
 $ kubectl apply -f app-v1.yaml
@@ -326,7 +328,7 @@ service "my-app" created
 deployment.apps "my-app" created
 ```
 
-测试版本1是否部署成功：
+测试版本 1 是否部署成功：
 
 ```shell
 $ kubectl get pods -l app=my-app
@@ -347,7 +349,7 @@ Host: my-app-7b4874cd75-qnt7p, Version: v1.0.0
 $ watch kubectl get pod -l app=my-app
 ```
 
-然后部署滚动更新版本2应用：
+然后部署滚动更新版本 2 应用：
 
 ```shell
 $ kubectl apply -f app-v2-rolling-update.yaml
@@ -370,7 +372,7 @@ Host: my-app-7b4874cd75-5ldqx, Version: v1.0.0
 Host: my-app-6b5479d97f-5z6ww, Version: v2.0.0
 ```
 
-我们可以看到上面的应用并没有出现不可用的情况，最开始访问到的都是版本1的应用，然后偶尔会出现版本2的应用，直到最后全都变成了版本2的应用，而这个时候看上面 watch 终端中 Pod 已经全部变成10个版本2的应用了，我们可以看到这就是一个逐步替换的过程。
+我们可以看到上面的应用并没有出现不可用的情况，最开始访问到的都是版本 1 的应用，然后偶尔会出现版本 2 的应用，直到最后全都变成了版本 2 的应用，而这个时候看上面 watch 终端中 Pod 已经全部变成 10 个版本 2 的应用了，我们可以看到这就是一个逐步替换的过程。
 
 如果在滚动更新过程中发现新版本应用有问题，我们可以通过下面的命令来进行一键回滚：
 
@@ -386,7 +388,7 @@ $ kubectl rollout pause deploy my-app
 deployment.apps "my-app" paused
 ```
 
-这个时候我们再去循环访问我们的应用就可以看到偶尔会出现版本1的应用信息了。
+这个时候我们再去循环访问我们的应用就可以看到偶尔会出现版本 1 的应用信息了。
 
 如果新版本应用程序没问题了，也可以继续恢复更新：
 
@@ -403,25 +405,23 @@ $ kubectl delete all -l app=my-app
 
 结论：
 
-* 版本在实例之间缓慢替换
-* rollout/rollback 可能需要一定时间
-* 无法控制流量
-
-
+- 版本在实例之间缓慢替换
+- rollout/rollback 可能需要一定时间
+- 无法控制流量
 
 ### 蓝/绿(blue/green) - 最好用来验证 API 版本问题
 
-蓝/绿发布是版本2 与版本1 一起发布，然后流量切换到版本2，也称为红/黑部署。蓝/绿发布与滚动更新不同，版本2(`绿`) 与版本1(`蓝`)一起部署，在测试新版本满足要求后，然后更新更新 Kubernetes 中扮演负载均衡器角色的 Service 对象，通过替换 label selector 中的版本标签来将流量发送到新版本，如下图所示：
+蓝/绿发布是版本 2 与版本 1 一起发布，然后流量切换到版本 2，也称为红/黑部署。蓝/绿发布与滚动更新不同，版本 2(`绿`) 与版本 1(`蓝`)一起部署，在测试新版本满足要求后，然后更新更新 Kubernetes 中扮演负载均衡器角色的 Service 对象，通过替换 label selector 中的版本标签来将流量发送到新版本，如下图所示：
 
-![blug/green](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/mEQW8i.jpg)
+![blug/green](https://picdn.youdianzhishi.com/images/mEQW8i.jpg)
 
 下面是蓝绿发布策略下应用方法的示例图：
 
-![blue/green request](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/FxTxRP.jpg)
+![blue/green request](https://picdn.youdianzhishi.com/images/FxTxRP.jpg)
 
 在 Kubernetes 中，我们可以用两种方法来实现蓝绿发布，通过单个 Service 对象或者 Ingress 控制器来实现蓝绿发布，实际操作都是类似的，都是通过 label 标签去控制。
 
-实现蓝绿发布的关键点就在于 Service 对象中 label selector 标签的匹配方法，比如我们重新定义版本1 的资源清单文件 app-v1-single-svc.yaml，文件内容如下：
+实现蓝绿发布的关键点就在于 Service 对象中 label selector 标签的匹配方法，比如我们重新定义版本 1 的资源清单文件 app-v1-single-svc.yaml，文件内容如下：
 
 ```yaml
 apiVersion: v1
@@ -433,9 +433,9 @@ metadata:
 spec:
   type: NodePort
   ports:
-  - name: http
-    port: 80
-    targetPort: http
+    - name: http
+      port: 80
+      targetPort: http
   # 注意这里我们匹配 app 和 version 标签，当要切换流量的时候，我们更新 version 标签的值，比如：v2.0.0
   selector:
     app: my-app
@@ -463,27 +463,27 @@ spec:
         prometheus.io/port: "9101"
     spec:
       containers:
-      - name: my-app
-        image: containersol/k8s-deployment-strategies
-        ports:
-        - name: http
-          containerPort: 8080
-        - name: probe
-          containerPort: 8086
-        env:
-        - name: VERSION
-          value: v1.0.0
-        livenessProbe:
-          httpGet:
-            path: /live
-            port: probe
-          initialDelaySeconds: 5
-          periodSeconds: 5
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: probe
-          periodSeconds: 5
+        - name: my-app
+          image: containersol/k8s-deployment-strategies
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: probe
+              containerPort: 8086
+          env:
+            - name: VERSION
+              value: v1.0.0
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: probe
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: probe
+            periodSeconds: 5
 ```
 
 上面定义的资源对象中，最重要的就是 Service 中 label selector 的定义：
@@ -494,7 +494,7 @@ selector:
   version: v1.0.0
 ```
 
-版本2 的应用定义和以前一样，新建文件 app-v2-single-svc.yaml，文件内容如下：
+版本 2 的应用定义和以前一样，新建文件 app-v2-single-svc.yaml，文件内容如下：
 
 ```yaml
 apiVersion: apps/v1
@@ -519,38 +519,38 @@ spec:
         prometheus.io/port: "9101"
     spec:
       containers:
-      - name: my-app
-        image: containersol/k8s-deployment-strategies
-        ports:
-        - name: http
-          containerPort: 8080
-        - name: probe
-          containerPort: 8086
-        env:
-        - name: VERSION
-          value: v2.0.0
-        livenessProbe:
-          httpGet:
-            path: /live
-            port: probe
-          initialDelaySeconds: 5
-          periodSeconds: 5
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: probe
-          periodSeconds: 5
+        - name: my-app
+          image: containersol/k8s-deployment-strategies
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: probe
+              containerPort: 8086
+          env:
+            - name: VERSION
+              value: v2.0.0
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: probe
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: probe
+            periodSeconds: 5
 ```
 
 然后按照下面的步骤来验证使用单个 Service 对象实现蓝/绿部署的策略：
 
-1. 版本1 应用提供服务
-2. 部署版本2 应用
-3. 等到版本2 应用全部部署完成
-4. 切换入口流量从版本1 到版本2
-5. 关闭版本1 应用
+1. 版本 1 应用提供服务
+2. 部署版本 2 应用
+3. 等到版本 2 应用全部部署完成
+4. 切换入口流量从版本 1 到版本 2
+5. 关闭版本 1 应用
 
-首先，部署版本1 应用：
+首先，部署版本 1 应用：
 
 ```shell
 $ kubectl apply -f app-v1-single-svc.yaml
@@ -558,7 +558,7 @@ service "my-app" created
 deployment.apps "my-app-v1" created
 ```
 
-测试版本1 应用是否部署成功：
+测试版本 1 应用是否部署成功：
 
 ```shell
 $ kubectl get pods -l app=my-app
@@ -579,14 +579,14 @@ Host: my-app-v1-7b4874cd75-7xh6s, Version: v1.0.0
 $ watch kubectl get pod -l app=my-app
 ```
 
-然后部署版本2 应用：
+然后部署版本 2 应用：
 
 ```shell
 $ kubectl apply -f app-v2-single-svc.yaml
 deployment.apps "my-app-v2" created
 ```
 
-然后在上面 watch 终端中可以看到会多3个`my-app-v2`开头的 Pod，待这些 Pod 部署成功后，我们再去访问当前的应用：
+然后在上面 watch 终端中可以看到会多 3 个`my-app-v2`开头的 Pod，待这些 Pod 部署成功后，我们再去访问当前的应用：
 
 ```shell
 $ while sleep 0.1; do curl http://127.0.0.1:31539; done
@@ -595,14 +595,14 @@ Host: my-app-v1-7b4874cd75-dmq8f, Version: v1.0.0
 ......
 ```
 
-我们会发现访问到的都是版本1 的应用，和我们刚刚部署的版本2 没有任何关系，这是因为我们 Service 对象中通过 label selector 匹配的是`version=v1.0.0`这个标签，我们可以通过修改 Service 对象的匹配标签，将流量路由到标签`version=v2.0.0`的 Pod 去：
+我们会发现访问到的都是版本 1 的应用，和我们刚刚部署的版本 2 没有任何关系，这是因为我们 Service 对象中通过 label selector 匹配的是`version=v1.0.0`这个标签，我们可以通过修改 Service 对象的匹配标签，将流量路由到标签`version=v2.0.0`的 Pod 去：
 
 ```shell
 $ kubectl patch service my-app -p '{"spec":{"selector":{"version":"v2.0.0"}}}'
 service "my-app" patched
 ```
 
-然后再去访问应用，可以发现现在都是版本2 的信息了：
+然后再去访问应用，可以发现现在都是版本 2 的信息了：
 
 ```shell
 $ while sleep 0.1; do curl http://127.0.0.1:31539; done
@@ -611,13 +611,13 @@ Host: my-app-v2-f885c8d45-r5m6z, Version: v2.0.0
 ......
 ```
 
-如果你需要回滚到版本1，同样只需要更改 Service 的匹配标签即可：
+如果你需要回滚到版本 1，同样只需要更改 Service 的匹配标签即可：
 
 ```shell
 $ kubectl patch service my-app -p '{"spec":{"selector":{"version":"v1.0.0"}}}'
 ```
 
-如果新版本已经完全符合我们的需求了，就可以删除版本1 的应用了：
+如果新版本已经完全符合我们的需求了，就可以删除版本 1 的应用了：
 
 ```shell
 $ kubectl delete deploy my-app-v1
@@ -631,13 +631,11 @@ $ kubectl delete all -l app=my-app
 
 结论：
 
-* 实时部署/回滚
+- 实时部署/回滚
 
-* 避免版本问题，因为一次更改是整个应用的改变
-* 需要两倍的资源
-* 在发布到生产之前，应该对整个应用进行适当的测试
-
-
+- 避免版本问题，因为一次更改是整个应用的改变
+- 需要两倍的资源
+- 在发布到生产之前，应该对整个应用进行适当的测试
 
 ### 金丝雀(Canary) - 让部分用户参与测试
 
@@ -645,22 +643,22 @@ $ kubectl delete all -l app=my-app
 
 如果需要按照具体的百分比来进行金丝雀发布，需要尽可能的启动多的 Pod 副本，这样计算流量百分比的时候才方便，比如，如果你想将 1% 的流量发送到版本 B，那么我们就需要有一个运行版本 B 的 Pod 和 99 个运行版本 A 的 Pod，当然如果你对具体的控制策略不在意的话也就无所谓了，如果你需要更精确的控制策略，建议使用服务网格（如 Istio），它们可以更好地控制流量。
 
-![Canary](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/RvcM4f.jpg)
+![Canary](https://picdn.youdianzhishi.com/images/RvcM4f.jpg)
 
 在下面的例子中，我们使用 Kubernetes 原生特性来实现一个穷人版的金丝雀发布，如果你想要对流量进行更加细粒度的控制，请使用豪华版本的 Istio。下面是金丝雀发布的应用请求示意图：
 
-![canary requests](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/OclNv8.jpg)
+![canary requests](https://picdn.youdianzhishi.com/images/OclNv8.jpg)
 
 接下来我们按照下面的步骤来验证金丝雀策略：
 
-1. 10个副本的版本1 应用提供服务
-2. 版本2 应用部署1个副本（意味着小于10%的流量）
-3. 等待足够的时间来确认版本2 应用足够稳定没有任何错误信息
-4. 将版本2 应用扩容到10个副本
+1. 10 个副本的版本 1 应用提供服务
+2. 版本 2 应用部署 1 个副本（意味着小于 10%的流量）
+3. 等待足够的时间来确认版本 2 应用足够稳定没有任何错误信息
+4. 将版本 2 应用扩容到 10 个副本
 5. 等待所有实例完成
-6. 关闭版本1 应用
+6. 关闭版本 1 应用
 
-首先，创建版本1 的应用资源清单，app-v1-canary.yaml，内容如下：
+首先，创建版本 1 的应用资源清单，app-v1-canary.yaml，内容如下：
 
 ```yaml
 apiVersion: v1
@@ -672,9 +670,9 @@ metadata:
 spec:
   type: NodePort
   ports:
-  - name: http
-    port: 80
-    targetPort: http
+    - name: http
+      port: 80
+      targetPort: http
   selector:
     app: my-app
 ---
@@ -700,30 +698,30 @@ spec:
         prometheus.io/port: "9101"
     spec:
       containers:
-      - name: my-app
-        image: containersol/k8s-deployment-strategies
-        ports:
-        - name: http
-          containerPort: 8080
-        - name: probe
-          containerPort: 8086
-        env:
-        - name: VERSION
-          value: v1.0.0
-        livenessProbe:
-          httpGet:
-            path: /live
-            port: probe
-          initialDelaySeconds: 5
-          periodSeconds: 5
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: probe
-          periodSeconds: 5
+        - name: my-app
+          image: containersol/k8s-deployment-strategies
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: probe
+              containerPort: 8086
+          env:
+            - name: VERSION
+              value: v1.0.0
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: probe
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: probe
+            periodSeconds: 5
 ```
 
-其中核心的部分也是 Service 对象中的 label selector 标签，不在具有版本相关的标签了，然后定义版本2 的资源清单文件，app-v2-canary.yaml，文件内容如下：
+其中核心的部分也是 Service 对象中的 label selector 标签，不在具有版本相关的标签了，然后定义版本 2 的资源清单文件，app-v2-canary.yaml，文件内容如下：
 
 ```yaml
 apiVersion: apps/v1
@@ -748,32 +746,32 @@ spec:
         prometheus.io/port: "9101"
     spec:
       containers:
-      - name: my-app
-        image: containersol/k8s-deployment-strategies
-        ports:
-        - name: http
-          containerPort: 8080
-        - name: probe
-          containerPort: 8086
-        env:
-        - name: VERSION
-          value: v2.0.0
-        livenessProbe:
-          httpGet:
-            path: /live
-            port: probe
-          initialDelaySeconds: 5
-          periodSeconds: 5
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: probe
-          periodSeconds: 5
+        - name: my-app
+          image: containersol/k8s-deployment-strategies
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: probe
+              containerPort: 8086
+          env:
+            - name: VERSION
+              value: v2.0.0
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: probe
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: probe
+            periodSeconds: 5
 ```
 
-版本1 和版本2 的 Pod 都具有一个共同的标签`app=my-app`，所以对应的 Service 会匹配两个版本的 Pod。
+版本 1 和版本 2 的 Pod 都具有一个共同的标签`app=my-app`，所以对应的 Service 会匹配两个版本的 Pod。
 
-首先，部署版本1 应用：
+首先，部署版本 1 应用：
 
 ```shell
 $ kubectl apply -f app-v1-canary.yaml
@@ -781,7 +779,7 @@ service "my-app" created
 deployment.apps "my-app-v1" created
 ```
 
-然后测试版本1 应用是否正确部署了：
+然后测试版本 1 应用是否正确部署了：
 
 ```shell
 $ kubectl get svc -l app=my-app
@@ -797,14 +795,14 @@ Host: my-app-v1-7b4874cd75-tsh2s, Version: v1.0.0
 $ watch kubectl get po
 ```
 
-然后部署版本2 应用：
+然后部署版本 2 应用：
 
 ```shell
 $ kubectl apply -f app-v2-canary.yaml
 deployment.apps "my-app-v2" created
 ```
 
-然后在 watch 终端页面可以看到多了一个 Pod，现在一共 11 个 Pod，其中只有1 个 Pod 运行新版本应用，然后同样可以循环访问该应用，查看是否会有版本2 的应用信息：
+然后在 watch 终端页面可以看到多了一个 Pod，现在一共 11 个 Pod，其中只有 1 个 Pod 运行新版本应用，然后同样可以循环访问该应用，查看是否会有版本 2 的应用信息：
 
 ```shell
 $ while sleep 0.1; do curl http://127.0.0.1:30760; done
@@ -817,14 +815,14 @@ Host: my-app-v2-f885c8d45-mc2fx, Version: v2.0.0
 ......
 ```
 
-正常情况下可以看到大部分都是返回的版本1 的应用信息，偶尔会出现版本2 的应用信息，这就证明我们的金丝雀发布成功了，待确认了版本2 的这个应用没有任何问题后，可以将版本2 应用扩容到10 个副本：
+正常情况下可以看到大部分都是返回的版本 1 的应用信息，偶尔会出现版本 2 的应用信息，这就证明我们的金丝雀发布成功了，待确认了版本 2 的这个应用没有任何问题后，可以将版本 2 应用扩容到 10 个副本：
 
 ```shell
 $ kubectl scale --replicas=10 deploy my-app-v2
 deployment.extensions "my-app-v2" scaled
 ```
 
-其实这个时候访问应用的话新版本和旧版本的流量分配是1:1了，确认了版本2 正常后，就可以删除版本1 的应用了：
+其实这个时候访问应用的话新版本和旧版本的流量分配是 1:1 了，确认了版本 2 正常后，就可以删除版本 1 的应用了：
 
 ```shell
 $ kubectl delete deploy my-app-v1
@@ -841,17 +839,15 @@ $ kubectl delete all -l app=my-app
 
 结论：
 
-* 部分用户获取新版本
-* 方便错误和性能监控
-* 快速回滚
-* 发布较慢
-* 流量精准控制很浪费（99％A / 1％B = 99 Pod A，1 Pod B）
+- 部分用户获取新版本
+- 方便错误和性能监控
+- 快速回滚
+- 发布较慢
+- 流量精准控制很浪费（99％A / 1％B = 99 Pod A，1 Pod B）
 
 > 如果你对新功能的发布没有信心，建议使用金丝雀发布的策略。
 
-
-
-### A/B测试(A/B testing) - 最适合部分用户的功能测试
+### A/B 测试(A/B testing) - 最适合部分用户的功能测试
 
 A/B 测试实际上是一种基于统计信息而非部署策略来制定业务决策的技术，与业务结合非常紧密。但是它们也是相关的，也可以使用金丝雀发布来实现。
 
@@ -861,7 +857,7 @@ A/B 测试实际上是一种基于统计信息而非部署策略来制定业务�
 
 要使用这些细粒度的控制，仍然还是建议使用 Istio，可以根据权重或 HTTP 头等来动态请求路由控制流量转发。
 
-![ab test](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/b4qVNZ.jpg)
+![ab test](https://picdn.youdianzhishi.com/images/b4qVNZ.jpg)
 
 下面是使用 Istio 进行规则设置的示例，因为 Istio 还不太稳定，以下示例规则将来可能会更改：
 
@@ -877,16 +873,14 @@ route:
 
 关于在 Istio 中具体如何做 A/B 测试，我们这里就不再详细介绍了，我们在`istio-book`文档中有相关的介绍。
 
-![ab test request](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/2lK8wZ.jpg)
+![ab test request](https://picdn.youdianzhishi.com/images/2lK8wZ.jpg)
 
 结论：
 
-* 几个版本并行运行
-* 完全控制流量分配
-* 特定的一个访问错误难以排查，需要分布式跟踪
-* Kubernetes 没有直接的支持，需要其他额外的工具
-
-
+- 几个版本并行运行
+- 完全控制流量分配
+- 特定的一个访问错误难以排查，需要分布式跟踪
+- Kubernetes 没有直接的支持，需要其他额外的工具
 
 ### 总结
 

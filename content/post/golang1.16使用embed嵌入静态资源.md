@@ -18,7 +18,7 @@ go1.16 版本已经 release 了，推出了一些新功能特性，其中有一�
 
 要测试 embed 功能，当然需要我们更新 go 到 1.16 版本，我们可以通过下面的方式进行安装，当然也可以直接下载安装包配置([https://golang.org/dl/#go1.16](https://golang.org/dl/#go1.16))。
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210218113657.png)
+![](https://picdn.youdianzhishi.com/images/20210218113657.png)
 
 ## 示例
 
@@ -43,15 +43,15 @@ func main() {
 可以看到上面的代码中出现了一个 `go:embed` 关键字的注解，通过该注解可以直接读取本地静态文件，在上面代码目录下面创建 hello.txt 静态文件，然后就可以直接编译打包运行了：
 
 ```go
-➜  go1.16 run main.go 
-Hello embed in golang 1.16
-➜  cat hello.txt        
-Hello embed in golang 1.16%                                                               
 ➜  go1.16 run main.go
 Hello embed in golang 1.16
-➜  go1.16 build main.go 
-➜  rm hello.txt                                  
-➜  ./main                        
+➜  cat hello.txt
+Hello embed in golang 1.16%
+➜  go1.16 run main.go
+Hello embed in golang 1.16
+➜  go1.16 build main.go
+➜  rm hello.txt
+➜  ./main
 Hello embed in golang 1.16
 ```
 
@@ -68,8 +68,10 @@ import "embed"
 var content embed.FS
 ```
 
-可以看到 `go:embed` 支持多个目录、单个文件或者多个文件，如果在代码中没有使用到 `embed.FS`，则需要在 import 的时候加上 `_` 。
+可以看到  `go:embed`  支持多个目录、单个文件或者多个文件，如果在代码中没有使用到 `embed.FS`，则需要在 import 的时候加上 `_` 。
+
 <!--adsense-text-->
+
 下面我们再和大家演示下如何将 embed 和 Gin 框架进行整合。
 
 ## 集成 **Gin**
@@ -143,7 +145,7 @@ var f embed.FS
 router.StaticFS("/public", http.FS(f))
 ```
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210218142211.png)
+![](https://picdn.youdianzhishi.com/images/20210218142211.png)
 
 ## 总结
 

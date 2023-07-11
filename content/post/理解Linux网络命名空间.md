@@ -5,7 +5,13 @@ tags: ["网络", "kubernetes"]
 keywords: ["网络", "kubernetes", "命名空间"]
 slug: learn-linux-net-namespace
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210213095208.png", desc: "https://unsplash.com/photos/lEuxYh1kftg"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/20210213095208.png",
+      desc: "https://unsplash.com/photos/lEuxYh1kftg",
+    },
+  ]
 category: "kubernetes"
 ---
 
@@ -27,15 +33,15 @@ category: "kubernetes"
 
 ```bash
 ip [OPTIONS] OBJECT COMMAND [ARGUMENTS]
-# where 
+# where
 #   OPTIONS are general global options
 #   OBJECT := { link | address | addrlabel | route |
-#     rule | neigh | ntable | tunnel | tuntap | maddress | 
-#     mroute | mrule | monitor | xfrm | netns | l2tp | 
+#     rule | neigh | ntable | tunnel | tuntap | maddress |
+#     mroute | mrule | monitor | xfrm | netns | l2tp |
 #     tcp_metrics }
 #   COMMAND is the action to perform on the object, such as,
 #     show, add, del etc.
-#   ARGUMENTS are arguments specific to the kind of OBJECT 
+#   ARGUMENTS are arguments specific to the kind of OBJECT
 #     and COMMAND
 ```
 
@@ -49,7 +55,7 @@ ip [OPTIONS] OBJECT COMMAND [ARGUMENTS]
 
 > 💡 `-n` 选项是 `ip netns exec` 的缩写
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20201123114944.png)
+![](https://picdn.youdianzhishi.com/images/20201123114944.png)
 
 ## 配置第一个网络命名空间
 
@@ -90,7 +96,7 @@ $ ip -n ns1 link set veth0 up
 # 将 lo 接口 up 起来，因为发往 10.0.1.0/24 的数据（本地的）
 # （像 ping）要通过 local（本地）路由表
 # 比如要 ping 自己
-$ ip -n ns1 link set lo up 
+$ ip -n ns1 link set lo up
 
 # 确认接口已经 up 起来
 $ ip -n ns1 addr show
@@ -110,7 +116,7 @@ $ ip -n ns1 addr show
 
 ```bash
 # veth0 不在主机的根网络命名空间中
-$ ip link show veth0            
+$ ip link show veth0
 Device "veth0" does not exist.
 
 # 从主机网络命名空间中 ping 不通
@@ -137,7 +143,9 @@ rtt min/avg/max/mdev = 0.063/0.089/0.121/0.028 ms
 ```
 
 这里我们使用了一条 `ip netns exec` 的命令，这个命令允许我们在指定的网络命名空间中去执行任意的命令，可以看到现在我们在 ns1 网络命名空中间去 ping `10.0.1.0` 就可以通了。
+
 <!--adsense-text-->
+
 ## 配置第二个网络命名空间
 
 下面我们用上面的方式来创建第二个网络命名空间 `ns2`，然后将 veth1 接口分配给这个网络命名空间，并将 `10.0.2.0/24` 的 IP 地址范围分配给这个接口。
@@ -156,7 +164,7 @@ $ ip -n ns2 addr add 10.0.2.0/24 dev veth1
 $ ip -n ns2 link set veth1 up
 
 # 将 lo 口 up 起来（这样可以 ping 通自己）
-$ ip -n ns2 link set lo up 
+$ ip -n ns2 link set lo up
 
 $ ip -n ns2 addr show
 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000

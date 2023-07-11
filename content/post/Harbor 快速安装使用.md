@@ -6,7 +6,13 @@ tags: ["harbor", "docker", "kubernetes", "helm"]
 keywords: ["harbor", "docker", "kubernetes", "安装", "registry"]
 slug: harbor-quick-install
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/sdmk1.jpg", desc: "https://unsplash.com/photos/T-a8zcXigq4"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/sdmk1.jpg",
+      desc: "https://unsplash.com/photos/T-a8zcXigq4",
+    },
+  ]
 category: "kubernetes"
 ---
 
@@ -15,7 +21,9 @@ category: "kubernetes"
 <!--more-->
 
 ### 安装 Harbor
+
 Harbor 支持多种安装方式，源码目录下面默认有一个安装脚本（make/install.sh），采用 docker-compose 的形式运行 Harbor 各个组件，和前面的课程一样，我们这里依然还是将 Harbor 安装到 Kubernetes 集群中，如果我们对 Harbor 的各个组件之间的运行关系非常熟悉，同样的，我们可以自己手动编写资源清单文件进行部署，不过 Harbor 源码目录中也为我们提供了生成这些资源清单的脚本文件了（make/kubernetes/k8s-prepare），我们只需要执行下面的命令即可为我们生成所需要用到的 YAML 文件了：
+
 ```shell
 $ python make/kubernetes/k8s-prepare
 ```
@@ -24,19 +32,21 @@ $ python make/kubernetes/k8s-prepare
 
 不过我们这里给大家介绍另外一种简单的安装方法：Helm，Harbor 官方提供了对应的 Helm Chart 包，所以我们可以很容易安装。
 
-
 首先下载 Harbor Chart 包到要安装的集群上：
+
 ```shell
 $ git clone https://github.com/goharbor/harbor-helm
 ```
 
-切换到我们需要安装的分支，比如我们这里使用 1.0.0分支：
+切换到我们需要安装的分支，比如我们这里使用 1.0.0 分支：
+
 ```bash
 $ cd harbor-helm
 $ git checkout 1.0.0
 ```
 
 安装 Helm Chart 包最重要的当然是`values.yaml`文件了，我们可以通过覆盖该文件中的属性来改变配置：
+
 ```yaml
 expose:
   # 设置暴露服务的方式。将类型设置为 ingress、clusterIP或nodePort并补充对应部分的信息。
@@ -231,10 +241,10 @@ portal:
     repository: goharbor/harbor-portal
     tag: v1.7.0
   replicas: 1
-# resources:
-#  requests:
-#    memory: 256Mi
-#    cpu: 100m
+  # resources:
+  #  requests:
+  #    memory: 256Mi
+  #    cpu: 100m
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -245,10 +255,10 @@ core:
     repository: goharbor/harbor-core
     tag: v1.7.0
   replicas: 1
-# resources:
-#  requests:
-#    memory: 256Mi
-#    cpu: 100m
+  # resources:
+  #  requests:
+  #    memory: 256Mi
+  #    cpu: 100m
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -276,10 +286,10 @@ jobservice:
   maxJobWorkers: 10
   # jobs 的日志收集器："file", "database" or "stdout"
   jobLogger: file
-# resources:
-#   requests:
-#     memory: 256Mi
-#     cpu: 100m
+  # resources:
+  #   requests:
+  #     memory: 256Mi
+  #     cpu: 100m
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -414,8 +424,8 @@ redis:
   podAnnotations: {}
 ```
 
-
 有了上面的配置说明，则我们可以根据自己的需求来覆盖上面的值，比如我们这里新建一个 qikqiak-values.yaml 的文件，文件内容如下：
+
 ```yaml
 expose:
   type: ingress
@@ -449,6 +459,7 @@ persistence:
 ```
 
 其中需要我们定制的部分很少，我们将域名替换成我们自己的，使用默认的 Ingress 方式暴露服务，其他需要我们手动配置的部分就是数据持久化的部分，我们需要提前为上面的这些服务创建好可用的 PVC 或者 StorageClass 对象，比如我们这里使用一个名为 harbor-data 的 StorageClass 资源对象，当然也可以根据我们实际的需求修改 accessMode 或者存储容量：(harbor-data-sc.yaml)
+
 ```yaml
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -458,12 +469,14 @@ provisioner: fuseim.pri/ifs
 ```
 
 先新建上面的 StorageClass 资源对象：
+
 ```shell
 $ kubectl create -f harbor-data-sc.yaml
 storageclass.storage.k8s.io "harbor-data" created
 ```
 
 创建完成后，使用上面自定义的 values 文件安装：
+
 ```shell
 $ helm install --name harbor -f qikqiak-values.yaml . --namespace kube-ops
 NAME:   harbor
@@ -555,6 +568,7 @@ For more details, please visit https://github.com/goharbor/harbor.
 ```
 
 上面是我们通过 Helm 安装所有涉及到的一些资源对象，稍微等一会儿，就可以安装成功了，查看对应的 Pod 状态：
+
 ```shell
 $ kubectl get pods -n kube-ops
 NAME                                           READY     STATUS    RESTARTS   AGE
@@ -572,6 +586,7 @@ harbor-harbor-registry-5569fcbf78-5grds        2/2       Running   0          49
 ```
 
 现在都是`Running`状态了，都成功运行起来了，查看下对应的 Ingress 对象：
+
 ```shell
 $ kubectl get ingress -n kube-ops
 NAME                    HOSTS                                     ADDRESS   PORTS     AGE
@@ -579,7 +594,6 @@ harbor-harbor-ingress   registry.qikqiak.com,notary.qikqiak.com             80, 
 ```
 
 如果你有自己的真正的域名，则将上面的两个域名解析到你的任意一个 Ingress Controller 的 Pod 所在的节点即可，我们这里为了演示方便，还是自己在本地的`/etc/hosts`里面添加上`registry.qikqiak.com`和`notary.qikqiak.com`的映射。
- 
 
 在第一次安装的时候比较顺畅，后面安装总是不成功，查看数据库的 Pod 日志出现**database "registry" does not exist（）**的错误信息，如果 registry 数据库没有自动创建，我们可以进入数据库 Pod 中手动创建：
 
@@ -600,24 +614,24 @@ CREATE TABLE
 registry-# \quit
 ```
 
-
 ### Harbor Portal
+
 添加完成后，在浏览器中输入`registry.qikqiak.com`就可以打开熟悉的 Harbor 的 Portal 界面了，当然我们配置的 Ingress 中会强制跳转到 https，所以如果你的浏览器有什么安全限制的话，需要信任我们这里 Ingress 对应的证书，证书文件可以通过查看 Secret 资源对象获取：
 
-![Harbor Portal](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/RwE3Mp.jpg)
+![Harbor Portal](https://picdn.youdianzhishi.com/images/RwE3Mp.jpg)
 
 然后输入用户名：admin，密码：Harbor12345（当然我们也可以通过 Helm 安装的时候自己覆盖 harborAdminPassword）即可登录进入 Portal 首页：
 
-![Harbor Portal Home](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/7Nh60z.jpg)
-
+![Harbor Portal Home](https://picdn.youdianzhishi.com/images/7Nh60z.jpg)
 
 我们可以看到有很多功能，默认情况下会有一个名叫`library`的项目，改项目默认是公开访问权限的，进入项目可以看到里面还有 Helm Chart 包的管理，可以手动在这里上传，也可以对改项目里面的镜像进行一些配置，比如是否开启自动扫描镜像功能：
 
-![Harbor project settings](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/OxyAsO.jpg)
-
+![Harbor project settings](https://picdn.youdianzhishi.com/images/OxyAsO.jpg)
 
 ### docker cli
+
 然后我们来测试下使用 docker cli 来进行 pull/push 镜像，由于上面我们安装的时候通过 Ingress 来暴露的 Harbor 的服务，而且强制使用了 https，所以如果我们要在终端中使用我们这里的私有仓库的话，就需要配置上相应的证书：
+
 ```shell
 $ docker login registry.qikqiak.com
 Warning: failed to get default registry endpoint from daemon (Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?). Using system default: https://index.docker.io/v1/
@@ -629,6 +643,7 @@ Get https://registry.qikqiak.com/v1/users/: x509: certificate has expired or is 
 ```
 
 这是因为我们没有提供证书文件，我们将使用到的`ca.crt`文件复制到`/etc/docker/certs.d/registry.qikqiak.com`目录下面，如果该目录不存在，则创建它。ca.crt 这个证书文件我们可以通过 Ingress 中使用的 Secret 资源对象来提供：
+
 ```shell
 $ kubectl get secret harbor-harbor-ingress -n kube-ops -o yaml
 apiVersion: v1
@@ -655,11 +670,13 @@ type: kubernetes.io/tls
 其中 data 区域中 ca.crt 对应的值就是我们需要证书，不过需要注意还需要做一个 base64 的解码，这样证书配置上以后就可以正常访问了。
 
 不过由于上面的方法较为繁琐，所以一般情况下面我们在使用 docker cli 的时候是在 docker 启动参数后面添加一个`--insecure-registry`参数来忽略证书的校验的，在 docker 启动配置文件`/usr/lib/systemd/system/docker.service`中修改`ExecStart`的启动参数：
+
 ```shell
 ExecStart=/usr/bin/dockerd --insecure-registry registry.qikqiak.com
 ```
 
 然后保存重启 docker，再使用 docker cli 就没有任何问题了：
+
 ```shell
 $ docker login registry.qikqiak.com
 Username: admin
@@ -668,6 +685,7 @@ Login Succeeded
 ```
 
 比如我们本地现在有一个名为 busybox 的镜像，现在我们想要将该镜像推送到我们的私有仓库中去，应该怎样操作呢？首先我们需要给该镜像重新打一个 registry.qikqiak.com 的前缀，然后推送的时候就可以识别到推送到哪个镜像仓库：
+
 ```shell
 $ docker tag busybox registry.qikqiak.com/library/busybox
 $ docker push registry.qikqiak.com/library/busybox
@@ -678,10 +696,10 @@ latest: digest: sha256:4415a904b1aca178c2450fd54928ab362825e863c0ad5452fd020e92f
 
 推送完成后，我们同样可以在 Portal 页面上看到这个镜像的信息：
 
-![Harbor image info](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/OLt246.jpg)
-
+![Harbor image info](https://picdn.youdianzhishi.com/images/OLt246.jpg)
 
 镜像 push 成功，同样可以测试下 pull：
+
 ```shell
 $ docker rmi registry.qikqiak.com/library/busybox
 Untagged: registry.qikqiak.com/library/busybox:latest

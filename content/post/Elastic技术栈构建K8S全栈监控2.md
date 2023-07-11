@@ -6,7 +6,13 @@ keywords: ["elastic", "kubernetes"]
 tags: ["elastic", "kubernetes", "metricbeat"]
 slug: k8s-monitor-use-elastic-stack-2
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200709104733.png", desc: "https://unsplash.com/photos/bK1hmAK3D78"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/20200709104733.png",
+      desc: "https://unsplash.com/photos/bK1hmAK3D78",
+    },
+  ]
 category: "kubernetes"
 ---
 
@@ -26,7 +32,7 @@ Metribeat 默认采集系统的指标，但是也包含了大量的其他模块�
 $ git clone https://github.com/kubernetes/kube-state-metrics.git
 $ cd kube-state-metrics
 # 执行安装命令
-$ kubectl apply -f examples/standard/  
+$ kubectl apply -f examples/standard/
 clusterrolebinding.rbac.authorization.k8s.io/kube-state-metrics configured
 clusterrole.rbac.authorization.k8s.io/kube-state-metrics configured
 deployment.apps/kube-state-metrics configured
@@ -127,9 +133,11 @@ data:
 ---
 ```
 
-ElasticSearch 的 indice 生命周期表示一组规则，可以根据 indice 的大小或者时长应用到你的 indice 上。比如可以每天或者每次超过 1GB 大小的时候对 indice 进行轮转，我们也可以根据规则配置不同的阶段。由于监控会产生大量的数据，很有可能一天就超过几十G的数据，所以为了防止大量的数据存储，我们可以利用 indice 的生命周期来配置数据保留，这个在 Prometheus 中也有类似的操作。
+ElasticSearch 的 indice 生命周期表示一组规则，可以根据 indice 的大小或者时长应用到你的 indice 上。比如可以每天或者每次超过 1GB 大小的时候对 indice 进行轮转，我们也可以根据规则配置不同的阶段。由于监控会产生大量的数据，很有可能一天就超过几十 G 的数据，所以为了防止大量的数据存储，我们可以利用 indice 的生命周期来配置数据保留，这个在 Prometheus 中也有类似的操作。
+
 <!--adsense-text-->
-如下所示的文件中，我们配置成每天或每次超过5GB的时候就对 indice 进行轮转，并删除所有超过10天的 indice 文件，我们这里只保留10天监控数据完全足够了。
+
+如下所示的文件中，我们配置成每天或每次超过 5GB 的时候就对 indice 进行轮转，并删除所有超过 10 天的 indice 文件，我们这里只保留 10 天监控数据完全足够了。
 
 ```yaml
 # metricbeat.indice-lifecycle.configmap.yml
@@ -192,81 +200,78 @@ spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
       containers:
-      - name: metricbeat
-        image: docker.elastic.co/beats/metricbeat:7.8.0
-        args: [
-          "-c", "/etc/metricbeat.yml",
-          "-e", "-system.hostfs=/hostfs"
-        ]
-        env:
-        - name: ELASTICSEARCH_HOST
-          value: elasticsearch-client.elastic.svc.cluster.local
-        - name: ELASTICSEARCH_PORT
-          value: "9200"
-        - name: ELASTICSEARCH_USERNAME
-          value: elastic
-        - name: ELASTICSEARCH_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: elasticsearch-pw-elastic
-              key: password
-        - name: KIBANA_HOST
-          value: kibana.elastic.svc.cluster.local
-        - name: KIBANA_PORT
-          value: "5601"
-        - name: NODE_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: spec.nodeName
-        - name: PERIOD
-          value: "10s"
-        securityContext:
-          runAsUser: 0
-        resources:
-          limits:
-            memory: 200Mi
-          requests:
-            cpu: 100m
-            memory: 100Mi
-        volumeMounts:
-        - name: config
-          mountPath: /etc/metricbeat.yml
-          readOnly: true
-          subPath: metricbeat.yml
-        - name: indice-lifecycle
-          mountPath: /etc/indice-lifecycle.json
-          readOnly: true
-          subPath: indice-lifecycle.json
-        - name: dockersock
-          mountPath: /var/run/docker.sock
-        - name: proc
-          mountPath: /hostfs/proc
-          readOnly: true
-        - name: cgroup
-          mountPath: /hostfs/sys/fs/cgroup
-          readOnly: true
+        - name: metricbeat
+          image: docker.elastic.co/beats/metricbeat:7.8.0
+          args: ["-c", "/etc/metricbeat.yml", "-e", "-system.hostfs=/hostfs"]
+          env:
+            - name: ELASTICSEARCH_HOST
+              value: elasticsearch-client.elastic.svc.cluster.local
+            - name: ELASTICSEARCH_PORT
+              value: "9200"
+            - name: ELASTICSEARCH_USERNAME
+              value: elastic
+            - name: ELASTICSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elasticsearch-pw-elastic
+                  key: password
+            - name: KIBANA_HOST
+              value: kibana.elastic.svc.cluster.local
+            - name: KIBANA_PORT
+              value: "5601"
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: PERIOD
+              value: "10s"
+          securityContext:
+            runAsUser: 0
+          resources:
+            limits:
+              memory: 200Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/metricbeat.yml
+              readOnly: true
+              subPath: metricbeat.yml
+            - name: indice-lifecycle
+              mountPath: /etc/indice-lifecycle.json
+              readOnly: true
+              subPath: indice-lifecycle.json
+            - name: dockersock
+              mountPath: /var/run/docker.sock
+            - name: proc
+              mountPath: /hostfs/proc
+              readOnly: true
+            - name: cgroup
+              mountPath: /hostfs/sys/fs/cgroup
+              readOnly: true
       volumes:
-      - name: proc
-        hostPath:
-          path: /proc
-      - name: cgroup
-        hostPath:
-          path: /sys/fs/cgroup
-      - name: dockersock
-        hostPath:
-          path: /var/run/docker.sock
-      - name: config
-        configMap:
-          defaultMode: 0600
-          name: metricbeat-config
-      - name: indice-lifecycle
-        configMap:
-          defaultMode: 0600
-          name: metricbeat-indice-lifecycle
-      - name: data
-        hostPath:
-          path: /var/lib/metricbeat-data
-          type: DirectoryOrCreate
+        - name: proc
+          hostPath:
+            path: /proc
+        - name: cgroup
+          hostPath:
+            path: /sys/fs/cgroup
+        - name: dockersock
+          hostPath:
+            path: /var/run/docker.sock
+        - name: config
+          configMap:
+            defaultMode: 0600
+            name: metricbeat-config
+        - name: indice-lifecycle
+          configMap:
+            defaultMode: 0600
+            name: metricbeat-indice-lifecycle
+        - name: data
+          hostPath:
+            path: /var/lib/metricbeat-data
+            type: DirectoryOrCreate
 ---
 ```
 
@@ -345,7 +350,7 @@ daemonset.extensions/metricbeat created
 clusterrolebinding.rbac.authorization.k8s.io/metricbeat created
 clusterrole.rbac.authorization.k8s.io/metricbeat created
 serviceaccount/metricbeat created
-$ kubectl get pods -n elastic -l app=metricbeat   
+$ kubectl get pods -n elastic -l app=metricbeat
 NAME               READY   STATUS    RESTARTS   AGE
 metricbeat-2gstq   1/1     Running   0          18m
 metricbeat-99rdb   1/1     Running   0          18m
@@ -359,23 +364,23 @@ metricbeat-lsrgv   1/1     Running   0          18m
 
 在 Kibana 左侧页面 Observability → Metrics 进入指标监控页面，正常就可以看到一些监控数据了：
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200627160041.png)
+![](https://picdn.youdianzhishi.com/images/20200627160041.png)
 
 也可以根据自己的需求进行筛选，比如我们可以按照 Kubernetes Namespace 进行分组作为视图查看监控信息：
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200627160240.png)
+![](https://picdn.youdianzhishi.com/images/20200627160240.png)
 
 由于我们在配置文件中设置了属性 setup.dashboards.enabled=true，所以 Kibana 会导入预先已经存在的一些 Dashboard。我们可以在左侧菜单进入 Kibana → Dashboard 页面，我们会看到一个大约有 50 个 Metricbeat 的 Dashboard 列表，我们可以根据需要筛选 Dashboard，比如我们要查看集群节点的信息，可以查看 `[Metricbeat Kubernetes] Overview ECS` 这个 Dashboard：
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200627160835.png)
+![](https://picdn.youdianzhishi.com/images/20200627160835.png)
 
 我们还单独启用了 mongodb 模块，我们可以使用 **[Metricbeat MongoDB] Overview ECS** 这个 Dashboard 来查看监控信息：
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200627161101.png)
+![](https://picdn.youdianzhishi.com/images/20200627161101.png)
 
 我们还启用了 docker 这个模块，也可以使用 **[Metricbeat Docker] Overview ECS** 这个 Dashboard 来查看监控信息：
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200627161244.png)
+![](https://picdn.youdianzhishi.com/images/20200627161244.png)
 
 到这里我们就完成了使用 Metricbeat 来监控 Kubernetes 集群信息，在下文我们再来学习如何使用 Filebeat 来收集日志以监控 Kubernetes 集群。
 

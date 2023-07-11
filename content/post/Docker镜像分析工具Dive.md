@@ -6,7 +6,13 @@ slug: docker-image-explore-tool-dive
 keywords: ["docker", "镜像", "dive"]
 gitcomment: true
 notoc: true
-bigimg: [{src: "/img/posts/photo-1544137105-295758788545.jpeg", desc: "Monte Due Mani, Italy"}]
+bigimg:
+  [
+    {
+      src: "/img/posts/photo-1544137105-295758788545.jpeg",
+      desc: "Monte Due Mani, Italy",
+    },
+  ]
 category: "docker"
 ---
 
@@ -61,33 +67,40 @@ IMAGE               CREATED             CREATED BY                              
 ```
 
 ### 介绍
+
 接下来我们给大家介绍一个用来分析 docker 镜像层信息的一个工具：dive，地址：[https://github.com/wagoodman/dive](https://github.com/wagoodman/dive)，该工具主要用于探索 docker 镜像层内容以及发现减小 docker 镜像大小的方法。
 
-{{% video mp4="http://vdn.haimaxy.com/course/2019/1/3/dive.mp4" poster="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qbzfz.jpg" %}}
+{{% video mp4="http://vdn.haimaxy.com/course/2019/1/3/dive.mp4" poster="https://picdn.youdianzhishi.com/images/qbzfz.jpg" %}}
 
 要分析一个 docker 镜像，只需要在 dive 工具后面添加上镜像的 tag 即可：
+
 ```shell
 $ dive <镜像TAG>
 ```
 
 除此之外，还可以通过 build 命令去构建 docker 镜像后，直接进入分析结果：
+
 ```shell
 $ dive build -t <镜像TAG> .
 ```
 
 ### 基本功能
-* 显示每层的 docker 镜像内容：当您在左侧选择一个层时，将在右侧线上显示该层的所有内容，此外，您可以使用箭头按键来浏览整个文件树内容。
-* 指出每层中发生了哪些变化：在文件树中标明已修改、添加或删除的文件，可以调整此值以显示特定层的更改。
-* 估计“镜像效率”：左下方窗格显示基本层信息和一个实验指标，用于猜测图像所包含的空间浪费。这可能是跨层的一些重复文件，跨层移动文件或不完全删除的文件。提供了一个百分比的“得分”和总浪费的文件空间。
-* 快速构建/分析周期：您可以构建 docker 镜像并使用一个命令立即进行分析：`dive build -t some-tag .`，您只需要将`docker build`命令用相同的`dive build`命令替换即可。
+
+- 显示每层的 docker 镜像内容：当您在左侧选择一个层时，将在右侧线上显示该层的所有内容，此外，您可以使用箭头按键来浏览整个文件树内容。
+- 指出每层中发生了哪些变化：在文件树中标明已修改、添加或删除的文件，可以调整此值以显示特定层的更改。
+- 估计“镜像效率”：左下方窗格显示基本层信息和一个实验指标，用于猜测图像所包含的空间浪费。这可能是跨层的一些重复文件，跨层移动文件或不完全删除的文件。提供了一个百分比的“得分”和总浪费的文件空间。
+- 快速构建/分析周期：您可以构建 docker 镜像并使用一个命令立即进行分析：`dive build -t some-tag .`，您只需要将`docker build`命令用相同的`dive build`命令替换即可。
 
 ### 安装
+
 安装非常简单，我们这里为了方便，直接使用 docker 镜像的方式，其他的安装方法在 dive 文档中查看即可。
+
 ```shell
 $ docker pull wagoodman/dive
 ```
 
 镜像 pull 下来后，然后使用该镜像运行一个临时的容器，加上我们需要分析的镜像即可：
+
 ```shell
 $ docker run --rm -it \
     -v /var/run/docker.sock:/var/run/docker.sock \
@@ -95,6 +108,7 @@ $ docker run --rm -it \
 ```
 
 比如，我们这里来分析下`python:3.6.4`这个镜像：
+
 ```shell
 $ docker run --rm -it \
     -v /var/run/docker.sock:/var/run/docker.sock \

@@ -5,9 +5,16 @@ tags: ["kubernetes", "Kustomize", "Helm"]
 keywords: ["Kustomize", "kubernetes", "Helm"]
 slug: use-kustomize-custom-helm-charts
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200923163428.png", desc: "https://unsplash.com/photos/nk4OAb64-Rk"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/20200923163428.png",
+      desc: "https://unsplash.com/photos/nk4OAb64-Rk",
+    },
+  ]
 category: "kubernetes"
 ---
+
 如果你经常使用 Kubernetes，那么应该对 Helm 和 Kustomize 不陌生，这两个工具都是用来管理 Kubernetes 的资源清单的，但是二者有着不同的工作方式。
 
 Helm 使用的是模板，一个 Helm Chart 包中包含了很多模板和值文件，当被渲染时模板中的变量会使用值文件中对应的值替换。而 Kustomize 使用的是一种无模板的方式，它对 YAML 文件进行修补和合并操作，此外 Kustomize 也已经被原生内置到 kubectl 中了。这两个工具在 Kubernetes 的生态系统中都被广泛使用，而且这两个工具也可以一起结合使用。
@@ -52,7 +59,7 @@ apiVersion: kustomize.config.k8s.io/v1
 kind: ChartInflator
 metadata:
   name: vault-official-helm-chart
-chartRepo: https://helm.releases.hashicorp.com  
+chartRepo: https://helm.releases.hashicorp.com
 chartName: vault
 chartRelease: hashicorp
 chartVersion: 0.7.0
@@ -61,7 +68,7 @@ values: values.yaml
 EOF
 
 # 创建 values 值文件
-$ helm repo add hashicorp https://helm.releases.hashicorp.com 
+$ helm repo add hashicorp https://helm.releases.hashicorp.com
 $ helm show values --version 0.7.0 hashicorp/vault > values.yaml
 
 # 创建 Kustomize 文件
@@ -106,7 +113,9 @@ $ kustomize build --enable_alpha_plugins .
 ```
 
 正常渲染完成后我们可以看到所有的资源上都被添加了一个 `env: dev` 的标签，这是实时完成的，不需要维护任何额外的文件的。
+
 <!--adsense-text-->
+
 ## 用单一的 Chart 文件定制
 
 另一种使用 Kustomize 定制 Chart 的方法是使用 `helm template` 命令来生成一个单一的资源清单，这种方式可以对 Chart 进行更多的控制，但它需要更多的工作来出来处理更新该生成文件的版本控制。
@@ -149,7 +158,7 @@ diff-chart-values:
 
 ```bash
 # 初始化 chart 文件
-$ make generate-chart-values generate-chart-manifest 
+$ make generate-chart-values generate-chart-manifest
 
 # 创建 Kustomize 文件并添加一个 label 标签
 $ kustomize init
@@ -188,7 +197,7 @@ $ kustomize build .
 
 ## 使用 Helm post rendering 定制
 
-[Post Rendering](https://helm.sh/docs/topics/advanced/#post-rendering) 是 Helm 3 带来的新功能之一，在前面的2种方法中，Kustomize 是用来处理生成图表清单的主要工具，但在这里，Kustomize 是作为 Helm 的助手进行工作的。
+[Post Rendering](https://helm.sh/docs/topics/advanced/#post-rendering) 是 Helm 3 带来的新功能之一，在前面的 2 种方法中，Kustomize 是用来处理生成图表清单的主要工具，但在这里，Kustomize 是作为 Helm 的助手进行工作的。
 
 下面我们来看下如何使用这种方法来进行定制：
 
@@ -210,7 +219,7 @@ $ chmod +x kustomize-wrapper.sh
 然后我们可以直接使用 Helm 渲染或者安装 Chart：
 
 ```bash
-$ helm repo add hashicorp https://helm.releases.hashicorp.com 
+$ helm repo add hashicorp https://helm.releases.hashicorp.com
 $ helm template vault hashicorp/vault --post-renderer ./kustomize-wrapper.sh
 ```
 

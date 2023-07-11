@@ -2,36 +2,48 @@
 title: 用 Kubernetes 资源对象创建 Grafana Dashboard
 date: 2020-03-27
 tags: ["kubernetes", "prometheus", "grafana", "operator"]
-keywords: ["kubernetes", "prometheus", "grafana", "dashboard", "crd", "operator"]
+keywords:
+  ["kubernetes", "prometheus", "grafana", "dashboard", "crd", "operator"]
 slug: use-crd-create-grafana-dashboard
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200327120114.png", desc: "Hand holding books on white background"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/20200327120114.png",
+      desc: "Hand holding books on white background",
+    },
+  ]
 category: "kubernetes"
 ---
+
 我们在使用 Grafana Dashboard 来展示我们的监控图表的时候，很多时候我们都是去找别人已经做好的 Dashboard 拿过来改一改，但是这样也造成了很多使用 Grafana 的人员压根不知道如何去自定义一个 Dashboard，虽然这并不是很困难。这里我们介绍一个比较新颖（骚）的工具：[DARK](https://github.com/K-Phoen/dark)，全称 `Dashboards As Resources in Kubernetes.`，意思就是通过 Kubernetes 的资源对象来定义 Grafana Dashboard，实现原理也很简单，也就是通过 CRD 来定义 Dashboard，然后通过和 Grafana 的 API Token 进行交互实现 Dashboard 的 CRUD。
 
 <!--more-->
 
 下面我们来看下如何使用 `DARK` 定义 Grafana Dashboard。首先 Clone 项目代码：
+
 ```shell
 $ git clone https://github.com/K-Phoen/dark.git
 ```
 
 然后安装 CRD 资源：
+
 ```shell
 $ kubectl apply -f k8s/crd.yaml
 ```
 
 然后通过 Secret 对象创建 Grafana 的 API KEYS，在 Grafana 主界面中，选择左侧的配置菜单 -> `API Keys` 创建 API Keys，选择 `Editor` 的角色：
 
-![api keys](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200327113133.png)
+![api keys](https://picdn.youdianzhishi.com/images/20200327113133.png)
 
 创建完成后会弹出一个对话框显示对应的 `API Keys`，使用这个 KEY 来创建一个对应的 Secret 对象：
+
 ```yaml
 $ kubectl create secret generic dark-tokens --from-literal=grafana=<替换成APIKEY>
 ```
 
 然后修改 `k8s/cluster-role.yaml` 文件，如下所示：
+
 ```yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -43,12 +55,12 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: dashboards-viewer
 rules:
-- apiGroups: ["k8s.kevingomez.fr"]
-  resources: ["grafanadashboards"]
-  verbs: ["get", "watch", "list"]
-- apiGroups: [""]
-  resources: ["events"]
-  verbs: ["create", "patch"]
+  - apiGroups: ["k8s.kevingomez.fr"]
+    resources: ["grafanadashboards"]
+    verbs: ["get", "watch", "list"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -65,11 +77,13 @@ roleRef:
 ```
 
 然后创建上面的资源对象：
+
 ```shell
 $ kubectl apply -f k8s/cluster-role.yaml
 ```
 
 修改 `k8s/deployment.yaml` 文件，将 `GRAFANA_HOST` 环境变量修改成自己的 Grafana 的地址，由于我这里 Grafana 也安装在 Kubernetes 集群中的，所以直接用 DNS 形式配置，然后加上上面创建的 `dark` 这个 ServiceAccount：
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -87,24 +101,25 @@ spec:
         app: dark
     spec:
       volumes:
-      - name: dark-tokens
-        secret:
-          secretName: dark-tokens
+        - name: dark-tokens
+          secret:
+            secretName: dark-tokens
       serviceAccountName: dark
       containers:
-      - name: dark
-        image: kphoen/dark:latest
-        env:
-        - name: GRAFANA_HOST
-          value: http://grafana.kube-mon:3000
-        - name: GRAFANA_TOKEN
-          valueFrom:
-            secretKeyRef:
-              key: grafana
-              name: dark-tokens
+        - name: dark
+          image: kphoen/dark:latest
+          env:
+            - name: GRAFANA_HOST
+              value: http://grafana.kube-mon:3000
+            - name: GRAFANA_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  key: grafana
+                  name: dark-tokens
 ```
 
 修改完成后直接创建上面的 Controller：
+
 ```shell
 $ kubectl apply -f k8s/deployment.yaml
 $ kubectl get pods -l app=dark
@@ -113,6 +128,7 @@ dark-6bd956b8d6-755p2   1/1     Running   0          36m
 ```
 
 现在 Controller 定义好过后，实际上我们就可以去通过 CRD 对象来定义 Grafana Dashboard 了，如下所示定义了一个 `GrafanaDashboard` 对象，在对象中我们完全就可以根据自己的需求去定义内容了，比如定义 `annotations`、`variables`、`graph`、`table` 都可以，当然最重要的还是数据源要正确，以及查询语句：（example-dashboards.yaml）
+
 ```yaml
 apiVersion: k8s.kevingomez.fr/v1
 kind: GrafanaDashboard
@@ -210,6 +226,7 @@ spec:
 ```
 
 同样直接创建上面的示例文件：
+
 ```shell
 $ kubectl apply -f example-dashboards.yaml
 $ kubectl get dashboards
@@ -228,12 +245,12 @@ I0327 11:13:22.643061       1 event.go:278] Event(v1.ObjectReference{Kind:"Grafa
 
 在 Controller 中也可以看到对应的日志信息，资源对象创建成功以后，现在去 Grafana 页面上查看可以看到已经新增了一个 `Test folder` 的文件夹以及 `Awesome dashboard`：
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200327115100.png)
+![](https://picdn.youdianzhishi.com/images/20200327115100.png)
 
 查看 Dashboard 就可以看到和上面 CRD 中定义的各种图表信息了：
 
-![grafana dashboard](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200327115434.png)
+![grafana dashboard](https://picdn.youdianzhishi.com/images/20200327115434.png)
 
-这样我们就使用 Kubernetes 资源对象去定义了 Grafana Dashboard 了，这种方式比直接在页面上去手动配置显然要更优雅，也符合 `everything as code` 的思想🤯。
+这样我们就使用 Kubernetes 资源对象去定义了 Grafana Dashboard 了，这种方式比直接在页面上去手动配置显然要更优雅，也符合 `everything as code` 的思想 🤯。
 
 <!--adsense-self-->

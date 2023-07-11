@@ -6,7 +6,13 @@ keywords: ["Pod", "kubernetes", "DNS", "CoreDNS"]
 slug: add-dns-record-for-pod
 gitcomment: true
 notoc: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210213095950.png", desc: "https://unsplash.com/photos/ynO51_dDcUo"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/20210213095950.png",
+      desc: "https://unsplash.com/photos/ynO51_dDcUo",
+    },
+  ]
 category: "kubernetes"
 ---
 
@@ -20,7 +26,7 @@ category: "kubernetes"
 
 如下所示，我们这里只有一个 Headless 的 SVC，并没有 StatefulSet 管理的 Pod，而是 ReplicaSet 管理的 Pod，我们可以看到貌似也生成了类似于 StatefulSet 中的解析记录。
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20201125113752.png)
+![](https://picdn.youdianzhishi.com/images/20201125113752.png)
 
 <!--more-->
 
@@ -30,7 +36,7 @@ category: "kubernetes"
 
 ```yaml
 # nginx.yaml
-apiVersion: apps/v1 
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx
@@ -45,10 +51,10 @@ spec:
         app: nginx
     spec:
       containers:
-      - name: nginx
-        image: nginx:1.7.9
-        ports:
-        - containerPort: 80
+        - name: nginx
+          image: nginx:1.7.9
+          ports:
+            - containerPort: 80
 ```
 
 部署后创建了两个 Pod：
@@ -73,14 +79,16 @@ metadata:
 spec:
   clusterIP: None
   ports:
-  - name: http
-    port: 80
-    protocol: TCP
+    - name: http
+      port: 80
+      protocol: TCP
   selector:
     app: nginx
   type: ClusterIP
 ```
+
 <!--adsense-text-->
+
 创建该 service，并尝试解析 service DNS：
 
 ```bash
@@ -151,14 +159,14 @@ cluster.local.		30	IN	SOA	ns.dns.cluster.local. hostmaster.cluster.local. 160627
 
 ```
 
-可以看到并没有得到解析结果。官方文档中有一段 [Pod’s hostname and subdomain fields](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-hostname-and-subdomain-fields) 说明：
+可以看到并没有得到解析结果。官方文档中有一段  [Pod’s hostname and subdomain fields](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-hostname-and-subdomain-fields)  说明：
 
 > Pod 规约中包含一个可选的 hostname 字段，可以用来指定 Pod 的主机名。 当这个字段被设置时，它将优先于 Pod 的名字成为该 Pod 的主机名。 举个例子，给定一个 hostname 设置为 "my-host" 的 Pod， 该 Pod 的主机名将被设置为 "my-host"。Pod 规约还有一个可选的 subdomain 字段，可以用来指定 Pod 的子域名。 举个例子，某 Pod 的 hostname 设置为 “foo”，subdomain 设置为 “bar”， 在名字空间 “my-namespace” 中对应的完全限定域名（FQDN）为 `“foo.bar.my-namespace.svc.cluster-domain.example”`。
 
 现在我们编辑一下 `nginx.yaml` 加上 subdomain 测试下看看：
 
 ```yaml
-apiVersion: apps/v1 
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx
@@ -174,10 +182,10 @@ spec:
     spec:
       subdomain: nginx
       containers:
-      - name: nginx
-        image: nginx:1.7.9
-        ports:
-        - containerPort: 80
+        - name: nginx
+          image: nginx:1.7.9
+          ports:
+            - containerPort: 80
 ```
 
 更新部署再尝试解析 Pod DNS：
@@ -225,9 +233,9 @@ spec:
     name: busybox
   clusterIP: None
   ports:
-  - name: foo # Actually, no port is needed.
-    port: 1234
-    targetPort: 1234
+    - name: foo # Actually, no port is needed.
+      port: 1234
+      targetPort: 1234
 ---
 apiVersion: v1
 kind: Pod
@@ -239,11 +247,11 @@ spec:
   hostname: busybox-1
   subdomain: default-subdomain
   containers:
-  - image: busybox:1.28
-    command:
-      - sleep
-      - "3600"
-    name: busybox
+    - image: busybox:1.28
+      command:
+        - sleep
+        - "3600"
+      name: busybox
 ---
 apiVersion: v1
 kind: Pod
@@ -255,11 +263,11 @@ spec:
   hostname: busybox-2
   subdomain: default-subdomain
   containers:
-  - image: busybox:1.28
-    command:
-      - sleep
-      - "3600"
-    name: busybox
+    - image: busybox:1.28
+      command:
+        - sleep
+        - "3600"
+      name: busybox
 ```
 
 部署然后尝试解析 Pod DNS (注意这里 hostname 和 pod 的名字有区别，中间多了减号)：
@@ -294,7 +302,7 @@ busybox-1.default-subdomain.default.svc.cluster.local. 5 IN A 10.44.0.6
 
 现在我们看到有 ANSWER 记录回来了，hostname 和 subdomain 二者都必须显式指定，缺一不可。一开始我们的截图中的实现方式其实也是这种方式。
 
-![https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20201125115719.png](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20201125115719.png)
+![https://picdn.youdianzhishi.com/images/20201125115719.png](https://picdn.youdianzhishi.com/images/20201125115719.png)
 
 现在我们修改一下之前的 nginx deployment 加上 hostname，重新解析：
 

@@ -5,7 +5,13 @@ tags: ["kubernetes", "kubelet", "kubeadm"]
 keywords: ["kubernetes", "kubelet", "kubeadm", "更新", "kubectl", "docker"]
 slug: use-kubeadm-upgrade-k8s
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20190518122741.png", desc: "https://unsplash.com/photos/NuYKNgI3ZW0"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/20190518122741.png",
+      desc: "https://unsplash.com/photos/NuYKNgI3ZW0",
+    },
+  ]
 category: "kubernetes"
 ---
 
@@ -14,7 +20,9 @@ category: "kubernetes"
 <!--more-->
 
 ## 更新集群
+
 首先我们保留 kubeadm config 文件：
+
 ```shell
 $ kubeadm config view
 api:
@@ -93,9 +101,10 @@ tokenUsages:
 unifiedControlPlaneImage: ""
 ```
 
-将上面的imageRepository值更改为：gcr.azk8s.cn/google_containers，然后保存内容到文件 kubeadm-config.yaml 中（当然如果你的集群可以获取到 grc.io 的镜像可以不用更改）。
+将上面的 imageRepository 值更改为：gcr.azk8s.cn/google_containers，然后保存内容到文件 kubeadm-config.yaml 中（当然如果你的集群可以获取到 grc.io 的镜像可以不用更改）。
 
 然后更新 kubeadm:
+
 ```shell
 $ yum makecache fast && yum install -y kubeadm-1.11.0-0 kubectl-1.11.0-0
 $ kubeadm version
@@ -105,6 +114,7 @@ kubeadm version: &version.Info{Major:"1", Minor:"11", GitVersion:"v1.11.0", GitC
 > 因为 kubeadm upgrade plan 命令执行过程中会去 dl.k8s.io 获取版本信息，这个地址是需要科学方法才能访问的，所以我们可以先将 kubeadm 更新到目标版本，然后就可以查看到目标版本升级的一些信息了。
 
 执行 upgrade plan 命令查看是否可以升级：
+
 ```shell
 $ kubeadm upgrade plan
 [preflight] Running pre-flight checks.
@@ -143,8 +153,8 @@ _____________________________________________________________________
 
 ```
 
-
 我们可以先使用 dry-run 命令查看升级信息：
+
 ```shell
 $ kubeadm upgrade apply v1.11.0 --config kubeadm-config.yaml --dry-run
 ```
@@ -152,6 +162,7 @@ $ kubeadm upgrade apply v1.11.0 --config kubeadm-config.yaml --dry-run
 > 注意要通过`--config`指定上面保存的配置文件，该配置文件信息包含了上一个版本的集群信息以及修改搞得镜像地址。
 
 查看了上面的升级信息确认无误后就可以执行升级操作了：
+
 ```shell
 $ kubeadm upgrade apply v1.11.0 --config kubeadm-config.yaml
 kubeadm upgrade apply v1.11.0 --config kubeadm-config.yaml
@@ -176,6 +187,7 @@ Static pod: kube-scheduler-ydzs-master hash: 2acb197d598c4730e3f5b159b241a81b
 ```
 
 隔一段时间看到如下信息就证明集群升级成功了：
+
 ```shell
 ......
 [bootstraptoken] configured RBAC rules to allow the csrapprover controller automatically approve CSRs from a Node Bootstrap Token
@@ -190,8 +202,8 @@ Static pod: kube-scheduler-ydzs-master hash: 2acb197d598c4730e3f5b159b241a81b
 [upgrade/kubelet] Now that your control plane is upgraded, please proceed with upgrading your kubelets if you haven't already done so.
 ```
 
-
 由于上面我们已经更新过 kubectl 了，现在我们用 kubectl 来查看下版本信息：
+
 ```shell
 $ kubectl version
 Client Version: version.Info{Major:"1", Minor:"11", GitVersion:"v1.11.0", GitCommit:"91e7b4fd31fcd3d5f436da26c980becec37ceefe", GitTreeState:"clean", BuildDate:"2018-06-27T20:17:28Z", GoVersion:"go1.10.2", Compiler:"gc", Platform:"linux/amd64"}
@@ -199,6 +211,7 @@ Server Version: version.Info{Major:"1", Minor:"11", GitVersion:"v1.11.0", GitCom
 ```
 
 可以看到现在 Server 端和 Client 端都已经是 v1.11.0 版本了，然后查看下 Pod 信息：
+
 ```shell
 $ kubectl get pods -n kube-system
 NAME                                             READY     STATUS    RESTARTS   AGE
@@ -224,6 +237,7 @@ tiller-deploy-847cfb9744-5cvh8                   1/1       Running   0          
 ## 更新 kubelet
 
 可以看到我们之前的 kube-dns 服务已经被 coredns 取代了，这是因为在 v1.11.0 版本后就默认使用 coredns 了，我们也可以访问下集群中的服务看是否有影响，然后查看下集群的 Node 信息：
+
 ```shell
 $ kubectl get nodes
 NAME          STATUS    ROLES     AGE       VERSION
@@ -233,12 +247,14 @@ ydzs-node2    Ready     <none>    64d       v1.10.0
 ```
 
 可以看到版本并没有更新，这是因为节点上的 kubelet 还没有更新的，我们可以通过 kubelet 查看下版本：
+
 ```shell
 $ kubelet --version
 Kubernetes v1.10.0
 ```
 
 这个时候我们去手动更新下 kubelet：
+
 ```shell
 $ yum install -y kubelet-1.11.0-0
 # 安装完成后查看下版本
@@ -256,8 +272,8 @@ ydzs-node2    Ready      <none>    64d       v1.10.0
 
 注意事项：
 
-* 如果节点上 swap 没有关掉重启 kubelet 服务会报错，所以最好是关掉 swap，执行命令：`swapoff -a` 即可。
-* 1.11.0 版本的 kubelet 默认使用的`pod-infra-container-image`镜像名称为：`k8s.gcr.io/pause:3.1`，所以最好先提前查看下集群节点上是否有这个镜像，因为我们之前 1.10.0 版本的集群默认的名字为`k8s.gcr.io/pause-amd64:3.1`，所以如果节点上还是之前的 pause 镜像的话，需要先重新打下镜像 tag：
+- 如果节点上 swap 没有关掉重启 kubelet 服务会报错，所以最好是关掉 swap，执行命令：`swapoff -a` 即可。
+- 1.11.0 版本的 kubelet 默认使用的`pod-infra-container-image`镜像名称为：`k8s.gcr.io/pause:3.1`，所以最好先提前查看下集群节点上是否有这个镜像，因为我们之前 1.10.0 版本的集群默认的名字为`k8s.gcr.io/pause-amd64:3.1`，所以如果节点上还是之前的 pause 镜像的话，需要先重新打下镜像 tag：
 
 ```shell
 $ docker tag k8s.gcr.io/pause-amd64:3.1 k8s.gcr.io/pause:3.1
@@ -269,12 +285,12 @@ $ docker tag k8s.gcr.io/pause-amd64:3.1 k8s.gcr.io/pause:3.1
 KUBELET_KUBEADM_ARGS=--cgroup-driver=cgroupfs --cni-bin-dir=/opt/cni/bin --cni-conf-dir=/etc/cni/net.d --network-plugin=cni --pod-infra-container-image=cnych/pause-amd64:3.1
 ```
 
-
 可以看到我们更新了 kubelet 的节点版本信息已经更新了，同样的方式去把另外两个节点 kubelet 更新即可。
 
 > 另外需要注意的是最好在节点上的 kubelet 更新之前将节点设置为不可调度，更新完成后再设置回来，可以避免不必要的错误。
 
 最后看下升级后的集群：
+
 ```shell
 $ kubectl get nodes
 NAME          STATUS    ROLES     AGE       VERSION
@@ -286,6 +302,7 @@ ydzs-node2    Ready     <none>    64d       v1.11.0
 到这里我们的集群就升级成功了，我们可以用同样的方法将集群升级到 v1.12.x、v1.13.x、v1.14.x 版本，而且升级过程中是不会影响到现有业务的。
 
 更新集群后遇到一个问题是，其中一个节点上的 Pod 的 IP 没有使用 cni0 网桥的网段，而是使用的 docker0 的网段，比较奇怪，我们使用的 CNI 模式，而且查看了 Flannel 的相关配置参数都没有问题的，重新将虚拟网络设备重置了，然后重启该节点的 Pod 后:
+
 ```shell
 $ ifconfig cni0 down
 $ ip link delete cni0
@@ -295,6 +312,7 @@ $ rm -rf /var/lib/cni/
 ```
 
 更奇怪的是 cni0 网桥死活创建不出来了，最后是重新使用 kubeadm reset 了，重新加入集群才解决这个问题：
+
 ```shell
 $ kubeadm reset
 # 使用下面命令获取加入节点的命令

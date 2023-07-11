@@ -6,7 +6,13 @@ tags: ["kubernetes", "Loki", "grafana"]
 keywords: ["kubernetes", "Loki", "Grafana", "日志"]
 slug: grafana-loki-usage
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200819114930.png", desc: "Grafana Loki"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/20200819114930.png",
+      desc: "Grafana Loki",
+    },
+  ]
 category: "kubernetes"
 ---
 
@@ -60,7 +66,7 @@ Loki 可以在本地小规模运行也可以横向扩展。Loki 自带单进程�
 
 每一个唯一的标签集数据都会在内存中构建成`chunks`，然后将它们存储到后端存储中去。
 
-如果一个采集器进程崩溃或者突然挂掉了，所有还没有被刷新到存储的数据就会丢失。Loki 通常配置成多个副本（通常为3个）来降低这种风险。
+如果一个采集器进程崩溃或者突然挂掉了，所有还没有被刷新到存储的数据就会丢失。Loki 通常配置成多个副本（通常为 3 个）来降低这种风险。
 
 **时间戳排序**
 
@@ -122,7 +128,7 @@ Fluentd 通常用于收集日志并转发到 Elasticsearch。Fluentd 被称为�
 
 相比之下，Promtail 是为 Loki 量身定做的。它的主要工作模式是发现存储在磁盘上的日志文件，并将其与一组标签关联的日志文件转发到 Loki。Promtail 可以为在同一节点上运行的 Kubernetes Pods 做服务发现，作为 Docker 日志驱动，从指定的文件夹中读取日志，并对 systemd 日志不断获取。
 
-Loki 通过一组标签表示日志的方式与 Prometheus 表示指标的方式类似。当与Prometheus 一起部署在环境中时，由于使用了相同的服务发现机制，来自Promtail 的日志通常与你的应用指标具有相同的标签。拥有相同级别的日志和指标，用户可以在指标和日志之间无缝切换，帮助进行根本性原因分析。
+Loki 通过一组标签表示日志的方式与 Prometheus 表示指标的方式类似。当与 Prometheus 一起部署在环境中时，由于使用了相同的服务发现机制，来自 Promtail 的日志通常与你的应用指标具有相同的标签。拥有相同级别的日志和指标，用户可以在指标和日志之间无缝切换，帮助进行根本性原因分析。
 
 Kibana 被用于可视化和搜索 Elasticsearch 数据，并且在对这些数据进行分析时非常强大。Kibana 提供了许多可视化工具来做数据分析，例如地图、用于异常检测的机器学习，以及关系图。也可以配置报警，当出现意外情况时，可以通知用户。
 
@@ -130,7 +136,7 @@ Kibana 被用于可视化和搜索 Elasticsearch 数据，并且在对这些数�
 
 # 2. 安装
 
-官方推荐使用 Tanka 进行安装，Tanka 是 Grafana 重新实现的 Ksonnect 版本，在 Grafana 内部用于生产环境部署，但是 Tanka 目前使用并不多，熟悉的人较少，所以我们这里就不介绍这种方式了。主要介绍下面3种方式。
+官方推荐使用 Tanka 进行安装，Tanka 是 Grafana 重新实现的 Ksonnect 版本，在 Grafana 内部用于生产环境部署，但是 Tanka 目前使用并不多，熟悉的人较少，所以我们这里就不介绍这种方式了。主要介绍下面 3 种方式。
 
 ## 2.1 使用 Helm 安装 Loki
 
@@ -284,8 +290,8 @@ $ docker-compose -f docker-compose.yaml up
 - 添加仓库 [`https://download.opensuse.org/repositories/security:/logging/`](https://download.opensuse.org/repositories/security:/logging/)到系统中。比如你在使用 Leap 15.1，执行命令 `sudo zypper ar [https://download.opensuse.org/repositories/security:/logging/openSUSE_Leap_15.1/security:logging.repo](https://download.opensuse.org/repositories/security:/logging/openSUSE_Leap_15.1/security:logging.repo) ; sudo zypper ref`
 - 使用命令 `zypper in loki` 安装 Loki 软件包
 - 启动 Loki 和 Promtail 服务：
-    - `systemd start promtail && systemd enable promtail`
-    - `systemd start loki && systemd enable loki`
+  - `systemd start promtail && systemd enable promtail`
+  - `systemd start loki && systemd enable loki`
 - 根据需求修改配置文件：`/etc/loki/promtail.yaml` 和 `/etc/loki/loki.yaml` 。
 
 ### 手动构建
@@ -317,7 +323,7 @@ $ make loki
 
 ## 3.1 Loki 在 Grafana 中的配置
 
-Grafana 在 6.0 以上的版本中内置了对 Loki 的支持。建议使用 6.3 或更高版本，就可以使用新的LogQL功能。
+Grafana 在 6.0 以上的版本中内置了对 Loki 的支持。建议使用 6.3 或更高版本，就可以使用新的 LogQL 功能。
 
 - 登录 Grafana 实例，如果这是你第一次运行 Grafana，用户名和密码都默认为`admin`。
 - 在 Grafana 中，通过左侧侧边栏上的图标转到 "`配置 > 数据源`"。
@@ -386,9 +392,11 @@ $ logcli series -q --match='{namespace="loki",container_name="loki"}'
 
 从 Loki 1.6.0 开始，logcli 会分批向 Loki 发送日志查询。
 
-如果你将查询的`--limit` 参数（默认为30）设置为一个较大的数，比如 10000，那么 logcli 会自动将此请求分批发送到 Loki，默认的批次大小是 1000。
+如果你将查询的`--limit` 参数（默认为 30）设置为一个较大的数，比如 10000，那么 logcli 会自动将此请求分批发送到 Loki，默认的批次大小是 1000。
+
 <!--adsense-text-->
-Loki 对查询中返回的最大行数有一个服务端的限制（默认为5000）。批量发送允许你发出比服务端限制更大的请求，只要 `--batch` 大小小于服务器限制。
+
+Loki 对查询中返回的最大行数有一个服务端的限制（默认为 5000）。批量发送允许你发出比服务端限制更大的请求，只要 `--batch` 大小小于服务器限制。
 
 请注意，每个批次的查询元数据都会被打印在 stderr 上，可以通过设置`--quiet` 参数来停止这个动作。
 
@@ -608,14 +616,14 @@ Loki 中的标签执行一个非常重要的任务：它们定义了一个流。
 
 ```yaml
 scrape_configs:
- - job_name: system
-   pipeline_stages:
-   static_configs:
-   - targets:
-      - localhost
-     labels:
-      job: syslog
-      __path__: /var/log/syslog
+  - job_name: system
+    pipeline_stages:
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: syslog
+          __path__: /var/log/syslog
 ```
 
 这个配置将获取日志文件数据并添加一个 `job=syslog` 的标签，我们可以这样来查询：
@@ -628,22 +636,22 @@ scrape_configs:
 
 ```yaml
 scrape_configs:
- - job_name: system
-   pipeline_stages:
-   static_configs:
-   - targets:
-      - localhost
-     labels:
-      job: syslog
-      __path__: /var/log/syslog
- - job_name: system
-   pipeline_stages:
-   static_configs:
-   - targets:
-      - localhost
-     labels:
-      job: apache
-      __path__: /var/log/apache.log
+  - job_name: system
+    pipeline_stages:
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: syslog
+          __path__: /var/log/syslog
+  - job_name: system
+    pipeline_stages:
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: apache
+          __path__: /var/log/apache.log
 ```
 
 现在我们采集两个日志文件，每个文件有一个标签与一个值，所以 Loki 会存储为两个流。我们可以通过下面几种方式来查询这些流：
@@ -658,24 +666,24 @@ scrape_configs:
 
 ```yaml
 scrape_configs:
- - job_name: system
-   pipeline_stages:
-   static_configs:
-   - targets:
-      - localhost
-     labels:
-      job: syslog
-      env: dev
-      __path__: /var/log/syslog
- - job_name: system
-   pipeline_stages:
-   static_configs:
-   - targets:
-      - localhost
-     labels:
-      job: apache
-      env: dev
-      __path__: /var/log/apache.log
+  - job_name: system
+    pipeline_stages:
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: syslog
+          env: dev
+          __path__: /var/log/syslog
+  - job_name: system
+    pipeline_stages:
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: apache
+          env: dev
+          __path__: /var/log/apache.log
 ```
 
 要获取这两个任务的日志可以用下面的方式来代替 regex 的方式：
@@ -685,7 +693,9 @@ scrape_configs:
 ```
 
 通过使用一个标签就可以查询很多日志流了，通过组合多个不同的标签，可以创建非常灵活的日志查询。
+
 <!--adsense-text-->
+
 Label 标签是 Loki 日志数据的索引，它们用于查找压缩后的日志内容，这些内容被单独存储为`块`。标签和值的每一个唯一组合都定义了一个`流` ，一个流的日志被分批，压缩，并作为块进行存储。
 
 ### Cardinality（势）
@@ -741,11 +751,11 @@ action (例如 action="GET", action="POST") status_code (例如 status_code="200
 {job="apache",env="dev",action="POST",status_code="400"} 11.11.11.14 - frank [25/Jan/2000:14:00:04 -0500] "POST /1986.js HTTP/1.1" 400 932 "-" "Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.1.7) Gecko/20091221 Firefox/3.5.7 GTB6"
 ```
 
-这4行日志将成为4个独立的流，并开始填充4个独立的块。任何与这些 `标签/值` 组合相匹配的额外日志行将被添加到现有的流中。如果有另一个独特的标签组合进来（比如 status_code="500"）就会创建另一个新的流。
+这 4 行日志将成为 4 个独立的流，并开始填充 4 个独立的块。任何与这些 `标签/值` 组合相匹配的额外日志行将被添加到现有的流中。如果有另一个独特的标签组合进来（比如 status_code="500"）就会创建另一个新的流。
 
 比如我们为 IP 设置一个 Label 标签，不仅用户的每一个请求都会变成一个唯一的流，每一个来自同一用户的不同 action 或 status_code 的请求都会得到自己的流。
 
-如果有4个共同的操作（GET、PUT、POST、DELETE）和4个共同的状态码（可能不止4个！），这将会是16个流和16个独立的块。然后现在乘以每个用户，如果我们使用 IP 的标签，你将很快就会有数千或数万个流了。
+如果有 4 个共同的操作（GET、PUT、POST、DELETE）和 4 个共同的状态码（可能不止 4 个！），这将会是 16 个流和 16 个独立的块。然后现在乘以每个用户，如果我们使用 IP 的标签，你将很快就会有数千或数万个流了。
 
 这个 Cardinality 太高了，这足以让 Loki 挂掉。
 
@@ -775,9 +785,9 @@ Loki 将有效地使你的静态成本尽可能低（索引大小和内存需求
 
 在背后 Loki 会将该查询分解成更小的碎片（shards），并为标签匹配的流打开每个块（chunk），并开始查找这个 IP 地址。
 
-这些碎片的大小和并行化的数量是可配置的，并基于你提供的资源。如果你愿意，可以将 shard 间隔配置到 5m，部署20个查询器，并在几秒内处理千兆字节的日志。或者你可以更加疯狂地配置200个查询器，处理 TB 级别的日志！
+这些碎片的大小和并行化的数量是可配置的，并基于你提供的资源。如果你愿意，可以将 shard 间隔配置到 5m，部署 20 个查询器，并在几秒内处理千兆字节的日志。或者你可以更加疯狂地配置 200 个查询器，处理 TB 级别的日志！
 
-这种较小的索引和并行查询与较大/较快的全文索引之间的权衡，是让 Loki 相对于其他系统节省成本的原因。操作大型索引的成本和复杂度很高，而且通常是固定的，无论是是否在查询它，你都要一天24小时为它付费。
+这种较小的索引和并行查询与较大/较快的全文索引之间的权衡，是让 Loki 相对于其他系统节省成本的原因。操作大型索引的成本和复杂度很高，而且通常是固定的，无论是是否在查询它，你都要一天 24 小时为它付费。
 
 这种设计的好处是，你可以决定你想拥有多大的查询能力，而且你可以按需变更。查询性能成为你想花多少钱的函数。同时数据被大量压缩并存储在低成本的对象存储中，比如 S3 和 GCS。这就将固定的运营成本降到了最低，同时还能提供难以置信的快速查询能力。
 

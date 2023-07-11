@@ -1,376 +1,551 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
 
+    <title>
+      Harbor
+      源码浅析-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
+    </title>
+    <meta property="og:title" content="Harbor 源码浅析" />
+    <meta name="twitter:title" content="Harbor 源码浅析" />
 
-  <title>Harbor 源码浅析-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
-  <meta property="og:title" content="Harbor 源码浅析" />
-  <meta name="twitter:title" content="Harbor 源码浅析" />
+    <meta
+      name="description"
+      content="
 
-  <meta name="description" content="
+Harbor 是一个CNCF基金会托管的开源的可信的云原生docker registry项目，可以用于存储、签名、扫描镜像内容，Harbor 通过添加一些常用的功能如安全性、身份权限管理等来扩展 docker registry 项目，此外还支持在 registry 之间复制镜像，还提供更加高级的安全功能，如用户管理、访问控制和活动审计等，在新版本中还添加了Helm仓库托管的支持。"
+    />
+    <meta
+      property="og:description"
+      content="
 
-Harbor 是一个CNCF基金会托管的开源的可信的云原生docker registry项目，可以用于存储、签名、扫描镜像内容，Harbor 通过添加一些常用的功能如安全性、身份权限管理等来扩展 docker registry 项目，此外还支持在 registry 之间复制镜像，还提供更加高级的安全功能，如用户管理、访问控制和活动审计等，在新版本中还添加了Helm仓库托管的支持。">
-  <meta property="og:description" content="
+Harbor 是一个CNCF基金会托管的开源的可信的云原生docker registry项目，可以用于存储、签名、扫描镜像内容，Harbor 通过添加一些常用的功能如安全性、身份权限管理等来扩展 docker registry 项目，此外还支持在 registry 之间复制镜像，还提供更加高级的安全功能，如用户管理、访问控制和活动审计等，在新版本中还添加了Helm仓库托管的支持。"
+    />
+    <meta
+      name="twitter:description"
+      content="
 
-Harbor 是一个CNCF基金会托管的开源的可信的云原生docker registry项目，可以用于存储、签名、扫描镜像内容，Harbor 通过添加一些常用的功能如安全性、身份权限管理等来扩展 docker registry 项目，此外还支持在 registry 之间复制镜像，还提供更加高级的安全功能，如用户管理、访问控制和活动审计等，在新版本中还添加了Helm仓库托管的支持。">
-  <meta name="twitter:description" content="
+Harbor 是一个CNCF基金会托管的开源的可信的云原生docker registry项目，可以用于存储、签名、扫描镜像内容，Harbor 通过添加一些常用的功能如安全性、身份权限管理等来扩展 docker registry 项目，此外还支持在 registry 之间复制镜像，还提供更加高级的安全功能，如用户管理、访问控制和活动审计等，在新版本中还添加了Helm仓库托管的支持。"
+    />
+    <meta name="author" content="" />
+    <link
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+      rel="icon"
+      type="image/x-icon"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      property="og:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      name="twitter:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta
+      property="og:url"
+      content="https://www.qikqiak.com/post/harbor-code-analysis/"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="阳明的博客" />
 
-Harbor 是一个CNCF基金会托管的开源的可信的云原生docker registry项目，可以用于存储、签名、扫描镜像内容，Harbor 通过添加一些常用的功能如安全性、身份权限管理等来扩展 docker registry 项目，此外还支持在 registry 之间复制镜像，还提供更加高级的安全功能，如用户管理、访问控制和活动审计等，在新版本中还添加了Helm仓库托管的支持。">
-  <meta name="author" content=""/>
-  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
-  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
-  <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://www.qikqiak.com/post/harbor-code-analysis/" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="阳明的博客" />
+    <meta name="generator" content="Hugo 0.55.6" />
+    <link
+      rel="canonical"
+      href="https://www.qikqiak.com/post/harbor-code-analysis/"
+    />
+    <link
+      rel="alternate"
+      href="https://www.qikqiak.com/index.xml"
+      type="application/rss+xml"
+      title="阳明的博客"
+    />
 
-  <meta name="generator" content="Hugo 0.55.6" />
-  <link rel="canonical" href="https://www.qikqiak.com/post/harbor-code-analysis/" />
-  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+    <link
+      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
+      rel="stylesheet"
+    />
 
-  
-  
-  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
-  
+    <link
+      rel="stylesheet"
+      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
+      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
+    />
 
-  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
+    />
 
-  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
-  
-  
-    
     <!--[if lt IE 9]>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+        rel="stylesheet"
+      />
     <![endif]-->
-<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
-<meta name="baidu-site-verification" content="F5ojAyqaKU" />
-<meta name="keywords" content="harbor, docker, kubernetes, 源码, registry">
-<script>
-var _hmt = _hmt || [];
-(function() {
-  var hm = document.createElement("script");
-  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-  var s = document.getElementsByTagName("script")[0];
-  s.parentNode.insertBefore(hm, s);
-})();
-</script>
+    <meta
+      name="google-site-verification"
+      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
+    />
+    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
+    <meta
+      name="keywords"
+      content="harbor, docker, kubernetes, 源码, registry"
+    />
+    <script>
+      var _hmt = _hmt || [];
+      (function () {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
 
+    <script type="application/javascript">
+      var doNotTrack = false;
+      if (!doNotTrack) {
+        window.ga =
+          window.ga ||
+          function () {
+            (ga.q = ga.q || []).push(arguments);
+          };
+        ga.l = +new Date();
+        ga("create", "UA-69668147-3", "auto");
 
-
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-	ga('create', 'UA-69668147-3', 'auto');
-	
-	ga('send', 'pageview');
-}
-</script>
-<script async src='https://www.google-analytics.com/analytics.js'></script>
-
-</head>
+        ga("send", "pageview");
+      }
+    </script>
+    <script async src="https://www.google-analytics.com/analytics.js"></script>
+  </head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
-        <span class="sr-only">切换导航</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
-        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
-      </a>
-    </div>
+      <div class="container">
+        <div class="navbar-header">
+          <button
+            type="button"
+            class="navbar-toggle"
+            data-toggle="collapse"
+            data-target="#main-navbar"
+          >
+            <span class="sr-only">切换导航</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a
+            class="navbar-brand"
+            href="https://www.qikqiak.com/"
+            title="阳明的博客"
+          >
+            <img
+              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
+              style="margin-top: -5px; height: 32px"
+              alt="阳明的博客"
+            />
+          </a>
+        </div>
 
-    <div class="collapse navbar-collapse" id="main-navbar">
-      <ul class="nav navbar-nav navbar-right">
-        
-          
+        <div class="collapse navbar-collapse" id="main-navbar">
+          <ul class="nav navbar-nav navbar-right">
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-          
-        
-          
+
             <li>
-              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+              <a
+                title="课程"
+                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
+                >课程</a
+              >
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/archives">Archive</a>
-                
-                  <a href="https://www.qikqiak.com/tags">tags</a>
-                
-                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-                
-                  <a href="https://www.qikqiak.com/tags/python">python</a>
-                
-                  <a href="https://www.qikqiak.com/tags/django">django</a>
-                
-                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
-                
+                <a href="https://www.qikqiak.com/archives">Archive</a>
+
+                <a href="https://www.qikqiak.com/tags">tags</a>
+
+                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+
+                <a href="https://www.qikqiak.com/tags/python">python</a>
+
+                <a href="https://www.qikqiak.com/tags/django">django</a>
+
+                <a href="https://www.qikqiak.com/tags/devops">devops</a>
               </div>
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-                
-                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-                
-                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-                
-                  <a href="https://md.qikqiak.com/">Markdown微信</a>
-                
+                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+
+                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+
+                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+
+                <a href="https://md.qikqiak.com/">Markdown微信</a>
               </div>
             </li>
-          
-        
-          
+
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+              <a title="关于" href="https://www.qikqiak.com/page/about/"
+                >关于</a
+              >
             </li>
-          
-        
-          
+
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
-          
-        
 
-        
-
-        
-
-        
-          <li>
-            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
-              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
-            </a>
-          </li>
-          
-
-      </ul>
-    </div>
-
-  </div>
-</nav>
-
-
-  <div id="modalSearch" class="modal fade" role="dialog">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-          <h4 class="modal-title">搜索</h4>
-        </div>
-        <div class="modal-body">
-            
-<div class="aa-input-container" id="aa-input-container">
-    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
-    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
-    </svg>
-</div>
-<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
-
-<script>
-var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
-var index = client.initIndex('prod_blog');
-
-autocomplete('#aa-search-input',
-{ hint: false}, {
-    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
-    
-    displayKey: 'name',
-    
-    templates: {
-        
-        suggestion: function(suggestion) {
-            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
-            suggestion._highlightResult.title.value + '</a></span>';
-        }
-    }
-});
-</script>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+            <li>
+              <a
+                href="#modalSearch"
+                data-toggle="modal"
+                data-target="#modalSearch"
+                style="outline: none"
+              >
+                <span
+                  id="searchGlyph"
+                  class="glyphicon glyphicon-search"
+                ></span>
+              </a>
+            </li>
+          </ul>
         </div>
       </div>
-    </div>
-  </div>
+    </nav>
 
-    
-  
-  
-  
-
-
-
-
-  
-
-  <header class="header-section ">
-    
-    
-    
-    <div class="intro-header no-img">
-      
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <div class="post-heading">
-              <h1>Harbor 源码浅析</h1>
-                
-                
-                  <span class="post-meta">
-  
-    发表于 February 20, 2019
-  
-  
-</span>
-
-
-                
+    <div id="modalSearch" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">
+              &times;
+            </button>
+            <h4 class="modal-title">搜索</h4>
+          </div>
+          <div class="modal-body">
+            <div class="aa-input-container" id="aa-input-container">
+              <input
+                type="search"
+                id="aa-search-input"
+                class="aa-input-search"
+                placeholder="Search for titles or URIs..."
+                name="search"
+                autocomplete="off"
+              />
+              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+                <path
+                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
+                />
+              </svg>
             </div>
+            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+            <script>
+              var client = algoliasearch(
+                "1JDRAS0AZR",
+                "8804ac109158bb3bb60d74ce98fa332f"
+              );
+              var index = client.initIndex("prod_blog");
+
+              autocomplete(
+                "#aa-search-input",
+                { hint: false },
+                {
+                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
+
+                  displayKey: "name",
+
+                  templates: {
+                    suggestion: function (suggestion) {
+                      return (
+                        "<span>" +
+                        '<a href="https://www.qikqiak.com/post/' +
+                        suggestion.slug +
+                        '">' +
+                        suggestion._highlightResult.title.value +
+                        "</a></span>"
+                      );
+                    },
+                  },
+                }
+              );
+            </script>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">
+              close
+            </button>
           </div>
         </div>
       </div>
     </div>
-    
-    
-  </header>
 
+    <header class="header-section">
+      <div class="intro-header no-img">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>Harbor 源码浅析</h1>
 
-    
-
-
-
-<div class="container" role="main">
-  <div class="row">
-
-    
-    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <div>
-            
-            
-            <h5 id="tags" style="margin-top: 30px;">标签:
-              
-                  <a href="https://www.qikqiak.com/tags/harbor/">harbor</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/docker/">docker</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
-              
-            </h5>
-            
+                <span class="post-meta"> 发表于 February 20, 2019 </span>
+              </div>
+            </div>
+          </div>
         </div>
-  
-        <article role="main" class="blog-post" itemprop="articleBody" id="content">
-          
-  
-          
-          
-          
-  
-          
-          
-          
-  
-          
-          
-          
+      </div>
+    </header>
 
-          <p><a href="https://www.qikqiak.com/post/harbor-code-analysis/"><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/Q2xt5X.jpg" alt="harbor" /></a></p>
+    <div class="container" role="main">
+      <div class="row">
+        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+          <div>
+            <h5 id="tags" style="margin-top: 30px">
+              标签:
 
-<p><a href="https://github.com/goharbor/harbor">Harbor</a> 是一个<code>CNCF</code>基金会托管的开源的可信的云原生<code>docker registry</code>项目，可以用于存储、签名、扫描镜像内容，Harbor 通过添加一些常用的功能如安全性、身份权限管理等来扩展 docker registry 项目，此外还支持在 registry 之间复制镜像，还提供更加高级的安全功能，如用户管理、访问控制和活动审计等，在新版本中还添加了<code>Helm</code>仓库托管的支持。</p>
+              <a href="https://www.qikqiak.com/tags/harbor/">harbor</a> &nbsp;
 
-<blockquote>
-<p>本文所有源码基于 Harbor release-1.7.0 版本进行分析。</p>
-</blockquote>
+              <a href="https://www.qikqiak.com/tags/docker/">docker</a> &nbsp;
 
-<p><code>Harbor</code>最核心的功能就是给 docker registry 添加上一层权限保护的功能，要实现这个功能，就需要我们在使用 docker login、pull、push 等命令的时候进行拦截，先进行一些权限相关的校验，再进行操作，其实这一系列的操作 docker registry v2 就已经为我们提供了支持，v2 集成了一个安全认证的功能，将安全认证暴露给外部服务，让外部服务去实现。</p>
+              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
+              &nbsp;
+            </h5>
+          </div>
 
-<h3 id="docker-registry-v2-认证">docker registry v2 认证</h3>
+          <article
+            role="main"
+            class="blog-post"
+            itemprop="articleBody"
+            id="content"
+          >
+            <p>
+              <a href="https://www.qikqiak.com/post/harbor-code-analysis/"
+                ><img
+                  src="https://picdn.youdianzhishi.com/images/Q2xt5X.jpg"
+                  alt="harbor"
+              /></a>
+            </p>
 
-<p>上面我们说了 docker registry v2 将安全认证暴露给了外部服务使用，那么是怎样暴露的呢？我们在命令行中输入<code>docker login https://registry.qikqiak.com</code>为例来为大家说明下认证流程：</p>
+            <p>
+              <a href="https://github.com/goharbor/harbor">Harbor</a>
+              是一个<code>CNCF</code>基金会托管的开源的可信的云原生<code
+                >docker registry</code
+              >项目，可以用于存储、签名、扫描镜像内容，Harbor
+              通过添加一些常用的功能如安全性、身份权限管理等来扩展 docker
+              registry 项目，此外还支持在 registry
+              之间复制镜像，还提供更加高级的安全功能，如用户管理、访问控制和活动审计等，在新版本中还添加了<code>Helm</code>仓库托管的支持。
+            </p>
 
-<ul>
-<li>1. docker client 接收到用户输入的 docker login 命令，将命令转化为调用 engine api 的 RegistryLogin 方法</li>
-<li>2. 在 RegistryLogin 方法中通过 http 盗用 registry 服务中的 auth 方法</li>
-<li>3. 因为我们这里使用的是 v2 版本的服务，所以会调用 loginV2 方法，在 loginV2 方法中会进行 /v2/ 接口调用，该接口会对请求进行认证</li>
-<li>4. 此时的请求中并没有包含 token 信息，认证会失败，返回 401 错误，同时会在 header 中返回去哪里请求认证的服务器地址</li>
-<li>5. registry client 端收到上面的返回结果后，便会去返回的认证服务器那里进行认证请求，向认证服务器发送的请求的 header 中包含有加密的用户名和密码</li>
-<li>6. 认证服务器从 header 中获取到加密的用户名和密码，这个时候就可以结合实际的认证系统进行认证了，比如从数据库中查询用户认证信息或者对接 ldap 服务进行认证校验</li>
-<li>7. 认证成功后，会返回一个 token 信息，client 端会拿着返回的 token 再次向 registry 服务发送请求，这次需要带上得到的 token，请求验证成功，返回状态码就是200了</li>
-<li>8. docker client 端接收到返回的200状态码，说明操作成功，在控制台上打印<code>Login Succeeded</code>的信息</li>
-</ul>
+            <blockquote>
+              <p>本文所有源码基于 Harbor release-1.7.0 版本进行分析。</p>
+            </blockquote>
 
-<p>至此，整个登录过程完成，整个过程可以用下面的流程图来说明：</p>
+            <p>
+              <code>Harbor</code>最核心的功能就是给 docker registry
+              添加上一层权限保护的功能，要实现这个功能，就需要我们在使用 docker
+              login、pull、push
+              等命令的时候进行拦截，先进行一些权限相关的校验，再进行操作，其实这一系列的操作
+              docker registry v2 就已经为我们提供了支持，v2
+              集成了一个安全认证的功能，将安全认证暴露给外部服务，让外部服务去实现。
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/cQZwq7.jpg" alt="docker login"><figcaption>docker login</figcaption></figure>
+            <h3 id="docker-registry-v2-认证">docker registry v2 认证</h3>
 
-<p>要完成上面的登录认证过程有两个关键点需要注意：怎样让 registry 服务知道服务认证地址？我们自己提供的认证服务生成的 token 为什么 registry 就能够识别？</p>
+            <p>
+              上面我们说了 docker registry v2
+              将安全认证暴露给了外部服务使用，那么是怎样暴露的呢？我们在命令行中输入<code
+                >docker login https://registry.qikqiak.com</code
+              >为例来为大家说明下认证流程：
+            </p>
 
-<p>对于第一个问题，比较好解决，registry 服务本身就提供了一个配置文件，可以在启动 registry 服务的配置文件中指定上认证服务地址即可，其中有如下这样的一段配置信息：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">......
+            <ul>
+              <li>
+                1. docker client 接收到用户输入的 docker login
+                命令，将命令转化为调用 engine api 的 RegistryLogin 方法
+              </li>
+              <li>
+                2. 在 RegistryLogin 方法中通过 http 盗用 registry 服务中的 auth
+                方法
+              </li>
+              <li>
+                3. 因为我们这里使用的是 v2 版本的服务，所以会调用 loginV2
+                方法，在 loginV2 方法中会进行 /v2/
+                接口调用，该接口会对请求进行认证
+              </li>
+              <li>
+                4. 此时的请求中并没有包含 token 信息，认证会失败，返回 401
+                错误，同时会在 header 中返回去哪里请求认证的服务器地址
+              </li>
+              <li>
+                5. registry client
+                端收到上面的返回结果后，便会去返回的认证服务器那里进行认证请求，向认证服务器发送的请求的
+                header 中包含有加密的用户名和密码
+              </li>
+              <li>
+                6. 认证服务器从 header
+                中获取到加密的用户名和密码，这个时候就可以结合实际的认证系统进行认证了，比如从数据库中查询用户认证信息或者对接
+                ldap 服务进行认证校验
+              </li>
+              <li>
+                7. 认证成功后，会返回一个 token 信息，client 端会拿着返回的
+                token 再次向 registry 服务发送请求，这次需要带上得到的
+                token，请求验证成功，返回状态码就是200了
+              </li>
+              <li>
+                8. docker client
+                端接收到返回的200状态码，说明操作成功，在控制台上打印<code
+                  >Login Succeeded</code
+                >的信息
+              </li>
+            </ul>
+
+            <p>至此，整个登录过程完成，整个过程可以用下面的流程图来说明：</p>
+
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/cQZwq7.jpg"
+                alt="docker login"
+              />
+              <figcaption>docker login</figcaption>
+            </figure>
+
+            <p>
+              要完成上面的登录认证过程有两个关键点需要注意：怎样让 registry
+              服务知道服务认证地址？我们自己提供的认证服务生成的 token 为什么
+              registry 就能够识别？
+            </p>
+
+            <p>
+              对于第一个问题，比较好解决，registry
+              服务本身就提供了一个配置文件，可以在启动 registry
+              服务的配置文件中指定上认证服务地址即可，其中有如下这样的一段配置信息：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">......
 auth:
   token:
     realm: token-realm
     service: token-service
     issuer: registry-token-issuer
     rootcertbundle: /root/certs/bundle
-......</code></pre></div>
-<p>其中 realm 就可以用来指定一个认证服务的地址，下面我们可以看到 Harbor 中该配置的内容</p>
+......</code></pre>
+            </div>
+            <p>
+              其中 realm 就可以用来指定一个认证服务的地址，下面我们可以看到
+              Harbor 中该配置的内容
+            </p>
 
-<blockquote>
-<p>关于 registry 的配置，可以参考官方文档：<a href="https://docs.docker.com/registry/configuration/">https://docs.docker.com/registry/configuration/</a></p>
-</blockquote>
+            <blockquote>
+              <p>
+                关于 registry 的配置，可以参考官方文档：<a
+                  href="https://docs.docker.com/registry/configuration/"
+                  >https://docs.docker.com/registry/configuration/</a
+                >
+              </p>
+            </blockquote>
 
-<p>第二个问题，就是 registry 怎么能够识别我们返回的 token 文件？如果按照 registry 的要求生成一个 token，是不是 registry 就可以识别了？所以我们需要在我们的认证服务器中按照 registry 的要求生成 token，而不是随便乱生成。那么要怎么生成呢？我们可以在 docker registry 的源码中可以看到 token 是如何定义的，文件路径在<code>distribution/registry/token/token.go</code>，从源码中我们可以看到 token 是通过<code>JWT（JSON Web Token）</code>来实现的，所以我们按照要求生成一个 JWT 的 token 就可以了。</p>
+            <p>
+              第二个问题，就是 registry 怎么能够识别我们返回的 token
+              文件？如果按照 registry 的要求生成一个 token，是不是 registry
+              就可以识别了？所以我们需要在我们的认证服务器中按照 registry
+              的要求生成 token，而不是随便乱生成。那么要怎么生成呢？我们可以在
+              docker registry 的源码中可以看到 token
+              是如何定义的，文件路径在<code>distribution/registry/token/token.go</code>，从源码中我们可以看到
+              token 是通过<code>JWT（JSON Web Token）</code
+              >来实现的，所以我们按照要求生成一个 JWT 的 token 就可以了。
+            </p>
 
-<h3 id="harbor-认证">Harbor 认证</h3>
+            <h3 id="harbor-认证">Harbor 认证</h3>
 
-<p>上面我们已经说明了 docker registry v2 认证的整个流程，Harbor 实际上核心的功能就是提供上面的认证服务的功能。我们在 Harbor 的源码目录中可以查看到 registry 服务的配置文件，路径为：<code>make/common/templates/registry/config.yml</code>，其中有两个非常重要的配置信息：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">......
+            <p>
+              上面我们已经说明了 docker registry v2 认证的整个流程，Harbor
+              实际上核心的功能就是提供上面的认证服务的功能。我们在 Harbor
+              的源码目录中可以查看到 registry
+              服务的配置文件，路径为：<code>make/common/templates/registry/config.yml</code>，其中有两个非常重要的配置信息：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">......
 auth:
   token:
     issuer: harbor-token-issuer
     realm: $public_url/service/token
     rootcertbundle: /etc/registry/root.crt
     service: harbor-registry
-......</code></pre></div>
-<p>一个就是上面我们提到的 auth.token.realm，是用来提供 registry v2 安全认证的外部服务地址，这里默认的配置是<code>$public_url/service/token</code>，其中<code>$public_url</code>就是 Harbor 服务的主域地址，所以安全认证服务就是去请求<code>/service/token</code>这个地址了，由于 Harbor 是基于 beego 这个 web 框架进行开发的，所以我们只需要去查找下<code>/service/token</code>这个路由，就可以找到对应的请求处理方法了。可以很容易在文件<code>src/core/router.go</code>文件中找到改路由：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">initRouters</span>() {
+......</code></pre>
+            </div>
+            <p>
+              一个就是上面我们提到的 auth.token.realm，是用来提供 registry v2
+              安全认证的外部服务地址，这里默认的配置是<code>$public_url/service/token</code>，其中<code>$public_url</code>就是
+              Harbor
+              服务的主域地址，所以安全认证服务就是去请求<code>/service/token</code>这个地址了，由于
+              Harbor 是基于 beego 这个 web
+              框架进行开发的，所以我们只需要去查找下<code>/service/token</code>这个路由，就可以找到对应的请求处理方法了。可以很容易在文件<code>src/core/router.go</code>文件中找到改路由：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-golang" data-lang="golang"><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">initRouters</span>() {
     <span style="color:#ff79c6">......</span>
     beego.<span style="color:#50fa7b">Router</span>(<span style="color:#f1fa8c">&#34;/service/token&#34;</span>, <span style="color:#ff79c6">&amp;</span>token.Handler{})
     <span style="color:#ff79c6">......</span>
-}</code></pre></div>
-<p>上面的请求处理方法在<code>src/core/service/token.go</code>文件中，里面有一个<code>Get</code>方法就是用来处理该请求的：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#8be9fd;font-style:italic">func</span> (h <span style="color:#ff79c6">*</span>Handler) <span style="color:#50fa7b">Get</span>() {
+}</code></pre>
+            </div>
+            <p>
+              上面的请求处理方法在<code>src/core/service/token.go</code>文件中，里面有一个<code>Get</code>方法就是用来处理该请求的：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-golang" data-lang="golang"><span style="color:#8be9fd;font-style:italic">func</span> (h <span style="color:#ff79c6">*</span>Handler) <span style="color:#50fa7b">Get</span>() {
     request <span style="color:#ff79c6">:=</span> h.Ctx.Request
     log.<span style="color:#50fa7b">Debugf</span>(<span style="color:#f1fa8c">&#34;URL for token request: %s&#34;</span>, request.URL.<span style="color:#50fa7b">String</span>())
     service <span style="color:#ff79c6">:=</span> h.<span style="color:#50fa7b">GetString</span>(<span style="color:#f1fa8c">&#34;service&#34;</span>)
@@ -391,9 +566,22 @@ auth:
     h.Data[<span style="color:#f1fa8c">&#34;json&#34;</span>] = token
     h.<span style="color:#50fa7b">ServeJSON</span>()
 
-}</code></pre></div>
-<p>上面的方法通过参数 service 来获取一个 tokenCreator，然后调用 Create 方法生成 token，方法如下：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#8be9fd;font-style:italic">func</span> (g generalCreator) <span style="color:#50fa7b">Create</span>(r <span style="color:#ff79c6">*</span>http.Request) (<span style="color:#ff79c6">*</span>models.Token, <span style="color:#8be9fd">error</span>) {
+}</code></pre>
+            </div>
+            <p>
+              上面的方法通过参数 service 来获取一个 tokenCreator，然后调用
+              Create 方法生成 token，方法如下：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-golang" data-lang="golang"><span style="color:#8be9fd;font-style:italic">func</span> (g generalCreator) <span style="color:#50fa7b">Create</span>(r <span style="color:#ff79c6">*</span>http.Request) (<span style="color:#ff79c6">*</span>models.Token, <span style="color:#8be9fd">error</span>) {
     <span style="color:#8be9fd;font-style:italic">var</span> err <span style="color:#8be9fd">error</span>
     scopes <span style="color:#ff79c6">:=</span> <span style="color:#50fa7b">parseScopes</span>(r.URL)
     log.<span style="color:#50fa7b">Debugf</span>(<span style="color:#f1fa8c">&#34;scopes: %v&#34;</span>, scopes)
@@ -420,19 +608,51 @@ auth:
         <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, err
     }
     <span style="color:#ff79c6">return</span> <span style="color:#50fa7b">MakeToken</span>(ctx.<span style="color:#50fa7b">GetUsername</span>(), g.service, access)
-}</code></pre></div>
-<p>这里就做了一系列的权限校验，如果没有问题就生成一个 token 对象返回，这里生成的 Token 对象结构体如下：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#8be9fd;font-style:italic">type</span> Token <span style="color:#8be9fd;font-style:italic">struct</span> {
+}</code></pre>
+            </div>
+            <p>
+              这里就做了一系列的权限校验，如果没有问题就生成一个 token
+              对象返回，这里生成的 Token 对象结构体如下：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-golang" data-lang="golang"><span style="color:#8be9fd;font-style:italic">type</span> Token <span style="color:#8be9fd;font-style:italic">struct</span> {
     Token     <span style="color:#8be9fd">string</span> <span style="color:#f1fa8c">`json:&#34;token&#34;`</span>
     ExpiresIn <span style="color:#8be9fd">int</span>    <span style="color:#f1fa8c">`json:&#34;expires_in&#34;`</span>
     IssuedAt  <span style="color:#8be9fd">string</span> <span style="color:#f1fa8c">`json:&#34;issued_at&#34;`</span>
-}</code></pre></div>
-<p>和 JWT 定义的 token 格式是保持一致的，所以 docker registry v2 能够识别我们返回的 token 字符串。</p>
+}</code></pre>
+            </div>
+            <p>
+              和 JWT 定义的 token 格式是保持一致的，所以 docker registry v2
+              能够识别我们返回的 token 字符串。
+            </p>
 
-<h3 id="harbor-api">Harbor API</h3>
+            <h3 id="harbor-api">Harbor API</h3>
 
-<p>上面是 Harbor 提供的最核心的认证服务功能，除此之外还有很多其他的功能，比如 Harbor 还提供了一个额外的 Dashboard 可供我们操作，还支持 Helm Chart 仓库。同样我们再看下之前的<code>src/core/router.go</code>文件：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">initRouters</span>() {
+            <p>
+              上面是 Harbor
+              提供的最核心的认证服务功能，除此之外还有很多其他的功能，比如
+              Harbor 还提供了一个额外的 Dashboard 可供我们操作，还支持 Helm
+              Chart
+              仓库。同样我们再看下之前的<code>src/core/router.go</code>文件：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-golang" data-lang="golang"><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">initRouters</span>() {
 
     <span style="color:#6272a4">// standalone
 </span><span style="color:#6272a4"></span>    <span style="color:#ff79c6">if</span> !config.<span style="color:#50fa7b">WithAdmiral</span>() {
@@ -557,9 +777,27 @@ auth:
     <span style="color:#6272a4">// Error pages
 </span><span style="color:#6272a4"></span>    beego.<span style="color:#50fa7b">ErrorController</span>(<span style="color:#ff79c6">&amp;</span>controllers.ErrorController{})
 
-}</code></pre></div>
-<p>上面这个文件里面就定义了 Harbor 核心的一些 API，其中如果<code>!config.WithAdmiral()</code>为真，则定义的一些用登录相关接口就会生效，Admiral 是 Vmware 的一个容器管理平台，如果我们在配置文件中定义了参数<code>admiral_url</code>，那么 Harbor 就会和 Admiral 进行交互，如果没有配置这个参数，那么就会去和我们定义的 login 相关接口进行交互了。我们这里简单介绍一下主要的接口，第一个登录接口<code>post:Login</code>：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#6272a4">// Login handles login request from UI.
+}</code></pre>
+            </div>
+            <p>
+              上面这个文件里面就定义了 Harbor 核心的一些
+              API，其中如果<code>!config.WithAdmiral()</code>为真，则定义的一些用登录相关接口就会生效，Admiral
+              是 Vmware
+              的一个容器管理平台，如果我们在配置文件中定义了参数<code>admiral_url</code>，那么
+              Harbor 就会和 Admiral
+              进行交互，如果没有配置这个参数，那么就会去和我们定义的 login
+              相关接口进行交互了。我们这里简单介绍一下主要的接口，第一个登录接口<code>post:Login</code>：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-golang" data-lang="golang"><span style="color:#6272a4">// Login handles login request from UI.
 </span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">func</span> (cc <span style="color:#ff79c6">*</span>CommonController) <span style="color:#50fa7b">Login</span>() {
     principal <span style="color:#ff79c6">:=</span> cc.<span style="color:#50fa7b">GetString</span>(<span style="color:#f1fa8c">&#34;principal&#34;</span>)
     password <span style="color:#ff79c6">:=</span> cc.<span style="color:#50fa7b">GetString</span>(<span style="color:#f1fa8c">&#34;password&#34;</span>)
@@ -577,9 +815,21 @@ auth:
         cc.<span style="color:#50fa7b">CustomAbort</span>(http.StatusUnauthorized, <span style="color:#f1fa8c">&#34;&#34;</span>)
     }
     cc.<span style="color:#50fa7b">SetSession</span>(<span style="color:#f1fa8c">&#34;user&#34;</span>, <span style="color:#ff79c6">*</span>user)
-}</code></pre></div>
-<p>根据请求获取用户名和密码，然后调用<code>auth.Login</code>方法进行登录校验，方法位于文件<code>src/core/auth/authenticator.go</code>下：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#6272a4">// Login authenticates user credentials based on setting.
+}</code></pre>
+            </div>
+            <p>
+              根据请求获取用户名和密码，然后调用<code>auth.Login</code>方法进行登录校验，方法位于文件<code>src/core/auth/authenticator.go</code>下：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-golang" data-lang="golang"><span style="color:#6272a4">// Login authenticates user credentials based on setting.
 </span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">Login</span>(m models.AuthModel) (<span style="color:#ff79c6">*</span>models.User, <span style="color:#8be9fd">error</span>) {
 
     authMode, err <span style="color:#ff79c6">:=</span> config.<span style="color:#50fa7b">AuthMode</span>()
@@ -610,10 +860,27 @@ auth:
     }
     err = authenticator.<span style="color:#50fa7b">PostAuthenticate</span>(user)
     <span style="color:#ff79c6">return</span> user, err
-}</code></pre></div>
-<p>通过<code>authenticator.Authenticate</code>方法进行验证，这里就需要通过 authMode 来进行判断应该调用哪个认证方法
-验证，该参数就是 Harbor 全局配置文件中的<code>auth_mode</code>参数，默认情况下<code>auth_mode=db_auth</code>，除此之外还可以设置成<code>ldap_auth</code>来通过提供一个<code>LDAP Server</code>进行用户认证，也可以设置成<code>uaa_auth</code>来通过 cloud foundry 的 id manager 来进行用户认证。比如如果使用数据库验证的话，那么校验方法就在文件<code>src/core/auth/db/db.go</code>中，方法如下：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#6272a4">// Authenticate calls dao to authenticate user.
+}</code></pre>
+            </div>
+            <p>
+              通过<code>authenticator.Authenticate</code>方法进行验证，这里就需要通过
+              authMode 来进行判断应该调用哪个认证方法 验证，该参数就是 Harbor
+              全局配置文件中的<code>auth_mode</code>参数，默认情况下<code>auth_mode=db_auth</code>，除此之外还可以设置成<code>ldap_auth</code>来通过提供一个<code
+                >LDAP Server</code
+              >进行用户认证，也可以设置成<code>uaa_auth</code>来通过 cloud
+              foundry 的 id manager
+              来进行用户认证。比如如果使用数据库验证的话，那么校验方法就在文件<code>src/core/auth/db/db.go</code>中，方法如下：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-golang" data-lang="golang"><span style="color:#6272a4">// Authenticate calls dao to authenticate user.
 </span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">func</span> (d <span style="color:#ff79c6">*</span>Auth) <span style="color:#50fa7b">Authenticate</span>(m models.AuthModel) (<span style="color:#ff79c6">*</span>models.User, <span style="color:#8be9fd">error</span>) {
     u, err <span style="color:#ff79c6">:=</span> dao.<span style="color:#50fa7b">LoginByDb</span>(m)
     <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
@@ -623,9 +890,21 @@ auth:
         <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, auth.<span style="color:#50fa7b">NewErrAuth</span>(<span style="color:#f1fa8c">&#34;Invalid credentials&#34;</span>)
     }
     <span style="color:#ff79c6">return</span> u, <span style="color:#ff79c6">nil</span>
-}</code></pre></div>
-<p>进入<code>LoginByDb</code>方法，位于<code>src/common/dao/user.go</code>文件：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">// LoginByDb is used for user to login with database auth mode.
+}</code></pre>
+            </div>
+            <p>
+              进入<code>LoginByDb</code>方法，位于<code>src/common/dao/user.go</code>文件：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">// LoginByDb is used for user to login with database auth mode.
 func LoginByDb(auth models.AuthModel) (<span style="color:#ff79c6">*models.User,</span> error) {
     o := GetOrmer()
 
@@ -648,11 +927,29 @@ func LoginByDb(auth models.AuthModel) (<span style="color:#ff79c6">*models.User,
     user.Password = <span style="color:#f1fa8c">&#34;&#34;</span> // do not return the password
 
     return <span style="color:#ff79c6">&amp;user,</span> nil
-}</code></pre></div>
-<p>上面这段代码逻辑就很简单了，首先根据用户名获取用户，然后将密码加密进行比较，验证通过就将 user 对象返回，并保存到 session 里面，这个后面会用到。</p>
+}</code></pre>
+            </div>
+            <p>
+              上面这段代码逻辑就很简单了，首先根据用户名获取用户，然后将密码加密进行比较，验证通过就将
+              user 对象返回，并保存到 session 里面，这个后面会用到。
+            </p>
 
-<p>其它的 API 操作类似，在此不再一一讲述，另外再和大家介绍一下镜像仓库的相关 API 操作，镜像操作相关 API 主要位于<code>/api/repositories</code>下面，请求处理方法主要位于文件<code>src/ui/api/repository.go</code>中，比如获取镜像分页列表数据：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#8be9fd;font-style:italic">func</span> (ra <span style="color:#ff79c6">*</span>RepositoryAPI) <span style="color:#50fa7b">Get</span>() {
+            <p>
+              其它的 API
+              操作类似，在此不再一一讲述，另外再和大家介绍一下镜像仓库的相关 API
+              操作，镜像操作相关 API
+              主要位于<code>/api/repositories</code>下面，请求处理方法主要位于文件<code>src/ui/api/repository.go</code>中，比如获取镜像分页列表数据：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-golang" data-lang="golang"><span style="color:#8be9fd;font-style:italic">func</span> (ra <span style="color:#ff79c6">*</span>RepositoryAPI) <span style="color:#50fa7b">Get</span>() {
     projectID, err <span style="color:#ff79c6">:=</span> ra.<span style="color:#50fa7b">GetInt64</span>(<span style="color:#f1fa8c">&#34;project_id&#34;</span>)
     <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> <span style="color:#ff79c6">||</span> projectID <span style="color:#ff79c6">&lt;=</span> <span style="color:#bd93f9">0</span> {
         ra.<span style="color:#50fa7b">HandleBadRequest</span>(fmt.<span style="color:#50fa7b">Sprintf</span>(<span style="color:#f1fa8c">&#34;invalid project_id %s&#34;</span>, ra.<span style="color:#50fa7b">GetString</span>(<span style="color:#f1fa8c">&#34;project_id&#34;</span>)))
@@ -710,17 +1007,48 @@ func LoginByDb(auth models.AuthModel) (<span style="color:#ff79c6">*models.User,
     ra.<span style="color:#50fa7b">SetPaginationHeader</span>(total, query.Page, query.Size)
     ra.Data[<span style="color:#f1fa8c">&#34;json&#34;</span>] = repositories
     ra.<span style="color:#50fa7b">ServeJSON</span>()
-}</code></pre></div>
-<p>上面的逻辑也相对比较简单，获取请求的参数，拼凑成一个 RepositoryQuery 对象，然后根据该对象去查询仓库列表数据，并支持分页返回，查询只是就是简单的操作数据库而已，其他操作也类似。不过我们仔细查看改文件中，并没有提供创建仓库的接口，这是因为创建 Repository 是在上传镜像的时候创建的，这里又回到 registry 的配置文件，里面有一段如下的配置：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">......
+}</code></pre>
+            </div>
+            <p>
+              上面的逻辑也相对比较简单，获取请求的参数，拼凑成一个
+              RepositoryQuery
+              对象，然后根据该对象去查询仓库列表数据，并支持分页返回，查询只是就是简单的操作数据库而已，其他操作也类似。不过我们仔细查看改文件中，并没有提供创建仓库的接口，这是因为创建
+              Repository 是在上传镜像的时候创建的，这里又回到 registry
+              的配置文件，里面有一段如下的配置：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">......
 notifications:
   endpoints:
   - name: harbor
     disabled: <span style="color:#ff79c6">false</span>
     url: $core_url/service/notifications
-......</code></pre></div>
-<p>其中配置的 url 就是仓库的一个回调 web hook 地址，在<code>pull</code>或者<code>push</code>镜像后就会触发该 hook 请求，比如 Harbor 这里就会去请求<code>/service/notifications</code>这个 url：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#6272a4">// Post handles POST request, and records audit log or refreshes cache based on event.
+......</code></pre>
+            </div>
+            <p>
+              其中配置的 url 就是仓库的一个回调 web hook
+              地址，在<code>pull</code>或者<code>push</code>镜像后就会触发该
+              hook 请求，比如 Harbor
+              这里就会去请求<code>/service/notifications</code>这个 url：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-golang" data-lang="golang"><span style="color:#6272a4">// Post handles POST request, and records audit log or refreshes cache based on event.
 </span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">func</span> (n <span style="color:#ff79c6">*</span>NotificationHandler) <span style="color:#50fa7b">Post</span>() {
     <span style="color:#8be9fd;font-style:italic">var</span> notification models.Notification
     err <span style="color:#ff79c6">:=</span> json.<span style="color:#50fa7b">Unmarshal</span>(n.Ctx.Input.<span style="color:#50fa7b">CopyBody</span>(<span style="color:#bd93f9">1</span><span style="color:#ff79c6">&lt;&lt;</span><span style="color:#bd93f9">32</span>), <span style="color:#ff79c6">&amp;</span>notification)
@@ -822,9 +1150,24 @@ notifications:
             }()
         }
     }
-}</code></pre></div>
-<p>从上面代码中可以看到首先在 hook 中我们可以获取到当前操作的动作，如果是 push 操作，首先判断 repository 是否存在，如果不存在则创建，对于 pull 镜像操作通过 IncreasePullCount 更新数据库 pull 镜像次数：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#6272a4">// IncreasePullCount ...
+}</code></pre>
+            </div>
+            <p>
+              从上面代码中可以看到首先在 hook
+              中我们可以获取到当前操作的动作，如果是 push 操作，首先判断
+              repository 是否存在，如果不存在则创建，对于 pull 镜像操作通过
+              IncreasePullCount 更新数据库 pull 镜像次数：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-golang" data-lang="golang"><span style="color:#6272a4">// IncreasePullCount ...
 </span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">IncreasePullCount</span>(name <span style="color:#8be9fd">string</span>) (err <span style="color:#8be9fd">error</span>) {
     o <span style="color:#ff79c6">:=</span> <span style="color:#50fa7b">GetOrmer</span>()
     num, err <span style="color:#ff79c6">:=</span> o.<span style="color:#50fa7b">QueryTable</span>(<span style="color:#f1fa8c">&#34;repository&#34;</span>).<span style="color:#50fa7b">Filter</span>(<span style="color:#f1fa8c">&#34;name&#34;</span>, name).<span style="color:#50fa7b">Update</span>(
@@ -839,166 +1182,246 @@ notifications:
         <span style="color:#ff79c6">return</span> fmt.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;Failed to increase repository pull count with name: %s&#34;</span>, name)
     }
     <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>
-}</code></pre></div>
-<p>除此之外，在路由文件中还可以看到<code>config.WithChartMuseum()</code>配置，如果在全局配置中配置了<code>with_chartmuseum=true</code>，则就会开启 Helm Chart 仓库所需要的 API，相关的请求处理方法位于文件<code>src/core/api/chart_repository.go</code>文件中。</p>
+}</code></pre>
+            </div>
+            <p>
+              除此之外，在路由文件中还可以看到<code>config.WithChartMuseum()</code>配置，如果在全局配置中配置了<code>with_chartmuseum=true</code>，则就会开启
+              Helm Chart 仓库所需要的
+              API，相关的请求处理方法位于文件<code>src/core/api/chart_repository.go</code>文件中。
+            </p>
 
-<p>除了上面的一些主要功能之外，Harbor 还有很多高级可能，感兴趣的同学可以下载 Harbor 的源码自行研究，当我们对源码比较熟悉之后，对于我们搭建 Harbor 显然是非常有帮助的，下节课给大家介绍怎样在 Kubernetes 集群中来搭建 Harbor。</p>
+            <p>
+              除了上面的一些主要功能之外，Harbor
+              还有很多高级可能，感兴趣的同学可以下载 Harbor
+              的源码自行研究，当我们对源码比较熟悉之后，对于我们搭建 Harbor
+              显然是非常有帮助的，下节课给大家介绍怎样在 Kubernetes 集群中来搭建
+              Harbor。
+            </p>
 
-<p><a href="https://youdianzhishi.com/web/course/1030" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+            <p>
+              <a
+                href="https://youdianzhishi.com/web/course/1030"
+                title="从 Docker 到 Kubernetes 进阶课程"
+                ><img
+                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
+                  alt="Kubernetes进阶训练营"
+              /></a>
+            </p>
 
+            <h2>微信公众号</h2>
+            <p>
+              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+              kubernetes 讨论群里面共同学习。
+            </p>
+            <img
+              src="https://picdn.youdianzhishi.com/images/qrcode.png"
+              alt="wechat-account-qrcode"
+            />
 
-          <h2>微信公众号</h2>
-<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
-
-  
-          
             <div class="entry-shang text-center">
-    <p>「真诚赞赏，手留余香」</p>
-    <button class="zs show-zs btn btn-bred">赞赏</button>
-</div>
-<div class="zs-modal-bg"></div>
-<div class="zs-modal-box">
-    <div class="zs-modal-head">
-        <button type="button" class="close">×</button>
-        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
-        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-    </div>
-    <div class="zs-modal-body">
-        <div class="zs-modal-btns">
-            <button class="btn btn-blink" data-num="2">2元</button>
-            <button class="btn btn-blink" data-num="5">5元</button>
-            <button class="btn btn-blink" data-num="10">10元</button>
-            <button class="btn btn-blink" data-num="50">50元</button>
-            <button class="btn btn-blink" data-num="100">100元</button>
-            <button class="btn btn-blink" data-num="1">任意金额</button>
-        </div>
-        <div class="zs-modal-pay">
-            <button class="btn btn-bred" id="pay-text">2元</button>
-            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
-        </div>
-    </div>
-    <div class="zs-modal-footer">
-        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
-    </div>
-</div>
-          
-          
-            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
-    <center>
-    <a href="#" class="social-share-icon icon-weibo"></a>
-    <a href="#" class="social-share-icon icon-wechat"></a>
-    <a href="#" class="social-share-icon icon-twitter"></a>
-    <a href="#" class="social-share-icon icon-linkedin"></a>
-    <a href="#" class="social-share-icon icon-facebook"></a>
-    <a href="#" class="social-share-icon icon-qq"></a>
-    <a href="#" class="social-share-icon icon-qzone"></a>
-    </center>
-</div>
+              <p>「真诚赞赏，手留余香」</p>
+              <button class="zs show-zs btn btn-bred">赞赏</button>
+            </div>
+            <div class="zs-modal-bg"></div>
+            <div class="zs-modal-box">
+              <div class="zs-modal-head">
+                <button type="button" class="close">×</button>
+                <span class="author"
+                  ><img
+                    src="https://www.qikqiak.com/img/avatar.jpeg"
+                  />阳明</span
+                >
+                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+              </div>
+              <div class="zs-modal-body">
+                <div class="zs-modal-btns">
+                  <button class="btn btn-blink" data-num="2">2元</button>
+                  <button class="btn btn-blink" data-num="5">5元</button>
+                  <button class="btn btn-blink" data-num="10">10元</button>
+                  <button class="btn btn-blink" data-num="50">50元</button>
+                  <button class="btn btn-blink" data-num="100">100元</button>
+                  <button class="btn btn-blink" data-num="1">任意金额</button>
+                </div>
+                <div class="zs-modal-pay">
+                  <button class="btn btn-bred" id="pay-text">2元</button>
+                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+                  <img
+                    src="https://www.qikqiak.com/img/wechat-2.png"
+                    id="pay-image"
+                  />
+                </div>
+              </div>
+              <div class="zs-modal-footer">
+                <span class="zs-wechat"
+                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
+                /></span>
+              </div>
+            </div>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+            <div
+              class="social-share"
+              data-initialized="true"
+              style="margin-bottom: 20px; margin-top: 20px"
+            >
+              <center>
+                <a href="#" class="social-share-icon icon-weibo"></a>
+                <a href="#" class="social-share-icon icon-wechat"></a>
+                <a href="#" class="social-share-icon icon-twitter"></a>
+                <a href="#" class="social-share-icon icon-linkedin"></a>
+                <a href="#" class="social-share-icon icon-facebook"></a>
+                <a href="#" class="social-share-icon icon-qq"></a>
+                <a href="#" class="social-share-icon icon-qzone"></a>
+              </center>
+            </div>
 
-          
-        </article>
-  
-        
-          
+            <link
+              rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
+            />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+          </article>
 
-<h3>相关文章</h3>
-<ul style="margin-bottom: 25px;">
-    
-    <li><a href="https://www.qikqiak.com/post/dockerfile-best-practice/">Dockerfile 最佳实践</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/pod-init-container/">初始化容器</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/write-kubernets-golang-service-step-by-step/">手摸手教你写 Kubernetes 的 golang 服务</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/install-docker-registry-harbor-in-kubernetes/">在kubernetes 集群上搭建docker 私有仓库Harbor</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/manual-install-high-available-kubernetes-cluster/">手动搭建高可用的kubernetes 集群</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/multi-stage-build-for-docker/">Docker 的多阶段构建</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/k8s-deployment-strategies/">Kubernetes 部署策略详解</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/k8s-istio-course/">Istio 实训免费视频课程</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/k8s-cka-course/">Kubernetes CKA 实训免费视频课程</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/office-env-k8s-network/">办公环境下 kubernetes 网络互通方案</a></li>
-    
-</ul>
+          <h3>相关文章</h3>
+          <ul style="margin-bottom: 25px">
+            <li>
+              <a href="https://www.qikqiak.com/post/dockerfile-best-practice/"
+                >Dockerfile 最佳实践</a
+              >
+            </li>
 
-        
-  
-        
-        <ul class="pager blog-pager">
-          
+            <li>
+              <a href="https://www.qikqiak.com/post/pod-init-container/"
+                >初始化容器</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/write-kubernets-golang-service-step-by-step/"
+                >手摸手教你写 Kubernetes 的 golang 服务</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/install-docker-registry-harbor-in-kubernetes/"
+                >在kubernetes 集群上搭建docker 私有仓库Harbor</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/manual-install-high-available-kubernetes-cluster/"
+                >手动搭建高可用的kubernetes 集群</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/multi-stage-build-for-docker/"
+                >Docker 的多阶段构建</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/k8s-deployment-strategies/"
+                >Kubernetes 部署策略详解</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/k8s-istio-course/"
+                >Istio 实训免费视频课程</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/k8s-cka-course/"
+                >Kubernetes CKA 实训免费视频课程</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/office-env-k8s-network/"
+                >办公环境下 kubernetes 网络互通方案</a
+              >
+            </li>
+          </ul>
+
+          <ul class="pager blog-pager">
             <li class="previous">
-              <a href="https://www.qikqiak.com/post/what-is-metaclass-in-python/" data-toggle="tooltip" data-placement="top" title="深入理解 Python 元类">&larr; 前一篇</a>
+              <a
+                href="https://www.qikqiak.com/post/what-is-metaclass-in-python/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="深入理解 Python 元类"
+                >&larr; 前一篇</a
+              >
             </li>
-          
-          
-            <li class="next">
-              <a href="https://www.qikqiak.com/post/harbor-quick-install/" data-toggle="tooltip" data-placement="top" title="在 Kubernetes 在快速安装 Harbor">后一篇 &rarr;</a>
-            </li>
-          
-        </ul>
-        
 
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-        
-        <ins class="adsbygoogle"
-            style="display:block"
+            <li class="next">
+              <a
+                href="https://www.qikqiak.com/post/harbor-quick-install/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="在 Kubernetes 在快速安装 Harbor"
+                >后一篇 &rarr;</a
+              >
+            </li>
+          </ul>
+
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+          ></script>
+
+          <ins
+            class="adsbygoogle"
+            style="display: block"
             data-ad-client="ca-pub-5376999672787220"
             data-ad-slot="3700507799"
             data-ad-format="auto"
-            data-full-width-responsive="true"></ins>
-        <script>
+            data-full-width-responsive="true"
+          ></ins>
+          <script>
             (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
-  
-        
-    <div id="gitalk-container"></div>
-    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-    <script>
-    var gitalk = new Gitalk({
-        clientID: 'bdb76dbb2e9d0786e350',
-        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
-        repo: 'blog',
-        owner: 'cnych',
-        admin: ['cnych'],
-        labels: ['gitment'],
-        title: 'Harbor 源码浅析',
-        createIssueManually: true,
-        id: 'harbor-code-analysis',      
-        distractionFreeMode: true  
-    });
-    gitalk.render('gitalk-container');
-</script>
+          </script>
 
-
-        
-          
-
-        
-  
+          <div id="gitalk-container"></div>
+          <link
+            rel="stylesheet"
+            href="https://unpkg.com/gitalk/dist/gitalk.css"
+          />
+          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+          <script>
+            var gitalk = new Gitalk({
+              clientID: "bdb76dbb2e9d0786e350",
+              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
+              repo: "blog",
+              owner: "cnych",
+              admin: ["cnych"],
+              labels: ["gitment"],
+              title: "Harbor 源码浅析",
+              createIssueManually: true,
+              id: "harbor-code-analysis",
+              distractionFreeMode: true,
+            });
+            gitalk.render("gitalk-container");
+          </script>
+        </div>
       </div>
-    
-    
-  </div>
-</div>
+    </div>
 
     <footer>
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <ul class="list-inline text-center footer-links">
-          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
-          
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <ul class="list-inline text-center footer-links">
+              <img
+                src="https://www.qikqiak.com/img/wechatmp.png"
+                alt="k8s技术圈"
+              />
+
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -1007,7 +1430,7 @@ notifications:
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -1016,7 +1439,7 @@ notifications:
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -1025,7 +1448,7 @@ notifications:
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -1034,121 +1457,158 @@ notifications:
                   </span>
                 </a>
               </li>
-          
-          
-          <li>
-            <a href="https://www.qikqiak.com/index.xml" title="RSS">
-              <span class="fa-stack fa-lg">
-                <i class="fa fa-circle fa-stack-2x"></i>
-                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+
+              <li>
+                <a href="https://www.qikqiak.com/index.xml" title="RSS">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+            </ul>
+            <p class="credits copyright text-muted">
+              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/">阳明的博客</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/archive/">归档</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/friend/">友链</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://beian.miit.gov.cn/" target="_blank"
+                >蜀ICP备11027319号-5</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
+                >kubernetes.io</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
+                >Kubernetes中文社区</a
+              >
+            </p>
+            <p class="text-center text-muted">
+              <script
+                async
+                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
+              ></script>
+              <span id="busuanzi_container_site_pv" style="display: none">
+                本站总访问量<span id="busuanzi_value_site_pv"></span>次
               </span>
-            </a>
-          </li>
-          
-        </ul>
-        <p class="credits copyright text-muted">
-          
+              &nbsp;&bull;&nbsp;
+              <span id="busuanzi_container_site_uv" style="display: none">
+                访客数<span id="busuanzi_value_site_uv"></span>人次
+              </span>
+            </p>
 
-          &nbsp;&bull;&nbsp;
-          2023
-
-          
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/">阳明的博客</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/archive/">归档</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/friend/">友链</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
-          
-        </p>
-        <p class="text-center text-muted">
-          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-          <span id="busuanzi_container_site_pv" style="display:none">
-            本站总访问量<span id="busuanzi_value_site_pv"></span>次
-          </span>
-          &nbsp;&bull;&nbsp;
-          <span id="busuanzi_container_site_uv" style="display:none">
-            访客数<span id="busuanzi_value_site_uv"></span>人次
-          </span>
-        </p>
-        
-        <p class="credits theme-by text-muted">
-          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
-          
-        </p>
+            <p class="credits theme-by text-muted">
+              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
+              &nbsp;&bull;&nbsp; 主题
+              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+              移植自
+              <a href="https://github.com/rootsongjc/beautifulhugo"
+                >Beautiful Hugo</a
+              >
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</footer>
+    </footer>
 
+    <script
+      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
+      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
+    ></script>
 
-<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "UA-69668147-3");
+    </script>
+    <script>
+      (function () {
+        var bp = document.createElement("script");
+        var curProtocol = window.location.protocol.split(":")[0];
+        if (curProtocol === "https") {
+          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
+        } else {
+          bp.src = "http://push.zhanzhang.baidu.com/push.js";
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+      })();
+    </script>
+    <script>
+      $(document).ready(function () {
+        var int = setInterval(fixCount, 50);
 
-
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-69668147-3');
-</script>
-<script>
-(function(){
-    var bp = document.createElement('script');
-    var curProtocol = window.location.protocol.split(':')[0];
-    if (curProtocol === 'https') {
-        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
-    }
-    else {
-        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
-    }
-    var s = document.getElementsByTagName("script")[0];
-    s.parentNode.insertBefore(bp, s);
-})();
-</script>
-<script >
-$(document).ready(function() {
-  var int = setInterval(fixCount, 50);  
-  
-  var initPVCount = 584976;
-  var initUVCount = 153191;
-  function fixCount() {                   
-    if ($("#busuanzi_container_site_pv").css("display") != "none") {
-        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
-        clearInterval(int); 
-    }
-    if ($("#busuanzi_container_site_uv").css("display") != "none") {
-      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
-      clearInterval(int); 
-    }  
-  }           
-});
-</script>
- <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
-<script type="text/javascript">
-$('.carousel').slick({
-    dots: true,
-    arrows: true,
-    autoplay: true,
-    autoplaySpeed: 4000,
-    infinite: true,
-    speed: 500,
-    fade: true,
-    cssEase: 'linear',
-    centerMode: true,
-    prevArrow: '<button type="button" class="slick-prev"></button>',
-    nextArrow: '<button type="button" class="slick-next"></button>',
-});
-</script>
-
+        var initPVCount = 584976;
+        var initUVCount = 153191;
+        function fixCount() {
+          if ($("#busuanzi_container_site_pv").css("display") != "none") {
+            $("#busuanzi_value_site_pv").html(
+              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
+            );
+            clearInterval(int);
+          }
+          if ($("#busuanzi_container_site_uv").css("display") != "none") {
+            $("#busuanzi_value_site_uv").html(
+              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
+            );
+            clearInterval(int);
+          }
+        }
+      });
+    </script>
+    <script>
+      (function (w, d, s, id) {
+        if (typeof w.webpushr !== "undefined") return;
+        w.webpushr =
+          w.webpushr ||
+          function () {
+            (w.webpushr.q = w.webpushr.q || []).push(arguments);
+          };
+        var js,
+          fjs = d.getElementsByTagName(s)[0];
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "https://cdn.webpushr.com/app.min.js";
+        fjs.parentNode.appendChild(js);
+      })(window, document, "script", "webpushr-jssdk");
+      webpushr(
+        "init",
+        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
+      );
+    </script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
+    ></script>
+    <script type="text/javascript">
+      $(".carousel").slick({
+        dots: true,
+        arrows: true,
+        autoplay: true,
+        autoplaySpeed: 4000,
+        infinite: true,
+        speed: 500,
+        fade: true,
+        cssEase: "linear",
+        centerMode: true,
+        prevArrow: '<button type="button" class="slick-prev"></button>',
+        nextArrow: '<button type="button" class="slick-next"></button>',
+      });
+    </script>
   </body>
 </html>
-

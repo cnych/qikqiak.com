@@ -8,7 +8,8 @@ gitcomment: true
 notoc: true
 category: "kubernetes"
 ---
-![自己动手写一个 Kubernetes YAML 模板化工具](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/use-go-code-k8s-yaml-template.png)
+
+![自己动手写一个 Kubernetes YAML 模板化工具](https://picdn.youdianzhishi.com/images/use-go-code-k8s-yaml-template.png)
 
 我们在使用 Kubernetes 编写资源清单文件的时候，往往会使用类似于 `Helm` 或者 `Kustomize` 这样的工具来进行模板化处理，一来是提高了资源清单的灵活性，另一方面也确实降低了我们安装复杂的 Kubernetes 应用的门槛。本文我们尝试自己使用 Golang 来实现一个 YAML 资源清单文件模板化的方案。
 
@@ -50,12 +51,12 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: my-configmap
-  namespace: {{ .Namespace }}
+  namespace: { { .Namespace } }
   labels:
     app: myapp
 data:
   USER: admin
-  PASSWORD: {{ GeneratePassword }}
+  PASSWORD: { { GeneratePassword } }
 ```
 
 然后我们把 `availableData` 和 `availableFunctions` 定义成如下所示的代码。
@@ -176,7 +177,7 @@ import(
 )
 ...
 for _, objectInYAML := range objectsInYAML {
-    runtimeObject, groupVersionAndKind, err := 
+    runtimeObject, groupVersionAndKind, err :=
     yaml.
         NewDecodingSerializer(unstructured.UnstructuredJSONScheme).
         Decode(objectInYAML.Raw, nil, nil)
@@ -206,7 +207,7 @@ if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
     if unstructuredObj.GetNamespace() == "" {
         unstructuredObj.SetNamespace("default")
     }
-    resourceREST = 
+    resourceREST =
     d.
       dynamicREST.
       Resource(mapping.Resource).

@@ -5,7 +5,13 @@ tags: ["traefik", "kubernetes", "ingress", "tcp"]
 keywords: ["traefik", "kubernetes", "traefik 2.0", "Ingress", "TCP", "redis"]
 slug: expose-redis-by-traefik2
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1570997491915-47ade51fed9f.jpeg", desc: "https://unsplash.com/photos/77AW8rM9KGg"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/photo-1570997491915-47ade51fed9f.jpeg",
+      desc: "https://unsplash.com/photos/77AW8rM9KGg",
+    },
+  ]
 category: "kubernetes"
 ---
 
@@ -15,7 +21,8 @@ category: "kubernetes"
 
 本文是来演示如何在 Kubernetes 下面通过 Traefik 暴露一个 TCP 服务的，这里我们以 Redis 为例。首先需要保证 Traefik 2.0 已经安装到了 Kubernetes 集群之中，可以参考之前我们提供的安装资源清单 [https://github.com/cnych/kubeapp](https://github.com/cnych/kubeapp/tree/master/traefik2)。
 
-## 部署 Redis 
+## 部署 Redis
+
 为了演示方便，我们这里只部署单节点的 Redis，对于 Redis 集群模式并不是我们这里的重点，下面是我们部署使用的资源清单文件：（redis.yaml）
 
 ```yaml
@@ -30,22 +37,21 @@ spec:
         app: redis
     spec:
       containers:
-      - name: redis
-        image: redis:3.2.11
-        ports:
-        - containerPort: 6379
-          protocol: TCP
+        - name: redis
+          image: redis:3.2.11
+          ports:
+            - containerPort: 6379
+              protocol: TCP
 
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
   name: redis
 spec:
   ports:
-  - port: 6379
-    targetPort: 6379
+    - port: 6379
+      targetPort: 6379
   selector:
     app: redis
 ```
@@ -57,6 +63,7 @@ $ kubectl apply -f redis.yaml
 ```
 
 ## 暴露 TCP 服务
+
 由于 Traefik 中使用 TCP 路由配置需要 SNI，而 SNI 又是依赖 TLS 的，所以我们需要配置证书才行，但是如果没有证书的话，我们可以使用通配符 `*` 进行配置，我们这里创建一个 IngressRouteTCP 类型的 CRD 对象（前面我们就已经安装了对应的 CRD 资源）：(ingressroute-redis.yaml)
 
 ```yaml
@@ -68,10 +75,10 @@ spec:
   entryPoints:
     - redis
   routes:
-  - match: HostSNI(`*`)
-    services:
-    - name: redis
-      port: 6379
+    - match: HostSNI(`*`)
+      services:
+        - name: redis
+          port: 6379
 ```
 
 <!--adsense-text-->
@@ -80,29 +87,29 @@ spec:
 
 ```yaml
 containers:
-- image: traefik:v2.0
-  name: traefik-ingress-lb
-  ports:
-  - name: web
-    containerPort: 80
-    hostPort: 80
-  - name: websecure
-    containerPort: 443
-    hostPort: 443
-  - name: redis
-    containerPort: 6379
-    hostPort: 6379
-  - name: admin
-    containerPort: 8080
-  args:
-  - --entrypoints.web.Address=:80
-  - --entrypoints.websecure.Address=:443
-  - --entrypoints.redis.Address=:6379
-  - --api.insecure=true
-  - --providers.kubernetescrd
-  - --api
-  - --api.dashboard=true
-  - --accesslog
+  - image: traefik:v2.0
+    name: traefik-ingress-lb
+    ports:
+      - name: web
+        containerPort: 80
+        hostPort: 80
+      - name: websecure
+        containerPort: 443
+        hostPort: 443
+      - name: redis
+        containerPort: 6379
+        hostPort: 6379
+      - name: admin
+        containerPort: 8080
+    args:
+      - --entrypoints.web.Address=:80
+      - --entrypoints.websecure.Address=:443
+      - --entrypoints.redis.Address=:6379
+      - --api.insecure=true
+      - --providers.kubernetescrd
+      - --api
+      - --api.dashboard=true
+      - --accesslog
 ```
 
 这里给入口点添加 hostPort 是为了能够通过节点的端口访问到服务，关于 `entryPoints` 入口点的更多信息，可以查看文档 [entrypoints](https://www.qikqiak.com/traefik-book/routing/entrypoints/) 了解更多信息。
@@ -115,7 +122,7 @@ $ kubectl apply -f ingressroute-redis.yaml
 
 创建完成后，同样我们可以去 Traefik 的 Dashboard 页面上查看是否生效：
 
-![traefik redis service](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/traefik-redis-tcp.jpg)
+![traefik redis service](https://picdn.youdianzhishi.com/images/traefik-redis-tcp.jpg)
 
 然后我们配置一个域名解析到 Traefik 所在的节点，然后通过 6379 端口来连接 Redis 服务：
 

@@ -5,16 +5,24 @@ tags: ["kubeadm", "kubernetes", "coredns", "ipvs", "calico"]
 keywords: ["kubeadm", "kubernetes", "coredns", "ipvs", "calico"]
 slug: use-kubeadm-install-kubernetes-1.15.3/
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1566807355181-4a22b3cfd335.jpeg", desc: "https://unsplash.com/photos/nfxD5dWy1wk"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/photo-1566807355181-4a22b3cfd335.jpeg",
+      desc: "https://unsplash.com/photos/nfxD5dWy1wk",
+    },
+  ]
 category: "kubernetes"
 ---
 
-以前文章和视频中都是[使用的 Kubeadm 搭建的 Kubernetes 集群](/use-kubeadm-install-kubernetes-1.10/)，但是版本比较低了（1.10.0版本），近期有不少反馈让更新下版本，本文将通过 Kubeadm 来搭建最新版本的 Kubernetes 1.15.3 集群，其实和以前搭建的方式方法基本一致，我们这里准备使用 calico 网络插件以及 ipvs 模式的 kube-proxy。
+以前文章和视频中都是[使用的 Kubeadm 搭建的 Kubernetes 集群](/use-kubeadm-install-kubernetes-1.10/)，但是版本比较低了（1.10.0 版本），近期有不少反馈让更新下版本，本文将通过 Kubeadm 来搭建最新版本的 Kubernetes 1.15.3 集群，其实和以前搭建的方式方法基本一致，我们这里准备使用 calico 网络插件以及 ipvs 模式的 kube-proxy。
 
 <!--more-->
 
 ## 环境准备
-3个节点，都是 Centos 7.6 系统，内核版本：3.10.0-957.12.2.el7.x86_64，在每个节点上添加 hosts 信息：
+
+3 个节点，都是 Centos 7.6 系统，内核版本：3.10.0-957.12.2.el7.x86_64，在每个节点上添加 hosts 信息：
+
 ```shell
 $ cat /etc/hosts
 10.151.30.11 ydzs-master
@@ -23,12 +31,14 @@ $ cat /etc/hosts
 ```
 
 禁用防火墙：
+
 ```shell
 $ systemctl stop firewalld
 $ systemctl disable firewalld
 ```
 
-禁用SELINUX：
+禁用 SELINUX：
+
 ```shell
 $ setenforce 0
 $ cat /etc/selinux/config
@@ -36,6 +46,7 @@ SELINUX=disabled
 ```
 
 创建`/etc/sysctl.d/k8s.conf`文件，添加如下内容：
+
 ```shell
 net.bridge.bridge-nf-call-ip6tables = 1
 net.bridge.bridge-nf-call-iptables = 1
@@ -43,12 +54,14 @@ net.ipv4.ip_forward = 1
 ```
 
 执行如下命令使修改生效：
+
 ```shell
 $ modprobe br_netfilter
 $ sysctl -p /etc/sysctl.d/k8s.conf
 ```
 
 安装 ipvs
+
 ```shell
 $ cat > /etc/sysconfig/modules/ipvs.modules <<EOF
 #!/bin/bash
@@ -64,16 +77,19 @@ $ chmod 755 /etc/sysconfig/modules/ipvs.modules && bash /etc/sysconfig/modules/i
 上面脚本创建了的`/etc/sysconfig/modules/ipvs.modules`文件，保证在节点重启后能自动加载所需模块。使用`lsmod | grep -e ip_vs -e nf_conntrack_ipv4`命令查看是否已经正确加载所需的内核模块。
 
 接下来还需要确保各个节点上已经安装了 ipset 软件包：
+
 ```shell
 $ yum install ipset
 ```
 
 为了便于查看 ipvs 的代理规则，最好安装一下管理工具 ipvsadm：
+
 ```shell
 $ yum install ipvsadm
 ```
 
 同步服务器时间
+
 ```shell
 $ yum install chrony -y
 $ systemctl enable chronyd
@@ -91,19 +107,21 @@ Tue Aug 27 09:28:41 CST 2019
 ```
 
 关闭 swap 分区：
+
 ```shell
 $ swapoff -a
 ```
 
 修改`/etc/fstab`文件，注释掉 SWAP 的自动挂载，使用`free -m`确认 swap 已经关闭。swappiness 参数调整，修改`/etc/sysctl.d/k8s.conf`添加下面一行：
+
 ```shell
 vm.swappiness=0
 ```
 
 执行`sysctl -p /etc/sysctl.d/k8s.conf`使修改生效。
 
-
 接下来可以安装 Docker
+
 ```shell
 $ yum install -y yum-utils \
   device-mapper-persistent-data \
@@ -130,11 +148,13 @@ Available Packages
 ```
 
 可以选择安装一个版本，比如我们这里安装最新版本：
+
 ```shell
 $ yum install docker-ce-19.03.1-3.el7
 ```
 
 配置 Docker 镜像加速器
+
 ```shell
 $ vi /etc/docker/daemon.json
 {
@@ -146,12 +166,14 @@ $ vi /etc/docker/daemon.json
 ```
 
 启动 Docker
+
 ```
 $ systemctl start docker
 $ systemctl enable docker
 ```
 
-在确保 Docker 安装完成后，上面的相关环境配置也完成了，现在我们就可以来安装 Kubeadm 了，我们这里是通过指定yum 源的方式来进行安装的：
+在确保 Docker 安装完成后，上面的相关环境配置也完成了，现在我们就可以来安装 Kubeadm 了，我们这里是通过指定 yum 源的方式来进行安装的：
+
 ```shell
 cat <<EOF > /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
@@ -166,6 +188,7 @@ EOF
 ```
 
 当然了，上面的 yum 源是需要科学上网的，如果不能科学上网的话，我们可以使用阿里云的源进行安装：
+
 ```shell
 cat <<EOF > /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
@@ -180,6 +203,7 @@ EOF
 ```
 
 然后安装 kubeadm、kubelet、kubectl：
+
 ```shell
 $ yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
 $ kubeadm version
@@ -187,40 +211,45 @@ kubeadm version: &version.Info{Major:"1", Minor:"15", GitVersion:"v1.15.3", GitC
 ```
 
 可以看到我们这里安装的是 v1.15.3 版本，然后将 kubelet 设置成开机启动：
+
 ```shell
 $ systemctl enable kubelet.service
 ```
 
 > 到这里为止上面所有的操作都需要在所有节点执行配置。
 
-
 ## 初始化集群
+
 然后接下来在 master 节点配置 kubeadm 初始化文件，可以通过如下命令导出默认的初始化配置：
+
 ```shell
 $ kubeadm config print init-defaults > kubeadm.yaml
 ```
+
 <!--adsense-text-->
+
 然后根据我们自己的需求修改配置，比如修改 imageRepository 的值，kube-proxy 的模式为 ipvs，另外需要注意的是我们这里是准备安装 calico 网络插件的，需要将 networking.podSubnet 设置为`192.168.0.0/16`：
+
 ```yaml
 apiVersion: kubeadm.k8s.io/v1beta2
 bootstrapTokens:
-- groups:
-  - system:bootstrappers:kubeadm:default-node-token
-  token: abcdef.0123456789abcdef
-  ttl: 24h0m0s
-  usages:
-  - signing
-  - authentication
+  - groups:
+      - system:bootstrappers:kubeadm:default-node-token
+    token: abcdef.0123456789abcdef
+    ttl: 24h0m0s
+    usages:
+      - signing
+      - authentication
 kind: InitConfiguration
 localAPIEndpoint:
-  advertiseAddress: 10.151.30.11  # apiserver 节点内网IP
+  advertiseAddress: 10.151.30.11 # apiserver 节点内网IP
   bindPort: 6443
 nodeRegistration:
   criSocket: /var/run/dockershim.sock
   name: ydzs-master
   taints:
-  - effect: NoSchedule
-    key: node-role.kubernetes.io/master
+    - effect: NoSchedule
+      key: node-role.kubernetes.io/master
 ---
 apiServer:
   timeoutForControlPlane: 4m0s
@@ -229,13 +258,13 @@ certificatesDir: /etc/kubernetes/pki
 clusterName: kubernetes
 controllerManager: {}
 dns:
-  type: CoreDNS  # dns类型
+  type: CoreDNS # dns类型
 etcd:
   local:
     dataDir: /var/lib/etcd
 imageRepository: gcr.azk8s.cn/google_containers
 kind: ClusterConfiguration
-kubernetesVersion: v1.15.3  # k8s版本
+kubernetesVersion: v1.15.3 # k8s版本
 networking:
   dnsDomain: cluster.local
   podSubnet: 192.168.0.0/16
@@ -244,10 +273,11 @@ scheduler: {}
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
-mode: ipvs  # kube-proxy 模式
+mode: ipvs # kube-proxy 模式
 ```
 
 然后使用上面的配置文件进行初始化：
+
 ```shell
 $ kubeadm init --config kubeadm.yaml
 [init] Using Kubernetes version: v1.15.3
@@ -319,9 +349,10 @@ kubeadm join 10.151.30.11:6443 --token abcdef.0123456789abcdef \
     --discovery-token-ca-cert-hash sha256:deb5158b39948a4592ff48512047ea6e45b288c248872724a28f15008962178b
 ```
 
-> 可以看到最新验证的 docker 版本是18.09，虽然是一个 warning，所以最好还是安装18.09版本的 docker。
+> 可以看到最新验证的 docker 版本是 18.09，虽然是一个 warning，所以最好还是安装 18.09 版本的 docker。
 
 拷贝 kubeconfig 文件
+
 ```shell
 $ mkdir -p $HOME/.kube
 $ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
@@ -329,7 +360,9 @@ $ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 ```
 
 ## 添加节点
+
 记住初始化集群上面的配置和操作要提前做好，将 master 节点上面的 $HOME/.kube/config 文件拷贝到 node 节点对应的文件中，安装 kubeadm、kubelet、kubectl，然后执行上面初始化完成后提示的 join 命令即可：
+
 ```shell
 $ kubeadm join 10.151.30.11:6443 --token abcdef.0123456789abcdef \
     --discovery-token-ca-cert-hash sha256:deb5158b39948a4592ff48512047ea6e45b288c248872724a28f15008962178b
@@ -351,6 +384,7 @@ Run 'kubectl get nodes' on the control-plane to see this node join the cluster.
 > 如果忘记了上面的 join 命令可以使用命令`kubeadm token create --print-join-command`重新获取。
 
 执行成功后运行 get nodes 命令：
+
 ```shell
 $ kubectl get nodes
 NAME          STATUS     ROLES    AGE    VERSION
@@ -359,6 +393,7 @@ ydzs-node1    NotReady   <none>   106s   v1.15.3
 ```
 
 可以看到是 NotReady 状态，这是因为还没有安装网络插件，接下来安装网络插件，可以在文档 [https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/) 中选择我们自己的网络插件，这里我们安装 calio:
+
 ```shell
 $ wget https://docs.projectcalico.org/v3.8/manifests/calico.yaml
 # 因为有节点是多网卡，所以需要在资源清单文件中指定内网网卡
@@ -378,6 +413,7 @@ $ kubectl apply -f calico.yaml  # 安装calico网络插件
 ```
 
 隔一会儿查看 Pod 运行状态：
+
 ```shell
 $ kubectl get pods -n kube-system
 NAME                                       READY   STATUS    RESTARTS   AGE
@@ -395,6 +431,7 @@ kube-scheduler-ydzs-master                 1/1     Running   0          41m
 ```
 
 网络插件运行成功了，node 状态也正常了：
+
 ```shell
 kubectl get nodes
 NAME          STATUS   ROLES    AGE     VERSION
@@ -405,6 +442,7 @@ ydzs-node1    Ready    <none>   168m    v1.15.3
 用同样的方法添加另外一个节点即可。
 
 ## 安装 Dashboard
+
 ```shell
 $ wget https://raw.githubusercontent.com/kubernetes/dashboard/v1.10.1/src/deploy/recommended/kubernetes-dashboard.yaml
 $ vi kubernetes-dashboard.yaml
@@ -425,6 +463,7 @@ type: NodePort
 ```
 
 直接创建：
+
 ```shell
 $ kubectl apply -f kubernetes-dashboard.yaml
 $ kubectl get pods -n kube-system -l k8s-app=kubernetes-dashboard
@@ -435,11 +474,12 @@ NAME                   TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)         
 kubernetes-dashboard   NodePort   10.110.172.49   <none>        443:32497/TCP   55m
 ```
 
-然后可以通过上面的 32497 端口去访问 Dashboard，要记住使用 https，Chrome不生效可以使用Firefox测试：
+然后可以通过上面的 32497 端口去访问 Dashboard，要记住使用 https，Chrome 不生效可以使用 Firefox 测试：
 
-![k8s dashboard login](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/install-k8s-dashboard-login.png)
+![k8s dashboard login](https://picdn.youdianzhishi.com/images/install-k8s-dashboard-login.png)
 
-然后创建一个具有全局所有权限的用户来登录Dashboard：(admin.yaml)
+然后创建一个具有全局所有权限的用户来登录 Dashboard：(admin.yaml)
+
 ```yaml
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -452,9 +492,9 @@ roleRef:
   name: cluster-admin
   apiGroup: rbac.authorization.k8s.io
 subjects:
-- kind: ServiceAccount
-  name: admin
-  namespace: kube-system
+  - kind: ServiceAccount
+    name: admin
+    namespace: kube-system
 
 ---
 apiVersion: v1
@@ -468,6 +508,7 @@ metadata:
 ```
 
 直接创建：
+
 ```shell
 $ kubectl apply -f admin.yaml
 $ kubectl get secret -n kube-system|grep admin-token
@@ -475,9 +516,9 @@ admin-token-d5jsg                  kubernetes.io/service-account-token   3      
 $ kubectl get secret admin-token-d5jsg -o jsonpath={.data.token} -n kube-system |base64 -d# 会生成一串很长的base64后的字符串
 ```
 
-然后用上面的base64解码后的字符串作为token登录Dashboard即可：
-![k8s dashboard](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/install-k8s-dashboard.png)
-
+然后用上面的 base64 解码后的字符串作为 token 登录 Dashboard 即可：
+![k8s dashboard](https://picdn.youdianzhishi.com/images/install-k8s-dashboard.png)
 
 最终我们就完成了使用 kubeadm 搭建 v1.15.3 版本的 kubernetes 集群、coredns、ipvs、calico。
+
 <!--adsense-self-->

@@ -5,7 +5,13 @@ tags: ["kubernetes", "kubeadm"]
 keywords: ["kubernetes", "kubeadm", "IP", "修改IP地址"]
 slug: how-to-change-k8s-node-ip
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20220513204237.png", desc: "https://unsplash.com/photos/SJAmTkWXuyM"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/20220513204237.png",
+      desc: "https://unsplash.com/photos/SJAmTkWXuyM",
+    },
+  ]
 category: "kubernetes"
 ---
 
@@ -48,7 +54,6 @@ category: "kubernetes"
 ```shell
 ➜ cp -Rf /etc/kubernetes/ /etc/kubernetes-bak
 ```
-
 
 2.替换 `/etc/kubernetes` 中所有配置文件的 APIServer 地址。
 
@@ -113,7 +118,7 @@ E0512 14:53:03.260817       1 reflector.go:138] k8s.io/client-go/informers/facto
 
 这就是因为 kube-proxy 的 ConfigMap 中配置的 apiserver 地址是旧的 IP 地址，所以一定要将其替换成新的。
 
-5.删除第3步中 grep 出的证书和私钥，重新生成这些证书。
+5.删除第 3 步中 grep 出的证书和私钥，重新生成这些证书。
 
 ```shell
 ➜ cd /etc/kubernetes/pki
@@ -125,6 +130,7 @@ E0512 14:53:03.260817       1 reflector.go:138] k8s.io/client-go/informers/facto
 ```
 
 当然也可以全部重新生成：
+
 ```shell
 ➜ kubeadm init phase certs all
 ```
@@ -301,7 +307,9 @@ node2     Ready    <none>                 48d   v1.22.8
 ## 推荐操作
 
 上面的操作方式虽然可以正常完成我们的需求，但是需要我们对相关证书有一定的了解。除了这种方式之外还有一种更简单的操作。
+
 <!--adsense-text-->
+
 首先停止 kubelet 并备份要操作的目录：
 
 ```shell
@@ -412,6 +420,7 @@ To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
 ```
 
 对于 node 节点我们可以 reset 后重新加入到集群即可：
+
 ```shell
 # 在node节点操作
 ➜ kubeadm reset
@@ -452,4 +461,5 @@ kind: ClusterConfiguration
 ```
 
 将需要进行前面的地址加入到 `certSANs` 中，比如这里我们额外添加了一个 `api.k8s.local` 的地址，这样即使以后 IP 变了可以直接将这个域名映射到新的 IP 地址即可，同样如果你想通过外网访问 IP 访问你的集群，那么你也需要将你的外网 IP 地址加进来进行签名认证。
+
 <!--adsense-self-->

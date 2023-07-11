@@ -6,11 +6,17 @@ keywords: ["elastic", "kubernetes"]
 tags: ["elastic", "kubernetes", "kibana"]
 slug: k8s-monitor-use-elastic-stack-1
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200709104733.png", desc: "https://unsplash.com/photos/bK1hmAK3D78"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/20200709104733.png",
+      desc: "https://unsplash.com/photos/bK1hmAK3D78",
+    },
+  ]
 category: "kubernetes"
 ---
 
-在本系列文章中，我们将学习如何使用 Elastic 技术栈来为 Kubernetes 构建监控环境。可观测性的目标是为生产环境提供运维工具来检测服务不可用的情况（比如服务宕机、错误或者响应变慢等），并且保留一些可以排查的信息，以帮助我们定位问题。总的来说主要包括3个方面：
+在本系列文章中，我们将学习如何使用 Elastic 技术栈来为 Kubernetes 构建监控环境。可观测性的目标是为生产环境提供运维工具来检测服务不可用的情况（比如服务宕机、错误或者响应变慢等），并且保留一些可以排查的信息，以帮助我们定位问题。总的来说主要包括 3 个方面：
 
 - 监控指标提供系统各个组件的时间序列数据，比如 CPU、内存、磁盘、网络等信息，通常可以用来显示系统的整体状况以及检测某个时间的异常行为
 - 日志为运维人员提供了一个数据来分析系统的一些错误行为，通常将系统、服务和应用的日志集中收集在同一个数据库中
@@ -18,11 +24,11 @@ category: "kubernetes"
 
 <!--more-->
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200626091556.png)
+![](https://picdn.youdianzhishi.com/images/20200626091556.png)
 
 本文我们就将在 Kubernetes 集群中使用由 ElasticSearch、Kibana、Filebeat、Metricbeat 和 APM-Server 组成的 Elastic 技术栈来监控系统环境。为了更好地去了解这些组件的配置，我们这里将采用手写资源清单文件的方式来安装这些组件，当然我们也可以使用 Helm 等其他工具来快速安装配置。
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/elastic-stack-arch.png)
+![](https://picdn.youdianzhishi.com/images/elastic-stack-arch.png)
 
 接下来我们就来学习下如何使用 Elastic 技术构建 Kubernetes 监控栈。我们这里的试验环境是 Kubernetes v1.16.2 版本的集群，为方便管理，我们将所有的资源对象都部署在一个名为 elastic 的命名空间中：
 
@@ -47,8 +53,8 @@ metadata:
     app: mongo
 spec:
   ports:
-  - port: 27017
-    protocol: TCP
+    - port: 27017
+      protocol: TCP
   selector:
     app: mongo
 ---
@@ -70,22 +76,22 @@ spec:
         app: mongo
     spec:
       containers:
-      - name: mongo
-        image: mongo
-        ports:
-        - containerPort: 27017
-        volumeMounts:
-        - name: data
-          mountPath: /data/db
+        - name: mongo
+          image: mongo
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - name: data
+              mountPath: /data/db
   volumeClaimTemplates:
-  - metadata:
-      name: data
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: rook-ceph-block  # 使用支持 RWO 的 StorageClass
-      resources:
-        requests:
-          storage: 1Gi
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: rook-ceph-block # 使用支持 RWO 的 StorageClass
+        resources:
+          requests:
+            storage: 1Gi
 ```
 
 这里我们使用了一个名为 rook-ceph-block 的 StorageClass 对象来自动创建 PV，可以替换成自己集群中支持 RWO 的 StorageClass 对象即可。直接使用上面的资源清单创建即可：
@@ -94,7 +100,7 @@ spec:
 $ kubectl apply -f mongo.yml
 service/mongo created
 statefulset.apps/mongo created
-$ kubectl get pods -n elastic -l app=mongo             
+$ kubectl get pods -n elastic -l app=mongo
 NAME      READY   STATUS    RESTARTS   AGE
 mongo-0   1/1     Running   0          34m
 ```
@@ -114,8 +120,8 @@ metadata:
 spec:
   type: NodePort
   ports:
-  - port: 8080
-    protocol: TCP
+    - port: 8080
+      protocol: TCP
   selector:
     app: spring-boot-simple
 ---
@@ -137,19 +143,19 @@ spec:
         app: spring-boot-simple
     spec:
       containers:
-      - image: cnych/spring-boot-simple:0.0.1-SNAPSHOT
-        name: spring-boot-simple
-        env:
-        - name: SPRING_DATA_MONGODB_HOST  # 指定MONGODB地址
-          value: mongo
-        ports:
-        - containerPort: 8080
+        - image: cnych/spring-boot-simple:0.0.1-SNAPSHOT
+          name: spring-boot-simple
+          env:
+            - name: SPRING_DATA_MONGODB_HOST # 指定MONGODB地址
+              value: mongo
+          ports:
+            - containerPort: 8080
 ```
 
 同样直接创建上面的应用的应用即可：
 
 ```bash
-$ kubectl apply -f spring-boot-simple.yaml 
+$ kubectl apply -f spring-boot-simple.yaml
 service/spring-boot-simple created
 deployment.apps/spring-boot-simple created
 $ kubectl get pods -n elastic -l app=spring-boot-simple
@@ -183,7 +189,7 @@ $ curl -X GET http://k8s.qikqiak.com:31847/message
 
 ## 2. ElasticSearch 集群
 
-要建立一个 Elastic 技术的监控栈，当然首先我们需要部署 ElasticSearch，它是用来存储所有的指标、日志和追踪的数据库，这里我们通过3个不同角色的可扩展的节点组成一个集群。
+要建立一个 Elastic 技术的监控栈，当然首先我们需要部署 ElasticSearch，它是用来存储所有的指标、日志和追踪的数据库，这里我们通过 3 个不同角色的可扩展的节点组成一个集群。
 
 ### 2.1 安装 ElasticSearch 主节点
 
@@ -234,8 +240,8 @@ metadata:
     role: master
 spec:
   ports:
-  - port: 9300
-    name: transport
+    - port: 9300
+      name: transport
   selector:
     app: elasticsearch
     role: master
@@ -268,40 +274,40 @@ spec:
         role: master
     spec:
       containers:
-      - name: elasticsearch-master
-        image: docker.elastic.co/elasticsearch/elasticsearch:7.8.0
-        env:
-        - name: CLUSTER_NAME
-          value: elasticsearch
-        - name: NODE_NAME
-          value: elasticsearch-master
-        - name: NODE_LIST
-          value: elasticsearch-master,elasticsearch-data,elasticsearch-client
-        - name: MASTER_NODES
-          value: elasticsearch-master
-        - name: "ES_JAVA_OPTS"
-          value: "-Xms512m -Xmx512m"
-        ports:
-        - containerPort: 9300
-          name: transport
-        volumeMounts:
-        - name: config
-          mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
-          readOnly: true
-          subPath: elasticsearch.yml
-        - name: storage
-          mountPath: /data
+        - name: elasticsearch-master
+          image: docker.elastic.co/elasticsearch/elasticsearch:7.8.0
+          env:
+            - name: CLUSTER_NAME
+              value: elasticsearch
+            - name: NODE_NAME
+              value: elasticsearch-master
+            - name: NODE_LIST
+              value: elasticsearch-master,elasticsearch-data,elasticsearch-client
+            - name: MASTER_NODES
+              value: elasticsearch-master
+            - name: "ES_JAVA_OPTS"
+              value: "-Xms512m -Xmx512m"
+          ports:
+            - containerPort: 9300
+              name: transport
+          volumeMounts:
+            - name: config
+              mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+              readOnly: true
+              subPath: elasticsearch.yml
+            - name: storage
+              mountPath: /data
       volumes:
-      - name: config
-        configMap:
-          name: elasticsearch-master-config
-      - name: "storage"
-        emptyDir:
-          medium: ""
+        - name: config
+          configMap:
+            name: elasticsearch-master-config
+        - name: "storage"
+          emptyDir:
+            medium: ""
 ---
 ```
 
-直接创建上面的3个资源对象即可：
+直接创建上面的 3 个资源对象即可：
 
 ```shell
 $ kubectl apply  -f elasticsearch-master.configmap.yaml \
@@ -321,7 +327,9 @@ elasticsearch-master-6f666cbbd-r9vtx    1/1     Running   0          111m
 ### 2.2 安装 ElasticSearch 数据节点
 
 现在我们需要安装的是集群的数据节点，它主要来负责集群的数据托管和执行查询。
+
 <!--adsense-text-->
+
 和 master 节点一样，我们使用一个 ConfigMap 对象来配置我们的数据节点：
 
 ```yaml
@@ -371,8 +379,8 @@ metadata:
     role: data
 spec:
   ports:
-  - port: 9300
-    name: transport
+    - port: 9300
+      name: transport
   selector:
     app: elasticsearch
     role: data
@@ -405,42 +413,42 @@ spec:
         role: data
     spec:
       containers:
-      - name: elasticsearch-data
-        image: docker.elastic.co/elasticsearch/elasticsearch:7.8.0
-        env:
-        - name: CLUSTER_NAME
-          value: elasticsearch
-        - name: NODE_NAME
-          value: elasticsearch-data
-        - name: NODE_LIST
-          value: elasticsearch-master,elasticsearch-data,elasticsearch-client
-        - name: MASTER_NODES
-          value: elasticsearch-master
-        - name: "ES_JAVA_OPTS"
-          value: "-Xms1024m -Xmx1024m"
-        ports:
-        - containerPort: 9300
-          name: transport
-        volumeMounts:
-        - name: config
-          mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
-          readOnly: true
-          subPath: elasticsearch.yml
-        - name: elasticsearch-data-persistent-storage
-          mountPath: /data/db
+        - name: elasticsearch-data
+          image: docker.elastic.co/elasticsearch/elasticsearch:7.8.0
+          env:
+            - name: CLUSTER_NAME
+              value: elasticsearch
+            - name: NODE_NAME
+              value: elasticsearch-data
+            - name: NODE_LIST
+              value: elasticsearch-master,elasticsearch-data,elasticsearch-client
+            - name: MASTER_NODES
+              value: elasticsearch-master
+            - name: "ES_JAVA_OPTS"
+              value: "-Xms1024m -Xmx1024m"
+          ports:
+            - containerPort: 9300
+              name: transport
+          volumeMounts:
+            - name: config
+              mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+              readOnly: true
+              subPath: elasticsearch.yml
+            - name: elasticsearch-data-persistent-storage
+              mountPath: /data/db
       volumes:
-      - name: config
-        configMap:
-          name: elasticsearch-data-config
+        - name: config
+          configMap:
+            name: elasticsearch-data-config
   volumeClaimTemplates:
-  - metadata:
-      name: elasticsearch-data-persistent-storage
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: rook-ceph-block
-      resources:
-        requests:
-          storage: 50Gi
+    - metadata:
+        name: elasticsearch-data-persistent-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: rook-ceph-block
+        resources:
+          requests:
+            storage: 50Gi
 ---
 ```
 
@@ -501,7 +509,7 @@ data:
 ---
 ```
 
-客户端节点需要暴露两个端口，9300端口用于与集群的其他节点进行通信，9200端口用于 HTTP API。对应的 Service 对象如下所示：
+客户端节点需要暴露两个端口，9300 端口用于与集群的其他节点进行通信，9200 端口用于 HTTP API。对应的 Service 对象如下所示：
 
 ```yaml
 # elasticsearch-client.service.yaml
@@ -516,10 +524,10 @@ metadata:
     role: client
 spec:
   ports:
-  - port: 9200
-    name: client
-  - port: 9300
-    name: transport
+    - port: 9200
+      name: client
+    - port: 9300
+      name: transport
   selector:
     app: elasticsearch
     role: client
@@ -551,38 +559,38 @@ spec:
         role: client
     spec:
       containers:
-      - name: elasticsearch-client
-        image: docker.elastic.co/elasticsearch/elasticsearch:7.8.0
-        env:
-        - name: CLUSTER_NAME
-          value: elasticsearch
-        - name: NODE_NAME
-          value: elasticsearch-client
-        - name: NODE_LIST
-          value: elasticsearch-master,elasticsearch-data,elasticsearch-client
-        - name: MASTER_NODES
-          value: elasticsearch-master
-        - name: "ES_JAVA_OPTS"
-          value: "-Xms256m -Xmx256m"
-        ports:
-        - containerPort: 9200
-          name: client
-        - containerPort: 9300
-          name: transport
-        volumeMounts:
-        - name: config
-          mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
-          readOnly: true
-          subPath: elasticsearch.yml
-        - name: storage
-          mountPath: /data
+        - name: elasticsearch-client
+          image: docker.elastic.co/elasticsearch/elasticsearch:7.8.0
+          env:
+            - name: CLUSTER_NAME
+              value: elasticsearch
+            - name: NODE_NAME
+              value: elasticsearch-client
+            - name: NODE_LIST
+              value: elasticsearch-master,elasticsearch-data,elasticsearch-client
+            - name: MASTER_NODES
+              value: elasticsearch-master
+            - name: "ES_JAVA_OPTS"
+              value: "-Xms256m -Xmx256m"
+          ports:
+            - containerPort: 9200
+              name: client
+            - containerPort: 9300
+              name: transport
+          volumeMounts:
+            - name: config
+              mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+              readOnly: true
+              subPath: elasticsearch.yml
+            - name: storage
+              mountPath: /data
       volumes:
-      - name: config
-        configMap:
-          name: elasticsearch-client-config
-      - name: "storage"
-        emptyDir:
-          medium: ""
+        - name: config
+          configMap:
+            name: elasticsearch-client-config
+        - name: "storage"
+          emptyDir:
+            medium: ""
 ---
 ```
 
@@ -700,8 +708,8 @@ metadata:
 spec:
   type: NodePort
   ports:
-  - port: 5601
-    name: webinterface
+    - port: 5601
+      name: webinterface
   selector:
     app: kibana
 ---
@@ -729,30 +737,30 @@ spec:
         app: kibana
     spec:
       containers:
-      - name: kibana
-        image: docker.elastic.co/kibana/kibana:7.8.0
-        ports:
-        - containerPort: 5601
-          name: webinterface
-        env:
-        - name: ELASTICSEARCH_HOSTS
-          value: "http://elasticsearch-client.elastic.svc.cluster.local:9200"
-        - name: ELASTICSEARCH_USER
-          value: "elastic"
-        - name: ELASTICSEARCH_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: elasticsearch-pw-elastic
-              key: password
-        volumeMounts:
-        - name: config
-          mountPath: /usr/share/kibana/config/kibana.yml
-          readOnly: true
-          subPath: kibana.yml
+        - name: kibana
+          image: docker.elastic.co/kibana/kibana:7.8.0
+          ports:
+            - containerPort: 5601
+              name: webinterface
+          env:
+            - name: ELASTICSEARCH_HOSTS
+              value: "http://elasticsearch-client.elastic.svc.cluster.local:9200"
+            - name: ELASTICSEARCH_USER
+              value: "elastic"
+            - name: ELASTICSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elasticsearch-pw-elastic
+                  key: password
+          volumeMounts:
+            - name: config
+              mountPath: /usr/share/kibana/config/kibana.yml
+              readOnly: true
+              subPath: kibana.yml
       volumes:
-      - name: config
-        configMap:
-          name: kibana-config
+        - name: config
+          configMap:
+            name: kibana-config
 ---
 ```
 
@@ -780,30 +788,30 @@ $ kubectl logs -f -n elastic $(kubectl get pods -n elastic | grep kibana | sed -
 当状态变成 `green` 后，我们就可以通过 NodePort 端口 30474 去浏览器中访问 Kibana 服务了：
 
 ```bash
-$ kubectl get svc kibana -n elastic   
+$ kubectl get svc kibana -n elastic
 NAME     TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
 kibana   NodePort   10.101.121.31   <none>        5601:30474/TCP   8m18s
 ```
 
 如下图所示，使用上面我们创建的 Secret 对象的 elastic 用户和生成的密码即可登录：
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200626122305.png)
+![](https://picdn.youdianzhishi.com/images/20200626122305.png)
 
 登录成功后会自动跳转到 Kibana 首页：
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200626122502.png)
+![](https://picdn.youdianzhishi.com/images/20200626122502.png)
 
 同样也可以自己创建一个新的超级用户，Management → Stack Management → Create User：
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200626122705.png)
+![](https://picdn.youdianzhishi.com/images/20200626122705.png)
 
 使用新的用户名和密码，选择 `superuser` 这个角色来创建新的用户：
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200626122835.png)
+![](https://picdn.youdianzhishi.com/images/20200626122835.png)
 
 创建成功后就可以使用上面新建的用户登录 Kibana，最后还可以通过 Management → Stack Monitoring 页面查看整个集群的健康状态：
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200626123104.png)
+![](https://picdn.youdianzhishi.com/images/20200626123104.png)
 
 到这里我们就安装成功了 ElasticSearch 与 Kibana，它们将为我们来存储和可视化我们的应用数据（监控指标、日志和追踪）服务。
 

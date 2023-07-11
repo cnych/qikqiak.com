@@ -7,7 +7,13 @@ slug: reduce-image-size
 gitcomment: true
 category: "kubernetes"
 draft: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1581375279144-bb3b381c7046.png", desc: "Painted, sliced avocado"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/photo-1581375279144-bb3b381c7046.png",
+      desc: "Painted, sliced avocado",
+    },
+  ]
 ---
 
 https://www.ardanlabs.com/blog/2020/02/docker-images-part1-reducing-image-size.html

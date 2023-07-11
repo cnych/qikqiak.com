@@ -2,23 +2,38 @@
 title: Prometheus 监控 Kubernetes Job 资源误报的坑
 date: 2022-03-06
 tags: ["kubernetes", "prometheus", "alertmanager", "promql"]
-keywords: ["kubernetes", "job", "cronjob", "prometheus", "alertmanager", "promql", "误报"]
+keywords:
+  [
+    "kubernetes",
+    "job",
+    "cronjob",
+    "prometheus",
+    "alertmanager",
+    "promql",
+    "误报",
+  ]
 slug: prometheus-monitor-k8s-job-trap
 gitcomment: true
 notoc: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20220306100118.png", desc: "https://unsplash.com/photos/_LXb4Yw-iVA"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/20220306100118.png",
+      desc: "https://unsplash.com/photos/_LXb4Yw-iVA",
+    },
+  ]
 category: "kubernetes"
 ---
 
 昨天在 Prometheus 课程辅导群里面有同学提到一个问题，是关于 Prometheus 监控 Job 任务误报的问题，大概的意思就 CronJob 控制的 Job，前面执行失败了，监控会触发报警，解决后后面生成的新的 Job 可以正常执行了，但是还是会收到前面的报警：
 
-![问题描述](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20220305200158.png)
+![问题描述](https://picdn.youdianzhishi.com/images/20220305200158.png)
 
 这是因为一般在执行 Job 任务的时候我们会保留一些历史记录方便排查问题，所以如果之前有失败的 Job 了，即便稍后会变成成功的，那么之前的 Job 也会继续存在，而大部分直接使用 kube-prometheus 安装部署的话使用的默认报警规则是`kube_job_status_failed > 0`，这显然是不准确的，只有我们去手动删除之前这个失败的 Job 任务才可以消除误报，当然这种方式是可以解决问题的，但是不够自动化，一开始没有想得很深入，想去自动化删除失败的 Job 来解决，但是这也会给运维人员带来问题，就是不方便回头去排查问题。下面我们来重新整理下思路解决下这个问题。
 
 <!--more-->
 
-`CronJob` 会在计划的每个执行时间创建一个 Job 对象，可以通过 `.spec.successfulJobsHistoryLimit` 和 `.spec.failedJobsHistoryLimit` 属性来保留多少已完成和失败的 Job，默认分别为3和1，比如下面声明一个 `CronJob` 的资源对象：
+`CronJob` 会在计划的每个执行时间创建一个 Job 对象，可以通过 `.spec.successfulJobsHistoryLimit` 和 `.spec.failedJobsHistoryLimit` 属性来保留多少已完成和失败的 Job，默认分别为 3 和 1，比如下面声明一个 `CronJob` 的资源对象：
 
 ```yaml
 apiVersion: batch/v1
@@ -34,13 +49,13 @@ spec:
       template:
         spec:
           containers:
-          - name: hello
-            image: busybox
-            imagePullPolicy: IfNotPresent
-            command:
-            - /bin/sh
-            - -c
-            - date;
+            - name: hello
+              image: busybox
+              imagePullPolicy: IfNotPresent
+              command:
+                - /bin/sh
+                - -c
+                - date;
           restartPolicy: OnFailure
 ```
 
@@ -54,10 +69,10 @@ hello-4111706356   1/1           5s         5s
 
 要解决上面的误报问题，同样还是需要使用到 `kube-state-metrics` 这个服务，它通过监听 Kubernetes APIServer 并生成有关对象状态的指标，它并不关注单个 Kubernetes 组件的健康状况，而是关注内部各种对象的健康状况，例如 Deployment、Node、Job、Pod 等资源对象的状态。这里我们将要使用到以下几个指标：
 
-* `kube_job_owner`：用来查找 Job 和触发它的 CronJob 之间的关系
-* `kube_job_status_start_time`：获取 Job 被触发的时间
-* `kube_job_status_failed`：获取执行失败的任务
-* `kube_cronjob_spec_suspend`：过滤掉挂起的作业
+- `kube_job_owner`：用来查找 Job 和触发它的 CronJob 之间的关系
+- `kube_job_status_start_time`：获取 Job 被触发的时间
+- `kube_job_status_failed`：获取执行失败的任务
+- `kube_cronjob_spec_suspend`：过滤掉挂起的作业
 
 下面是一个指标示例，其中包含 CronJob 触发运行的`hello` 任务生成的标签：
 
@@ -69,7 +84,9 @@ kube_cronjob_spec_suspend{cronjob="hello",job="kube-state-metrics", namespace="m
 ```
 
 要想做到监控报警准确，其实我们只需要去**获取同一个 CronJob 触发的一组 Job 的最后一次任务，只有该 Job 在执行失败的时候才触发报警**即可。
+
 <!--adsense-text-->
+
 由于 `kube_job_status_failed` 和 `kube_job_status_start_time` 指标中并不包含所属 CronJob 的标签，所以第一步需要加入这个标签，而 `kube_job_owner` 指标中的 `owner_name` 就是我们需要的，可以用下面的 promql 语句来进行合并：
 
 ```shell
@@ -95,7 +112,7 @@ max(
   kube_job_status_start_time
   * ON(job_name,namespace) GROUP_RIGHT()
   kube_job_owner{owner_name!=""}
-) 
+)
 BY (owner_name)
 ```
 
@@ -204,4 +221,4 @@ label_replace(
 
 最后也为大家推荐下我们全新制作的 Prometheus 课程正在上新促销中，内容丰富、价格优惠，扫描下方海报二维码前往购买：
 
-![Prometheus](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20220306095902.png)
+![Prometheus](https://picdn.youdianzhishi.com/images/20220306095902.png)

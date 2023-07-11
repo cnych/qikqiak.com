@@ -1,353 +1,406 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
 
+    <title>
+      Kubernetes
+      Deployment滚动升级-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
+    </title>
+    <meta property="og:title" content="Kubernetes Deployment滚动升级" />
+    <meta name="twitter:title" content="Kubernetes Deployment滚动升级" />
 
-  <title>Kubernetes Deployment滚动升级-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
-  <meta property="og:title" content="Kubernetes Deployment滚动升级" />
-  <meta name="twitter:title" content="Kubernetes Deployment滚动升级" />
+    <meta
+      name="description"
+      content="我们k8s集群使用的是1.7.7版本的，该版本中官方已经推荐使用Deployment代替Replication Controller(rc)了，Deployment继承了rc的全部功能外，还可以查看升级详细进度和状态，当升级出现问题的时候，可以使用回滚操作回滚到指定的版本，每一次对Deployment的操作，都会保存下来，变能方便的进行回滚操作了，另外对于每一次升级都可以随时暂停和启动，拥有多种升级方案：Recreate删除现在的Pod，重新创建；RollingUpdate滚动升级，逐步替换现有Pod，对于生产环境的服务升级，显然这是一种最好的方式。"
+    />
+    <meta
+      property="og:description"
+      content="我们k8s集群使用的是1.7.7版本的，该版本中官方已经推荐使用Deployment代替Replication Controller(rc)了，Deployment继承了rc的全部功能外，还可以查看升级详细进度和状态，当升级出现问题的时候，可以使用回滚操作回滚到指定的版本，每一次对Deployment的操作，都会保存下来，变能方便的进行回滚操作了，另外对于每一次升级都可以随时暂停和启动，拥有多种升级方案：Recreate删除现在的Pod，重新创建；RollingUpdate滚动升级，逐步替换现有Pod，对于生产环境的服务升级，显然这是一种最好的方式。"
+    />
+    <meta
+      name="twitter:description"
+      content="我们k8s集群使用的是1.7.7版本的，该版本中官方已经推荐使用Deployment代替Replication Controller(rc)了，Deployment继承了rc的全部功能外，还可以查看升级详细进度和状态，当升级出现问题的时候，可以使用回滚操作回滚到指定的版本，每一次对Deployment的操作，都会保存下来，变能方便的进行回滚操作了，另外对于每一次升级都可以随时暂停和启动，拥有多种升 …"
+    />
+    <meta name="author" content="" />
+    <link
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+      rel="icon"
+      type="image/x-icon"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      property="og:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      name="twitter:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta
+      property="og:url"
+      content="https://www.qikqiak.com/post/kubernetes-rollout-update/"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="阳明的博客" />
 
-  <meta name="description" content="我们k8s集群使用的是1.7.7版本的，该版本中官方已经推荐使用Deployment代替Replication Controller(rc)了，Deployment继承了rc的全部功能外，还可以查看升级详细进度和状态，当升级出现问题的时候，可以使用回滚操作回滚到指定的版本，每一次对Deployment的操作，都会保存下来，变能方便的进行回滚操作了，另外对于每一次升级都可以随时暂停和启动，拥有多种升级方案：Recreate删除现在的Pod，重新创建；RollingUpdate滚动升级，逐步替换现有Pod，对于生产环境的服务升级，显然这是一种最好的方式。">
-  <meta property="og:description" content="我们k8s集群使用的是1.7.7版本的，该版本中官方已经推荐使用Deployment代替Replication Controller(rc)了，Deployment继承了rc的全部功能外，还可以查看升级详细进度和状态，当升级出现问题的时候，可以使用回滚操作回滚到指定的版本，每一次对Deployment的操作，都会保存下来，变能方便的进行回滚操作了，另外对于每一次升级都可以随时暂停和启动，拥有多种升级方案：Recreate删除现在的Pod，重新创建；RollingUpdate滚动升级，逐步替换现有Pod，对于生产环境的服务升级，显然这是一种最好的方式。">
-  <meta name="twitter:description" content="我们k8s集群使用的是1.7.7版本的，该版本中官方已经推荐使用Deployment代替Replication Controller(rc)了，Deployment继承了rc的全部功能外，还可以查看升级详细进度和状态，当升级出现问题的时候，可以使用回滚操作回滚到指定的版本，每一次对Deployment的操作，都会保存下来，变能方便的进行回滚操作了，另外对于每一次升级都可以随时暂停和启动，拥有多种升 …">
-  <meta name="author" content=""/>
-  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
-  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
-  <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://www.qikqiak.com/post/kubernetes-rollout-update/" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="阳明的博客" />
+    <meta name="generator" content="Hugo 0.55.6" />
+    <link
+      rel="canonical"
+      href="https://www.qikqiak.com/post/kubernetes-rollout-update/"
+    />
+    <link
+      rel="alternate"
+      href="https://www.qikqiak.com/index.xml"
+      type="application/rss+xml"
+      title="阳明的博客"
+    />
 
-  <meta name="generator" content="Hugo 0.55.6" />
-  <link rel="canonical" href="https://www.qikqiak.com/post/kubernetes-rollout-update/" />
-  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+    <link
+      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
+      rel="stylesheet"
+    />
 
-  
-  
-  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
-  
+    <link
+      rel="stylesheet"
+      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
+      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
+    />
 
-  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
+    />
 
-  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
-  
-  
-    
     <!--[if lt IE 9]>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+        rel="stylesheet"
+      />
     <![endif]-->
-<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
-<meta name="baidu-site-verification" content="F5ojAyqaKU" />
-<meta name="keywords" content="kubernetes, deployment, 滚动, 升级, 回滚, 更新">
-<script>
-var _hmt = _hmt || [];
-(function() {
-  var hm = document.createElement("script");
-  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-  var s = document.getElementsByTagName("script")[0];
-  s.parentNode.insertBefore(hm, s);
-})();
-</script>
+    <meta
+      name="google-site-verification"
+      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
+    />
+    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
+    <meta
+      name="keywords"
+      content="kubernetes, deployment, 滚动, 升级, 回滚, 更新"
+    />
+    <script>
+      var _hmt = _hmt || [];
+      (function () {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
 
+    <script type="application/javascript">
+      var doNotTrack = false;
+      if (!doNotTrack) {
+        window.ga =
+          window.ga ||
+          function () {
+            (ga.q = ga.q || []).push(arguments);
+          };
+        ga.l = +new Date();
+        ga("create", "UA-69668147-3", "auto");
 
-
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-	ga('create', 'UA-69668147-3', 'auto');
-	
-	ga('send', 'pageview');
-}
-</script>
-<script async src='https://www.google-analytics.com/analytics.js'></script>
-
-</head>
+        ga("send", "pageview");
+      }
+    </script>
+    <script async src="https://www.google-analytics.com/analytics.js"></script>
+  </head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
-        <span class="sr-only">切换导航</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
-        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
-      </a>
-    </div>
+      <div class="container">
+        <div class="navbar-header">
+          <button
+            type="button"
+            class="navbar-toggle"
+            data-toggle="collapse"
+            data-target="#main-navbar"
+          >
+            <span class="sr-only">切换导航</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a
+            class="navbar-brand"
+            href="https://www.qikqiak.com/"
+            title="阳明的博客"
+          >
+            <img
+              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
+              style="margin-top: -5px; height: 32px"
+              alt="阳明的博客"
+            />
+          </a>
+        </div>
 
-    <div class="collapse navbar-collapse" id="main-navbar">
-      <ul class="nav navbar-nav navbar-right">
-        
-          
+        <div class="collapse navbar-collapse" id="main-navbar">
+          <ul class="nav navbar-nav navbar-right">
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-          
-        
-          
+
             <li>
-              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+              <a
+                title="课程"
+                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
+                >课程</a
+              >
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/archives">Archive</a>
-                
-                  <a href="https://www.qikqiak.com/tags">tags</a>
-                
-                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-                
-                  <a href="https://www.qikqiak.com/tags/python">python</a>
-                
-                  <a href="https://www.qikqiak.com/tags/django">django</a>
-                
-                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
-                
+                <a href="https://www.qikqiak.com/archives">Archive</a>
+
+                <a href="https://www.qikqiak.com/tags">tags</a>
+
+                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+
+                <a href="https://www.qikqiak.com/tags/python">python</a>
+
+                <a href="https://www.qikqiak.com/tags/django">django</a>
+
+                <a href="https://www.qikqiak.com/tags/devops">devops</a>
               </div>
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-                
-                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-                
-                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-                
-                  <a href="https://md.qikqiak.com/">Markdown微信</a>
-                
+                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+
+                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+
+                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+
+                <a href="https://md.qikqiak.com/">Markdown微信</a>
               </div>
             </li>
-          
-        
-          
+
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+              <a title="关于" href="https://www.qikqiak.com/page/about/"
+                >关于</a
+              >
             </li>
-          
-        
-          
+
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
-          
-        
 
-        
-
-        
-
-        
-          <li>
-            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
-              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
-            </a>
-          </li>
-          
-
-      </ul>
-    </div>
-
-  </div>
-</nav>
-
-
-  <div id="modalSearch" class="modal fade" role="dialog">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-          <h4 class="modal-title">搜索</h4>
+            <li>
+              <a
+                href="#modalSearch"
+                data-toggle="modal"
+                data-target="#modalSearch"
+                style="outline: none"
+              >
+                <span
+                  id="searchGlyph"
+                  class="glyphicon glyphicon-search"
+                ></span>
+              </a>
+            </li>
+          </ul>
         </div>
-        <div class="modal-body">
-            
-<div class="aa-input-container" id="aa-input-container">
-    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
-    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
-    </svg>
-</div>
-<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+      </div>
+    </nav>
 
-<script>
-var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
-var index = client.initIndex('prod_blog');
+    <div id="modalSearch" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">
+              &times;
+            </button>
+            <h4 class="modal-title">搜索</h4>
+          </div>
+          <div class="modal-body">
+            <div class="aa-input-container" id="aa-input-container">
+              <input
+                type="search"
+                id="aa-search-input"
+                class="aa-input-search"
+                placeholder="Search for titles or URIs..."
+                name="search"
+                autocomplete="off"
+              />
+              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+                <path
+                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
+                />
+              </svg>
+            </div>
+            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-autocomplete('#aa-search-input',
-{ hint: false}, {
-    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
-    
-    displayKey: 'name',
-    
-    templates: {
-        
-        suggestion: function(suggestion) {
-            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
-            suggestion._highlightResult.title.value + '</a></span>';
-        }
-    }
-});
-</script>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+            <script>
+              var client = algoliasearch(
+                "1JDRAS0AZR",
+                "8804ac109158bb3bb60d74ce98fa332f"
+              );
+              var index = client.initIndex("prod_blog");
+
+              autocomplete(
+                "#aa-search-input",
+                { hint: false },
+                {
+                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
+
+                  displayKey: "name",
+
+                  templates: {
+                    suggestion: function (suggestion) {
+                      return (
+                        "<span>" +
+                        '<a href="https://www.qikqiak.com/post/' +
+                        suggestion.slug +
+                        '">' +
+                        suggestion._highlightResult.title.value +
+                        "</a></span>"
+                      );
+                    },
+                  },
+                }
+              );
+            </script>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">
+              close
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-    
-  
-  
-  
+    <div
+      id="header-big-imgs"
+      data-num-img="1"
+      data-img-src-1="https://www.qikqiak.com/img/posts/22280765_1473377219422921_7316093626113589248_n.jpg"
+      data-img-desc-1="峨眉山@四川 Sep 30,2017"
+    ></div>
 
-
-
-
-  
-    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://www.qikqiak.com/img/posts/22280765_1473377219422921_7316093626113589248_n.jpg" data-img-desc-1="峨眉山@四川 Sep 30,2017"></div>
-  
-
-  <header class="header-section has-img">
-    
+    <header class="header-section has-img">
       <div class="intro-header big-img">
-        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>Kubernetes Deployment滚动升级</h1>
-                  
-                  
-                    <span class="post-meta">
-  
-    发表于 October 18, 2017
-  
-  
-</span>
 
-
-                  
+                <span class="post-meta"> 发表于 October 18, 2017 </span>
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline;"></span>
+        <span class="img-desc" style="display: inline"></span>
       </div>
-    
-    
-    
-    <div class="intro-header no-img">
-      
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <div class="post-heading">
-              <h1>Kubernetes Deployment滚动升级</h1>
-                
-                
-                  <span class="post-meta">
-  
-    发表于 October 18, 2017
-  
-  
-</span>
 
+      <div class="intro-header no-img">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>Kubernetes Deployment滚动升级</h1>
 
-                
+                <span class="post-meta"> 发表于 October 18, 2017 </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    
-    
-  </header>
+    </header>
 
+    <div class="container" role="main">
+      <div class="row">
+        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+          <div>
+            <h5 id="tags" style="margin-top: 30px">
+              标签:
 
-    
+              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
+              &nbsp;
 
-
-
-<div class="container" role="main">
-  <div class="row">
-
-    
-    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <div>
-            
-            
-            <h5 id="tags" style="margin-top: 30px;">标签:
-              
-                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/deployment/">deployment</a> &nbsp;
-              
+              <a href="https://www.qikqiak.com/tags/deployment/">deployment</a>
+              &nbsp;
             </h5>
-            
-        </div>
-  
-        <article role="main" class="blog-post" itemprop="articleBody" id="content">
-          
-            
-<aside class="toc">
-  <nav id="TableOfContents">
-<ul>
-<li>
-<ul>
-<li><a href="#创建deployment">创建Deployment</a></li>
-<li><a href="#滚动升级deployment">滚动升级Deployment</a></li>
-<li><a href="#回滚deployment">回滚Deployment</a></li>
-<li><a href="#注意清除机制">注意清除机制</a></li>
-<li><a href="#参考文档">参考文档</a></li>
-</ul></li>
-</ul>
-</nav>
-</aside>
+          </div>
 
-          
-  
-          
-          
-          
-  
-          
-          
-          
-  
-          
-          
-          
+          <article
+            role="main"
+            class="blog-post"
+            itemprop="articleBody"
+            id="content"
+          >
+            <aside class="toc">
+              <nav id="TableOfContents">
+                <ul>
+                  <li>
+                    <ul>
+                      <li><a href="#创建deployment">创建Deployment</a></li>
+                      <li>
+                        <a href="#滚动升级deployment">滚动升级Deployment</a>
+                      </li>
+                      <li><a href="#回滚deployment">回滚Deployment</a></li>
+                      <li><a href="#注意清除机制">注意清除机制</a></li>
+                      <li><a href="#参考文档">参考文档</a></li>
+                    </ul>
+                  </li>
+                </ul>
+              </nav>
+            </aside>
 
-          <p>我们<code>k8s</code>集群使用的是1.7.7版本的，该版本中官方已经推荐使用<code>Deployment</code>代替<code>Replication Controller</code>(rc)了，<code>Deployment</code>继承了rc的全部功能外，还可以查看升级详细进度和状态，当升级出现问题的时候，可以使用回滚操作回滚到指定的版本，每一次对Deployment的操作，都会保存下来，变能方便的进行回滚操作了，另外对于每一次升级都可以随时暂停和启动，拥有多种升级方案：<code>Recreate</code>删除现在的<code>Pod</code>，重新创建；<code>RollingUpdate</code>滚动升级，逐步替换现有<code>Pod</code>，对于生产环境的服务升级，显然这是一种最好的方式。</p>
+            <p>
+              我们<code>k8s</code>集群使用的是1.7.7版本的，该版本中官方已经推荐使用<code>Deployment</code>代替<code
+                >Replication Controller</code
+              >(rc)了，<code>Deployment</code>继承了rc的全部功能外，还可以查看升级详细进度和状态，当升级出现问题的时候，可以使用回滚操作回滚到指定的版本，每一次对Deployment的操作，都会保存下来，变能方便的进行回滚操作了，另外对于每一次升级都可以随时暂停和启动，拥有多种升级方案：<code>Recreate</code>删除现在的<code>Pod</code>，重新创建；<code>RollingUpdate</code>滚动升级，逐步替换现有<code>Pod</code>，对于生产环境的服务升级，显然这是一种最好的方式。
+            </p>
 
-<h2 id="创建deployment">创建Deployment</h2>
+            <h2 id="创建deployment">创建Deployment</h2>
 
-<p><img src="https://www.qikqiak.com/img/posts/deployment.png" alt="Deployment结构" />
-可以看出一个Deployment拥有多个Replica Set，而一个Replica Set拥有一个或多个Pod。一个Deployment控制多个rs主要是为了支持回滚机制，每当Deployment操作时，Kubernetes会重新生成一个Replica Set并保留，以后有需要的话就可以回滚至之前的状态。
-下面创建一个Deployment，它创建了一个Replica Set来启动3个nginx pod，yaml文件如下：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1beta1
+            <p>
+              <img
+                src="https://www.qikqiak.com/img/posts/deployment.png"
+                alt="Deployment结构"
+              />
+              可以看出一个Deployment拥有多个Replica Set，而一个Replica
+              Set拥有一个或多个Pod。一个Deployment控制多个rs主要是为了支持回滚机制，每当Deployment操作时，Kubernetes会重新生成一个Replica
+              Set并保留，以后有需要的话就可以回滚至之前的状态。
+              下面创建一个Deployment，它创建了一个Replica Set来启动3个nginx
+              pod，yaml文件如下：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   name: nginx-deploy
@@ -364,90 +417,231 @@ spec:
       - name: nginx
         image: nginx:<span style="color:#bd93f9">1.7</span>.<span style="color:#bd93f9">9</span>
         ports:
-        - containerPort: <span style="color:#bd93f9">80</span></code></pre></div>
-<p>将上面内容保存为: nginx-deployment.yaml，执行命令:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create -f nginx-deployment.yaml
-deployment <span style="color:#f1fa8c">&#34;nginx-deploy&#34;</span> created</code></pre></div>
-<p>然后执行一下命令查看刚刚创建的Deployment:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get deployments
+        - containerPort: <span style="color:#bd93f9">80</span></code></pre>
+            </div>
+            <p>将上面内容保存为: nginx-deployment.yaml，执行命令:</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl create -f nginx-deployment.yaml
+deployment <span style="color:#f1fa8c">&#34;nginx-deploy&#34;</span> created</code></pre>
+            </div>
+            <p>然后执行一下命令查看刚刚创建的Deployment:</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get deployments
 NAME           DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
-nginx-deploy   <span style="color:#bd93f9">3</span>         <span style="color:#bd93f9">0</span>         <span style="color:#bd93f9">0</span>            <span style="color:#bd93f9">0</span>           1s</code></pre></div>
-<p>隔一会再次执行上面命令：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get deployments
+nginx-deploy   <span style="color:#bd93f9">3</span>         <span style="color:#bd93f9">0</span>         <span style="color:#bd93f9">0</span>            <span style="color:#bd93f9">0</span>           1s</code></pre>
+            </div>
+            <p>隔一会再次执行上面命令：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get deployments
 NAME           DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
-nginx-deploy   <span style="color:#bd93f9">3</span>         <span style="color:#bd93f9">3</span>         <span style="color:#bd93f9">3</span>            <span style="color:#bd93f9">3</span>           4m</code></pre></div>
-<p>我们可以看到Deployment已经创建了3个Replica Set了，执行下面的命令查看rs和pod:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get rs
+nginx-deploy   <span style="color:#bd93f9">3</span>         <span style="color:#bd93f9">3</span>         <span style="color:#bd93f9">3</span>            <span style="color:#bd93f9">3</span>           4m</code></pre>
+            </div>
+            <p>
+              我们可以看到Deployment已经创建了3个Replica
+              Set了，执行下面的命令查看rs和pod:
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get rs
 NAME                     DESIRED   CURRENT   READY     AGE
-nginx-deploy-431080787   <span style="color:#bd93f9">3</span>         <span style="color:#bd93f9">3</span>         <span style="color:#bd93f9">3</span>         6m</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pod --show-labels
+nginx-deploy-431080787   <span style="color:#bd93f9">3</span>         <span style="color:#bd93f9">3</span>         <span style="color:#bd93f9">3</span>         6m</code></pre>
+            </div>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get pod --show-labels
 NAME                           READY     STATUS    RESTARTS   AGE       LABELS
 nginx-deploy-431080787-53z8q   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          7m        <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>nginx,pod-template-hash<span style="color:#ff79c6">=</span><span style="color:#bd93f9">431080787</span>
 nginx-deploy-431080787-bhhq0   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          7m        <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>nginx,pod-template-hash<span style="color:#ff79c6">=</span><span style="color:#bd93f9">431080787</span>
-nginx-deploy-431080787-sr44p   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          7m        <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>nginx,pod-template-hash<span style="color:#ff79c6">=</span><span style="color:#bd93f9">431080787</span></code></pre></div>
-<p>上面的Deployment的yaml文件中的<code>replicas:3</code>将会保证我们始终有3个POD在运行。</p>
+nginx-deploy-431080787-sr44p   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          7m        <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>nginx,pod-template-hash<span style="color:#ff79c6">=</span><span style="color:#bd93f9">431080787</span></code></pre>
+            </div>
+            <p>
+              上面的Deployment的yaml文件中的<code>replicas:3</code>将会保证我们始终有3个POD在运行。
+            </p>
 
-<h2 id="滚动升级deployment">滚动升级Deployment</h2>
+            <h2 id="滚动升级deployment">滚动升级Deployment</h2>
 
-<p>现在我们将刚刚保存的yaml文件中的nginx镜像修改为<code>nginx:1.13.3</code>，然后在spec下面添加滚动升级策略：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">minReadySeconds: <span style="color:#bd93f9">5</span>
+            <p>
+              现在我们将刚刚保存的yaml文件中的nginx镜像修改为<code>nginx:1.13.3</code>，然后在spec下面添加滚动升级策略：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">minReadySeconds: <span style="color:#bd93f9">5</span>
 strategy:
   <span style="color:#6272a4"># indicate which strategy we want for rolling update</span>
   type: RollingUpdate
   rollingUpdate:
     maxSurge: <span style="color:#bd93f9">1</span>
-    maxUnavailable: <span style="color:#bd93f9">1</span></code></pre></div>
-<ul>
-<li>minReadySeconds:
+    maxUnavailable: <span style="color:#bd93f9">1</span></code></pre>
+            </div>
+            <ul>
+              <li>
+                minReadySeconds:
 
-<ul>
-<li>Kubernetes在等待设置的时间后才进行升级</li>
-<li>如果没有设置该值，Kubernetes会假设该容器启动起来后就提供服务了</li>
-<li>如果没有设置该值，在某些极端情况下可能会造成服务服务正常运行</li>
-</ul></li>
-<li>maxSurge:
+                <ul>
+                  <li>Kubernetes在等待设置的时间后才进行升级</li>
+                  <li>
+                    如果没有设置该值，Kubernetes会假设该容器启动起来后就提供服务了
+                  </li>
+                  <li>
+                    如果没有设置该值，在某些极端情况下可能会造成服务服务正常运行
+                  </li>
+                </ul>
+              </li>
+              <li>
+                maxSurge:
 
-<ul>
-<li>升级过程中最多可以比原先设置多出的POD数量</li>
-<li>例如：maxSurage=1，replicas=5,则表示Kubernetes会先启动1一个新的Pod后才删掉一个旧的POD，整个升级过程中最多会有5+1个POD。</li>
-</ul></li>
-<li>maxUnavaible:
+                <ul>
+                  <li>升级过程中最多可以比原先设置多出的POD数量</li>
+                  <li>
+                    例如：maxSurage=1，replicas=5,则表示Kubernetes会先启动1一个新的Pod后才删掉一个旧的POD，整个升级过程中最多会有5+1个POD。
+                  </li>
+                </ul>
+              </li>
+              <li>
+                maxUnavaible:
 
-<ul>
-<li>升级过程中最多有多少个POD处于无法提供服务的状态</li>
-<li>当<code>maxSurge</code>不为0时，该值也不能为0</li>
-<li>例如：maxUnavaible=1，则表示Kubernetes整个升级过程中最多会有1个POD处于无法服务的状态。</li>
-</ul></li>
-</ul>
+                <ul>
+                  <li>升级过程中最多有多少个POD处于无法提供服务的状态</li>
+                  <li>当<code>maxSurge</code>不为0时，该值也不能为0</li>
+                  <li>
+                    例如：maxUnavaible=1，则表示Kubernetes整个升级过程中最多会有1个POD处于无法服务的状态。
+                  </li>
+                </ul>
+              </li>
+            </ul>
 
-<p>然后执行命令：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f nginx-deployment.yaml
-deployment <span style="color:#f1fa8c">&#34;nginx-deploy&#34;</span> configured</code></pre></div>
-<p>然后我们可以使用<code>rollout</code>命令：</p>
+            <p>然后执行命令：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl apply -f nginx-deployment.yaml
+deployment <span style="color:#f1fa8c">&#34;nginx-deploy&#34;</span> configured</code></pre>
+            </div>
+            <p>然后我们可以使用<code>rollout</code>命令：</p>
 
-<ul>
-<li><p>查看状态：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl rollout status deployment/nginx-deploy
+            <ul>
+              <li>
+                <p>查看状态：</p>
+                <div class="highlight">
+                  <pre
+                    style="
+                      color: #f8f8f2;
+                      background-color: #282a36;
+                      -moz-tab-size: 4;
+                      -o-tab-size: 4;
+                      tab-size: 4;
+                    "
+                  ><code class="language-shell" data-lang="shell">$ kubectl rollout status deployment/nginx-deploy
 Waiting <span style="color:#ff79c6">for</span> rollout to finish: <span style="color:#bd93f9">1</span> out of <span style="color:#bd93f9">3</span> new replicas have been updated..
-deployment <span style="color:#f1fa8c">&#34;nginx-deploy&#34;</span> successfully rolled out</code></pre></div>
-<ul>
-<li>暂停升级
-<code>shell
-$ kubectl rollout pause deployment &lt;deployment&gt;
-</code></li>
-</ul></li>
+deployment <span style="color:#f1fa8c">&#34;nginx-deploy&#34;</span> successfully rolled out</code></pre>
+                </div>
+                <ul>
+                  <li>
+                    暂停升级
+                    <code
+                      >shell $ kubectl rollout pause deployment
+                      &lt;deployment&gt;
+                    </code>
+                  </li>
+                </ul>
+              </li>
 
-<li><p>继续升级</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl rollout resume deployment &lt;deployment&gt;</code></pre></div>
-<p>升级结束后，继续查看rs的状态：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get rs
+              <li>
+                <p>继续升级</p>
+                <div class="highlight">
+                  <pre
+                    style="
+                      color: #f8f8f2;
+                      background-color: #282a36;
+                      -moz-tab-size: 4;
+                      -o-tab-size: 4;
+                      tab-size: 4;
+                    "
+                  ><code class="language-shell" data-lang="shell">$ kubectl rollout resume deployment &lt;deployment&gt;</code></pre>
+                </div>
+                <p>升级结束后，继续查看rs的状态：</p>
+                <div class="highlight">
+                  <pre
+                    style="
+                      color: #f8f8f2;
+                      background-color: #282a36;
+                      -moz-tab-size: 4;
+                      -o-tab-size: 4;
+                      tab-size: 4;
+                    "
+                  ><code class="language-shell" data-lang="shell">$ kubectl get rs
 NAME                      DESIRED   CURRENT   READY     AGE
 nginx-deploy-2078889897   <span style="color:#bd93f9">0</span>         <span style="color:#bd93f9">0</span>         <span style="color:#bd93f9">0</span>         47m
 nginx-deploy-3297445372   <span style="color:#bd93f9">3</span>         <span style="color:#bd93f9">3</span>         <span style="color:#bd93f9">3</span>         42m
-nginx-deploy-431080787    <span style="color:#bd93f9">0</span>         <span style="color:#bd93f9">0</span>         <span style="color:#bd93f9">0</span>         1h</code></pre></div></li>
-</ul>
+nginx-deploy-431080787    <span style="color:#bd93f9">0</span>         <span style="color:#bd93f9">0</span>         <span style="color:#bd93f9">0</span>         1h</code></pre>
+                </div>
+              </li>
+            </ul>
 
-<p>根据AGE我们可以看到离我们最近的当前状态是：3，和我们的yaml文件是一致的，证明升级成功了。用<code>describe</code>命令可以查看升级的全部信息：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">Name:     nginx-deploy
+            <p>
+              根据AGE我们可以看到离我们最近的当前状态是：3，和我们的yaml文件是一致的，证明升级成功了。用<code>describe</code>命令可以查看升级的全部信息：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">Name:     nginx-deploy
 Namespace:    default
 CreationTimestamp:  Wed, <span style="color:#bd93f9">18</span> Oct <span style="color:#bd93f9">2017</span> <span style="color:#bd93f9">16</span>:58:52 +0800
 Labels:     k8s-app<span style="color:#ff79c6">=</span>nginx-demo
@@ -484,20 +678,44 @@ Annotations:    deployment.kubernetes.io/revision<span style="color:#ff79c6">=</
 </span><span style="color:#f1fa8c">  39m   39m   1 deployment-controller     Normal    ScalingReplicaSet Scaled up replica set nginx-deploy-3297445372 to 2
 </span><span style="color:#f1fa8c">  38m   38m   1 deployment-controller     Normal    ScalingReplicaSet Scaled down replica set nginx-deploy-431080787 to 1
 </span><span style="color:#f1fa8c">  38m   38m   1 deployment-controller     Normal    ScalingReplicaSet Scaled up replica set nginx-deploy-3297445372 to 3
-</span><span style="color:#f1fa8c">  38m   38m   1 deployment-controller     Normal    ScalingReplicaSet Scaled down replica set nginx-deploy-431080787 to 0</span></code></pre></div>
-<h2 id="回滚deployment">回滚Deployment</h2>
+</span><span style="color:#f1fa8c">  38m   38m   1 deployment-controller     Normal    ScalingReplicaSet Scaled down replica set nginx-deploy-431080787 to 0</span></code></pre>
+            </div>
+            <h2 id="回滚deployment">回滚Deployment</h2>
 
-<p>我们已经能够滚动平滑的升级我们的Deployment了，但是如果升级后的POD出了问题该怎么办？我们能够想到的最好最快的方式当然是回退到上一次能够提供正常工作的版本，Deployment就为我们提供了回滚机制。</p>
+            <p>
+              我们已经能够滚动平滑的升级我们的Deployment了，但是如果升级后的POD出了问题该怎么办？我们能够想到的最好最快的方式当然是回退到上一次能够提供正常工作的版本，Deployment就为我们提供了回滚机制。
+            </p>
 
-<p>首先，查看Deployment的升级历史：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl rollout <span style="color:#8be9fd;font-style:italic">history</span> deployment nginx-deploy
+            <p>首先，查看Deployment的升级历史：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl rollout <span style="color:#8be9fd;font-style:italic">history</span> deployment nginx-deploy
 deployments <span style="color:#f1fa8c">&#34;nginx-deploy&#34;</span>
 REVISION  CHANGE-CAUSE
 <span style="color:#bd93f9">1</span>   &lt;none&gt;
 <span style="color:#bd93f9">2</span>   &lt;none&gt;
-<span style="color:#bd93f9">3</span>   kubectl apply --filename<span style="color:#ff79c6">=</span>Desktop/nginx-deployment.yaml --record<span style="color:#ff79c6">=</span>true</code></pre></div>
-<p>从上面的结果可以看出在执行Deployment升级的时候最好带上<code>record</code>参数，便于我们查看历史版本信息。同样我们可以使用下面的命令查看单个REVISION的信息：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl rollout <span style="color:#8be9fd;font-style:italic">history</span> deployment nginx-deploy --revision<span style="color:#ff79c6">=</span><span style="color:#bd93f9">3</span>
+<span style="color:#bd93f9">3</span>   kubectl apply --filename<span style="color:#ff79c6">=</span>Desktop/nginx-deployment.yaml --record<span style="color:#ff79c6">=</span>true</code></pre>
+            </div>
+            <p>
+              从上面的结果可以看出在执行Deployment升级的时候最好带上<code>record</code>参数，便于我们查看历史版本信息。同样我们可以使用下面的命令查看单个REVISION的信息：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl rollout <span style="color:#8be9fd;font-style:italic">history</span> deployment nginx-deploy --revision<span style="color:#ff79c6">=</span><span style="color:#bd93f9">3</span>
 deployments <span style="color:#f1fa8c">&#34;nginx-deploy&#34;</span> with revision <span style="color:#6272a4">#3</span>
 Pod Template:
   Labels: <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>nginx
@@ -509,175 +727,266 @@ Pod Template:
     Port: <span style="color:#bd93f9">80</span>/TCP
     Environment:  &lt;none&gt;
     Mounts: &lt;none&gt;
-  Volumes:  &lt;none&gt;</code></pre></div>
-<p>假如现在要直接回退到当前版本的前一个版本：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl rollout undo deployment nginx-deploy
-deployment <span style="color:#f1fa8c">&#34;nginx-deploy&#34;</span> rolled back</code></pre></div>
-<p>当然也可以用<code>revision</code>回退到指定的版本：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl rollout undo deployment nginx-deploy --to-revision<span style="color:#ff79c6">=</span><span style="color:#bd93f9">2</span>
-deployment <span style="color:#f1fa8c">&#34;nginx-deploy&#34;</span> rolled back</code></pre></div>
-<p>现在可以用命令查看Deployment现在的状态了。</p>
+  Volumes:  &lt;none&gt;</code></pre>
+            </div>
+            <p>假如现在要直接回退到当前版本的前一个版本：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl rollout undo deployment nginx-deploy
+deployment <span style="color:#f1fa8c">&#34;nginx-deploy&#34;</span> rolled back</code></pre>
+            </div>
+            <p>当然也可以用<code>revision</code>回退到指定的版本：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl rollout undo deployment nginx-deploy --to-revision<span style="color:#ff79c6">=</span><span style="color:#bd93f9">2</span>
+deployment <span style="color:#f1fa8c">&#34;nginx-deploy&#34;</span> rolled back</code></pre>
+            </div>
+            <p>现在可以用命令查看Deployment现在的状态了。</p>
 
-<h2 id="注意清除机制">注意清除机制</h2>
+            <h2 id="注意清除机制">注意清除机制</h2>
 
-<p>前面在用<code>apply</code>命令滚动升级Deployment后，无意间在<code>Dashboard</code>中发现了<code>Replica Sets</code>下面有很多Pods为<code>0/0</code>的RS，由于本人有轻微的强迫症，眼里是容不下<code>0/0</code>这种东西的，然后就给<code>删除</code>了，结果后面更新的时候又出现了，以为是yaml脚本有误，结果到现在才清楚这个是用于Deployment回滚用的，<strong>不能随便删除</strong>的(感觉自己就是个棒槌啊~~~)。
-<img src="https://www.qikqiak.com/img/posts/1508322427262.jpg" alt="RS不能随便删除" /></p>
+            <p>
+              前面在用<code>apply</code>命令滚动升级Deployment后，无意间在<code>Dashboard</code>中发现了<code
+                >Replica Sets</code
+              >下面有很多Pods为<code>0/0</code>的RS，由于本人有轻微的强迫症，眼里是容不下<code>0/0</code>这种东西的，然后就给<code>删除</code>了，结果后面更新的时候又出现了，以为是yaml脚本有误，结果到现在才清楚这个是用于Deployment回滚用的，<strong>不能随便删除</strong>的(感觉自己就是个棒槌啊~~~)。
+              <img
+                src="https://www.qikqiak.com/img/posts/1508322427262.jpg"
+                alt="RS不能随便删除"
+              />
+            </p>
 
-<blockquote>
-<p><code>Kubernetes</code>默认是会将Deployments的每次改动操作生成一个新的RS，并保存下来的。不过你可以设置参数<code>.spec.revisonHistoryLimit</code>来来指定Deployment最多保留多少revision 历史记录。<strong>如果将该项设置为0，Deployment就不允许回退了</strong>。</p>
-</blockquote>
+            <blockquote>
+              <p>
+                <code>Kubernetes</code
+                >默认是会将Deployments的每次改动操作生成一个新的RS，并保存下来的。不过你可以设置参数<code>.spec.revisonHistoryLimit</code>来来指定Deployment最多保留多少revision
+                历史记录。<strong>如果将该项设置为0，Deployment就不允许回退了</strong>。
+              </p>
+            </blockquote>
 
-<h2 id="参考文档">参考文档</h2>
+            <h2 id="参考文档">参考文档</h2>
 
-<ul>
-<li><a href="http://kubernetes.io/docs/user-guide/deployments/">http://kubernetes.io/docs/user-guide/deployments/</a></li>
-<li><a href="http://kubernetes.io/docs/user-guide/kubectl/kubectl_rollout_history/">http://kubernetes.io/docs/user-guide/kubectl/kubectl_rollout_history/</a></li>
-<li><a href="http://kubernetes.io/docs/user-guide/kubectl/kubectl_rolling-update/">http://kubernetes.io/docs/user-guide/kubectl/kubectl_rolling-update/</a></li>
-</ul>
+            <ul>
+              <li>
+                <a href="http://kubernetes.io/docs/user-guide/deployments/"
+                  >http://kubernetes.io/docs/user-guide/deployments/</a
+                >
+              </li>
+              <li>
+                <a
+                  href="http://kubernetes.io/docs/user-guide/kubectl/kubectl_rollout_history/"
+                  >http://kubernetes.io/docs/user-guide/kubectl/kubectl_rollout_history/</a
+                >
+              </li>
+              <li>
+                <a
+                  href="http://kubernetes.io/docs/user-guide/kubectl/kubectl_rolling-update/"
+                  >http://kubernetes.io/docs/user-guide/kubectl/kubectl_rolling-update/</a
+                >
+              </li>
+            </ul>
 
-<p><a href="https://youdianzhishi.com/web/course/1030" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+            <p>
+              <a
+                href="https://youdianzhishi.com/web/course/1030"
+                title="从 Docker 到 Kubernetes 进阶课程"
+                ><img
+                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
+                  alt="Kubernetes进阶训练营"
+              /></a>
+            </p>
 
+            <h2>微信公众号</h2>
+            <p>
+              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+              kubernetes 讨论群里面共同学习。
+            </p>
+            <img
+              src="https://picdn.youdianzhishi.com/images/qrcode.png"
+              alt="wechat-account-qrcode"
+            />
 
-          <h2>微信公众号</h2>
-<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
-
-  
-          
             <div class="entry-shang text-center">
-    <p>「真诚赞赏，手留余香」</p>
-    <button class="zs show-zs btn btn-bred">赞赏</button>
-</div>
-<div class="zs-modal-bg"></div>
-<div class="zs-modal-box">
-    <div class="zs-modal-head">
-        <button type="button" class="close">×</button>
-        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
-        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-    </div>
-    <div class="zs-modal-body">
-        <div class="zs-modal-btns">
-            <button class="btn btn-blink" data-num="2">2元</button>
-            <button class="btn btn-blink" data-num="5">5元</button>
-            <button class="btn btn-blink" data-num="10">10元</button>
-            <button class="btn btn-blink" data-num="50">50元</button>
-            <button class="btn btn-blink" data-num="100">100元</button>
-            <button class="btn btn-blink" data-num="1">任意金额</button>
-        </div>
-        <div class="zs-modal-pay">
-            <button class="btn btn-bred" id="pay-text">2元</button>
-            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
-        </div>
-    </div>
-    <div class="zs-modal-footer">
-        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
-    </div>
-</div>
-          
-          
-            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
-    <center>
-    <a href="#" class="social-share-icon icon-weibo"></a>
-    <a href="#" class="social-share-icon icon-wechat"></a>
-    <a href="#" class="social-share-icon icon-twitter"></a>
-    <a href="#" class="social-share-icon icon-linkedin"></a>
-    <a href="#" class="social-share-icon icon-facebook"></a>
-    <a href="#" class="social-share-icon icon-qq"></a>
-    <a href="#" class="social-share-icon icon-qzone"></a>
-    </center>
-</div>
+              <p>「真诚赞赏，手留余香」</p>
+              <button class="zs show-zs btn btn-bred">赞赏</button>
+            </div>
+            <div class="zs-modal-bg"></div>
+            <div class="zs-modal-box">
+              <div class="zs-modal-head">
+                <button type="button" class="close">×</button>
+                <span class="author"
+                  ><img
+                    src="https://www.qikqiak.com/img/avatar.jpeg"
+                  />阳明</span
+                >
+                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+              </div>
+              <div class="zs-modal-body">
+                <div class="zs-modal-btns">
+                  <button class="btn btn-blink" data-num="2">2元</button>
+                  <button class="btn btn-blink" data-num="5">5元</button>
+                  <button class="btn btn-blink" data-num="10">10元</button>
+                  <button class="btn btn-blink" data-num="50">50元</button>
+                  <button class="btn btn-blink" data-num="100">100元</button>
+                  <button class="btn btn-blink" data-num="1">任意金额</button>
+                </div>
+                <div class="zs-modal-pay">
+                  <button class="btn btn-bred" id="pay-text">2元</button>
+                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+                  <img
+                    src="https://www.qikqiak.com/img/wechat-2.png"
+                    id="pay-image"
+                  />
+                </div>
+              </div>
+              <div class="zs-modal-footer">
+                <span class="zs-wechat"
+                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
+                /></span>
+              </div>
+            </div>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+            <div
+              class="social-share"
+              data-initialized="true"
+              style="margin-bottom: 20px; margin-top: 20px"
+            >
+              <center>
+                <a href="#" class="social-share-icon icon-weibo"></a>
+                <a href="#" class="social-share-icon icon-wechat"></a>
+                <a href="#" class="social-share-icon icon-twitter"></a>
+                <a href="#" class="social-share-icon icon-linkedin"></a>
+                <a href="#" class="social-share-icon icon-facebook"></a>
+                <a href="#" class="social-share-icon icon-qq"></a>
+                <a href="#" class="social-share-icon icon-qzone"></a>
+              </center>
+            </div>
 
-          
-        </article>
-  
-        
-          
+            <link
+              rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
+            />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+          </article>
 
-<h3>相关文章</h3>
-<ul style="margin-bottom: 25px;">
-    
-    <li><a href="https://www.qikqiak.com/post/kubernetes-monitor-prometheus-grafana/">Kubernetes使用Prometheus搭建监控平台</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/first-use-helm-on-kubernetes/">Kubernetes Helm 初体验</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/understand-kubernetes-configmap-and-secrets/">kubernetes ConfigMap 和 Secrets</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/add-authorization-for-kubernetes-dashboard/">为kubernetes dashboard访问用户添加权限控制</a></li>
-    
-</ul>
+          <h3>相关文章</h3>
+          <ul style="margin-bottom: 25px">
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/kubernetes-monitor-prometheus-grafana/"
+                >Kubernetes使用Prometheus搭建监控平台</a
+              >
+            </li>
 
-        
-  
-        
-        <ul class="pager blog-pager">
-          
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/first-use-helm-on-kubernetes/"
+                >Kubernetes Helm 初体验</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/understand-kubernetes-configmap-and-secrets/"
+                >kubernetes ConfigMap 和 Secrets</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/add-authorization-for-kubernetes-dashboard/"
+                >为kubernetes dashboard访问用户添加权限控制</a
+              >
+            </li>
+          </ul>
+
+          <ul class="pager blog-pager">
             <li class="previous">
-              <a href="https://www.qikqiak.com/post/kubernetes-monitor-prometheus-grafana/" data-toggle="tooltip" data-placement="top" title="Kubernetes使用Prometheus搭建监控平台">&larr; 前一篇</a>
+              <a
+                href="https://www.qikqiak.com/post/kubernetes-monitor-prometheus-grafana/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="Kubernetes使用Prometheus搭建监控平台"
+                >&larr; 前一篇</a
+              >
             </li>
-          
-          
-            <li class="next">
-              <a href="https://www.qikqiak.com/post/what-is-service-mesh/" data-toggle="tooltip" data-placement="top" title="服务网格(Service Mesh)是什么?">后一篇 &rarr;</a>
-            </li>
-          
-        </ul>
-        
 
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-        
-        <ins class="adsbygoogle"
-            style="display:block"
+            <li class="next">
+              <a
+                href="https://www.qikqiak.com/post/what-is-service-mesh/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="服务网格(Service Mesh)是什么?"
+                >后一篇 &rarr;</a
+              >
+            </li>
+          </ul>
+
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+          ></script>
+
+          <ins
+            class="adsbygoogle"
+            style="display: block"
             data-ad-client="ca-pub-5376999672787220"
             data-ad-slot="3700507799"
             data-ad-format="auto"
-            data-full-width-responsive="true"></ins>
-        <script>
+            data-full-width-responsive="true"
+          ></ins>
+          <script>
             (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
-  
-        
-    <div id="gitalk-container"></div>
-    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-    <script>
-    var gitalk = new Gitalk({
-        clientID: 'bdb76dbb2e9d0786e350',
-        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
-        repo: 'blog',
-        owner: 'cnych',
-        admin: ['cnych'],
-        labels: ['gitment'],
-        title: 'Kubernetes Deployment滚动升级',
-        createIssueManually: true,
-        id: 'kubernetes-rollout-update',      
-        distractionFreeMode: true  
-    });
-    gitalk.render('gitalk-container');
-</script>
+          </script>
 
-
-        
-          
-
-        
-  
+          <div id="gitalk-container"></div>
+          <link
+            rel="stylesheet"
+            href="https://unpkg.com/gitalk/dist/gitalk.css"
+          />
+          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+          <script>
+            var gitalk = new Gitalk({
+              clientID: "bdb76dbb2e9d0786e350",
+              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
+              repo: "blog",
+              owner: "cnych",
+              admin: ["cnych"],
+              labels: ["gitment"],
+              title: "Kubernetes Deployment滚动升级",
+              createIssueManually: true,
+              id: "kubernetes-rollout-update",
+              distractionFreeMode: true,
+            });
+            gitalk.render("gitalk-container");
+          </script>
+        </div>
       </div>
-    
-    
-  </div>
-</div>
+    </div>
 
     <footer>
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <ul class="list-inline text-center footer-links">
-          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
-          
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <ul class="list-inline text-center footer-links">
+              <img
+                src="https://www.qikqiak.com/img/wechatmp.png"
+                alt="k8s技术圈"
+              />
+
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -686,7 +995,7 @@ deployment <span style="color:#f1fa8c">&#34;nginx-deploy&#34;</span> rolled back
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -695,7 +1004,7 @@ deployment <span style="color:#f1fa8c">&#34;nginx-deploy&#34;</span> rolled back
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -704,7 +1013,7 @@ deployment <span style="color:#f1fa8c">&#34;nginx-deploy&#34;</span> rolled back
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -713,121 +1022,158 @@ deployment <span style="color:#f1fa8c">&#34;nginx-deploy&#34;</span> rolled back
                   </span>
                 </a>
               </li>
-          
-          
-          <li>
-            <a href="https://www.qikqiak.com/index.xml" title="RSS">
-              <span class="fa-stack fa-lg">
-                <i class="fa fa-circle fa-stack-2x"></i>
-                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+
+              <li>
+                <a href="https://www.qikqiak.com/index.xml" title="RSS">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+            </ul>
+            <p class="credits copyright text-muted">
+              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/">阳明的博客</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/archive/">归档</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/friend/">友链</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://beian.miit.gov.cn/" target="_blank"
+                >蜀ICP备11027319号-5</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
+                >kubernetes.io</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
+                >Kubernetes中文社区</a
+              >
+            </p>
+            <p class="text-center text-muted">
+              <script
+                async
+                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
+              ></script>
+              <span id="busuanzi_container_site_pv" style="display: none">
+                本站总访问量<span id="busuanzi_value_site_pv"></span>次
               </span>
-            </a>
-          </li>
-          
-        </ul>
-        <p class="credits copyright text-muted">
-          
+              &nbsp;&bull;&nbsp;
+              <span id="busuanzi_container_site_uv" style="display: none">
+                访客数<span id="busuanzi_value_site_uv"></span>人次
+              </span>
+            </p>
 
-          &nbsp;&bull;&nbsp;
-          2023
-
-          
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/">阳明的博客</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/archive/">归档</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/friend/">友链</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
-          
-        </p>
-        <p class="text-center text-muted">
-          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-          <span id="busuanzi_container_site_pv" style="display:none">
-            本站总访问量<span id="busuanzi_value_site_pv"></span>次
-          </span>
-          &nbsp;&bull;&nbsp;
-          <span id="busuanzi_container_site_uv" style="display:none">
-            访客数<span id="busuanzi_value_site_uv"></span>人次
-          </span>
-        </p>
-        
-        <p class="credits theme-by text-muted">
-          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
-          
-        </p>
+            <p class="credits theme-by text-muted">
+              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
+              &nbsp;&bull;&nbsp; 主题
+              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+              移植自
+              <a href="https://github.com/rootsongjc/beautifulhugo"
+                >Beautiful Hugo</a
+              >
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</footer>
+    </footer>
 
+    <script
+      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
+      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
+    ></script>
 
-<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "UA-69668147-3");
+    </script>
+    <script>
+      (function () {
+        var bp = document.createElement("script");
+        var curProtocol = window.location.protocol.split(":")[0];
+        if (curProtocol === "https") {
+          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
+        } else {
+          bp.src = "http://push.zhanzhang.baidu.com/push.js";
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+      })();
+    </script>
+    <script>
+      $(document).ready(function () {
+        var int = setInterval(fixCount, 50);
 
-
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-69668147-3');
-</script>
-<script>
-(function(){
-    var bp = document.createElement('script');
-    var curProtocol = window.location.protocol.split(':')[0];
-    if (curProtocol === 'https') {
-        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
-    }
-    else {
-        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
-    }
-    var s = document.getElementsByTagName("script")[0];
-    s.parentNode.insertBefore(bp, s);
-})();
-</script>
-<script >
-$(document).ready(function() {
-  var int = setInterval(fixCount, 50);  
-  
-  var initPVCount = 584976;
-  var initUVCount = 153191;
-  function fixCount() {                   
-    if ($("#busuanzi_container_site_pv").css("display") != "none") {
-        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
-        clearInterval(int); 
-    }
-    if ($("#busuanzi_container_site_uv").css("display") != "none") {
-      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
-      clearInterval(int); 
-    }  
-  }           
-});
-</script>
- <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
-<script type="text/javascript">
-$('.carousel').slick({
-    dots: true,
-    arrows: true,
-    autoplay: true,
-    autoplaySpeed: 4000,
-    infinite: true,
-    speed: 500,
-    fade: true,
-    cssEase: 'linear',
-    centerMode: true,
-    prevArrow: '<button type="button" class="slick-prev"></button>',
-    nextArrow: '<button type="button" class="slick-next"></button>',
-});
-</script>
-
+        var initPVCount = 584976;
+        var initUVCount = 153191;
+        function fixCount() {
+          if ($("#busuanzi_container_site_pv").css("display") != "none") {
+            $("#busuanzi_value_site_pv").html(
+              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
+            );
+            clearInterval(int);
+          }
+          if ($("#busuanzi_container_site_uv").css("display") != "none") {
+            $("#busuanzi_value_site_uv").html(
+              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
+            );
+            clearInterval(int);
+          }
+        }
+      });
+    </script>
+    <script>
+      (function (w, d, s, id) {
+        if (typeof w.webpushr !== "undefined") return;
+        w.webpushr =
+          w.webpushr ||
+          function () {
+            (w.webpushr.q = w.webpushr.q || []).push(arguments);
+          };
+        var js,
+          fjs = d.getElementsByTagName(s)[0];
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "https://cdn.webpushr.com/app.min.js";
+        fjs.parentNode.appendChild(js);
+      })(window, document, "script", "webpushr-jssdk");
+      webpushr(
+        "init",
+        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
+      );
+    </script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
+    ></script>
+    <script type="text/javascript">
+      $(".carousel").slick({
+        dots: true,
+        arrows: true,
+        autoplay: true,
+        autoplaySpeed: 4000,
+        infinite: true,
+        speed: 500,
+        fade: true,
+        cssEase: "linear",
+        centerMode: true,
+        prevArrow: '<button type="button" class="slick-prev"></button>',
+        nextArrow: '<button type="button" class="slick-next"></button>',
+      });
+    </script>
   </body>
 </html>
-

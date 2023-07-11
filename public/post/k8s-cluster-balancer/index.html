@@ -1,397 +1,584 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
 
+    <title>
+      Kubernetes 集群均衡器
+      Descheduler-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
+    </title>
+    <meta property="og:title" content="Kubernetes 集群均衡器 Descheduler" />
+    <meta name="twitter:title" content="Kubernetes 集群均衡器 Descheduler" />
 
-  <title>Kubernetes 集群均衡器 Descheduler-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
-  <meta property="og:title" content="Kubernetes 集群均衡器 Descheduler" />
-  <meta name="twitter:title" content="Kubernetes 集群均衡器 Descheduler" />
+    <meta
+      name="description"
+      content="通过 Descheduler 实现 Kubernetes 的二次调度"
+    />
+    <meta
+      property="og:description"
+      content="通过 Descheduler 实现 Kubernetes 的二次调度"
+    />
+    <meta
+      name="twitter:description"
+      content="通过 Descheduler 实现 Kubernetes 的二次调度"
+    />
+    <meta name="author" content="" />
+    <link
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+      rel="icon"
+      type="image/x-icon"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      property="og:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      name="twitter:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta
+      property="og:url"
+      content="https://www.qikqiak.com/post/k8s-cluster-balancer/"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="阳明的博客" />
 
-  <meta name="description" content="通过 Descheduler 实现 Kubernetes 的二次调度">
-  <meta property="og:description" content="通过 Descheduler 实现 Kubernetes 的二次调度">
-  <meta name="twitter:description" content="通过 Descheduler 实现 Kubernetes 的二次调度">
-  <meta name="author" content=""/>
-  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
-  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
-  <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://www.qikqiak.com/post/k8s-cluster-balancer/" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="阳明的博客" />
+    <meta name="generator" content="Hugo 0.55.6" />
+    <link
+      rel="canonical"
+      href="https://www.qikqiak.com/post/k8s-cluster-balancer/"
+    />
+    <link
+      rel="alternate"
+      href="https://www.qikqiak.com/index.xml"
+      type="application/rss+xml"
+      title="阳明的博客"
+    />
 
-  <meta name="generator" content="Hugo 0.55.6" />
-  <link rel="canonical" href="https://www.qikqiak.com/post/k8s-cluster-balancer/" />
-  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+    <link
+      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
+      rel="stylesheet"
+    />
 
-  
-  
-  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
-  
+    <link
+      rel="stylesheet"
+      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
+      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
+    />
 
-  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
+    />
 
-  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
-  
-  
-    
     <!--[if lt IE 9]>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+        rel="stylesheet"
+      />
     <![endif]-->
-<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
-<meta name="baidu-site-verification" content="F5ojAyqaKU" />
-<meta name="keywords" content="kubernetes, scheduler, 均衡, 调度, descheduler">
-<script>
-var _hmt = _hmt || [];
-(function() {
-  var hm = document.createElement("script");
-  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-  var s = document.getElementsByTagName("script")[0];
-  s.parentNode.insertBefore(hm, s);
-})();
-</script>
+    <meta
+      name="google-site-verification"
+      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
+    />
+    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
+    <meta
+      name="keywords"
+      content="kubernetes, scheduler, 均衡, 调度, descheduler"
+    />
+    <script>
+      var _hmt = _hmt || [];
+      (function () {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
 
+    <script type="application/javascript">
+      var doNotTrack = false;
+      if (!doNotTrack) {
+        window.ga =
+          window.ga ||
+          function () {
+            (ga.q = ga.q || []).push(arguments);
+          };
+        ga.l = +new Date();
+        ga("create", "UA-69668147-3", "auto");
 
-
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-	ga('create', 'UA-69668147-3', 'auto');
-	
-	ga('send', 'pageview');
-}
-</script>
-<script async src='https://www.google-analytics.com/analytics.js'></script>
-
-</head>
+        ga("send", "pageview");
+      }
+    </script>
+    <script async src="https://www.google-analytics.com/analytics.js"></script>
+  </head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
-        <span class="sr-only">切换导航</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
-        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
-      </a>
-    </div>
+      <div class="container">
+        <div class="navbar-header">
+          <button
+            type="button"
+            class="navbar-toggle"
+            data-toggle="collapse"
+            data-target="#main-navbar"
+          >
+            <span class="sr-only">切换导航</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a
+            class="navbar-brand"
+            href="https://www.qikqiak.com/"
+            title="阳明的博客"
+          >
+            <img
+              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
+              style="margin-top: -5px; height: 32px"
+              alt="阳明的博客"
+            />
+          </a>
+        </div>
 
-    <div class="collapse navbar-collapse" id="main-navbar">
-      <ul class="nav navbar-nav navbar-right">
-        
-          
+        <div class="collapse navbar-collapse" id="main-navbar">
+          <ul class="nav navbar-nav navbar-right">
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-          
-        
-          
+
             <li>
-              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+              <a
+                title="课程"
+                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
+                >课程</a
+              >
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/archives">Archive</a>
-                
-                  <a href="https://www.qikqiak.com/tags">tags</a>
-                
-                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-                
-                  <a href="https://www.qikqiak.com/tags/python">python</a>
-                
-                  <a href="https://www.qikqiak.com/tags/django">django</a>
-                
-                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
-                
+                <a href="https://www.qikqiak.com/archives">Archive</a>
+
+                <a href="https://www.qikqiak.com/tags">tags</a>
+
+                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+
+                <a href="https://www.qikqiak.com/tags/python">python</a>
+
+                <a href="https://www.qikqiak.com/tags/django">django</a>
+
+                <a href="https://www.qikqiak.com/tags/devops">devops</a>
               </div>
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-                
-                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-                
-                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-                
-                  <a href="https://md.qikqiak.com/">Markdown微信</a>
-                
+                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+
+                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+
+                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+
+                <a href="https://md.qikqiak.com/">Markdown微信</a>
               </div>
             </li>
-          
-        
-          
+
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+              <a title="关于" href="https://www.qikqiak.com/page/about/"
+                >关于</a
+              >
             </li>
-          
-        
-          
+
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
-          
-        
 
-        
-
-        
-
-        
-          <li>
-            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
-              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
-            </a>
-          </li>
-          
-
-      </ul>
-    </div>
-
-  </div>
-</nav>
-
-
-  <div id="modalSearch" class="modal fade" role="dialog">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-          <h4 class="modal-title">搜索</h4>
+            <li>
+              <a
+                href="#modalSearch"
+                data-toggle="modal"
+                data-target="#modalSearch"
+                style="outline: none"
+              >
+                <span
+                  id="searchGlyph"
+                  class="glyphicon glyphicon-search"
+                ></span>
+              </a>
+            </li>
+          </ul>
         </div>
-        <div class="modal-body">
-            
-<div class="aa-input-container" id="aa-input-container">
-    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
-    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
-    </svg>
-</div>
-<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+      </div>
+    </nav>
 
-<script>
-var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
-var index = client.initIndex('prod_blog');
+    <div id="modalSearch" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">
+              &times;
+            </button>
+            <h4 class="modal-title">搜索</h4>
+          </div>
+          <div class="modal-body">
+            <div class="aa-input-container" id="aa-input-container">
+              <input
+                type="search"
+                id="aa-search-input"
+                class="aa-input-search"
+                placeholder="Search for titles or URIs..."
+                name="search"
+                autocomplete="off"
+              />
+              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+                <path
+                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
+                />
+              </svg>
+            </div>
+            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-autocomplete('#aa-search-input',
-{ hint: false}, {
-    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
-    
-    displayKey: 'name',
-    
-    templates: {
-        
-        suggestion: function(suggestion) {
-            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
-            suggestion._highlightResult.title.value + '</a></span>';
-        }
-    }
-});
-</script>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+            <script>
+              var client = algoliasearch(
+                "1JDRAS0AZR",
+                "8804ac109158bb3bb60d74ce98fa332f"
+              );
+              var index = client.initIndex("prod_blog");
+
+              autocomplete(
+                "#aa-search-input",
+                { hint: false },
+                {
+                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
+
+                  displayKey: "name",
+
+                  templates: {
+                    suggestion: function (suggestion) {
+                      return (
+                        "<span>" +
+                        '<a href="https://www.qikqiak.com/post/' +
+                        suggestion.slug +
+                        '">' +
+                        suggestion._highlightResult.title.value +
+                        "</a></span>"
+                      );
+                    },
+                  },
+                }
+              );
+            </script>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">
+              close
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-    
-  
-  
-  
+    <div
+      id="header-big-imgs"
+      data-num-img="1"
+      data-img-src-1="https://picdn.youdianzhishi.com/images/20200316122224.png"
+      data-img-desc-1="https://github.com/kubernetes-sigs/descheduler"
+    ></div>
 
-
-
-
-  
-    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200316122224.png" data-img-desc-1="https://github.com/kubernetes-sigs/descheduler"></div>
-  
-
-  <header class="header-section has-img">
-    
+    <header class="header-section has-img">
       <div class="intro-header big-img">
-        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>Kubernetes 集群均衡器 Descheduler</h1>
-                  
-                    
-                      <h2 class="post-subheading">通过 Descheduler 实现 Kubernetes 的二次调度</h2>
-                    
-                  
-                  
-                    <span class="post-meta">
-  
-    发表于 March 16, 2020
-  
-  
-</span>
 
+                <h2 class="post-subheading">
+                  通过 Descheduler 实现 Kubernetes 的二次调度
+                </h2>
 
-                  
+                <span class="post-meta"> 发表于 March 16, 2020 </span>
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline;"></span>
+        <span class="img-desc" style="display: inline"></span>
       </div>
-    
-    
-    
-    <div class="intro-header no-img">
-      
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <div class="post-heading">
-              <h1>Kubernetes 集群均衡器 Descheduler</h1>
-                
-                  
-                    <h2 class="post-subheading">通过 Descheduler 实现 Kubernetes 的二次调度</h2>
-                  
-                
-                
-                  <span class="post-meta">
-  
-    发表于 March 16, 2020
-  
-  
-</span>
 
+      <div class="intro-header no-img">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>Kubernetes 集群均衡器 Descheduler</h1>
 
-                
+                <h2 class="post-subheading">
+                  通过 Descheduler 实现 Kubernetes 的二次调度
+                </h2>
+
+                <span class="post-meta"> 发表于 March 16, 2020 </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    
-    
-  </header>
+    </header>
 
+    <div class="container" role="main">
+      <div class="row">
+        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+          <div>
+            <h5 id="tags" style="margin-top: 30px">
+              标签:
 
-    
+              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
+              &nbsp;
 
+              <a href="https://www.qikqiak.com/tags/scheduler/">scheduler</a>
+              &nbsp;
 
-
-<div class="container" role="main">
-  <div class="row">
-
-    
-    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <div>
-            
-            
-            <h5 id="tags" style="margin-top: 30px;">标签:
-              
-                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/scheduler/">scheduler</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/descheduler/">descheduler</a> &nbsp;
-              
+              <a href="https://www.qikqiak.com/tags/descheduler/"
+                >descheduler</a
+              >
+              &nbsp;
             </h5>
-            
-        </div>
-  
-        <article role="main" class="blog-post" itemprop="articleBody" id="content">
-          
-  
-          
-          
-          
-  
-          
-          
-          
-  
-          
-          
-          
+          </div>
 
-          <p>在介绍 <a href="https://www.qikqiak.com/tags/kubernetes/">Kubernetes</a> 集群均衡器之前我们还是非常有必要再来回顾下 <code>kube-scheduler</code> 组件的概念。我们知道基本上所有的分布式系统都需要一个流程或应用来调度集群中的任务来执行，同样 Kubernetes 也需要这样一个调度器来执行任务，我们熟知的 <code>kube-scheduler</code> 组件就是扮演这个角色的，该组件是作为 Kubernetes 整个<a href="https://kubernetes.io/docs/reference/glossary/?all=true#term-control-plane">控制面板</a>的一部分来运行的，并监听所有未分配节点新创建的 Pod，为其选择一个最合适的节点绑定运行。<code>kube-scheduler</code> 是如何来选择最合适的节点的呢？</p>
+          <article
+            role="main"
+            class="blog-post"
+            itemprop="articleBody"
+            id="content"
+          >
+            <p>
+              在介绍
+              <a href="https://www.qikqiak.com/tags/kubernetes/">Kubernetes</a>
+              集群均衡器之前我们还是非常有必要再来回顾下
+              <code>kube-scheduler</code>
+              组件的概念。我们知道基本上所有的分布式系统都需要一个流程或应用来调度集群中的任务来执行，同样
+              Kubernetes 也需要这样一个调度器来执行任务，我们熟知的
+              <code>kube-scheduler</code> 组件就是扮演这个角色的，该组件是作为
+              Kubernetes 整个<a
+                href="https://kubernetes.io/docs/reference/glossary/?all=true#term-control-plane"
+                >控制面板</a
+              >的一部分来运行的，并监听所有未分配节点新创建的
+              Pod，为其选择一个最合适的节点绑定运行。<code>kube-scheduler</code>
+              是如何来选择最合适的节点的呢？
+            </p>
 
-<h2 id="调度器">调度器</h2>
+            <h2 id="调度器">调度器</h2>
 
-<p>前面我们在 <a href="https://www.qikqiak.com/post/kube-scheduler-introduction/">调度器介绍</a> 和 <a href="https://www.qikqiak.com/post/custom-kube-scheduler/">自定义调度器</a> 的文章中就介绍过，整个调度器执行调度的过程需要两个阶段：<code>过滤</code> 和 <code>打分</code>。</p>
+            <p>
+              前面我们在
+              <a
+                href="https://www.qikqiak.com/post/kube-scheduler-introduction/"
+                >调度器介绍</a
+              >
+              和
+              <a href="https://www.qikqiak.com/post/custom-kube-scheduler/"
+                >自定义调度器</a
+              >
+              的文章中就介绍过，整个调度器执行调度的过程需要两个阶段：<code
+                >过滤</code
+              >
+              和 <code>打分</code>。
+            </p>
 
-<ul>
-<li><code>过滤</code>：找到所有可以满足 Pod 要求的节点集合，该阶段属于强制性规则，满足邀请的节点集合会输入给第二阶段，如果过滤处理的节点集合为空，则 Pod 将会处于 <code>Pending</code> 状态，期间调度器会不断尝试重试，直到有节点满足条件。</li>
-<li><code>打分</code>：该阶段对上一阶段输入的节点集合根据优先级进行排名，最后选择优先级最高的节点来绑定 Pod。一旦 <code>kube-scheduler</code> 确定了最优的节点，它就会通过绑定通知 APIServer。</li>
-</ul>
+            <ul>
+              <li>
+                <code>过滤</code>：找到所有可以满足 Pod
+                要求的节点集合，该阶段属于强制性规则，满足邀请的节点集合会输入给第二阶段，如果过滤处理的节点集合为空，则
+                Pod 将会处于
+                <code>Pending</code>
+                状态，期间调度器会不断尝试重试，直到有节点满足条件。
+              </li>
+              <li>
+                <code>打分</code
+                >：该阶段对上一阶段输入的节点集合根据优先级进行排名，最后选择优先级最高的节点来绑定
+                Pod。一旦
+                <code>kube-scheduler</code> 确定了最优的节点，它就会通过绑定通知
+                APIServer。
+              </li>
+            </ul>
 
-<p>根据 <a href="https://kubernetes.io/docs/concepts/configuration/scheduling-framework/">K8S 调度框架文档</a>描述，在 K8S 调度框架中将调度过程和绑定过程合在一起，称之为<code>调度上下文（scheduling context）</code>。<code>调度框架</code>是 K8S 调度程序的一种新的可插拔调度框架，可以用来简化自定义调度程序，需要注意的是调度过程是同步运行的（同一时间点只为一个 Pod 进行调度），绑定过程可异步运行（同一时间点可并发为多个 Pod 执行绑定）。</p>
+            <p>
+              根据
+              <a
+                href="https://kubernetes.io/docs/concepts/configuration/scheduling-framework/"
+                >K8S 调度框架文档</a
+              >描述，在 K8S 调度框架中将调度过程和绑定过程合在一起，称之为<code
+                >调度上下文（scheduling context）</code
+              >。<code>调度框架</code>是 K8S
+              调度程序的一种新的可插拔调度框架，可以用来简化自定义调度程序，需要注意的是调度过程是同步运行的（同一时间点只为一个
+              Pod 进行调度），绑定过程可异步运行（同一时间点可并发为多个 Pod
+              执行绑定）。
+            </p>
 
-<p>下图展示了调度框架中的调度上下文及其中的扩展点，一个扩展可以注册多个扩展点，以便可以执行更复杂的有状态的任务。</p>
+            <p>
+              下图展示了调度框架中的调度上下文及其中的扩展点，一个扩展可以注册多个扩展点，以便可以执行更复杂的有状态的任务。
+            </p>
 
-<figure><img src="https://www.qikqiak.com/k8strain/assets/img/scheduler/scheduling-framework-extensions.png" alt="scheduling framework extensions"><figcaption>scheduling framework extensions</figcaption></figure>
+            <figure>
+              <img
+                src="https://www.qikqiak.com/k8strain/assets/img/scheduler/scheduling-framework-extensions.png"
+                alt="scheduling framework extensions"
+              />
+              <figcaption>scheduling framework extensions</figcaption>
+            </figure>
 
-<blockquote>
-<p>关于每个扩展点的介绍以及如何通过调度框架去自定义调度器可以查看前面的文章 <a href="https://www.qikqiak.com/post/custom-kube-scheduler/">自定义调度</a> 了解更多信息。</p>
-</blockquote>
+            <blockquote>
+              <p>
+                关于每个扩展点的介绍以及如何通过调度框架去自定义调度器可以查看前面的文章
+                <a href="https://www.qikqiak.com/post/custom-kube-scheduler/"
+                  >自定义调度</a
+                >
+                了解更多信息。
+              </p>
+            </blockquote>
 
-<h2 id="为什么需要集群均衡器">为什么需要集群均衡器</h2>
+            <h2 id="为什么需要集群均衡器">为什么需要集群均衡器</h2>
 
-<p>从 <code>kube-scheduler</code> 的角度来看，它通过各种算法计算出最佳节点去运行 Pod 是非常完美的，当出现新的 Pod 进行调度时，调度程序会根据其当时对 Kubernetes 集群的资源描述做出最佳调度决定。但是 Kubernetes 集群是非常动态的，由于整个集群范围内的变化，比如一个节点为了维护，我们先执行了驱逐操作，这个节点上的所有 Pod 会被驱逐到其他节点去，但是当我们维护完成后，之前的 Pod 并不会自动回到该节点上来，因为 Pod 一旦被绑定了节点是不会触发重新调度的，由于这些变化，Kubernetes 集群在一段时间内就出现了不均衡的状态，所以需要均衡器来重新平衡集群。
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+            <p>
+              从
+              <code>kube-scheduler</code>
+              的角度来看，它通过各种算法计算出最佳节点去运行 Pod
+              是非常完美的，当出现新的 Pod 进行调度时，调度程序会根据其当时对
+              Kubernetes 集群的资源描述做出最佳调度决定。但是 Kubernetes
+              集群是非常动态的，由于整个集群范围内的变化，比如一个节点为了维护，我们先执行了驱逐操作，这个节点上的所有
+              Pod 会被驱逐到其他节点去，但是当我们维护完成后，之前的 Pod
+              并不会自动回到该节点上来，因为 Pod
+              一旦被绑定了节点是不会触发重新调度的，由于这些变化，Kubernetes
+              集群在一段时间内就出现了不均衡的状态，所以需要均衡器来重新平衡集群。
+              <script
+                async
+                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+              ></script>
 
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-5376999672787220"
-     data-ad-slot="9165834656"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
-</p>
+              <ins
+                class="adsbygoogle"
+                style="display: block"
+                data-ad-client="ca-pub-5376999672787220"
+                data-ad-slot="9165834656"
+                data-ad-format="auto"
+                data-full-width-responsive="true"
+              ></ins>
+              <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+              </script>
+            </p>
 
-<h2 id="解决方案">解决方案</h2>
+            <h2 id="解决方案">解决方案</h2>
 
-<p>要解决这个问题，当然我们可以去手动做一些集群的平衡，比如手动去删掉某些 Pod，触发重新调度就可以了，但是显然这是一个繁琐的过程，也不是解决问题的方式。要解决这个问题我们首先需要根据集群新的状态去确定有哪些 Pod 是需要被重新调度的，然后再重新找出最佳节点去调度这些 Pod。对于第二部分是不是 <code>kube-scheduler</code> 的打分阶段就已经解决了这个问题，所以我们只需要找出被错误调度的 Pod 然后将其移除就可以。原理是这样的吧？</p>
+            <p>
+              要解决这个问题，当然我们可以去手动做一些集群的平衡，比如手动去删掉某些
+              Pod，触发重新调度就可以了，但是显然这是一个繁琐的过程，也不是解决问题的方式。要解决这个问题我们首先需要根据集群新的状态去确定有哪些
+              Pod 是需要被重新调度的，然后再重新找出最佳节点去调度这些
+              Pod。对于第二部分是不是
+              <code>kube-scheduler</code>
+              的打分阶段就已经解决了这个问题，所以我们只需要找出被错误调度的 Pod
+              然后将其移除就可以。原理是这样的吧？
+            </p>
 
-<p>这里就需要引出本文的主人公：<a href="https://github.com/kubernetes-sigs/descheduler">Descheduler</a> 项目了，该项目本身就是属于 <code>kubernetes sigs</code> 的项目，所以完全不用担心项目的问题。<code>Descheduler</code> 可以根据一些规则和配置策略来帮助我们重新平衡集群状态，当前项目实现了五种策略：<code>RemoveDuplicates</code>、<code>LowNodeUtilization</code>、<code>RemovePodsViolatingInterPodAntiAffinity</code>、<code>RemovePodsViolatingNodeAffinity</code> 和 <code>RemovePodsViolatingNodeTaints</code>，这些策略都是可以启用或者禁用的，作为策略的一部分，也可以配置与策略相关的一些参数，默认情况下，所有策略都是启用的。</p>
+            <p>
+              这里就需要引出本文的主人公：<a
+                href="https://github.com/kubernetes-sigs/descheduler"
+                >Descheduler</a
+              >
+              项目了，该项目本身就是属于
+              <code>kubernetes sigs</code>
+              的项目，所以完全不用担心项目的问题。<code>Descheduler</code>
+              可以根据一些规则和配置策略来帮助我们重新平衡集群状态，当前项目实现了五种策略：<code>RemoveDuplicates</code>、<code>LowNodeUtilization</code>、<code>RemovePodsViolatingInterPodAntiAffinity</code>、<code
+                >RemovePodsViolatingNodeAffinity</code
+              >
+              和
+              <code>RemovePodsViolatingNodeTaints</code
+              >，这些策略都是可以启用或者禁用的，作为策略的一部分，也可以配置与策略相关的一些参数，默认情况下，所有策略都是启用的。
+            </p>
 
-<h3 id="removeduplicates"><code>RemoveDuplicates</code></h3>
+            <h3 id="removeduplicates"><code>RemoveDuplicates</code></h3>
 
-<p>该策略确保只有一个和 Pod 关联的 RS、RC、Deployment 或者 Job 资源对象运行在同一节点上。如果还有更多的 Pod 则将这些重复的 Pod 进行驱逐，以便更好地在集群中分散 Pod。如果某些节点由于某些原因崩溃了，这些节点上的 Pod 漂移到了其他节点，导致多个与 RS 或者 RC 关联的 Pod 在同一个节点上运行，就有可能发生这种情况，一旦出现故障的节点再次准备就绪，就可以启用该策略来驱逐这些重复的 Pod，当前，没有与该策略关联的参数，要禁用该策略，也很简单，只需要配置成 false 即可：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: <span style="color:#f1fa8c">&#34;descheduler/v1alpha1&#34;</span>
+            <p>
+              该策略确保只有一个和 Pod 关联的 RS、RC、Deployment 或者 Job
+              资源对象运行在同一节点上。如果还有更多的 Pod 则将这些重复的 Pod
+              进行驱逐，以便更好地在集群中分散
+              Pod。如果某些节点由于某些原因崩溃了，这些节点上的 Pod
+              漂移到了其他节点，导致多个与 RS 或者 RC 关联的 Pod
+              在同一个节点上运行，就有可能发生这种情况，一旦出现故障的节点再次准备就绪，就可以启用该策略来驱逐这些重复的
+              Pod，当前，没有与该策略关联的参数，要禁用该策略，也很简单，只需要配置成
+              false 即可：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: <span style="color:#f1fa8c">&#34;descheduler/v1alpha1&#34;</span>
 kind: <span style="color:#f1fa8c">&#34;DeschedulerPolicy&#34;</span>
 strategies:
   <span style="color:#f1fa8c">&#34;RemoveDuplicates&#34;</span>:
-     enabled: <span style="color:#ff79c6">false</span></code></pre></div>
-<h3 id="lownodeutilization"><code>LowNodeUtilization</code></h3>
+     enabled: <span style="color:#ff79c6">false</span></code></pre>
+            </div>
+            <h3 id="lownodeutilization"><code>LowNodeUtilization</code></h3>
 
-<p>该策略查找未充分利用的节点，并从其他节点驱逐 Pod，以便 <code>kube-scheudler</code> 重新将它们调度到未充分利用的节点上。该策略的参数可以通过字段 <code>nodeResourceUtilizationThresholds</code> 进行配置。</p>
+            <p>
+              该策略查找未充分利用的节点，并从其他节点驱逐 Pod，以便
+              <code>kube-scheudler</code>
+              重新将它们调度到未充分利用的节点上。该策略的参数可以通过字段
+              <code>nodeResourceUtilizationThresholds</code> 进行配置。
+            </p>
 
-<p>节点的利用率不足可以通过配置 <code>thresholds</code> 阈值参数来确定，可以通过 CPU、内存和 Pod 数量的百分比进行配置。如果节点的使用率均低于所有阈值，则认为该节点未充分利用。</p>
+            <p>
+              节点的利用率不足可以通过配置
+              <code>thresholds</code> 阈值参数来确定，可以通过 CPU、内存和 Pod
+              数量的百分比进行配置。如果节点的使用率均低于所有阈值，则认为该节点未充分利用。
+            </p>
 
-<p>此外，还有一个可配置的阈值 <code>targetThresholds</code>，该阈值用于计算可从中驱逐 Pod 的那些潜在节点，对于所有节点 <code>thresholds</code> 和 <code>targetThresholds</code> 之间的阈值被认为是合理使用的，不考虑驱逐。<code>targetThresholds</code> 阈值也可以针对 CPU、内存和 Pod 数量进行配置。<code>thresholds</code> 和 <code>targetThresholds</code> 可以根据你的集群需求进行动态调整，如下所示示例：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: <span style="color:#f1fa8c">&#34;descheduler/v1alpha1&#34;</span>
+            <p>
+              此外，还有一个可配置的阈值
+              <code>targetThresholds</code>，该阈值用于计算可从中驱逐 Pod
+              的那些潜在节点，对于所有节点 <code>thresholds</code> 和
+              <code>targetThresholds</code>
+              之间的阈值被认为是合理使用的，不考虑驱逐。<code
+                >targetThresholds</code
+              >
+              阈值也可以针对 CPU、内存和 Pod 数量进行配置。<code
+                >thresholds</code
+              >
+              和
+              <code>targetThresholds</code>
+              可以根据你的集群需求进行动态调整，如下所示示例：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: <span style="color:#f1fa8c">&#34;descheduler/v1alpha1&#34;</span>
 kind: <span style="color:#f1fa8c">&#34;DeschedulerPolicy&#34;</span>
 strategies:
   <span style="color:#f1fa8c">&#34;LowNodeUtilization&#34;</span>:
@@ -405,42 +592,136 @@ strategies:
          targetThresholds:
            <span style="color:#f1fa8c">&#34;cpu&#34;</span> : <span style="color:#bd93f9">50</span>
            <span style="color:#f1fa8c">&#34;memory&#34;</span>: <span style="color:#bd93f9">50</span>
-           <span style="color:#f1fa8c">&#34;pods&#34;</span>: <span style="color:#bd93f9">50</span></code></pre></div>
-<p>和 <code>LowNodeUtilization</code> 策略关联的另一个参数是 <code>numberOfNodes</code>，只有当未充分利用的节点数大于该配置值的时候，才可以配置该参数来激活该策略，该参数对于大型集群非常有用，其中有一些节点可能会频繁使用或短期使用不足，默认情况下，<code>numberOfNodes</code> 为0。</p>
+           <span style="color:#f1fa8c">&#34;pods&#34;</span>: <span style="color:#bd93f9">50</span></code></pre>
+            </div>
+            <p>
+              和 <code>LowNodeUtilization</code> 策略关联的另一个参数是
+              <code>numberOfNodes</code
+              >，只有当未充分利用的节点数大于该配置值的时候，才可以配置该参数来激活该策略，该参数对于大型集群非常有用，其中有一些节点可能会频繁使用或短期使用不足，默认情况下，<code
+                >numberOfNodes</code
+              >
+              为0。
+            </p>
 
-<h3 id="removepodsviolatingnodetaints"><code>RemovePodsViolatingNodeTaints</code></h3>
+            <h3 id="removepodsviolatingnodetaints">
+              <code>RemovePodsViolatingNodeTaints</code>
+            </h3>
 
-<p>该策略可以确保从节点中删除违反 <code>NoSchedule</code> 污点的 Pod。比如有一个名为 <code>podA</code> 的 Pod，通过配置容忍 <code>key=value:NoSchedule</code> 允许被调度到有该污点配置的节点上，如果节点的污点随后被更新或者删除了，则污点将不再被 Pods 的容忍满足，然后将被驱逐，如下所示配置策略：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: <span style="color:#f1fa8c">&#34;descheduler/v1alpha1&#34;</span>
+            <p>
+              该策略可以确保从节点中删除违反 <code>NoSchedule</code> 污点的
+              Pod。比如有一个名为 <code>podA</code> 的 Pod，通过配置容忍
+              <code>key=value:NoSchedule</code>
+              允许被调度到有该污点配置的节点上，如果节点的污点随后被更新或者删除了，则污点将不再被
+              Pods 的容忍满足，然后将被驱逐，如下所示配置策略：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: <span style="color:#f1fa8c">&#34;descheduler/v1alpha1&#34;</span>
 kind: <span style="color:#f1fa8c">&#34;DeschedulerPolicy&#34;</span>
 strategies:
   <span style="color:#f1fa8c">&#34;RemovePodsViolatingNodeTaints&#34;</span>:
-    enabled: <span style="color:#ff79c6">true</span></code></pre></div>
-<h3 id="removepodsviolatingnodeaffinity"><code>RemovePodsViolatingNodeAffinity</code></h3>
+    enabled: <span style="color:#ff79c6">true</span></code></pre>
+            </div>
+            <h3 id="removepodsviolatingnodeaffinity">
+              <code>RemovePodsViolatingNodeAffinity</code>
+            </h3>
 
-<p>该策略确保从节点中删除违反节点亲和性的 Pod。比如名为 <code>podA</code> 的 Pod 被调度到了节点 <code>nodeA</code>，<code>podA</code> 在调度的时候满足了节点亲和性规则 <code>requiredDuringSchedulingIgnoredDuringExecution</code>，但是随着时间的推移，节点 <code>nodeA</code> 不再满足该规则了，那么如果另一个满足节点亲和性规则的节点 <code>nodeB</code> 可用，则 <code>podA</code> 将被从节点 <code>nodeA</code> 驱逐，如下所示的策略配置示例：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: <span style="color:#f1fa8c">&#34;descheduler/v1alpha1&#34;</span>
+            <p>
+              该策略确保从节点中删除违反节点亲和性的 Pod。比如名为
+              <code>podA</code> 的 Pod 被调度到了节点 <code>nodeA</code>，<code
+                >podA</code
+              >
+              在调度的时候满足了节点亲和性规则
+              <code>requiredDuringSchedulingIgnoredDuringExecution</code
+              >，但是随着时间的推移，节点
+              <code>nodeA</code>
+              不再满足该规则了，那么如果另一个满足节点亲和性规则的节点
+              <code>nodeB</code> 可用，则 <code>podA</code> 将被从节点
+              <code>nodeA</code> 驱逐，如下所示的策略配置示例：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: <span style="color:#f1fa8c">&#34;descheduler/v1alpha1&#34;</span>
 kind: <span style="color:#f1fa8c">&#34;DeschedulerPolicy&#34;</span>
 strategies:
   <span style="color:#f1fa8c">&#34;RemovePodsViolatingNodeAffinity&#34;</span>:
     enabled: <span style="color:#ff79c6">true</span>
     params:
       nodeAffinityType:
-      - <span style="color:#f1fa8c">&#34;requiredDuringSchedulingIgnoredDuringExecution&#34;</span></code></pre></div>
-<h3 id="removepodsviolatinginterpodantiaffinity"><code>RemovePodsViolatingInterPodAntiAffinity</code></h3>
+      - <span style="color:#f1fa8c">&#34;requiredDuringSchedulingIgnoredDuringExecution&#34;</span></code></pre>
+            </div>
+            <h3 id="removepodsviolatinginterpodantiaffinity">
+              <code>RemovePodsViolatingInterPodAntiAffinity</code>
+            </h3>
 
-<p>该策略可以确保从节点中删除违反 Pod 反亲和性的 Pod。比如某个节点上有 <code>podA</code> 这个 Pod，并且 <code>podB</code> 和 <code>podC</code>（在同一个节点上运行）具有禁止它们在同一个节点上运行的反亲和性规则，则 <code>podA</code> 将被从该节点上驱逐，以便 <code>podB</code> 和 <code>podC</code> 运行正常运行。当 <code>podB</code> 和 <code>podC</code> 已经运行在节点上后，反亲和性规则被创建就会发送这样的问题，目前没有和该策略相关联的配置参数，要禁用该策略，同样配置成 false 即可：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: <span style="color:#f1fa8c">&#34;descheduler/v1alpha1&#34;</span>
+            <p>
+              该策略可以确保从节点中删除违反 Pod 反亲和性的
+              Pod。比如某个节点上有 <code>podA</code> 这个 Pod，并且
+              <code>podB</code> 和
+              <code>podC</code
+              >（在同一个节点上运行）具有禁止它们在同一个节点上运行的反亲和性规则，则
+              <code>podA</code> 将被从该节点上驱逐，以便 <code>podB</code> 和
+              <code>podC</code> 运行正常运行。当 <code>podB</code> 和
+              <code>podC</code>
+              已经运行在节点上后，反亲和性规则被创建就会发送这样的问题，目前没有和该策略相关联的配置参数，要禁用该策略，同样配置成
+              false 即可：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: <span style="color:#f1fa8c">&#34;descheduler/v1alpha1&#34;</span>
 kind: <span style="color:#f1fa8c">&#34;DeschedulerPolicy&#34;</span>
 strategies:
   <span style="color:#f1fa8c">&#34;RemovePodsViolatingInterPodAntiAffinity&#34;</span>:
-     enabled: <span style="color:#ff79c6">false</span></code></pre></div>
-<h2 id="测试">测试</h2>
+     enabled: <span style="color:#ff79c6">false</span></code></pre>
+            </div>
+            <h2 id="测试">测试</h2>
 
-<p>通过 <a href="https://github.com/kubernetes-sigs/descheduler">Descheduler</a> 项目 Github 仓库中的 <code>README</code> 文档介绍，我们可以在 Kubernetes 集群内部通过 Job 或者 CronJob 的形式来运行 <code>Deschduler</code>，这样可以多次运行而无需用户手动干预，此外 <code>Descheduler</code> 的 Pod 在 <code>kube-system</code> 命名空间下面以 <code>critical pod</code> 的形式运行，可以避免被自身或者 <code>kubelet</code> 驱逐了。</p>
+            <p>
+              通过
+              <a href="https://github.com/kubernetes-sigs/descheduler"
+                >Descheduler</a
+              >
+              项目 Github 仓库中的 <code>README</code> 文档介绍，我们可以在
+              Kubernetes 集群内部通过 Job 或者 CronJob 的形式来运行
+              <code>Deschduler</code>，这样可以多次运行而无需用户手动干预，此外
+              <code>Descheduler</code> 的 Pod 在
+              <code>kube-system</code> 命名空间下面以
+              <code>critical pod</code> 的形式运行，可以避免被自身或者
+              <code>kubelet</code> 驱逐了。
+            </p>
 
-<p>首先定义如下所示的 RBAC 资源对象：（rbac.yaml）</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">kind: ClusterRole
+            <p>首先定义如下所示的 RBAC 资源对象：（rbac.yaml）</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: descheduler-cluster-role
@@ -477,9 +758,22 @@ roleRef:
 subjects:
   - name: descheduler-sa
     kind: ServiceAccount
-    namespace: kube-system</code></pre></div>
-<p>然后我们可以通过 ConfigMap 资源对象来定义 <code>Descheduler</code> 的均衡策略：(configmap.yaml)</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+    namespace: kube-system</code></pre>
+            </div>
+            <p>
+              然后我们可以通过 ConfigMap 资源对象来定义
+              <code>Descheduler</code> 的均衡策略：(configmap.yaml)
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: v1
 kind: ConfigMap
 metadata:
   name: descheduler-policy-configmap
@@ -504,9 +798,22 @@ data:
              targetThresholds:
                <span style="color:#f1fa8c">&#34;cpu&#34;</span> : <span style="color:#bd93f9">50</span>
                <span style="color:#f1fa8c">&#34;memory&#34;</span>: <span style="color:#bd93f9">50</span>
-               <span style="color:#f1fa8c">&#34;pods&#34;</span>: <span style="color:#bd93f9">50</span></code></pre></div>
-<p>最后可以通过 Job 或者 CronJob 资源对象来运行 <code>Descheduler</code>，这里我们以 Job 为例进行说明：(job.yaml)</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: batch/v1
+               <span style="color:#f1fa8c">&#34;pods&#34;</span>: <span style="color:#bd93f9">50</span></code></pre>
+            </div>
+            <p>
+              最后可以通过 Job 或者 CronJob 资源对象来运行
+              <code>Descheduler</code>，这里我们以 Job 为例进行说明：(job.yaml)
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: batch/v1
 kind: Job
 metadata:
   name: descheduler-job
@@ -537,18 +844,53 @@ spec:
       volumes:
       - name: policy-volume
         configMap:
-          name: descheduler-policy-configmap</code></pre></div>
-<p>确保集群中有 <code>system-cluster-critical</code> 这个 <code>priorityclass</code>，否则去掉该字段：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get priorityclass
+          name: descheduler-policy-configmap</code></pre>
+            </div>
+            <p>
+              确保集群中有 <code>system-cluster-critical</code> 这个
+              <code>priorityclass</code>，否则去掉该字段：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get priorityclass
 NAME                      VALUE        GLOBAL-DEFAULT   AGE
 system-cluster-critical   <span style="color:#bd93f9">2000000000</span>   <span style="color:#8be9fd;font-style:italic">false</span>            128d
-system-node-critical      <span style="color:#bd93f9">2000001000</span>   <span style="color:#8be9fd;font-style:italic">false</span>            128d</code></pre></div>
-<p>直接创建上面的3个资源对象即可：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create -f rbac.yaml
+system-node-critical      <span style="color:#bd93f9">2000001000</span>   <span style="color:#8be9fd;font-style:italic">false</span>            128d</code></pre>
+            </div>
+            <p>直接创建上面的3个资源对象即可：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl create -f rbac.yaml
 $ kubectl create -f configmap.yaml
-$ kubectl create -f job.yaml</code></pre></div>
-<p>运行成功后可以查看 <code>Descheduler</code> 的 Job 任务的日志：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-system -l job-name<span style="color:#ff79c6">=</span>descheduler-job
+$ kubectl create -f job.yaml</code></pre>
+            </div>
+            <p>
+              运行成功后可以查看 <code>Descheduler</code> 的 Job 任务的日志：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-system -l job-name<span style="color:#ff79c6">=</span>descheduler-job
 NAME                    READY   STATUS      RESTARTS   AGE
 descheduler-job-zmf6c   <span style="color:#bd93f9">0</span>/1     Completed   <span style="color:#bd93f9">0</span>          4m54s
 $ kubectl logs -f descheduler-job-zmf6c -n kube-system
@@ -584,164 +926,239 @@ I0316 <span style="color:#bd93f9">04</span>:07:38.659807       <span style="colo
 I0316 <span style="color:#bd93f9">04</span>:07:38.865860       <span style="color:#bd93f9">1</span> pod_antiaffinity.go:44<span style="color:#ff79c6">]</span> Processing node: <span style="color:#f1fa8c">&#34;ydzs-node3&#34;</span>
 I0316 <span style="color:#bd93f9">04</span>:07:39.093155       <span style="color:#bd93f9">1</span> pod_antiaffinity.go:44<span style="color:#ff79c6">]</span> Processing node: <span style="color:#f1fa8c">&#34;ydzs-node4&#34;</span>
 I0316 <span style="color:#bd93f9">04</span>:07:39.570699       <span style="color:#bd93f9">1</span> pod_antiaffinity.go:44<span style="color:#ff79c6">]</span> Processing node: <span style="color:#f1fa8c">&#34;ydzs-node5&#34;</span>
-I0316 <span style="color:#bd93f9">04</span>:07:39.974866       <span style="color:#bd93f9">1</span> pod_antiaffinity.go:44<span style="color:#ff79c6">]</span> Processing node: <span style="color:#f1fa8c">&#34;ydzs-node6&#34;</span></code></pre></div>
-<p>从上面日志中可以看出我整个集群目前都还是比较均衡的状态，所以没有 Pod 被驱逐进行重新调度。如果遇到节点资源使用率极度不均衡的时候可以尝试使用 <code>Descheduler</code> 来对集群进行重新平衡。</p>
+I0316 <span style="color:#bd93f9">04</span>:07:39.974866       <span style="color:#bd93f9">1</span> pod_antiaffinity.go:44<span style="color:#ff79c6">]</span> Processing node: <span style="color:#f1fa8c">&#34;ydzs-node6&#34;</span></code></pre>
+            </div>
+            <p>
+              从上面日志中可以看出我整个集群目前都还是比较均衡的状态，所以没有
+              Pod
+              被驱逐进行重新调度。如果遇到节点资源使用率极度不均衡的时候可以尝试使用
+              <code>Descheduler</code> 来对集群进行重新平衡。
+            </p>
 
-<p><a href="https://youdianzhishi.com/web/course/1030" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+            <p>
+              <a
+                href="https://youdianzhishi.com/web/course/1030"
+                title="从 Docker 到 Kubernetes 进阶课程"
+                ><img
+                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
+                  alt="Kubernetes进阶训练营"
+              /></a>
+            </p>
 
+            <h2>微信公众号</h2>
+            <p>
+              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+              kubernetes 讨论群里面共同学习。
+            </p>
+            <img
+              src="https://picdn.youdianzhishi.com/images/qrcode.png"
+              alt="wechat-account-qrcode"
+            />
 
-          <h2>微信公众号</h2>
-<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
-
-  
-          
             <div class="entry-shang text-center">
-    <p>「真诚赞赏，手留余香」</p>
-    <button class="zs show-zs btn btn-bred">赞赏</button>
-</div>
-<div class="zs-modal-bg"></div>
-<div class="zs-modal-box">
-    <div class="zs-modal-head">
-        <button type="button" class="close">×</button>
-        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
-        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-    </div>
-    <div class="zs-modal-body">
-        <div class="zs-modal-btns">
-            <button class="btn btn-blink" data-num="2">2元</button>
-            <button class="btn btn-blink" data-num="5">5元</button>
-            <button class="btn btn-blink" data-num="10">10元</button>
-            <button class="btn btn-blink" data-num="50">50元</button>
-            <button class="btn btn-blink" data-num="100">100元</button>
-            <button class="btn btn-blink" data-num="1">任意金额</button>
-        </div>
-        <div class="zs-modal-pay">
-            <button class="btn btn-bred" id="pay-text">2元</button>
-            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
-        </div>
-    </div>
-    <div class="zs-modal-footer">
-        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
-    </div>
-</div>
-          
-          
-            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
-    <center>
-    <a href="#" class="social-share-icon icon-weibo"></a>
-    <a href="#" class="social-share-icon icon-wechat"></a>
-    <a href="#" class="social-share-icon icon-twitter"></a>
-    <a href="#" class="social-share-icon icon-linkedin"></a>
-    <a href="#" class="social-share-icon icon-facebook"></a>
-    <a href="#" class="social-share-icon icon-qq"></a>
-    <a href="#" class="social-share-icon icon-qzone"></a>
-    </center>
-</div>
+              <p>「真诚赞赏，手留余香」</p>
+              <button class="zs show-zs btn btn-bred">赞赏</button>
+            </div>
+            <div class="zs-modal-bg"></div>
+            <div class="zs-modal-box">
+              <div class="zs-modal-head">
+                <button type="button" class="close">×</button>
+                <span class="author"
+                  ><img
+                    src="https://www.qikqiak.com/img/avatar.jpeg"
+                  />阳明</span
+                >
+                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+              </div>
+              <div class="zs-modal-body">
+                <div class="zs-modal-btns">
+                  <button class="btn btn-blink" data-num="2">2元</button>
+                  <button class="btn btn-blink" data-num="5">5元</button>
+                  <button class="btn btn-blink" data-num="10">10元</button>
+                  <button class="btn btn-blink" data-num="50">50元</button>
+                  <button class="btn btn-blink" data-num="100">100元</button>
+                  <button class="btn btn-blink" data-num="1">任意金额</button>
+                </div>
+                <div class="zs-modal-pay">
+                  <button class="btn btn-bred" id="pay-text">2元</button>
+                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+                  <img
+                    src="https://www.qikqiak.com/img/wechat-2.png"
+                    id="pay-image"
+                  />
+                </div>
+              </div>
+              <div class="zs-modal-footer">
+                <span class="zs-wechat"
+                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
+                /></span>
+              </div>
+            </div>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+            <div
+              class="social-share"
+              data-initialized="true"
+              style="margin-bottom: 20px; margin-top: 20px"
+            >
+              <center>
+                <a href="#" class="social-share-icon icon-weibo"></a>
+                <a href="#" class="social-share-icon icon-wechat"></a>
+                <a href="#" class="social-share-icon icon-twitter"></a>
+                <a href="#" class="social-share-icon icon-linkedin"></a>
+                <a href="#" class="social-share-icon icon-facebook"></a>
+                <a href="#" class="social-share-icon icon-qq"></a>
+                <a href="#" class="social-share-icon icon-qzone"></a>
+              </center>
+            </div>
 
-          
-        </article>
-  
-        
-          
+            <link
+              rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
+            />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+          </article>
 
-<h3>相关文章</h3>
-<ul style="margin-bottom: 25px;">
-    
-    <li><a href="https://www.qikqiak.com/post/kube-scheduler-introduction/">Kubernetes 调度器介绍</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/custom-kube-scheduler/">自定义 Kubernetes 调度器</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/kubernetes-affinity-scheduler/">重新理解 kubernetes 亲和性调度</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/understand-kubernetes-affinity/">理解 Kubernetes 的亲和性调度</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/k8s-ui-kubevious/">带时光机的 Kubernetes Dashboard - Kubevious</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/get-client-realip/">获取客户端访问真实 IP</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/deploy-vault-on-k8s/">在 Kubernetes 上部署 Vault</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/deploy-spinnaker-on-k8s/">在 Kubernetes 上部署 Spinnaker</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/zero-downtime-rolling-update-k8s/">Kubernetes 零宕机滚动更新</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/deploy-vscode-on-k8s/">在 Kubernetes 集群上部署 VSCode</a></li>
-    
-</ul>
+          <h3>相关文章</h3>
+          <ul style="margin-bottom: 25px">
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/kube-scheduler-introduction/"
+                >Kubernetes 调度器介绍</a
+              >
+            </li>
 
-        
-  
-        
-        <ul class="pager blog-pager">
-          
+            <li>
+              <a href="https://www.qikqiak.com/post/custom-kube-scheduler/"
+                >自定义 Kubernetes 调度器</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/kubernetes-affinity-scheduler/"
+                >重新理解 kubernetes 亲和性调度</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/understand-kubernetes-affinity/"
+                >理解 Kubernetes 的亲和性调度</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/k8s-ui-kubevious/"
+                >带时光机的 Kubernetes Dashboard - Kubevious</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/get-client-realip/"
+                >获取客户端访问真实 IP</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/deploy-vault-on-k8s/"
+                >在 Kubernetes 上部署 Vault</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/deploy-spinnaker-on-k8s/"
+                >在 Kubernetes 上部署 Spinnaker</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/zero-downtime-rolling-update-k8s/"
+                >Kubernetes 零宕机滚动更新</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/deploy-vscode-on-k8s/"
+                >在 Kubernetes 集群上部署 VSCode</a
+              >
+            </li>
+          </ul>
+
+          <ul class="pager blog-pager">
             <li class="previous">
-              <a href="https://www.qikqiak.com/post/k8s-ui-kubevious/" data-toggle="tooltip" data-placement="top" title="带时光机的 Kubernetes Dashboard - Kubevious">&larr; 前一篇</a>
+              <a
+                href="https://www.qikqiak.com/post/k8s-ui-kubevious/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="带时光机的 Kubernetes Dashboard - Kubevious"
+                >&larr; 前一篇</a
+              >
             </li>
-          
-          
-            <li class="next">
-              <a href="https://www.qikqiak.com/post/install-kafka-in-kubernetes/" data-toggle="tooltip" data-placement="top" title="在 Kubernetes 集群上部署 Kafka">后一篇 &rarr;</a>
-            </li>
-          
-        </ul>
-        
 
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-        
-        <ins class="adsbygoogle"
-            style="display:block"
+            <li class="next">
+              <a
+                href="https://www.qikqiak.com/post/install-kafka-in-kubernetes/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="在 Kubernetes 集群上部署 Kafka"
+                >后一篇 &rarr;</a
+              >
+            </li>
+          </ul>
+
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+          ></script>
+
+          <ins
+            class="adsbygoogle"
+            style="display: block"
             data-ad-client="ca-pub-5376999672787220"
             data-ad-slot="3700507799"
             data-ad-format="auto"
-            data-full-width-responsive="true"></ins>
-        <script>
+            data-full-width-responsive="true"
+          ></ins>
+          <script>
             (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
-  
-        
-    <div id="gitalk-container"></div>
-    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-    <script>
-    var gitalk = new Gitalk({
-        clientID: 'bdb76dbb2e9d0786e350',
-        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
-        repo: 'blog',
-        owner: 'cnych',
-        admin: ['cnych'],
-        labels: ['gitment'],
-        title: 'Kubernetes 集群均衡器 Descheduler',
-        createIssueManually: true,
-        id: 'k8s-cluster-balancer',      
-        distractionFreeMode: true  
-    });
-    gitalk.render('gitalk-container');
-</script>
+          </script>
 
-
-        
-          
-
-        
-  
+          <div id="gitalk-container"></div>
+          <link
+            rel="stylesheet"
+            href="https://unpkg.com/gitalk/dist/gitalk.css"
+          />
+          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+          <script>
+            var gitalk = new Gitalk({
+              clientID: "bdb76dbb2e9d0786e350",
+              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
+              repo: "blog",
+              owner: "cnych",
+              admin: ["cnych"],
+              labels: ["gitment"],
+              title: "Kubernetes 集群均衡器 Descheduler",
+              createIssueManually: true,
+              id: "k8s-cluster-balancer",
+              distractionFreeMode: true,
+            });
+            gitalk.render("gitalk-container");
+          </script>
+        </div>
       </div>
-    
-    
-  </div>
-</div>
+    </div>
 
     <footer>
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <ul class="list-inline text-center footer-links">
-          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
-          
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <ul class="list-inline text-center footer-links">
+              <img
+                src="https://www.qikqiak.com/img/wechatmp.png"
+                alt="k8s技术圈"
+              />
+
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -750,7 +1167,7 @@ I0316 <span style="color:#bd93f9">04</span>:07:39.974866       <span style="colo
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -759,7 +1176,7 @@ I0316 <span style="color:#bd93f9">04</span>:07:39.974866       <span style="colo
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -768,7 +1185,7 @@ I0316 <span style="color:#bd93f9">04</span>:07:39.974866       <span style="colo
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -777,121 +1194,158 @@ I0316 <span style="color:#bd93f9">04</span>:07:39.974866       <span style="colo
                   </span>
                 </a>
               </li>
-          
-          
-          <li>
-            <a href="https://www.qikqiak.com/index.xml" title="RSS">
-              <span class="fa-stack fa-lg">
-                <i class="fa fa-circle fa-stack-2x"></i>
-                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+
+              <li>
+                <a href="https://www.qikqiak.com/index.xml" title="RSS">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+            </ul>
+            <p class="credits copyright text-muted">
+              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/">阳明的博客</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/archive/">归档</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/friend/">友链</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://beian.miit.gov.cn/" target="_blank"
+                >蜀ICP备11027319号-5</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
+                >kubernetes.io</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
+                >Kubernetes中文社区</a
+              >
+            </p>
+            <p class="text-center text-muted">
+              <script
+                async
+                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
+              ></script>
+              <span id="busuanzi_container_site_pv" style="display: none">
+                本站总访问量<span id="busuanzi_value_site_pv"></span>次
               </span>
-            </a>
-          </li>
-          
-        </ul>
-        <p class="credits copyright text-muted">
-          
+              &nbsp;&bull;&nbsp;
+              <span id="busuanzi_container_site_uv" style="display: none">
+                访客数<span id="busuanzi_value_site_uv"></span>人次
+              </span>
+            </p>
 
-          &nbsp;&bull;&nbsp;
-          2023
-
-          
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/">阳明的博客</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/archive/">归档</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/friend/">友链</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
-          
-        </p>
-        <p class="text-center text-muted">
-          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-          <span id="busuanzi_container_site_pv" style="display:none">
-            本站总访问量<span id="busuanzi_value_site_pv"></span>次
-          </span>
-          &nbsp;&bull;&nbsp;
-          <span id="busuanzi_container_site_uv" style="display:none">
-            访客数<span id="busuanzi_value_site_uv"></span>人次
-          </span>
-        </p>
-        
-        <p class="credits theme-by text-muted">
-          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
-          
-        </p>
+            <p class="credits theme-by text-muted">
+              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
+              &nbsp;&bull;&nbsp; 主题
+              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+              移植自
+              <a href="https://github.com/rootsongjc/beautifulhugo"
+                >Beautiful Hugo</a
+              >
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</footer>
+    </footer>
 
+    <script
+      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
+      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
+    ></script>
 
-<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "UA-69668147-3");
+    </script>
+    <script>
+      (function () {
+        var bp = document.createElement("script");
+        var curProtocol = window.location.protocol.split(":")[0];
+        if (curProtocol === "https") {
+          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
+        } else {
+          bp.src = "http://push.zhanzhang.baidu.com/push.js";
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+      })();
+    </script>
+    <script>
+      $(document).ready(function () {
+        var int = setInterval(fixCount, 50);
 
-
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-69668147-3');
-</script>
-<script>
-(function(){
-    var bp = document.createElement('script');
-    var curProtocol = window.location.protocol.split(':')[0];
-    if (curProtocol === 'https') {
-        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
-    }
-    else {
-        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
-    }
-    var s = document.getElementsByTagName("script")[0];
-    s.parentNode.insertBefore(bp, s);
-})();
-</script>
-<script >
-$(document).ready(function() {
-  var int = setInterval(fixCount, 50);  
-  
-  var initPVCount = 584976;
-  var initUVCount = 153191;
-  function fixCount() {                   
-    if ($("#busuanzi_container_site_pv").css("display") != "none") {
-        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
-        clearInterval(int); 
-    }
-    if ($("#busuanzi_container_site_uv").css("display") != "none") {
-      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
-      clearInterval(int); 
-    }  
-  }           
-});
-</script>
- <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
-<script type="text/javascript">
-$('.carousel').slick({
-    dots: true,
-    arrows: true,
-    autoplay: true,
-    autoplaySpeed: 4000,
-    infinite: true,
-    speed: 500,
-    fade: true,
-    cssEase: 'linear',
-    centerMode: true,
-    prevArrow: '<button type="button" class="slick-prev"></button>',
-    nextArrow: '<button type="button" class="slick-next"></button>',
-});
-</script>
-
+        var initPVCount = 584976;
+        var initUVCount = 153191;
+        function fixCount() {
+          if ($("#busuanzi_container_site_pv").css("display") != "none") {
+            $("#busuanzi_value_site_pv").html(
+              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
+            );
+            clearInterval(int);
+          }
+          if ($("#busuanzi_container_site_uv").css("display") != "none") {
+            $("#busuanzi_value_site_uv").html(
+              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
+            );
+            clearInterval(int);
+          }
+        }
+      });
+    </script>
+    <script>
+      (function (w, d, s, id) {
+        if (typeof w.webpushr !== "undefined") return;
+        w.webpushr =
+          w.webpushr ||
+          function () {
+            (w.webpushr.q = w.webpushr.q || []).push(arguments);
+          };
+        var js,
+          fjs = d.getElementsByTagName(s)[0];
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "https://cdn.webpushr.com/app.min.js";
+        fjs.parentNode.appendChild(js);
+      })(window, document, "script", "webpushr-jssdk");
+      webpushr(
+        "init",
+        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
+      );
+    </script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
+    ></script>
+    <script type="text/javascript">
+      $(".carousel").slick({
+        dots: true,
+        arrows: true,
+        autoplay: true,
+        autoplaySpeed: 4000,
+        infinite: true,
+        speed: 500,
+        fade: true,
+        cssEase: "linear",
+        centerMode: true,
+        prevArrow: '<button type="button" class="slick-prev"></button>',
+        nextArrow: '<button type="button" class="slick-next"></button>',
+      });
+    </script>
   </body>
 </html>
-

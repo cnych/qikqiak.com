@@ -3,9 +3,16 @@ title: 一文搞懂容器运行时 Containerd
 date: 2021-08-12
 tags: ["kubernetes", "docker", "containerd"]
 slug: containerd-usage
-keywords: ["kubernetes", "docker", "containerd", "容器运行时", "OCI", "CRI", "runc"]
+keywords:
+  ["kubernetes", "docker", "containerd", "容器运行时", "OCI", "CRI", "runc"]
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210812213346.png", desc: "https://unsplash.com/photos/ZXnhTNY94Zs"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/20210812213346.png",
+      desc: "https://unsplash.com/photos/ZXnhTNY94Zs",
+    },
+  ]
 category: "kubernetes"
 ---
 
@@ -17,7 +24,7 @@ category: "kubernetes"
 
 从 Docker 1.11 版本开始，Docker 容器运行就不是简单通过 Docker Daemon 来启动了，而是通过集成 containerd、runc 等多个组件来完成的。虽然 Docker Daemon 守护进程模块在不停的重构，但是基本功能和定位没有太大的变化，一直都是 CS 架构，守护进程负责和 Docker Client 端交互，并管理 Docker 镜像和容器。现在的架构中组件 containerd 就会负责集群节点上容器的生命周期管理，并向上为 Docker Daemon 提供 gRPC 接口。
 
-![docker 架构](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210809154608.png)
+![docker 架构](https://picdn.youdianzhishi.com/images/20210809154608.png)
 
 当我们要创建一个容器的时候，现在 Docker Daemon 并不能直接帮我们创建了，而是请求 `containerd` 来创建一个容器，containerd 收到请求后，也并不会直接去操作容器，而是创建一个叫做 `containerd-shim` 的进程，让这个进程去操作容器，我们指定容器进程是需要一个父进程来做状态收集、维持 stdin 等 fd 打开等工作的，假如这个父进程就是 containerd，那如果 containerd 挂掉的话，整个宿主机上所有的容器都得退出了，而引入 `containerd-shim` 这个垫片就可以来规避这个问题了。
 
@@ -35,17 +42,17 @@ category: "kubernetes"
 
 `CRI`（Container Runtime Interface 容器运行时接口）本质上就是 Kubernetes 定义的一组与容器运行时进行交互的接口，所以只要实现了这套接口的容器运行时都可以对接到 Kubernetes 平台上来。不过 Kubernetes 推出 CRI 这套标准的时候还没有现在的统治地位，所以有一些容器运行时可能不会自身就去实现 CRI 接口，于是就有了 `shim（垫片）`， 一个 shim 的职责就是作为适配器将各种容器运行时本身的接口适配到 Kubernetes 的 CRI 接口上，其中 `dockershim` 就是 Kubernetes 对接 Docker 到 CRI 接口上的一个垫片实现。
 
-![cri shim](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210809172030.png)
+![cri shim](https://picdn.youdianzhishi.com/images/20210809172030.png)
 
 Kubelet 通过 gRPC 框架与容器运行时或 shim 进行通信，其中 kubelet 作为客户端，CRI shim（也可能是容器运行时本身）作为服务器。
 
 CRI 定义的 API(https://github.com/kubernetes/kubernetes/blob/release-1.5/pkg/kubelet/api/v1alpha1/runtime/api.proto) 主要包括两个 gRPC 服务，`ImageService` 和 `RuntimeService`，`ImageService` 服务主要是拉取镜像、查看和删除镜像等操作，`RuntimeService` 则是用来管理 Pod 和容器的生命周期，以及与容器交互的调用（exec/attach/port-forward）等操作，可以通过 kubelet 中的标志 `--container-runtime-endpoint` 和 `--image-service-endpoint` 来配置这两个服务的套接字。
 
-![kubelet cri](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210809173134.png)
+![kubelet cri](https://picdn.youdianzhishi.com/images/20210809173134.png)
 
 不过这里同样也有一个例外，那就是 Docker，由于 Docker 当时的江湖地位很高，Kubernetes 是直接内置了 `dockershim` 在 kubelet 中的，所以如果你使用的是 Docker 这种容器运行时的话是不需要单独去安装配置适配器之类的，当然这个举动似乎也麻痹了 Docker 公司。
 
-![dockershim](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210809173555.png)
+![dockershim](https://picdn.youdianzhishi.com/images/20210809173555.png)
 
 现在如果我们使用的是 Docker 的话，当我们在 Kubernetes 中创建一个 Pod 的时候，首先就是 kubelet 通过 CRI 接口调用 `dockershim`，请求创建一个容器，kubelet 可以视作一个简单的 CRI Client, 而 dockershim 就是接收请求的 Server，不过他们都是在 kubelet 内置的。
 
@@ -53,7 +60,7 @@ CRI 定义的 API(https://github.com/kubernetes/kubernetes/blob/release-1.5/pkg/
 
 其实我们仔细观察也不难发现使用 Docker 的话其实是调用链比较长的，真正容器相关的操作其实 containerd 就完全足够了，Docker 太过于复杂笨重了，当然 Docker 深受欢迎的很大一个原因就是提供了很多对用户操作比较友好的功能，但是对于 Kubernetes 来说压根不需要这些功能，因为都是通过接口去操作容器的，所以自然也就可以将容器运行时切换到 containerd 来。
 
-![切换到containerd](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210810094948.png)
+![切换到containerd](https://picdn.youdianzhishi.com/images/20210810094948.png)
 
 切换到 containerd 可以消除掉中间环节，操作体验也和以前一样，但是由于直接用容器运行时调度容器，所以它们对 Docker 来说是不可见的。 因此，你以前用来检查这些容器的 Docker 工具就不能使用了。
 
@@ -65,16 +72,18 @@ CRI 定义的 API(https://github.com/kubernetes/kubernetes/blob/release-1.5/pkg/
 
 然后到了 containerd 1.1 版本后就去掉了 `CRI-Containerd` 这个 shim，直接把适配逻辑作为插件的方式集成到了 containerd 主进程中，现在这样的调用就更加简洁了。
 
-![containerd cri](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210810095546.png)
+![containerd cri](https://picdn.youdianzhishi.com/images/20210810095546.png)
 
 与此同时 Kubernetes 社区也做了一个专门用于 Kubernetes 的 CRI 运行时 [CRI-O](https://cri-o.io/)，直接兼容 CRI 和 OCI 规范。
 
-![cri-o](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210810100752.png)
+![cri-o](https://picdn.youdianzhishi.com/images/20210810100752.png)
 
 这个方案和 containerd 的方案显然比默认的 dockershim 简洁很多，不过由于大部分用户都比较习惯使用 Docker，所以大家还是更喜欢使用 `dockershim` 方案。
 
-但是随着 CRI 方案的发展，以及其他容器运行时对 CRI 的支持越来越完善，Kubernetes 社区在2020年7月份就开始着手移除 dockershim 方案了：https://github.com/kubernetes/enhancements/tree/master/keps/sig-node/2221-remove-dockershim，现在的移除计划是在 1.20 版本中将 kubelet 中内置的 dockershim 代码分离，将内置的 dockershim 标记为`维护模式`，当然这个时候仍然还可以使用 dockershim，目标是在 1.23/1.24 版本发布没有 dockershim 的版本（代码还在，但是要默认支持开箱即用的 docker 需要自己构建 kubelet，会在某个宽限期过后从 kubelet 中删除内置的 dockershim 代码）。
+但是随着 CRI 方案的发展，以及其他容器运行时对 CRI 的支持越来越完善，Kubernetes 社区在 2020 年 7 月份就开始着手移除 dockershim 方案了：https://github.com/kubernetes/enhancements/tree/master/keps/sig-node/2221-remove-dockershim，现在的移除计划是在 1.20 版本中将 kubelet 中内置的 dockershim 代码分离，将内置的 dockershim 标记为`维护模式`，当然这个时候仍然还可以使用 dockershim，目标是在 1.23/1.24 版本发布没有 dockershim 的版本（代码还在，但是要默认支持开箱即用的 docker 需要自己构建 kubelet，会在某个宽限期过后从 kubelet 中删除内置的 dockershim 代码）。
+
 <!--adsense-text-->
+
 那么这是否就意味这 Kubernetes 不再支持 Docker 了呢？当然不是的，这只是废弃了内置的 `dockershim` 功能而已，Docker 和其他容器运行时将一视同仁，不会单独对待内置支持，如果我们还想直接使用 Docker 这种容器运行时应该怎么办呢？可以将 dockershim 的功能单独提取出来独立维护一个 `cri-dockerd` 即可，就类似于 containerd 1.0 版本中提供的 `CRI-Containerd`，当然还有一种办法就是 Docker 官方社区将 CRI 接口内置到 Dockerd 中去实现。
 
 但是我们也清楚 Dockerd 也是去直接调用的 Containerd，而 containerd 1.1 版本后就内置实现了 CRI，所以 Docker 也没必要再去单独实现 CRI 了，当 Kubernetes 不再内置支持开箱即用的 Docker 的以后，最好的方式当然也就是直接使用 Containerd 这种容器运行时，而且该容器运行时也已经经过了生产环境实践的，接下来我们就来学习下 Containerd 的使用。
@@ -85,28 +94,28 @@ CRI 定义的 API(https://github.com/kubernetes/kubernetes/blob/release-1.5/pkg/
 
 containerd 是一个工业级标准的容器运行时，它强调**简单性**、**健壮性**和**可移植性**，containerd 可以负责干下面这些事情：
 
-* 管理容器的生命周期（从创建容器到销毁容器）
-* 拉取/推送容器镜像
-* 存储管理（管理镜像及容器数据的存储）
-* 调用 runc 运行容器（与 runc 等容器运行时交互）
-* 管理容器网络接口及网络
+- 管理容器的生命周期（从创建容器到销毁容器）
+- 拉取/推送容器镜像
+- 存储管理（管理镜像及容器数据的存储）
+- 调用 runc 运行容器（与 runc 等容器运行时交互）
+- 管理容器网络接口及网络
 
 ### 架构
 
 containerd 可用作 Linux 和 Windows 的守护程序，它管理其主机系统完整的容器生命周期，从镜像传输和存储到容器执行和监测，再到底层存储到网络附件等等。
 
-![containerd 架构](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210810134700.png)
+![containerd 架构](https://picdn.youdianzhishi.com/images/20210810134700.png)
 
 上图是 containerd 官方提供的架构图，可以看出 containerd 采用的也是 C/S 架构，服务端通过 unix domain socket 暴露低层的 gRPC API 接口出去，客户端通过这些 API 管理节点上的容器，每个 containerd 只负责一台机器，Pull 镜像，对容器的操作（启动、停止等），网络，存储都是由 containerd 完成。具体运行容器由 runc 负责，实际上只要是符合 OCI 规范的容器都可以支持。
 
 为了解耦，containerd 将系统划分成了不同的组件，每个组件都由一个或多个模块协作完成（Core 部分），每一种类型的模块都以插件的形式集成到 Containerd 中，而且插件之间是相互依赖的，例如，上图中的每一个长虚线的方框都表示一种类型的插件，包括 Service Plugin、Metadata Plugin、GC Plugin、Runtime Plugin 等，其中 Service Plugin 又会依赖 Metadata Plugin、GC Plugin 和 Runtime Plugin。每一个小方框都表示一个细分的插件，例如 Metadata Plugin 依赖 Containers Plugin、Content Plugin 等。比如:
 
-* `Content Plugin`: 提供对镜像中可寻址内容的访问，所有不可变的内容都被存储在这里。
-* `Snapshot Plugin`: 用来管理容器镜像的文件系统快照，镜像中的每一层都会被解压成文件系统快照，类似于 Docker 中的 graphdriver。
+- `Content Plugin`: 提供对镜像中可寻址内容的访问，所有不可变的内容都被存储在这里。
+- `Snapshot Plugin`: 用来管理容器镜像的文件系统快照，镜像中的每一层都会被解压成文件系统快照，类似于 Docker 中的 graphdriver。
 
 总体来看 containerd 可以分为三个大块：Storage、Metadata 和 Runtime。
 
-![containerd 架构2](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210810145929.png)
+![containerd 架构2](https://picdn.youdianzhishi.com/images/20210810145929.png)
 
 ### 安装
 
@@ -239,13 +248,13 @@ WantedBy=multi-user.target
 
 这里有两个重要的参数：
 
-* `Delegate`: 这个选项允许 containerd 以及运行时自己管理自己创建容器的 cgroups。如果不设置这个选项，systemd 就会将进程移到自己的 cgroups 中，从而导致 containerd 无法正确获取容器的资源使用情况。
-* `KillMode`: 这个选项用来处理 containerd 进程被杀死的方式。默认情况下，systemd 会在进程的 cgroup 中查找并杀死 containerd 的所有子进程。KillMode 字段可以设置的值如下。
+- `Delegate`: 这个选项允许 containerd 以及运行时自己管理自己创建容器的 cgroups。如果不设置这个选项，systemd 就会将进程移到自己的 cgroups 中，从而导致 containerd 无法正确获取容器的资源使用情况。
+- `KillMode`: 这个选项用来处理 containerd 进程被杀死的方式。默认情况下，systemd 会在进程的 cgroup 中查找并杀死 containerd 的所有子进程。KillMode 字段可以设置的值如下。
 
-    * `control-group`（默认值）：当前控制组里面的所有子进程，都会被杀掉
-    * `process`：只杀主进程
-    * `mixed`：主进程将收到 SIGTERM 信号，子进程收到 SIGKILL 信号
-    * `none`：没有进程会被杀掉，只是执行服务的 stop 命令
+  - `control-group`（默认值）：当前控制组里面的所有子进程，都会被杀掉
+  - `process`：只杀主进程
+  - `mixed`：主进程将收到 SIGTERM 信号，子进程收到 SIGKILL 信号
+  - `none`：没有进程会被杀掉，只是执行服务的 stop 命令
 
 我们需要将 KillMode 的值设置为 process，这样可以确保升级或重启 containerd 时不杀死现有的容器。
 
@@ -257,7 +266,7 @@ WantedBy=multi-user.target
 
 启动完成后就可以使用 containerd 的本地 CLI 工具 `ctr` 了，比如查看版本：
 
-![ctr version](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210810164519.png)
+![ctr version](https://picdn.youdianzhishi.com/images/20210810164519.png)
 
 ### 配置
 
@@ -537,8 +546,8 @@ io.containerd.grpc.v1           cri                      linux/amd64    ok
       endpoint = ["https://registry.aliyuncs.com/k8sxio"]
 ```
 
-* `registry.mirrors."xxx"`: 表示需要配置 mirror 的镜像仓库，例如 `registry.mirrors."docker.io"` 表示配置 docker.io 的 mirror。
-* `endpoint`: 表示提供 mirror 的镜像加速服务，比如我们可以注册一个阿里云的镜像服务来作为 docker.io 的 mirror。
+- `registry.mirrors."xxx"`: 表示需要配置 mirror 的镜像仓库，例如 `registry.mirrors."docker.io"` 表示配置 docker.io 的 mirror。
+- `endpoint`: 表示提供 mirror 的镜像加速服务，比如我们可以注册一个阿里云的镜像服务来作为 docker.io 的 mirror。
 
 另外在默认配置中还有两个关于存储的配置路径：
 
@@ -548,7 +557,9 @@ state = "/run/containerd"
 ```
 
 其中 `root` 是用来保存持久化数据，包括 Snapshots, Content, Metadata 以及各种插件的数据，每一个插件都有自己单独的目录，Containerd 本身不存储任何数据，它的所有功能都来自于已加载的插件。
+
 <!--adsense-text-->
+
 而另外的 `state` 是用来保存运行时的临时数据的，包括 sockets、pid、挂载点、运行时状态以及不需要持久化的插件数据。
 
 ### 使用
@@ -905,7 +916,7 @@ TASK     PID     STATUS
 nginx    3984    RUNNING
 ```
 
-其中第一个 PID `3984` 就是我们容器中的1号进程。
+其中第一个 PID `3984` 就是我们容器中的 1 号进程。
 
 #### 命名空间
 

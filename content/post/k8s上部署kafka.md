@@ -5,7 +5,13 @@ tags: ["kubernetes", "Pod", "Kafka", "Helm"]
 slug: deploy-kafka-ha-on-k8s
 keywords: ["kubernetes", "pod", "kafka", "helm", "operator"]
 gitcomment: true
-bigimg: [{src: "/img/posts/photo-1503863937795-62954a3c0f05.jpeg", desc: "Morning glory"}]
+bigimg:
+  [
+    {
+      src: "/img/posts/photo-1503863937795-62954a3c0f05.jpeg",
+      desc: "Morning glory",
+    },
+  ]
 category: "kubernetes"
 ---
 
@@ -13,9 +19,9 @@ Apache Kafka 是目前最流行的分布式消息发布订阅系统，虽然 Kaf
 
 如果你在 Kubernetes 集群中运行你的微服务，那么在 Kubernetes 中运行 Kafka 集群也是很有意义的，这样可以利用其内置的弹性和高可用，我们可以使用内置的 Kubernetes 服务发现轻松地与集群内的 Kafka Pods 进行交互。
 
-下面我们将来介绍下如何在 Kubernetes 上构建分布式的 Kafka 集群，这里我们将使用 Helm Chart 和 StatefulSet 来进行部署，当然如果想要动态生成持久化数据卷，还需要提前配置一个 StorageClass 资源，比如基于 Ceph RBD 的，如果你集群中没有配置动态卷，则需要提前创建3个未绑定的 PV 用于数据持久化。
+下面我们将来介绍下如何在 Kubernetes 上构建分布式的 Kafka 集群，这里我们将使用 Helm Chart 和 StatefulSet 来进行部署，当然如果想要动态生成持久化数据卷，还需要提前配置一个 StorageClass 资源，比如基于 Ceph RBD 的，如果你集群中没有配置动态卷，则需要提前创建 3 个未绑定的 PV 用于数据持久化。
 
-当前基于 Helm 官方仓库的 `chartincubator/kafka` 在 Kubernetes 上部署的 Kafka，使用的镜像是 `confluentinc/cp-kafka:5.0.1`，即部署的是Confluent 公司提供的 Kafka 版本，Confluent Platform Kafka(简称CP Kafka)提供了一些 Apache Kafka 没有的高级特性，例如跨数据中心备份、Schema 注册中心以及集群监控工具等。
+当前基于 Helm 官方仓库的 `chartincubator/kafka` 在 Kubernetes 上部署的 Kafka，使用的镜像是 `confluentinc/cp-kafka:5.0.1`，即部署的是 Confluent 公司提供的 Kafka 版本，Confluent Platform Kafka(简称 CP Kafka)提供了一些 Apache Kafka 没有的高级特性，例如跨数据中心备份、Schema 注册中心以及集群监控工具等。
 
 <!--more-->
 
@@ -114,7 +120,7 @@ kafka-zookeeper-1   1/1     Running   0          22m
 kafka-zookeeper-2   1/1     Running   0          18m
 ```
 
-默认会安装3个 ZK Pods 和3个 Kafka Pods，这样可以保证应用的高可用，也可以看下我配置的持久卷信息：
+默认会安装 3 个 ZK Pods 和 3 个 Kafka Pods，这样可以保证应用的高可用，也可以看下我配置的持久卷信息：
 
 ```bash
 > kubectl get pvc
@@ -144,7 +150,9 @@ kubernetes                 ClusterIP   10.96.0.1        <none>        443/TCP   
 ```
 
 可以看到又一个叫 `kafka-zookeeper` 的 zookeeper 服务和一个叫 `kafka` 的 Kafka 服务，对于 Kafka 集群的管理，我们将与 `kafka-zookeeper` 服务进行交互，对于集群消息的收发，我们将使用 `kafka` 服务。
+
 <!--adsense-text-->
+
 ## 客户端测试
 
 现在 Kafka 集群已经搭建好了，接下来我们来安装一个 Kafka 客户端，用它来帮助我们产生和获取 topics 消息。
@@ -194,7 +202,7 @@ Created topic "test1".
 
 现在我们在生产者的窗口发送消息，在上面的消费者会话窗口中就可以看到对应的消息了：
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20201101102425.png)
+![](https://picdn.youdianzhishi.com/images/20201101102425.png)
 
 到这里证明 Kafka 集群就正常工作了。比如需要注意 zk 集群我们并没有做持久化，如果是生产环境一定记得做下数据持久化，在 values.yaml 文件中根据需求进行定制即可，当然对于生产环境还是推荐使用 Operator 来搭建 Kafka 集群，比如 `strimzi-kafka-operator`。
 

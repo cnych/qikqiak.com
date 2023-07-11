@@ -6,7 +6,13 @@ slug: helm-chart-compatible-different-kube-version
 keywords: ["kubernetes", "helm", "chart", "template", "兼容"]
 gitcomment: true
 notoc: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20211110192940.png", desc: "图片来源 -> https://unsplash.com/photos/sf99zPcy8dQ"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/20211110192940.png",
+      desc: "图片来源 -> https://unsplash.com/photos/sf99zPcy8dQ",
+    },
+  ]
 category: "kubernetes"
 ---
 
@@ -16,16 +22,16 @@ category: "kubernetes"
 
 要实现对不同版本的兼容核心就是利用 Helm Chart 模板提供的内置对象 `Capabilities`，该对象提供了关于 Kubernetes 集群支持功能的信息，包括如下特性：
 
-* `Capabilities.APIVersions` 获取集群版本集合
-* `Capabilities.APIVersions.Has $version` 判断集群中的某个版本 (e.g., batch/v1) 或是资源 (e.g., apps/v1/Deployment) 是否可用
-* `Capabilities.KubeVersion` 和 `Capabilities.KubeVersion.Version` 可以获取 Kubernetes 版本号
-* `Capabilities.KubeVersion.Major` 获取 Kubernetes 的主版本
-* `Capabilities.KubeVersion.Minor` 获取 Kubernetes 的次版本
-* `Capabilities.HelmVersion` 包含 Helm 版本详细信息的对象，和 `helm version` 的输出一致
-* `Capabilities.HelmVersion.Version` 是当前 Helm 版本的语义格式
-* `Capabilities.HelmVersion.GitCommit` Helm 的 `git sha1` 值
-* `Capabilities.HelmVersion.GitTreeState` 是 Helm git 树的状态
-* `Capabilities.HelmVersion.GoVersion` 使用的 Go 编译器版本
+- `Capabilities.APIVersions` 获取集群版本集合
+- `Capabilities.APIVersions.Has $version` 判断集群中的某个版本 (e.g., batch/v1) 或是资源 (e.g., apps/v1/Deployment) 是否可用
+- `Capabilities.KubeVersion` 和 `Capabilities.KubeVersion.Version` 可以获取 Kubernetes 版本号
+- `Capabilities.KubeVersion.Major` 获取 Kubernetes 的主版本
+- `Capabilities.KubeVersion.Minor` 获取 Kubernetes 的次版本
+- `Capabilities.HelmVersion` 包含 Helm 版本详细信息的对象，和 `helm version` 的输出一致
+- `Capabilities.HelmVersion.Version` 是当前 Helm 版本的语义格式
+- `Capabilities.HelmVersion.GitCommit` Helm 的 `git sha1` 值
+- `Capabilities.HelmVersion.GitTreeState` 是 Helm git 树的状态
+- `Capabilities.HelmVersion.GoVersion` 使用的 Go 编译器版本
 
 利用上面的几个对象我们可以判断资源对象需要使用的 API 版本或者属性，下面我们以 Ingress 资源对象为例进行说明。
 
@@ -42,15 +48,15 @@ metadata:
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
-  - http:
-      paths:
-      - path: /testpath
-        pathType: Prefix
-        backend:
-          service:
-            name: test
-            port:
-              number: 80
+    - http:
+        paths:
+          - path: /testpath
+            pathType: Prefix
+            backend:
+              service:
+                name: test
+                port:
+                  number: 80
 ```
 
 而旧版本的资源对象格式如下：
@@ -64,12 +70,12 @@ metadata:
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
-  - http:
-      paths:
-      - path: /testpath
-        backend:
-          serviceName: test
-          servicePort: 80
+    - http:
+        paths:
+          - path: /testpath
+            backend:
+              serviceName: test
+              servicePort: 80
 ```
 
 具体使用哪种格式的资源对象需要依赖我们的集群版本，首先我们在 Chart 包的 `_helpers.tpl` 文件中添加几个用于判断集群版本或 API 的命名模板：

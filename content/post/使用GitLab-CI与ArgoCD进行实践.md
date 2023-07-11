@@ -5,7 +5,13 @@ keywords: ["argo", "kubernetes", "gitops"]
 tags: ["argo", "gitlab", "gitops", "devops"]
 slug: gitlab-ci-argo-cd-gitops
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200715115832.png", desc: "https://unsplash.com/photos/0YL3UFYjR_g"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/20200715115832.png",
+      desc: "https://unsplash.com/photos/0YL3UFYjR_g",
+    },
+  ]
 category: "devops"
 ---
 
@@ -15,7 +21,7 @@ category: "devops"
 
 ## 介绍
 
-![GitOps Workflow](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200710144852.png)
+![GitOps Workflow](https://picdn.youdianzhishi.com/images/20200710144852.png)
 
 上图是当前示例中的 GitOps 工作流程。GitLab 和 Argo CD 是两个主要的核心组件：
 
@@ -51,13 +57,13 @@ $ helm install argocd -n argocd argo/argo-cd --values values.yaml
 server:
   ingress:
     enabled: true
-    annotations: 
+    annotations:
       kubernetes.io/ingress.class: "nginx"
       nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
       nginx.ingress.kubernetes.io/ssl-passthrough: "true"
       nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
     hosts:
-    - argocd.k8s.local
+      - argocd.k8s.local
 ```
 
 执行上面的安装命令后，Argo CD 就会被安装在 argocd 命名空间之下，可以在本地 `/etc/hosts` 中添加一个映射，将 [argocd.k8s.local](http://argocd.k8s.local) 映射到 ingress-nginx 所在的节点即可：
@@ -77,7 +83,7 @@ argocd-server-7877ff8889-zp7tq                   1/1     Running   0          49
 
 当所有 Pod 变成 Running 状态后，我们就可以通过浏览器访问 Argo CD 的 Dashboard 页面了：
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200710161259.png)
+![](https://picdn.youdianzhishi.com/images/20200710161259.png)
 
 默认的用户名为 admin，密码为 server Pod 的名称，可以通过如下所示的命令来获取：
 
@@ -88,7 +94,7 @@ argocd-server-7877ff8889-zp7tq
 
 用上面的用户名和密码即可登录成功，接下来我们在 GitLab 中来创建示例项目。
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200710161420.png)
+![](https://picdn.youdianzhishi.com/images/20200710161420.png)
 
 ## GitLab 项目配置
 
@@ -103,7 +109,7 @@ argocd-server-7877ff8889-zp7tq
 - CI_PASSWORD - Git 仓库访问密码
 - CI_USERNAME - Git 仓库访问用户名
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200710184849.png)
+![](https://picdn.youdianzhishi.com/images/20200710184849.png)
 
 ## Argo CD 配置
 
@@ -118,7 +124,7 @@ metadata:
   namespace: argocd
 spec:
   project: default
-  source: 
+  source:
     repoURL: http://git.k8s.local/course/gitops-webapp.git
     targetRevision: HEAD
     path: deployment/dev
@@ -136,7 +142,7 @@ metadata:
   namespace: argocd
 spec:
   project: default
-  source: 
+  source:
     repoURL: http://git.k8s.local/course/gitops-webapp.git
     targetRevision: HEAD
     path: deployment/prod
@@ -171,17 +177,17 @@ web-app-prod   24s
 
 此时我们再去 Argo CD 的 Dashboard 首页同样将会看到两个 Application 的信息：
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200710161727.png)
+![](https://picdn.youdianzhishi.com/images/20200710161727.png)
 
 点击其中一个就可以看到关于应用的详细信息，我们可以在 gitops-webapp 代码仓库的 `deployment/<env>` 目录里面找到资源对象。我们可以看到，在每个文件夹下面都有一个 `kustomization.yaml` 文件，Argo CD 可以识别它，不需要任何其他的设置就可以使用。
 
 由于我们这里的代码仓库是私有的 GitLab，所以我们还需要配置对应的仓库地址，在页面上 Settings → Repositories，点击 `Connect Repo using HTTPS` 按钮：
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200710162651.png)
+![](https://picdn.youdianzhishi.com/images/20200710162651.png)
 
 添加我们的代码仓库认证信息：
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200710162935.png)
+![](https://picdn.youdianzhishi.com/images/20200710162935.png)
 
 需要注意的是这里默认使用的是 HTTPS，所以我们需要勾选下方的 `Skip server verification`，然后点击上方的 `CONNECT` 按钮添加即可。然后重新同步上面的两个 Application，就可以看到正常的状态了。
 
@@ -190,15 +196,17 @@ web-app-prod   24s
 接下来我们需要为应用程序创建流水线，自动构建我们的应用程序，推送到镜像仓库，然后更新 Kubernetes 的资源清单文件。
 
 下面的示例并不是一个多么完美的流水线，但是基本上可以展示整个 GitOps 的工作流。开发人员在自己的分支上开发代码，他们分支的每一次提交都会触发一个阶段性的构建，当他们将自己的修改和主分支合并时，完整的流水线就被触发。将构建应用程序，打包成 Docker 镜像，将镜推送到 Docker 仓库，并自动更新 Kubernetes 资源清单，此外，一般情况下将应用部署到生产环境需要手动操作。
+
 <!--adsense-text-->
+
 GitLab CI 中的流水线默认定义在代码仓库根目录下的 `.gitlab-ci.yml` 文件中，在改文件的最上面定义了一些构建阶段和环境变量、镜像以及一些前置脚本：
 
 ```yaml
 stages:
-- build
-- publish
-- deploy-dev
-- deploy-prod
+  - build
+  - publish
+  - deploy-dev
+  - deploy-prod
 ```
 
 接下来是阶段的定义和所需的任务声明。我们这里的构建过程比较简单，只需要在一个 golang 镜像中执行一个构建命令即可，然后将编译好的二进制文件保存到下一个阶段处理，这一个阶段适合分支的任何变更：
@@ -229,7 +237,7 @@ publish:
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
     - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile ./Dockerfile --destination $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
   dependencies:
-    - build  
+    - build
   only:
     - master
 ```
@@ -286,7 +294,7 @@ deploy-prod:
 
 如果一切正常的话现在我们可以在浏览器中来查看我们部署的 web 应用程序了。
 
-![Dev web app](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200710190515.png)
+![Dev web app](https://picdn.youdianzhishi.com/images/20200710190515.png)
 
 然后我们来尝试修改下代码，编辑 main.go 文件，将变量 welcome 中的 `GITOPS` 修改为 `GITOPS-K8S`:
 
@@ -299,23 +307,23 @@ func main() {
 
 然后提交代码到 master 分支，然后进入 GitLab 项目 -> CI/CD -> Pipelines，就可以看到一个新的流水线开始构建了。
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200710191018.png)
+![](https://picdn.youdianzhishi.com/images/20200710191018.png)
 
 等待一会儿，正常情况下会执行到 dev 的部署阶段，然后变成 `skipped` 的状态，此时流水线已经将代码中的 dev 下的资源清单文件已经更新了。
 
-![GitLab CI/CD Pipeline](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200710191559.png)
+![GitLab CI/CD Pipeline](https://picdn.youdianzhishi.com/images/20200710191559.png)
 
 然后 Argo CD 在自动同步模式下在一分钟内变会更新 Kubernetes 的资源对象，我们也可以在 Argo CD 的页面中看到进度。当 Argo CD 中同步完成后我们再去查看 DEV 环境的应用，就可以看到页面上面的信息已经变成了 `GITOPS-K8S` 了。
 
-![Update Dev Web APP](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200710191716.png)
+![Update Dev Web APP](https://picdn.youdianzhishi.com/images/20200710191716.png)
 
 最后如果需要部署到 prod 环境，我们只需要在 GitLab 的流水线中手动触发即可，之后，prod 中的镜像也会被更新。
 
-![GitLab CI/CD Prod deployment](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200710192038.png)
+![GitLab CI/CD Prod deployment](https://picdn.youdianzhishi.com/images/20200710192038.png)
 
 下面是同步时 Argo CD 更新的页面状态变化图。
 
-![Argo CD Sync Workflow](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200710192302.png)
+![Argo CD Sync Workflow](https://picdn.youdianzhishi.com/images/20200710192302.png)
 
 到这里，我们就使用 GitOps 成功的将我们的应用部署到了开发和生产环境之中了。
 
@@ -326,6 +334,5 @@ func main() {
 - [https://docs.gitlab.com/ee/ci/yaml/](https://docs.gitlab.com/ee/ci/yaml/)
 - [https://medium.com/@andrew.kaczynski/gitops-in-kubernetes-argo-cd-and-gitlab-ci-cd-5828c8eb34d6](https://medium.com/@andrew.kaczynski/gitops-in-kubernetes-argo-cd-and-gitlab-ci-cd-5828c8eb34d6)
 - [https://github.com/cnych/gitops-webapp-demo](https://github.com/cnych/gitops-webapp-demo)
-
 
 <!--adsense-self-->

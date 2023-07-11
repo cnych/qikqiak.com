@@ -10,7 +10,7 @@ category: "devops"
 
 近日，Docker 创始人 Solomon Hykes 对外宣布推出全新产品 [Dagger](https://dagger.io)，Dagger 是一个全新的 DevOps 平台，目的是为开发者解决 DevOps 流程上的一些问题。目前 Dagger 已经获得 2000 万 A 轮融资，本轮融资由 Redpoint Ventures 领投，GitHub 前 CEO Nat Fireman、Red Hat 前 CTO Brian Stevens 、Reddit 前 CEO Ellan Pao 等大佬参投。
 
-[![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/7691649210649_.pic.jpg)](https://dagger.io)
+[![](https://picdn.youdianzhishi.com/images/7691649210649_.pic.jpg)](https://dagger.io)
 
 Dagger 要帮助 DevOps 开发者将 CI/CD 流水线编写成 CUE 中的声明性模型，以此为基础，开发者可以描述自己的流水线、并将其中各个环节进行对接，同时全部以纯代码形式实现。
 
@@ -76,13 +76,13 @@ dagger 0.2.4 (GIT_SHA) darwin/arm64
 
 上面的结果显示了我们上面的构建命令的执行结果，在整个执行过程中会在本地的一个名为 `dagger-buildkitd` 的容器中进行：
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20220405173323.png)
+![](https://picdn.youdianzhishi.com/images/20220405173323.png)
 
 这样证明了 `dagger` 是在 Docker 的执行引擎 `BuildKit` 中去执行任务的。
 
 由于这是一个静态应用程序，我们可以在浏览器中打开最终生成的文件，这里我们是定义最后将构建结果复制到主机上的 `_build` 目录中。我们可以执行 `open _build/index.html` 命令来预览该应用：
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20220405174337.png)
+![](https://picdn.youdianzhishi.com/images/20220405174337.png)
 
 现在我们不需要安装任何特定应用的依赖，`dagger` 管理了所有的这些中间步骤，有了 `dagger` 我们也不需要每次都去 commit、push 代码后才能看到应用的结果，而且每个执行的动作都有缓存，后续的运行会非常快。
 
@@ -221,11 +221,11 @@ dagger.#Plan & {
 
 从上面的 CUE 文件可以看出 `dagger` 的流水线是以一个 `#Plan` 开始的，在 `#Plan` 中，我们可以：
 
-* 与 `client` 客户端文件系统进行交互
-  * 读取文件，通常使用 `.` 表示当前目录
-  * 写入文件，通常构建输出为 `_build` 目录
-* 读取环境变量，比如上面定义的 `NETLIFY_TOKEN`
-* 声明一些动作，比如 test、build、deploy 等等，动作的名称可以随意命名
+- 与 `client` 客户端文件系统进行交互
+  - 读取文件，通常使用 `.` 表示当前目录
+  - 写入文件，通常构建输出为 `_build` 目录
+- 读取环境变量，比如上面定义的 `NETLIFY_TOKEN`
+- 声明一些动作，比如 test、build、deploy 等等，动作的名称可以随意命名
 
 上面我们定义的流水线整体架构如下所示，其中 `client` 部分定义和客户端相关的交互，`actions` 部分定义的流水线动作：
 
@@ -312,7 +312,7 @@ dagger.#Plan & {
     client: filesystem:  {
         ".": read: {
             // 将本地目录加载为 dagger.#FS
-            contents: dagger.#FS   
+            contents: dagger.#FS
             exclude: ["node_modules"]
         }
         "config.yaml": write: {

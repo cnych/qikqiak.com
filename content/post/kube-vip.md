@@ -5,7 +5,13 @@ tags: ["kubernetes", "kube-vip", "高可用"]
 slug: use-kube-vip-ha-k8s-lb
 keywords: ["kubernetes", "kube-vip", "高可用", "集群", "haproxy", "keepalived"]
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210617105319.png", desc: "https://unsplash.com/photos/QsgE8vzTTSo"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/20210617105319.png",
+      desc: "https://unsplash.com/photos/QsgE8vzTTSo",
+    },
+  ]
 category: "kubernetes"
 ---
 
@@ -19,31 +25,31 @@ category: "kubernetes"
 
 Kube-Vip 最初是为 Kubernetes 控制平面提供 HA 解决方案而创建的，随着时间的推移，它已经发展为将相同的功能合并到 Kubernetes 的 LoadBalancer 类型的 Service 中了。
 
-* VIP 地址可以是 IPv4 或 IPv6
-* 带有 ARP（第2层）或 BGP（第3层）的控制平面
-* 使用领导选举或 raft 控制平面
-* 带有 kubeadm（静态 Pod）的控制平面 HA
-* 带有 K3s/和其他（DaemonSets）的控制平面 HA
-* 使用 ARP 领导者选举的 Service LoadBalancer（第 2 层）
-* 通过 BGP 使用多个节点的 Service LoadBalancer
-* 每个命名空间或全局的 Service LoadBalancer 地址池
-* Service LoadBalancer 地址通过 UPNP 暴露给网关
+- VIP 地址可以是 IPv4 或 IPv6
+- 带有 ARP（第 2 层）或 BGP（第 3 层）的控制平面
+- 使用领导选举或 raft 控制平面
+- 带有 kubeadm（静态 Pod）的控制平面 HA
+- 带有 K3s/和其他（DaemonSets）的控制平面 HA
+- 使用 ARP 领导者选举的 Service LoadBalancer（第 2 层）
+- 通过 BGP 使用多个节点的 Service LoadBalancer
+- 每个命名空间或全局的 Service LoadBalancer 地址池
+- Service LoadBalancer 地址通过 UPNP 暴露给网关
 
 ## HAProxy 和 kube-vip 的 HA 集群
 
-在以前我们在私有环境下创建 Kubernetes 集群时，我们需要准备一个硬件/软件的负载均衡器来创建多控制面集群，更多的情况下我们会选择使用 HAProxy + Keepalived 来实现这个功能。一般情况下我们创建2个负载均衡器的虚拟机，然后分配一个 VIP，然后使用 VIP 为负载均衡器提供服务，通过 VIP 将流量重定向到后端的某个 Kubernetes 控制器平面节点上。
+在以前我们在私有环境下创建 Kubernetes 集群时，我们需要准备一个硬件/软件的负载均衡器来创建多控制面集群，更多的情况下我们会选择使用 HAProxy + Keepalived 来实现这个功能。一般情况下我们创建 2 个负载均衡器的虚拟机，然后分配一个 VIP，然后使用 VIP 为负载均衡器提供服务，通过 VIP 将流量重定向到后端的某个 Kubernetes 控制器平面节点上。
 
-![haproxy+keepalived](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210616142006.png)
+![haproxy+keepalived](https://picdn.youdianzhishi.com/images/20210616142006.png)
 
 接下来我们再来看看如果我们使用 kube-vip 的话会怎样呢？
 
-![kube-vip](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210616142207.png)
+![kube-vip](https://picdn.youdianzhishi.com/images/20210616142207.png)
 
-kube-vip 可以通过静态 pod 运行在控制平面节点上，这些 pod 通过ARP 对话来识别每个节点上的其他主机，所以需要在 hosts 文件中设置每个节点的 IP 地址，我们可以选择 BGP 或 ARP 来设置负载平衡器，这与 Metal LB 比较类似。这里我们没有 BGP 服务，只是想快速测试一下，所以这里我们使用 ARP 与静态 pod 的方式。
+kube-vip 可以通过静态 pod 运行在控制平面节点上，这些 pod 通过 ARP 对话来识别每个节点上的其他主机，所以需要在 hosts 文件中设置每个节点的 IP 地址，我们可以选择 BGP 或 ARP 来设置负载平衡器，这与 Metal LB 比较类似。这里我们没有 BGP 服务，只是想快速测试一下，所以这里我们使用 ARP 与静态 pod 的方式。
 
 ## kube-vip 架构
 
-kube-vip 有许多功能设计选择提供高可用性或网络功能，作为VIP/负载平衡解决方案的一部分。
+kube-vip 有许多功能设计选择提供高可用性或网络功能，作为 VIP/负载平衡解决方案的一部分。
 
 ### Cluster
 
@@ -51,15 +57,15 @@ kube-vip 建立了一个多节点或多模块的集群来提供高可用性。�
 
 当使用 ARP 或 layer2 时，它将使用领导者选举，当然也可以使用 raft 集群技术，但这种方法在很大程度上已经被领导者选举所取代，特别是在集群中运行时。
 
-### 虚拟IP
+### 虚拟 IP
 
 集群中的领导者将分配 vip，并将其绑定到配置中声明的选定接口上。当领导者改变时，它将首先撤销 vip，或者在失败的情况下，vip 将直接由下一个当选的领导者分配。
 
-当 vip 从一个主机移动到另一个主机时，任何使用 vip 的主机将保留以前的 `vip <-> MAC` 地址映射，直到 ARP 过期（通常是30秒）并检索到一个新的 `vip <-> MAC` 映射，这可以通过使用无偿的 ARP 广播来优化。
+当 vip 从一个主机移动到另一个主机时，任何使用 vip 的主机将保留以前的 `vip <-> MAC` 地址映射，直到 ARP 过期（通常是 30 秒）并检索到一个新的 `vip <-> MAC` 映射，这可以通过使用无偿的 ARP 广播来优化。
 
 ### ARP
 
-kube-vip可以被配置为广播一个无偿的 arp（可选），通常会立即通知所有本地主机 `vip <-> MAC` 地址映射已经改变。
+kube-vip 可以被配置为广播一个无偿的 arp（可选），通常会立即通知所有本地主机 `vip <-> MAC` 地址映射已经改变。
 
 下面我们可以看到，当 ARP 广播被接收时，故障转移通常在几秒钟内完成。
 
@@ -86,15 +92,17 @@ Request timeout for icmp_seq 150
 
 ## 使用 kube-vip
 
-接下来我们来使用 kube-vip 搭建一个高可用的 Kubernetes 集群。先准备6个节点：
+接下来我们来使用 kube-vip 搭建一个高可用的 Kubernetes 集群。先准备 6 个节点：
 
-* 3个控制平面节点
-* 3个 worker 节点
+- 3 个控制平面节点
+- 3 个 worker 节点
 
-![kube-vip](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210616142509.png)
+![kube-vip](https://picdn.youdianzhishi.com/images/20210616142509.png)
 
 首先在宿主机上面安装相关依赖，包括 kubeadm、kubelet、kubectl 以及一个容器运行时，这里我们使用的是 containerd。
+
 <!--adsense-text-->
+
 获取 kube-vip 的 docker 镜像，并在 `/etc/kuberentes/manifests` 中设置静态 pod 的 yaml 资源清单文件，这样 Kubernetes 就会自动在每个控制平面节点上部署 kube-vip 的 pod 了。
 
 ```shell

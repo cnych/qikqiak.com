@@ -7,7 +7,13 @@ tags: ["elastic", "kubernetes", "filebeat"]
 slug: k8s-monitor-use-elastic-stack-3
 gitcomment: true
 notoc: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200709104733.png", desc: "https://unsplash.com/photos/bK1hmAK3D78"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/20200709104733.png",
+      desc: "https://unsplash.com/photos/bK1hmAK3D78",
+    },
+  ]
 category: "kubernetes"
 ---
 
@@ -43,7 +49,7 @@ data:
           matchers:
           - logs_path:
               logs_path: "/var/log/containers/"
-    
+
     filebeat.autodiscover:
       providers:
         - type: kubernetes
@@ -96,7 +102,7 @@ data:
 ---
 ```
 
-我们配置采集 `/var/log/containers/` 下面的所有日志数据，并且使用 `inCluster` 的模式访问 Kubernetes 的 APIServer，获取日志数据的 Meta 信息，将日志直接发送到  Elasticsearch。
+我们配置采集 `/var/log/containers/` 下面的所有日志数据，并且使用 `inCluster` 的模式访问 Kubernetes 的 APIServer，获取日志数据的 Meta 信息，将日志直接发送到 Elasticsearch。
 
 此外还通过 `policy_file` 定义了 indice 的回收策略：
 
@@ -159,86 +165,85 @@ spec:
       serviceAccountName: filebeat
       terminationGracePeriodSeconds: 30
       containers:
-      - name: filebeat
-        image: docker.elastic.co/beats/filebeat:7.8.0
-        args: [
-          "-c", "/etc/filebeat.yml",
-          "-e",
-        ]
-        env:
-        - name: ELASTICSEARCH_HOST
-          value: elasticsearch-client.elastic.svc.cluster.local
-        - name: ELASTICSEARCH_PORT
-          value: "9200"
-        - name: ELASTICSEARCH_USERNAME
-          value: elastic
-        - name: ELASTICSEARCH_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: elasticsearch-pw-elastic
-              key: password
-        - name: KIBANA_HOST
-          value: kibana.elastic.svc.cluster.local
-        - name: KIBANA_PORT
-          value: "5601"
-        - name: NODE_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: spec.nodeName
-        securityContext:
-          runAsUser: 0
-        resources:
-          limits:
-            memory: 200Mi
-          requests:
-            cpu: 100m
-            memory: 100Mi
-        volumeMounts:
-        - name: config
-          mountPath: /etc/filebeat.yml
-          readOnly: true
-          subPath: filebeat.yml
-        - name: filebeat-indice-lifecycle
-          mountPath: /etc/indice-lifecycle.json
-          readOnly: true
-          subPath: indice-lifecycle.json
-        - name: data
-          mountPath: /usr/share/filebeat/data
-        - name: varlog
-          mountPath: /var/log
-          readOnly: true
-        - name: varlibdockercontainers
-          mountPath: /var/lib/docker/containers
-          readOnly: true
-        - name: dockersock
-          mountPath: /var/run/docker.sock
+        - name: filebeat
+          image: docker.elastic.co/beats/filebeat:7.8.0
+          args: ["-c", "/etc/filebeat.yml", "-e"]
+          env:
+            - name: ELASTICSEARCH_HOST
+              value: elasticsearch-client.elastic.svc.cluster.local
+            - name: ELASTICSEARCH_PORT
+              value: "9200"
+            - name: ELASTICSEARCH_USERNAME
+              value: elastic
+            - name: ELASTICSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elasticsearch-pw-elastic
+                  key: password
+            - name: KIBANA_HOST
+              value: kibana.elastic.svc.cluster.local
+            - name: KIBANA_PORT
+              value: "5601"
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          securityContext:
+            runAsUser: 0
+          resources:
+            limits:
+              memory: 200Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/filebeat.yml
+              readOnly: true
+              subPath: filebeat.yml
+            - name: filebeat-indice-lifecycle
+              mountPath: /etc/indice-lifecycle.json
+              readOnly: true
+              subPath: indice-lifecycle.json
+            - name: data
+              mountPath: /usr/share/filebeat/data
+            - name: varlog
+              mountPath: /var/log
+              readOnly: true
+            - name: varlibdockercontainers
+              mountPath: /var/lib/docker/containers
+              readOnly: true
+            - name: dockersock
+              mountPath: /var/run/docker.sock
       volumes:
-      - name: config
-        configMap:
-          defaultMode: 0600
-          name: filebeat-config
-      - name: filebeat-indice-lifecycle
-        configMap:
-          defaultMode: 0600
-          name: filebeat-indice-lifecycle
-      - name: varlog
-        hostPath:
-          path: /var/log
-      - name: varlibdockercontainers
-        hostPath:
-          path: /var/lib/docker/containers
-      - name: dockersock
-        hostPath:
-          path: /var/run/docker.sock
-      - name: data
-        hostPath:
-          path: /var/lib/filebeat-data
-          type: DirectoryOrCreate
+        - name: config
+          configMap:
+            defaultMode: 0600
+            name: filebeat-config
+        - name: filebeat-indice-lifecycle
+          configMap:
+            defaultMode: 0600
+            name: filebeat-indice-lifecycle
+        - name: varlog
+          hostPath:
+            path: /var/log
+        - name: varlibdockercontainers
+          hostPath:
+            path: /var/lib/docker/containers
+        - name: dockersock
+          hostPath:
+            path: /var/run/docker.sock
+        - name: data
+          hostPath:
+            path: /var/lib/filebeat-data
+            type: DirectoryOrCreate
 ---
 ```
 
 我们这里使用的是 Kubeadm 搭建的集群，默认 Master 节点是有污点的，所以如果还想采集 Master 节点的日志，还必须加上对应的容忍，我这里不采集就没有添加容忍了。
+
 <!--adsense-text-->
+
 此外由于需要获取日志在 Kubernetes 集群中的 Meta 信息，比如 Pod 名称、所在的命名空间等，所以 Filebeat 需要访问 APIServer，自然就需要对应的 RBAC 权限了，所以还需要进行权限声明：
 
 ```yaml
@@ -249,9 +254,9 @@ kind: ClusterRoleBinding
 metadata:
   name: filebeat
 subjects:
-- kind: ServiceAccount
-  name: filebeat
-  namespace: elastic
+  - kind: ServiceAccount
+    name: filebeat
+    namespace: elastic
 roleRef:
   kind: ClusterRole
   name: filebeat
@@ -264,14 +269,14 @@ metadata:
   labels:
     app: filebeat
 rules:
-- apiGroups: [""]
-  resources:
-  - namespaces
-  - pods
-  verbs:
-  - get
-  - watch
-  - list
+  - apiGroups: [""]
+    resources:
+      - namespaces
+      - pods
+    verbs:
+      - get
+      - watch
+      - list
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -289,7 +294,7 @@ metadata:
 $ kubectl apply  -f filebeat.settings.configmap.yml \
                  -f filebeat.indice-lifecycle.configmap.yml \
                  -f filebeat.daemonset.yml \
-                 -f filebeat.permissions.yml 
+                 -f filebeat.permissions.yml
 
 configmap/filebeat-config created
 configmap/filebeat-indice-lifecycle created
@@ -301,15 +306,15 @@ serviceaccount/filebeat created
 
 当所有的 Filebeat 和 Logstash 的 Pod 都变成 Running 状态后，证明部署完成。现在我们就可以进入到 Kibana 页面中去查看日志了。左侧菜单 Observability → Logs
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200703152916.png)
+![](https://picdn.youdianzhishi.com/images/20200703152916.png)
 
 此外还可以从上节我们提到的 Metrics 页面进入查看 Pod 的日志：
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200703153140.png)
+![](https://picdn.youdianzhishi.com/images/20200703153140.png)
 
 点击 `Kubernetes Pod logs` 获取需要查看的 Pod 日志：
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200703153311.png)
+![](https://picdn.youdianzhishi.com/images/20200703153311.png)
 
 如果集群中要采集的日志数据量太大，直接将数据发送给 ElasticSearch，对 ES 压力比较大，这种情况一般可以加一个类似于 Kafka 这样的中间件来缓冲下，或者通过 Logstash 来收集 Filebeat 的日志。
 

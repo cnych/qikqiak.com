@@ -5,7 +5,13 @@ tags: ["kubernetes", "devops"]
 keywords: ["kubernetes", "devops", "devstream", "工具链"]
 slug: devops-tools-chain-devstream
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/1658384199220.jpg", desc: "https://unsplash.com/photos/6gZDIWrsfTs"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/1658384199220.jpg",
+      desc: "https://unsplash.com/photos/6gZDIWrsfTs",
+    },
+  ]
 category: "kubernetes"
 ---
 
@@ -15,7 +21,7 @@ category: "kubernetes"
 
 通常情况下，你需要以下几个部分来高效地工作。
 
-- 项目管理软件或 `issue` 追溯工具（JIRA 等）
+- 项目管理软件或  `issue`  追溯工具（JIRA 等）
 - 源代码管理（GitHub、Bitbucket 等）
 - 持续集成（Jenkins、CircleCI、Travis CI 等）
 - 持续交付/部署（Flux CD/Flux2、Argo CD 等)
@@ -165,7 +171,7 @@ State 记录了您的 DevOps 工具链的当前状态，它包含每个工具的
 我们将创建的插件称为资源，插件的 `Read()` 接口将返回对该资源的描述，该描述又存储为状态的一部分。
 
 `DevStream` 的整个工作流如下图所示：
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/1656729342474.jpg)
+![](https://picdn.youdianzhishi.com/images/1656729342474.jpg)
 
 - 首先获取工具状态
 - 如果状态中没找到工具，则调用 `Create()` 接口创建
@@ -191,7 +197,7 @@ sudo mv dtm /usr/local/bin
 
 现在我们可以通过执行 dtm 命令来验证是否安装成功。
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/1656732896001.png)
+![](https://picdn.youdianzhishi.com/images/1656732896001.png)
 
 ## 使用
 
@@ -497,7 +503,7 @@ tools:
 
 第二个工具插件为 [githubactions-golang](https://docs.devstream.io/en/latest/plugins/githubactions-golang/) ，这个插件会创建一些 Golang GitHub Actions 的工作流，同样该插件依赖 `GITHUB_TOKEN` 这个环境变量，如果启用了 Docker 镜像构建/推送，则还需要设置另外两个环境变量：`DOCKERHUB_USERNAME` 与 `DOCKERHUB_TOKEN`，Docker 的 Token 信息可以访问页面 <https://hub.docker.com/settings/security?generateToken=true> 去创建获取。
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/1656738623638.png)
+![](https://picdn.youdianzhishi.com/images/1656738623638.png)
 
 第三个插件是 [argocd](https://docs.devstream.io/en/latest/plugins/argocd/) ，该插件会使用 Helm chart 的方式在现有 Kubernetes 集群中安装 ArgoCD。
 
@@ -506,7 +512,7 @@ tools:
 配置定义完之后，我们只需要在根目录下面执行 `dtm init`，该命令就会下载所有定义的相关插件，如果你使用的是 `s3` 来存储状态信息，则当再次执行该命令的时候会先从远程下载对应的状态信息。
 
 ```shell
-$ dtm init                                      
+$ dtm init
 2022-07-02 12:36:03 ℹ [INFO]  Got Backend from config: local
 2022-07-02 12:36:03 ℹ [INFO]  Using dir <.devstream> to store plugins.
 2022-07-02 12:36:05 ℹ [INFO]  Downloading: [github-repo-scaffolding-golang-darwin-arm64_0.7.0.so] ...
@@ -578,14 +584,16 @@ $ dtm init
 ```
 
 初始化完成后会在当前目录下面创建一个 `.devstream` 的目录，该目录下面就是保存下载下来的插件相关文件。
+
 <!--adsense-text-->
+
 接下来我们只需要在根目录下面执行 `dtm apply` 命令即可根据我们的配置文件创建或更新 DevOps 工具链了。
 
 首先要记得配置需要的环境变量，比如我们这里上面的定义几个插件需要配置下面的 3 个环境变量：
 
 ```shell
 export GITHUB_TOKEN=xxx
-export DOCKERHUB_USERNAME=cnych                                               
+export DOCKERHUB_USERNAME=cnych
 export DOCKERHUB_TOKEN=xxx
 ```
 
@@ -594,7 +602,7 @@ export DOCKERHUB_TOKEN=xxx
 配置完成后直接执行 `dtm apply` 命令即可：
 
 ```shell
-$ dtm apply     
+$ dtm apply
 2022-07-02 13:17:15 ℹ [INFO]  Apply started.
 2022-07-02 13:17:15 ℹ [INFO]  Got Backend from config: local
 2022-07-02 13:17:15 ℹ [INFO]  Using dir <.devstream> to store plugins.
@@ -639,16 +647,16 @@ Enter a value (Default is n): y
 
 在 `apply` 的过程中会将执行的状态保存在定义的状态后端存储中，比如我们这里使用的是本地存储，则会在根目录的 `devstream.state` 文件中保存执行的状态，比如我们这里一共 4 个工具链，如果前两个执行完成，后面两个执行识别了，则会在该文件中保存前两个插件的状态，下一次重新 apply 的时候则只需要执行后面两个工具链即可。
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/1656740036542.png)
+![](https://picdn.youdianzhishi.com/images/1656740036542.png)
 
 我们上面定义的工具链最终会为我们在 GitHub 上创建一个 Golang Web 的脚手架应用代码仓库。
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/1656740453666.jpg)
+![](https://picdn.youdianzhishi.com/images/1656740453666.jpg)
 
 会使用 Github Actions 来进行 CI 操作，构建 Docker 镜像。
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/1656740502749.jpg)
+![](https://picdn.youdianzhishi.com/images/1656740502749.jpg)
 
 CI 流程最后会推送镜像到 Docker Hub。
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/1656740570211.jpg)
+![](https://picdn.youdianzhishi.com/images/1656740570211.jpg)
 
 然后会在 Kubernetes 中部署 ArgoCD。
 
@@ -673,12 +681,12 @@ dtm-test-go   Unknown       Healthy
 ```
 
 我们也可以通过 ArgoCD 查看部署的应用详情。
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/1656741508757.jpg)
+![](https://picdn.youdianzhishi.com/images/1656741508757.jpg)
 
 最后如果想要删除整个工具链则只需要执行 `dtm delete` 命令即可。
 
 整个流程体验非常顺畅（除了因为某些原因访问 GitHub 超级慢之外），我们只需要根据需要在配置文件中定义对应的插件即可，关于插件的具体配置方式可以参考官方文档 <https://docs.devstream.io/en/latest/plugins/plugins-list/> 了解更多相关信息。
 
-只需要在一个 `YAML` 配置文件中定义你所需要的 DevOps 工具，只需按一个命令就能建立起整个 DevOps 工具链和 SDLC 工作流了，所以说 `DevStream` 是神器完全不为过。
+只需要在一个  `YAML`  配置文件中定义你所需要的 DevOps 工具，只需按一个命令就能建立起整个 DevOps 工具链和 SDLC 工作流了，所以说 `DevStream` 是神器完全不为过。
 
 <!--adsense-self-->

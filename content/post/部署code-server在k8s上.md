@@ -6,7 +6,7 @@ keywords: ["kubernetes", "vscode", "ide", "code-server"]
 slug: deploy-vscode-on-k8s
 gitcomment: true
 category: "kubernetes"
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200204183433.png", desc: "awesome vscode"}]
+bigimg: [{src: "https://picdn.youdianzhishi.com/images/20200204183433.png", desc: "awesome vscode"}]
 ---
 近来由于武汉冠状病毒疫情的扩散，很多公司不得不开始了远程办公的模式，远程办公最大的成本自然是沟通成本了，对于我们开发人员来说最重要的自然也是有一个顺手的 IDE 工具，现在在云端作业的工具也在逐渐增长，比如最近比较流行的设计应用 Figma，就完全是云端操作的方式，大有要取代 Sketch 的趋势，对于开发工具来说云端 IDE 也逐渐受到大家重视，特别是对于远程办公的团队，Cloud IDE 允许开发团队在一个统一的开发环境中实时协作的工具，这可以大大提高生产效率。而且只需要通过 web 浏览器就可以访问，还有一个优点就是可以利用集群的能力，这可以大大超过我们之前的个人 PC 的处理能力，我们也不用为本地 IDE 占用了电脑大量资源而苦恼了。
 
@@ -140,14 +140,14 @@ code-server-https   5d
 ### 测试
 在浏览器中访问 `code.qikqiak.com`，第一次会弹出对话框要求输入密码，也就是上面我们在环境变量 `PASSWORD` 中配置的值：
 
-![code-server login](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200204182200.png)
+![code-server login](https://picdn.youdianzhishi.com/images/20200204182200.png)
 
 输入配置的密码后即可进入应用，就是我们熟悉的 VSCode 界面的样子，只是现在是在浏览器中运行：
 
-![vscode web](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200204182525.png)
+![vscode web](https://picdn.youdianzhishi.com/images/20200204182525.png)
 
 然后其他的就和我们在本地使用 VSCode 基本上差不多了，可以安装主题、插件、调试等等，大家可以自行探索：
 
-![vscode usage](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200204182833.png)
+![vscode usage](https://picdn.youdianzhishi.com/images/20200204182833.png)
 
 <!--adsense-self-->

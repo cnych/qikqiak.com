@@ -6,7 +6,8 @@ tags: ["kubernetes", "devops", "gitlab", "ci"]
 keywords: ["kubernetes", "devops", "gitlab", "ci", "CI/CD", "runner"]
 slug: gitlab-ci-k8s-cluster-feature
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/a28fp.jpg", desc: "STEP"}]
+bigimg:
+  [{ src: "https://picdn.youdianzhishi.com/images/a28fp.jpg", desc: "STEP" }]
 category: "kubernetes"
 ---
 
@@ -17,6 +18,7 @@ category: "kubernetes"
 ### 基本配置
 
 首先将本节所用到的代码库从 Github 上获得：[cnych/gitlab-ci-k8s-demo](https://github.com/cnych/gitlab-ci-k8s-demo)，可以在 Gitlab 上新建一个项目导入该仓库，当然也可以新建一个空白的仓库，然后将 Github 上面的项目 Clone 到本地后，更改远程仓库地址即可：
+
 ```shell
 $ git clone https://github.com/cnych/gitlab-ci-k8s-demo.git
 $ cd gitlab-ci-k8s-demo
@@ -27,9 +29,10 @@ $ git push -u origin master
 ```
 
 当我们把仓库推送到 Gitlab 以后，应该可以看到 Gitlab CI 开始执行构建任务了:
-![gitlab ci](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/FLHIAa.jpg)
+![gitlab ci](https://picdn.youdianzhishi.com/images/FLHIAa.jpg)
 
 此时 Runner Pod 所在的 namespace 下面也会出现两个新的 Pod：
+
 ```shell
 $ kubectl get pods -n kube-ops
 NAME                                           READY     STATUS              RESTARTS   AGE
@@ -43,9 +46,10 @@ runner-9rixsyft-project-2-concurrent-1t74t9    0/2       ContainerCreating   0  
 
 这两个新的 Pod 就是用来执行具体的 Job 任务的，这里同时出现两个证明第一步是并行执行的两个任务，从上面的 Pipeline 中也可以看到是 test 和 test2 这两个 Job。我们可以看到在执行 image_build 任务的时候出现了错误：
 
-![pipeline](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/FPwuTu.jpg)
+![pipeline](https://picdn.youdianzhishi.com/images/FPwuTu.jpg)
 
 我们可以点击查看这个 Job 失败详细信息：
+
 ```shell
 $ docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
 WARNING! Using --password via the CLI is insecure. Use --password-stdin.
@@ -54,13 +58,15 @@ ERROR: Job failed: command terminated with exit code 1
 ```
 
 出现上面的错误是因为我们并没有在 Gitlab 中开启 Container Registry，所以环境变量中并没有这些值，还记得前面章节中我们安装的 [Harbor](https://www.qikqiak.com/tags/harbor/)吗？我们这里使用 [Harbor](https://www.qikqiak.com/tags/harbor/) 来作为我们的镜像仓库，这里我们只需要把 [Harbor](https://www.qikqiak.com/tags/harbor/) 相关的配置以参数的形式配置到环境中就可以了。
+
 <!--adsense-text-->
+
 定位到项目 -> 设置 -> CI/CD，展开`Environment variables`栏目，配置镜像仓库相关的参数值：
 
-![gitlab ci env](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/NWlfR4.jpg)
-
+![gitlab ci env](https://picdn.youdianzhishi.com/images/NWlfR4.jpg)
 
 配置上后，我们在上面失败的 Job 任务上点击“重试”，在重试过后依然可以看到会出现下面的错误信息：
+
 ```shell
 $ docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
 WARNING! Using --password via the CLI is insecure. Use --password-stdin.
@@ -69,10 +75,11 @@ ERROR: Job failed: command terminated with exit code 1
 ```
 
 从错误信息可以看出这是因为登录私有镜像仓库的时候证书验证错误，因为我们根本就没有提供任何证书，所以肯定会失败的，还记得我们之前在介绍 Harbor 的时候的解决方法吗？第一种是在 Docker 的启动参数中添加上`insecure-registries`，另外一种是在目录`/etc/docker/certs.d/`下面添加上私有仓库的 CA 证书，同样，我们只需要在 dind 中添加 insecure 的参数即可：
+
 ```yaml
 services:
-- name: docker:dind
-  command: ["--insecure-registry=registry.qikqiak.com"]
+  - name: docker:dind
+    command: ["--insecure-registry=registry.qikqiak.com"]
 ```
 
 > 其中`registry.qikqiak.com`就是我们之前配置的私有镜像仓库地址。
@@ -80,6 +87,7 @@ services:
 然后保存`.gitlab-ci.yml`文件，重新提交到代码仓库，可以看到又触发了正常的流水线构建了，在最后的阶段`deploy_review`仍然可以看到失败了，这是因为在最后的部署阶段我们使用`kubectl`工具操作集群的时候并没有关联上任何集群。
 
 我们在 Gitlab CI 中部署阶段使用到的镜像是`cnych/kubectl`，该镜像的`Dockerfile`文件可以在仓库 [cnych/docker-kubectl](https://github.com/cnych/docker-kubectl) 中获取：
+
 ```yaml
 FROM alpine:3.8
 
@@ -88,16 +96,16 @@ MAINTAINER cnych <icnych@gmail.com>
 ENV KUBE_LATEST_VERSION="v1.13.4"
 
 RUN apk add --update ca-certificates \
- && apk add --update -t deps curl \
- && apk add --update gettext \
- && apk add --update git \
- && curl -L https://storage.googleapis.com/kubernetes-release/release/${KUBE_LATEST_VERSION}/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
- && chmod +x /usr/local/bin/kubectl \
- && apk del --purge deps \
- && rm /var/cache/apk/*
+&& apk add --update -t deps curl \
+&& apk add --update gettext \
+&& apk add --update git \
+&& curl -L https://storage.googleapis.com/kubernetes-release/release/${KUBE_LATEST_VERSION}/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
+&& chmod +x /usr/local/bin/kubectl \
+&& apk del --purge deps \
+&& rm /var/cache/apk/*
 
- ENTRYPOINT ["kubectl"]
- CMD ["--help"]
+ENTRYPOINT ["kubectl"]
+CMD ["--help"]
 ```
 
 我们知道`kubectl`在使用的时候默认会读取当前用户目录下面的`~/.kube/config`文件来链接集群，当然我们可以把连接集群的信息直接内置到上面的这个镜像中去，这样就可以直接操作集群了，但是也有一个不好的地方就是不方便操作，假如要切换一个集群还得重新制作一个镜像。所以一般我们这里直接在 Gitlab 上配置集成 Kubernetes 集群。
@@ -107,6 +115,7 @@ RUN apk add --update ca-certificates \
 1.Kubernetes cluster name 可以随便填
 
 2.API URL 是你的集群的`apiserver`的地址， 一般可以通过输入`kubectl cluster-info `获取，Kubernetes master 地址就是需要的
+
 ```shell
 $ kubectl cluster-info
 Kubernetes master is running at https://10.151.30.11:6443
@@ -115,14 +124,16 @@ KubeDNS is running at https://10.151.30.11:6443/api/v1/namespaces/kube-system/se
 To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
 ```
 
-3.CA证书、Token、项目命名空间
+3.CA 证书、Token、项目命名空间
 
 对于我们这个项目准备部署在一个名为`gitlab`的 namespace 下面，所以首先我们需要到目标集群中创建一个 namespace:
+
 ```shell
 $ kubectl create ns gitlab
 ```
 
 由于我们在部署阶段需要去创建、删除一些资源对象，所以我们也需要对象的 RBAC 权限，这里为了简单，我们直接新建一个 ServiceAccount，绑定上一个`cluster-admin`的权限：(gitlab-sa.yaml)
+
 ```yaml
 ---
 apiVersion: v1
@@ -148,6 +159,7 @@ roleRef:
 ```
 
 然后创建上面的 ServiceAccount 对象：
+
 ```shell
 $ kubectl apply -f sa.yaml
 serviceaccount "gitlab" created
@@ -155,6 +167,7 @@ clusterrolebinding.rbac.authorization.k8s.io "gitlab" created
 ```
 
 可以通过上面创建的 ServiceAccount 获取 CA 证书和 Token：
+
 ```shell
 $ kubectl get serviceaccount gitlab -n gitlab -o json | jq -r '.secrets[0].name'
 gitlab-token-f9zp7
@@ -170,15 +183,14 @@ xxxxxxtoken值xxxx
 
 填写上面对应的值添加集群：
 
-![add k8s cluster](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/Xbc1i5.jpg)
-
-
+![add k8s cluster](https://picdn.youdianzhishi.com/images/Xbc1i5.jpg)
 
 ### .gitlab-ci.yml
 
 现在 Gitlab CI 的环境都准备好了，我们可以来看下用于描述 Gitlab CI 的`.gitlab-ci.yml`文件。
 
 一个 Job 在`.gitlab-ci.yml`文件中一般如下定义：
+
 ```yaml
 # 运行golang测试用例
 test:
@@ -190,6 +202,7 @@ test:
 上面这个 Job 会在 test 这个 Stage 阶段运行。
 
 为了指定运行的 Stage 阶段，可以在`.gitlab-ci.yml`文件中放置任意一个简单的列表：
+
 ```yaml
 # 所有 Stage
 stages:
@@ -200,6 +213,7 @@ stages:
 ```
 
 你可以指定用于在全局或者每个作业上执行命令的镜像：
+
 ```yaml
 # 对于未指定镜像的作业，会使用下面的镜像
 image: golang:1.10.3-stretch
@@ -214,6 +228,7 @@ test:
 > 对于`.gitlab-ci.yml`文件的的其他部分，请查看如下文档介绍：[https://docs.gitlab.com/ce/ci/yaml/README.html](https://docs.gitlab.com/ce/ci/yaml/README.html)。
 
 在我们当前的项目中定义了 4 个构建阶段：test、build、release、review、deploy，完整的`.gitlab-ci.yml`文件如下：
+
 ```yaml
 image:
   name: golang:1.10.3-stretch
@@ -335,12 +350,14 @@ deploy_live:
     - kubectl apply -f ingress.yaml
     - kubectl rollout status -f deployment.yaml
     - kubectl get all,ing -l ref=${CI_ENVIRONMENT_SLUG}
-
 ```
 
 上面的`.gitlab-ci.yml`文件中还有一些特殊的属性，如限制运行的的`when`和`only`参数，例如`only: ["tags"]`表示只为创建的标签运行，更多的信息，我可以通过查看 Gitlab CI YAML 文件查看：[https://docs.gitlab.com/ce/ci/yaml/README.html](https://docs.gitlab.com/ce/ci/yaml/README.html)
+
 <!--adsense-->
+
 由于我们在`.gitlab-ci.yml`文件中将应用的镜像构建完成后推送到了我们的私有仓库，而 Kubernetes 资源清单文件中使用的私有镜像，所以我们需要配置一个`imagePullSecret`，否则在 Kubernetes 集群中是无法拉取我们的私有镜像的：(替换下面相关信息为自己的)
+
 ```shell
 $ kubectl create secret docker-registry myregistry --docker-server=registry.qikqiak.com --docker-username=xxxx --docker-password=xxxxxx --docker-email=xxxx -n gitlab
 secret "myregistry" created
@@ -349,6 +366,7 @@ secret "myregistry" created
 在下面的 Deployment 的资源清单文件中会使用到创建的`myregistry`。
 
 接下来为应用创建 Kubernetes 资源清单文件，添加到代码仓库中。首先创建 Deployment 资源：（deployment.yaml）
+
 ```yaml
 ---
 apiVersion: apps/v1
@@ -376,33 +394,33 @@ spec:
       imagePullSecrets:
         - name: myregistry
       containers:
-      - name: app
-        image: registry.qikqiak.com/gitdemo/gitlab-k8s:__VERSION__
-        imagePullPolicy: Always
-        ports:
-        - name: http-metrics
-          protocol: TCP
-          containerPort: 8000
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 3
-          timeoutSeconds: 2
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 3
-          timeoutSeconds: 2
+        - name: app
+          image: registry.qikqiak.com/gitdemo/gitlab-k8s:__VERSION__
+          imagePullPolicy: Always
+          ports:
+            - name: http-metrics
+              protocol: TCP
+              containerPort: 8000
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 3
+            timeoutSeconds: 2
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 3
+            timeoutSeconds: 2
 ```
 
 > 注意用上面创建的 myregistry 替换 imagePullSecrets。
 
 这是一个基本的 Deployment 资源清单的描述，像`__CI_ENVIRONMENT_SLUG__`和`__VERSION__`这样的占位符用于区分不同的环境，`__CI_ENVIRONMENT_SLUG__`将由 dev 或 live（环境名称）和`__VERSION__`替换为镜像标签。
 
-
 为了能够连接到部署的 Pod，还需要 Service。对应的 Service 资源清单如下（service.yaml）：
+
 ```yaml
 ---
 apiVersion: v1
@@ -429,10 +447,10 @@ spec:
     ref: __CI_ENVIRONMENT_SLUG__
 ```
 
-我们的应用程序运行8000端口上，端口名为`http-metrics`，如果你还记得前面我们监控的课程中应该还记得我们使用`prometheus-operator`为 Prometheus 创建了`自动发现`的配置，所以我们在`annotations`里面配置上上面的这几个注释后，Prometheus 就可以自动获取我们应用的监控指标数据了。
-
+我们的应用程序运行 8000 端口上，端口名为`http-metrics`，如果你还记得前面我们监控的课程中应该还记得我们使用`prometheus-operator`为 Prometheus 创建了`自动发现`的配置，所以我们在`annotations`里面配置上上面的这几个注释后，Prometheus 就可以自动获取我们应用的监控指标数据了。
 
 现在 Service 创建成功了，但是外部用户还不能访问到我们的应用，当然我们可以把 Service 设置成 NodePort 类型，另外一个常见的方式当然就是使用 Ingress 了，我们可以通过 Ingress 来将应用暴露给外面用户使用，对应的资源清单文件如下：（ingress.yaml）
+
 ```yaml
 ---
 apiVersion: extensions/v1beta1
@@ -447,25 +465,23 @@ metadata:
     kubernetes.io/ingress.class: "traefik"
 spec:
   rules:
-  - host: __CI_ENVIRONMENT_SLUG__-gitlab-k8s-demo.qikqiak.com
-    http:
-      paths:
-      - path: /
-        backend:
-          serviceName: gitlab-k8s-demo-__CI_ENVIRONMENT_SLUG__
-          servicePort: 8000
-
+    - host: __CI_ENVIRONMENT_SLUG__-gitlab-k8s-demo.qikqiak.com
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: gitlab-k8s-demo-__CI_ENVIRONMENT_SLUG__
+              servicePort: 8000
 ```
 
 > 当然如果想配置 https 访问的话我们可以自己用 CA 证书创建一个 tls 密钥，也可以使用`cert-manager`来自动为我们的应用程序添加 https。
 
 当然要通过上面的域名进行访问，还需要进行 DNS 解析的，`__CI_ENVIRONMENT_SLUG__-gitlab-k8s-demo.qikqiak.com`其中`__CI_ENVIRONMENT_SLUG__`值为 live 或 dev，所以需要创建`dev-gitlab-k8s-demo.qikqiak.com` 和 `live-gitlab-k8s-demo.qikqiak.com` 两个域名的解析。
 
-
 > 我们可以使用 DNS 解析服务商的 API 来自动创建域名解析，也可以使用 [Kubernetes incubator](https://github.com/kubernetes-incubator) 孵化的项目 [external-dns operator](https://github.com/kubernetes-incubator/external-dns) 来进行操作。
 
-
 所需要的资源清单和`.gitlab-ci.yml`文件已经准备好了，我们可以小小的添加一个文件去触发下 Gitlab CI 构建：
+
 ```shell
 $ touch test1
 $ git add .
@@ -475,25 +491,22 @@ $ git push origin master
 
 现在回到 Gitlab 中可以看到我们的项目触发了一个新的 Pipeline 的构建：
 
-![gitlab pipeline](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/M5aDxg.jpg)
-
+![gitlab pipeline](https://picdn.youdianzhishi.com/images/M5aDxg.jpg)
 
 可以查看最后一个阶段（stage）是否正确，如果通过了，证明我们已经成功将应用程序部署到 Kubernetes 集群中了，一个成功的`review`阶段如下所示：
 
-![review success](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/GZezTs.jpg)
-
+![review success](https://picdn.youdianzhishi.com/images/GZezTs.jpg)
 
 整个 Pipeline 构建成功后，我们可以在项目的环境菜单下面看到多了一个环境：
 
-![env](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/PTl4AS.jpg)
+![env](https://picdn.youdianzhishi.com/images/PTl4AS.jpg)
 
-如果我们点击`终止`，就会调用`.gitlab-ci.yml`中定义的钩子`on_stop: stop_review`，点击`View deployment`就可以看到这次我们的部署结果（前提是DNS解析已经完成）：
+如果我们点击`终止`，就会调用`.gitlab-ci.yml`中定义的钩子`on_stop: stop_review`，点击`View deployment`就可以看到这次我们的部署结果（前提是 DNS 解析已经完成）：
 
-![view deployment](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/OfDR1j.jpg)
+![view deployment](https://picdn.youdianzhishi.com/images/OfDR1j.jpg)
 
 这就是关于 Gitlab CI 结合 Kubernetes 进行 CI/CD 的过程，具体详细的构建任务还需要结合我们自己的应用实际情况而定。下节课给大家介绍使用 Jenkins + Gitlab + Harbor + Helm + Kubernetes 来实现一个完整的 CI/CD 流水线作业。
 
 参考链接：[https://edenmal.moe/post/2017/Kubernetes-WYNTK-GitLab-CI-Kubernetes-Presentation/](https://edenmal.moe/post/2017/Kubernetes-WYNTK-GitLab-CI-Kubernetes-Presentation/)
 
 <!--adsense-self-->
-

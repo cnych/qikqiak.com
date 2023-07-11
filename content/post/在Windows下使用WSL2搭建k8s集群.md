@@ -5,13 +5,22 @@ tags: ["kubernetes", "wsl", "kind"]
 slug: deploy-k8s-on-win-use-wsl2
 keywords: ["kubernetes", "windows", "wsl", "kind", "minikube"]
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/0_ELInjYSqoY9iKX1W.jpeg", desc: "Windows WSL2"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/0_ELInjYSqoY9iKX1W.jpeg",
+      desc: "Windows WSL2",
+    },
+  ]
 category: "kubernetes"
 ---
+
 本文我们将介绍如何在 Windows10 下使用 WSL2 和 KinD 来搭建一套 Kubernetes 集群。在过去几年，Kubernetes 已经成为了容器编排领域事实上的标准。虽然现在已经有各种各样的 Kubernetes 发行版本和安装程序来部署 Kubernetes 环境了，除了云环境或者裸机环境下面之外，我们仍然需要在本地部署和运行 Kubernetes 集群，特别是对于相关的开发人员。
 
 但是 Kubernetes 最开始是被设计在 Linux 环境中来部署和使用的，然而还是有不少用户平时工作还是使用的是 Windows 操作系统，为了降低 Windows 用户使用 Linux 的困难程度，微软推出了 WSL (Windows Subsystem for Linux)，该工具相当于一个运行在 Windows 下面的 Linux 子系统，这让 Windows 和 Linux 之间的环境界限变得更加不明显了，特别是 WSL2 版本推出以后，完全具有了在 WSL2 中运行 Docker 的能力了，所以现在我们几乎可以无缝地在 WSL2 上面运行 Kubernetes。
+
 <!--more-->
+
 下面我们就来简要介绍下在 Windows10 下面如何安装和配置 WSL2 以及 Kubernetes 集群。
 
 # 安装 WSL2
@@ -30,10 +39,10 @@ dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux 
 
 如果要更新到 WSL2，首先需要满足下面的条件：
 
-- Windows 10 操作系统（[已更新到版本 2004](ms-settings:windowsupdate) 的**内部版本 19041** 或更高版本）
-- 通过按 Windows 徽标键 + R，检查你的 Windows 版本，然后键入 **winver**，选择“确定”。 （或者在 Windows 命令提示符下输入 `ver` 命令）。 如果内部版本低于 19041，请[更新到最新的 Windows 版本](ms-settings:windowsupdate)。
+- Windows 10 操作系统（[已更新到版本 2004](ms-settings:windowsupdate)  的**内部版本 19041**  或更高版本）
+- 通过按 Windows 徽标键 + R，检查你的 Windows 版本，然后键入  **winver**，选择“确定”。 （或者在 Windows 命令提示符下输入  `ver`  命令）。  如果内部版本低于 19041，请[更新到最新的 Windows 版本](ms-settings:windowsupdate)。
 
-![windows 版本](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200610124047.png)
+![windows 版本](https://picdn.youdianzhishi.com/images/20200610124047.png)
 
 > 升级 Windows 可以使用官方的更新助手，非常方便，地址：[https://www.microsoft.com/zh-cn/software-download/windows10](https://www.microsoft.com/zh-cn/software-download/windows10)
 
@@ -59,19 +68,19 @@ wsl --set-default-version 2
 
 ## **安装配置 Linux 发行版**
 
-1. 打开 [Microsoft Store](https://aka.ms/wslstore)，搜索 Terminal，安装 Windows Terminal，用于后面和 WSL 子系统交互。
+1. 打开  [Microsoft Store](https://aka.ms/wslstore)，搜索 Terminal，安装 Windows Terminal，用于后面和 WSL 子系统交互。
 
-    ![安装 windows terminal](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200610124851.png)
+   ![安装 windows terminal](https://picdn.youdianzhishi.com/images/20200610124851.png)
 
 2. 搜索 Ubuntu，选择安装。
 
-    ![安装 Ubuntu](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200610125008.png)
+   ![安装 Ubuntu](https://picdn.youdianzhishi.com/images/20200610125008.png)
 
 安装完成后，第一次打开 Ubuntu 的时候，将打开一个控制台窗口，会等待几分钟来进行配置，启动完成后为 Ubuntu 创建一个用户和密码。
 
 然后我们就可以使用 Windows Terminal 来操作 Ubuntu 系统了，在 Windows Terminal 中选择 Ubuntu 发行版就可以跳转到 Ubuntu 终端中，使用上面我们配置的用户名和密码登录即可：
 
-![Powershell](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200610125458.png)
+![Powershell](https://picdn.youdianzhishi.com/images/20200610125458.png)
 
 由于默认情况下我们不知道 root 用户的密码，所以如果我们想要使用 root 用户的话可以使用 passwd 命令为 root 用户设置一个新的密码。
 
@@ -132,7 +141,7 @@ root@k8s:~# source ~/.zshrc
 
 配置完成之后，Terminal 的最终效果如下图所示。
 
-![zsh config](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200610131555.png)
+![zsh config](https://picdn.youdianzhishi.com/images/20200610131555.png)
 
 ### 配置 Systemd
 
@@ -163,32 +172,34 @@ fi
 
 上面的脚本放置在 /etc/profile.d 目录下面，所以要让脚本生效，我们需要退出当前 session，重新进入即可。
 
-![wsl2 systemd](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200610141914.png)
+![wsl2 systemd](https://picdn.youdianzhishi.com/images/20200610141914.png)
 
 到这里我们就完成了 WSL2 的安装和配置。
 
 # 安装 Docker
 
-其实现在我们已经可以直接在 WSL 中去安装 Docker 了，和平时在 Linux 下面操作方式是一样的。但实际上 Docker 也专门开发了可以使用 `WSL2` 中的 `Docker` 守护进程的桌面管理程序, 打开 [Docker Desktop WSL2 backend](https://docs.docker.com/docker-for-windows/wsl-tech-preview/) 页面，下载最新的 Docker Desktop for Windows 程序 ，安装之后，打开程序做如下设置
+其实现在我们已经可以直接在 WSL 中去安装 Docker 了，和平时在 Linux 下面操作方式是一样的。但实际上 Docker 也专门开发了可以使用  `WSL2`  中的  `Docker`  守护进程的桌面管理程序, 打开  [Docker Desktop WSL2 backend](https://docs.docker.com/docker-for-windows/wsl-tech-preview/)  页面，下载最新的 Docker Desktop for Windows 程序 ，安装之后，打开程序做如下设置
 
 - 启用基于`WSL2`的引擎复选框（`Use the WSL 2 based engine）`
 
-    ![docker use wsl2](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200610142842.png)
+  ![docker use wsl2](https://picdn.youdianzhishi.com/images/20200610142842.png)
 
-    这个时候在 WSL 里面执行 docker 命令还是找不到的：
+  这个时候在 WSL 里面执行 docker 命令还是找不到的：
 
-    ![select wsl2](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/WX20200610-102450@2x.png)
+  ![select wsl2](https://picdn.youdianzhishi.com/images/WX20200610-102450@2x.png)
 
 - 我们还需要在 Resources 中设置要从哪个 WSL2 发行版中访问 Docker，如下图使用的是 Ubuntu-20.04：
 
-    ![wsl2](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/WX20200610-102506@2x.png)
+  ![wsl2](https://picdn.youdianzhishi.com/images/WX20200610-102506@2x.png)
 
 - 然后记住重启 Docker for Windows，重启完成后我们就可以在 WSL 里面使用 docker 命令了：
 
-    ![docker cli](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/WX20200610-103321@2x.png)
+  ![docker cli](https://picdn.youdianzhishi.com/images/WX20200610-103321@2x.png)
 
 到这里 Docker 和 WSL2 的基本配置就完成了，接下来我们来安装 Kubernetes 集群。
+
 <!--adsense-text-->
+
 # 安装 Kubernetes
 
 安装 Kubernetes 集群有很多成熟的方案，在本地搭建也有 minikube、microk8s 等等，我们这里选择使用 KinD：在容器中来运行 Kubernetes 的一种简单方式。这里我们将安装 KinD 官方网站的说明（[https://kind.sigs.k8s.io/docs/user/quick-start/](https://kind.sigs.k8s.io/docs/user/quick-start/)）来进行操作。
@@ -203,7 +214,7 @@ mv ./kind /usr/local/bin/
 # TODO，记得提前下载安装 kubectl 二进制文件
 ```
 
-![https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/WX20200610-104349@2x.png](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/WX20200610-104349@2x.png)
+![https://picdn.youdianzhishi.com/images/WX20200610-104349@2x.png](https://picdn.youdianzhishi.com/images/WX20200610-104349@2x.png)
 
 KinD 获取后，我们就可以来创建 Kubernetes 集群了
 
@@ -218,11 +229,11 @@ kind create cluster --name wslk8s
 ls $HOME/.kube
 ```
 
-![KinD 安装](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/WX20200610-104843@2x.png)
+![KinD 安装](https://picdn.youdianzhishi.com/images/WX20200610-104843@2x.png)
 
 到这里集群就创建成功了，我们也可以在 Windows 的浏览器中打开上面的 `Kubernetes master` 地址：
 
-![k8s master](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/WX20200610-104934@2x.png)
+![k8s master](https://picdn.youdianzhishi.com/images/WX20200610-104934@2x.png)
 
 这就是 Docker Desktop for Windows 与 WSL2 后台结合的真正优势，比之前 Docker 默认的方式性能要好很多。
 
@@ -235,7 +246,7 @@ kubectl get nodes
 kubectl get all --all-namespaces
 ```
 
-![k8s 资源](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/WX20200610-110237@2x.png)
+![k8s 资源](https://picdn.youdianzhishi.com/images/WX20200610-110237@2x.png)
 
 对于大部分使用者来说，本地运行一个节点的集群已经足够了，当然如果只需要一个节点，我们也完全可以使用 minikube。同样我们也可以使用 KinD 来创建一个多节点的集群：
 
@@ -257,15 +268,15 @@ kind create cluster --name wslkindmultinodes --config ./kind-3nodes.yaml
 kubectl get nodes
 ```
 
-![k8s 集群](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/WX20200610-111246@2x.png)
+![k8s 集群](https://picdn.youdianzhishi.com/images/WX20200610-111246@2x.png)
 
-可以看到我们这里就成功运行了3个 v1.18.2 版本的 Kubernetes 节点，而且这些节点都是运行在 Docker 容器中的，我们可以通过 docker ps 命令查看，就类似于 Kubernetes 运行在 Docker 容器中，所以叫做 KinD：
+可以看到我们这里就成功运行了 3 个 v1.18.2 版本的 Kubernetes 节点，而且这些节点都是运行在 Docker 容器中的，我们可以通过 docker ps 命令查看，就类似于 Kubernetes 运行在 Docker 容器中，所以叫做 KinD：
 
-![docker ps](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200610145436.png)
+![docker ps](https://picdn.youdianzhishi.com/images/20200610145436.png)
 
 现在我们也可以去查看下整个集群的资源对象：
 
-![k8s 资源](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/WX20200610-111438@2x.png)
+![k8s 资源](https://picdn.youdianzhishi.com/images/WX20200610-111438@2x.png)
 
 当然同样我们也可以在集群中部署应用，比如安装一个 Kubernetes Dashboard：
 
@@ -288,7 +299,7 @@ $ kubectl proxy
 http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
 ```
 
-![k8s dashboard](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/WX20200610-115328@2x.png)
+![k8s dashboard](https://picdn.youdianzhishi.com/images/WX20200610-115328@2x.png)
 
 然后我们使用官方推荐的 RBAC 方式来创建一个 Token 进行登录，重新打开一个 WSL2 终端，执行如下所示命令：
 
@@ -322,14 +333,14 @@ EOF
 
 ```bash
 kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}')
-# 拷贝上面命令获取到的 Token 数据 
+# 拷贝上面命令获取到的 Token 数据
 ```
 
-![获取 Token](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200610150610.png)
+![获取 Token](https://picdn.youdianzhishi.com/images/20200610150610.png)
 
 将上面获取到的 token 数据拷贝到 Dashboard 登录页面进行登录即可：
 
-![k8s dashboard](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/WX20200610-115823@2x.png)
+![k8s dashboard](https://picdn.youdianzhishi.com/images/WX20200610-115823@2x.png)
 
 到这里我们就完成了在 Windows 系统下面使用 WSL2 + KinD 来搭建 Kubernetes 集群，对于本地开发测试来说非常方便。当然 WSL2 目前还是有一些小问题，比如不能通过局域网访问到 WSL2 里面的服务，当然也有一些解决方案，但是都不优雅，每次重启机器过后 WSL2 的 IP 都会变化，所以有时候也非常不方便，不过整体来说 WSL2 还是非常香的。
 

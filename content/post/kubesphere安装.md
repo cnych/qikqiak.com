@@ -5,7 +5,13 @@ tags: ["kubernetes", "devops", "KubeSphere", "istio"]
 keywords: ["kubernetes", "drone", "CI", "CD", "github", "动态", "helm"]
 slug: install-kubesphere-on-k8s
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1558981420-c532902e58b4.jpeg", desc: "https://unsplash.com/photos/AyH9hAmiX9Y"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/photo-1558981420-c532902e58b4.jpeg",
+      desc: "https://unsplash.com/photos/AyH9hAmiX9Y",
+    },
+  ]
 category: "kubernetes"
 ---
 
@@ -16,14 +22,16 @@ category: "kubernetes"
 KubeSphere 一开始就推出了开源的[社区版本](https://github.com/kubesphere/kubesphere)，只是之前提供的安装方式比较单一，在已有的 Kubernetes 集群上要想安装相对较麻烦，本文将为你演示如何在已有的 Kubernetes 集群上安装 KubeSphere。
 
 ## 环境准备
+
 本文安装 KubeSphere 使用到的相关环境及工具如下：
 
-* 使用 kubeadm 搭建的 Kubernetes 1.15.2 版本集群
-* Helm v2.14.1 版本
-* 使用 NFS 作为集群存储后端
-* 使用到的安装脚本地址：[https://github.com/kubesphere/ks-installer](https://github.com/kubesphere/ks-installer)
+- 使用 kubeadm 搭建的 Kubernetes 1.15.2 版本集群
+- Helm v2.14.1 版本
+- 使用 NFS 作为集群存储后端
+- 使用到的安装脚本地址：[https://github.com/kubesphere/ks-installer](https://github.com/kubesphere/ks-installer)
 
 首先需要确保集群中有一个默认的 StorageClass 资源对象，关于 StorageClass 的使用可以查看前面的文章介绍：
+
 ```shell
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -35,6 +43,7 @@ provisioner: fuseim.pri/ifs
 ```
 
 其中 annotations 下面的 storageclass.kubernetes.io/is-default-class: "true" 是必须的：
+
 ```shell
 $ kubectl get sc
 NAME                     PROVISIONER      AGE
@@ -42,9 +51,11 @@ dynamic-data (default)   fuseim.pri/ifs   4h41m
 ```
 
 ## 安装
+
 首先将上面安装仓库 Clone 到 Kubernetes 集群中的 master 节点上，因为我们需要使用到 master 节点上的一些证书文件。
 
-1.首先，在集群中创建名为 kubesphere-system 和 kubesphere-monitoring-system 的namespace：
+1.首先，在集群中创建名为 kubesphere-system 和 kubesphere-monitoring-system 的 namespace：
+
 ```shell
 $ cat <<EOF | kubectl create -f -
 ---
@@ -60,20 +71,19 @@ metadata:
 EOF
 ```
 
-
-2.创建集群ca证书secret
+2.创建集群 ca 证书 secret
 
 > 注：按照当前集群 ca.crt 和 ca.key 证书路径创建（kubeadm 创建集群的证书路径一般为/etc/kubernetes/pki）
 
 ```shell
 $ kubectl -n kubesphere-system create secret generic kubesphere-ca  \
 --from-file=ca.crt=/etc/kubernetes/pki/ca.crt  \
---from-file=ca.key=/etc/kubernetes/pki/ca.key 
+--from-file=ca.key=/etc/kubernetes/pki/ca.key
 ```
 
-3.创建etcd证书secret
+3.创建 etcd 证书 secret
 
-> 注：以集群实际 etcd 证书位置创建；若 etcd 没有配置证书，则创建空secret
+> 注：以集群实际 etcd 证书位置创建；若 etcd 没有配置证书，则创建空 secret
 
 ```shell
 $ kubectl -n kubesphere-monitoring-system create secret generic kube-etcd-client-certs  \
@@ -83,6 +93,7 @@ $ kubectl -n kubesphere-monitoring-system create secret generic kube-etcd-client
 ```
 
 由于我这里使用的是 kubeadm 搭建的集群，所以我们可以查看 etcd 的资源清单文件：
+
 ```shell
 $ cat /etc/kubernetes/manifests/etcd.yaml
 ......
@@ -102,35 +113,38 @@ livenessProbe:
 4.修改部署文件
 由于 KubeSphere 部署过程中涉及到的组件非常多，所以安装过程中难免会有一些奇奇怪怪的问题，下面是我在安装过程中遇到的一些问题：
 
-问题1：openldap 这个组件启动报错，因为 ks-account 组件又是依赖 openldap 这个组件的，所以同样启动报错，在安装过程中 openldap 出现了类似如下错误信息。
+问题 1：openldap 这个组件启动报错，因为 ks-account 组件又是依赖 openldap 这个组件的，所以同样启动报错，在安装过程中 openldap 出现了类似如下错误信息。
+
 ```shell
 ......
-rm: cannot remove ‘/container/service/slapd/assets/config/bootstrap/ldif/readonly-user’: Directory not empty 
-rm: cannot remove ‘/container/service/slapd/assets/config/bootstrap/schema/mmc’: Directory not empty 
-rm: cannot remove ‘/container/service/slapd/assets/config/replication’: Directory not empty 
-rm: cannot remove ‘/container/service/slapd/assets/config/tls’: Directory not empty *** /container/run/startup/slapd 
+rm: cannot remove ‘/container/service/slapd/assets/config/bootstrap/ldif/readonly-user’: Directory not empty
+rm: cannot remove ‘/container/service/slapd/assets/config/bootstrap/schema/mmc’: Directory not empty
+rm: cannot remove ‘/container/service/slapd/assets/config/replication’: Directory not empty
+rm: cannot remove ‘/container/service/slapd/assets/config/tls’: Directory not empty *** /container/run/startup/slapd
 
 failed with status 1
 ```
 
 解决方法：修改配置文件`roles/ks-core/prepare/templates/ks-account-init.yaml.j2`文件，在 openldap 这个 Deployment 下面容器中添加启动参数`--copy-service`
+
 ```yaml
 ......
 image: {{ openldap_repo }}:{{ openldap_tag }}
 imagePullPolicy: IfNotPresent
 args:   # 添加该启动参数
-- --copy-service 
+- --copy-service
 name: openldap
 ......
 ```
 
-问题2：如果现有集群中已经安装有 metrics_server，需要在配置文件中将 metrics_server_enable 设置为 False
+问题 2：如果现有集群中已经安装有 metrics_server，需要在配置文件中将 metrics_server_enable 设置为 False
 
-问题3：在安装过程中卡死在`Waitting for ks-sonarqube port to become open`部分，节点上通过 NodePort 已经可以正常访问 sonarqube ，该问题没有解决，由于是一个不影响全局安装的一个操作，所以同样在配置文件中将 sonarqube_enable 设置为 False
+问题 3：在安装过程中卡死在`Waitting for ks-sonarqube port to become open`部分，节点上通过 NodePort 已经可以正常访问 sonarqube ，该问题没有解决，由于是一个不影响全局安装的一个操作，所以同样在配置文件中将 sonarqube_enable 设置为 False
 
-问题4：在安装过程中 istio 安装不上，由于我当前的集群资源不是很足，所以也临时取消掉 istio 的安装，后续在开启 istio 的支持。
+问题 4：在安装过程中 istio 安装不上，由于我当前的集群资源不是很足，所以也临时取消掉 istio 的安装，后续在开启 istio 的支持。
 
 最终用于安装 KubeSphere 的配置文件如下所示：(deploy/kubesphere.yaml)
+
 ```yaml
 ---
 apiVersion: v1
@@ -152,8 +166,11 @@ metadata:
 ```
 
 只需要修改 ConfigMap 的值即可，其中 kube_apiserver_host 就是现有集群的 APIServer 地址，etcd_endpoint_ips 就是 etcd 的所在节点 IP，默认端口为 2379，如果你是集群模式 etcd，这里可以填写多个节点 IP，中间用`,`隔开，下面就是不需要安装的组件设置为 False。
+
 <!--adsense-text-->
+
 到这里执行安装命令即可：
+
 ```shell
 $ kubectl apply -f deploy/kubesphere.yaml
 $ kubectl get pods -n kubesphere-system
@@ -171,6 +188,7 @@ redis-6cf6fc98b5-nsqfn                   1/1     Running     0          3h19m
 ```
 
 在安装过程中可能会因为拉取镜像过慢导致安装校验失败，这种情况我们可以先手动在节点上拉取镜像，然后再重新创建一个新的用于安装的 Job 即可。通过如下命令可以查看部署过程中的完整日志：
+
 ```shell
 $ kubectl logs -n kubesphere-system $(kubectl get pod -n kubesphere-system -l job-name=kubesphere-installer -o jsonpath='{.items[0].metadata.name}') -f
 ```
@@ -178,6 +196,7 @@ $ kubectl logs -n kubesphere-system $(kubectl get pod -n kubesphere-system -l jo
 如果上面用于安装的 Job 是完成状态的话，证明 KubeSphere 已经安装成功了。
 
 最后，可以创建一个 Ingress 对象来访问 KubeSphere：(kubesphere-ingress.yaml)
+
 ```yaml
 $ apiVersion: extensions/v1beta1
 kind: Ingress
@@ -188,32 +207,33 @@ metadata:
     kubernetes.io/ingress.class: nginx
 spec:
   rules:
-  - host: ks.qikqiak.com
-    http:
-      paths:
-      - path:
-        backend:
-          serviceName: ks-console
-          servicePort: 80
+    - host: ks.qikqiak.com
+      http:
+        paths:
+          - path:
+            backend:
+              serviceName: ks-console
+              servicePort: 80
 ```
 
 直接创建即可：
+
 ```shell
 $ kubectl create -f kubesphere-ingress.yaml
 ```
 
 最后做好域名解析，在浏览器中就可以访问了：
-![kubesphere login](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubesphere-login.png)
+![kubesphere login](https://picdn.youdianzhishi.com/images/kubesphere-login.png)
 
 默认的登录信息为：
 
-* 用户名：admin  
-* 密码：P@88w0rd
+- 用户名：admin
+- 密码：P@88w0rd
 
-![kubesphere dashboard](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubesphere-dashboard.jpg)
+![kubesphere dashboard](https://picdn.youdianzhishi.com/images/kubesphere-dashboard.jpg)
 
 KubeSphere 中有一些自己的概念，需要我们去理解
-![kubesphere dashboard](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubesphere-dashboard2.jpg)
+![kubesphere dashboard](https://picdn.youdianzhishi.com/images/kubesphere-dashboard2.jpg)
 
 更多的信息可以查看官方文档：[https://kubesphere.io/docs/](https://kubesphere.io/docs/)
 

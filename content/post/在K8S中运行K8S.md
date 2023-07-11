@@ -5,12 +5,20 @@ tags: ["kubernetes", "wsl", "kind", "docker"]
 slug: k8s-in-k8s
 keywords: ["kubernetes", "windows", "wsl", "kind", "cgroup"]
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200612120656.png", desc: "Kubernetes IN Kubernetes"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/20200612120656.png",
+      desc: "Kubernetes IN Kubernetes",
+    },
+  ]
 category: "kubernetes"
 ---
 
 [前面其实我们在 Windows 系统的 WSL2 下面使用 KinD 搭建了一套 Kubernetes 集群](/post/deploy-k8s-on-win-use-wsl2/)，KinD 是一个非常轻量级的 Kubernetes 安装工具，他将 Docker 容器当成 Kubernetes 的节点，使用非常方便。既然在 Docker 容器中可以运行 Kubernetes 集群，那么我们自然就会想到是否可以在 Pod 中来运行呢？在 Pod 中运行会遇到哪些问题呢？
+
 <!--more-->
+
 ## 在 Pod 中安装 Docker Daemon
 
 KinD 现在是依赖与 Docker 的，所以首先我们需要创建一个允许我们在 Pod 中运行 Docker Deamon 的镜像，这样我们就可以在 Pod 里面去执行 `docker run` 这样的命令，当然这个和我们之前说的挂载宿主机的 docker.sock 这种 DIND 模式是不一样的。要想在 Pod 中运行 Docker Deamon 依然会有不少问题的。
@@ -64,14 +72,14 @@ CGROUP_PARENT="$(grep systemd /proc/self/cgroup | cut -d: -f3)/docker"
 但是我们要知道，挂载宿主机的 `/sys/fs/cgroup` 文件是非常危险的事情，因为他把整个宿主机的 cgroup 层次结构都暴露给了容器。以前为了解决这个问题，Docker 用了一个小技巧把不相关的 cgroups 隐藏起来，不让容器看到。Docker 从容器的 cgroups 对每个 cgroup 系统的 cgroup 层次结构的根部进行绑定挂载。
 
 ```bash
-$ docker run --rm debian findmnt -lo source,target -t cgroup       
+$ docker run --rm debian findmnt -lo source,target -t cgroup
 SOURCE                                                                               TARGET
 cpuset[/docker/451b803b3cd7cd2b69dde64cd833fdd799ae16f9d2d942386ec382f6d55bffac]     /sys/fs/cgroup/cpuset
 cpu[/docker/451b803b3cd7cd2b69dde64cd833fdd799ae16f9d2d942386ec382f6d55bffac]        /sys/fs/cgroup/cpu
 cpuacct[/docker/451b803b3cd7cd2b69dde64cd833fdd799ae16f9d2d942386ec382f6d55bffac]    /sys/fs/cgroup/cpuacct
 blkio[/docker/451b803b3cd7cd2b69dde64cd833fdd799ae16f9d2d942386ec382f6d55bffac]     /sys/fs/cgroup/blkio
 memory[/docker/451b803b3cd7cd2b69dde64cd833fdd799ae16f9d2d942386ec382f6d55bffac]     /sys/fs/cgroup/memory
- 
+
 cgroup[/docker/451b803b3cd7cd2b69dde64cd833fdd799ae16f9d2d942386ec382f6d55bffac]     /sys/fs/cgroup/systemd
 ```
 
@@ -80,9 +88,9 @@ cgroup[/docker/451b803b3cd7cd2b69dde64cd833fdd799ae16f9d2d942386ec382f6d55bffac]
 但是这种方式有时候会让 cadvisor 和 kubelet 这样的应用感动困惑，因为绑定挂载并不会改变 `/proc/<PID>/cgroup` 里面的内容。
 
 ```bash
-$ docker run --rm debian cat /proc/1/cgroup                                
+$ docker run --rm debian cat /proc/1/cgroup
 14:name=systemd:/docker/512f6b62e3963f85f5abc09b69c370d27ab1dc56549fa8afcbb86eec8663a141
- 
+
 5:memory:/docker/512f6b62e3963f85f5abc09b69c370d27ab1dc56549fa8afcbb86eec8663a141
 4:blkio:/docker/512f6b62e3963f85f5abc09b69c370d27ab1dc56549fa8afcbb86eec8663a141
 3:cpuacct:/docker/512f6b62e3963f85f5abc09b69c370d27ab1dc56549fa8afcbb86eec8663a141
@@ -100,7 +108,9 @@ cadvisor 会通过查看 `/proc/<PID>/cgroup` 来获取给定进程的 cgroup，
 在使用的时候我们发现在线上的 Kubernetes 集群运行时，有时候容器内的 Docker Daemon 启动的嵌套容器无法访问外网，但是在本地开发电脑上却可以很正常的工作，大部分开发者应该都会经常遇到这种情况。
 
 最后发现当出现这个问题的时候，来自嵌套的 Docker 容器的数据包并没有打到 iptables 的 POSTROUTING 链，所以没有做 masqueraded。
+
 <!--adsense-text-->
+
 这个问题是因为包含 Docker Daemon 的镜像是基于 [Debian buster](https://www.debian.org/releases/buster/) 的，而默认情况下，Debian buster 使用的是 [nftables](https://wiki.debian.org/nftables) 作为 iptables 的默认后端，然而 Docker 本身还不支持 nftables。要解决这个问题只需要在容器镜像中切换到 iptables 命令即可。
 
 ```bash
@@ -124,20 +134,20 @@ metadata:
   name: dind
 spec:
   containers:
-  - image: jieyu/dind-buster:v0.1.8
-    name: dind
-    stdin: true
-    tty: true
-    args:
-    - /bin/bash
-    volumeMounts:
-    - mountPath: /var/lib/docker
-      name: varlibdocker
-    securityContext:
-      privileged: true
+    - image: jieyu/dind-buster:v0.1.8
+      name: dind
+      stdin: true
+      tty: true
+      args:
+        - /bin/bash
+      volumeMounts:
+        - mountPath: /var/lib/docker
+          name: varlibdocker
+      securityContext:
+        privileged: true
   volumes:
-  - name: varlibdocker
-    emptyDir: {}
+    - name: varlibdocker
+      emptyDir: {}
 ```
 
 ## 在 Pod 中运行 KinD
@@ -149,15 +159,15 @@ $ docker run -ti --rm --privileged jieyu/dind-buster:v0.1.8 /bin/bash
 Waiting for dockerd...
 [root@257b543a91a5 /]# curl -Lso ./kind https://kind.sigs.k8s.io/dl/v0.8.1/kind-$(uname)-amd64
 [root@257b543a91a5 /]# chmod +x ./kind
-[root@257b543a91a5 /]# mv ./kind /usr/bin/ 
+[root@257b543a91a5 /]# mv ./kind /usr/bin/
 [root@257b543a91a5 /]# kind create cluster
 Creating cluster "kind" ...
- ✓ Ensuring node image (kindest/node:v1.18.2) 🖼 
- ✓ Preparing nodes 📦  
- ✓ Writing configuration 📜 
- ✓ Starting control-plane 🕹️ 
- ✓ Installing CNI 🔌 
- ✓ Installing StorageClass 💾 
+ ✓ Ensuring node image (kindest/node:v1.18.2) 🖼
+ ✓ Preparing nodes 📦
+ ✓ Writing configuration 📜
+ ✓ Starting control-plane 🕹️
+ ✓ Installing CNI 🔌
+ ✓ Installing StorageClass 💾
 Set kubectl context to "kind-kind"
 You can now use your cluster with:
 kubectl cluster-info --context kind-kind
@@ -173,7 +183,7 @@ kind-control-plane   Ready    master   11m   v1.18.2
 $ docker run -it --rm --privileged -v /usr/local/bin/kind:/usr/bin/kind -v /usr/local/bin/kubectl:/usr/bin/kubectl jieyu/dind-buster:v0.1.8 /bin/bash
 ```
 
-![kind in docker](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200612100342.png)
+![kind in docker](https://picdn.youdianzhishi.com/images/20200612100342.png)
 
 可以看到在容器中可以很好的使用 KinD 来创建 Kubernetes 集群。接下来我们直接在 Kubernetes 中来测试一次：
 
@@ -185,10 +195,10 @@ root@dind:/# chmod +x ./kind
 root@dind:/# mv ./kind /usr/bin/
 root@dind:/# kind create cluster
 Creating cluster "kind" ...
- ✓ Ensuring node image (kindest/node:v1.17.0) 🖼 
- ✓ Preparing nodes 📦  
- ✓ Writing configuration 📜 
- ✗ Starting control-plane 🕹️ 
+ ✓ Ensuring node image (kindest/node:v1.17.0) 🖼
+ ✓ Preparing nodes 📦
+ ✓ Writing configuration 📜
+ ✗ Starting control-plane 🕹️
 ERROR: failed to create cluster: failed to init node with kubeadm: command "docker exec --privileged kind-control-plane kubeadm init --ignore-preflight-errors=all --config=/kind/kubeadm.conf --skip-token-print --v=6" failed with error: exit status 137
 ```
 
@@ -196,17 +206,17 @@ ERROR: failed to create cluster: failed to init node with kubeadm: command "dock
 
 但其实我自己在使用 v0.8.1 版本的 KinD 的时候，在上面的 Pod 中是可以正常创建集群的，不知道是否是 KinD 搭建的集群有什么特殊处理，这里需要再深入研究：
 
-![kind in pod](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200612114709.png)
+![kind in pod](https://picdn.youdianzhishi.com/images/20200612114709.png)
 
 如果你在使用的过程中也遇到了上述的问题，则可以继续往下看解决方案。
 
-当顶层容器（DIND）在 Kubernetes  Pod 中运行的时候，对于每个 cgroup 子系统（比如内存），从宿主机的角度来看，它的 cgroup 路径是 `/kubepods/burstable/<POD_ID>/<DIND_CID>`。
+当顶层容器（DIND）在 Kubernetes Pod 中运行的时候，对于每个 cgroup 子系统（比如内存），从宿主机的角度来看，它的 cgroup 路径是 `/kubepods/burstable/<POD_ID>/<DIND_CID>`。
 
 当 KinD 在 DIND 容器内的嵌套节点容器内启动 kubelet 的时候，kubelet 将在 `/kubepods/burstable/` 下相对于嵌套 KIND 节点容器的根 cgroup 为其 Pods 来操作 cgroup。从宿主机的角度来看，cgroup 路径就是 `/kubepods/burstable/<POD_ID>/<DIND_CID>/docker/<KIND_CID>/kubepods/burstable/`。
 
 这些都是正确的，但是在嵌套的 KinD 节点容器中，有另一个 cgroup 存在于 `/kubepods/burstable/<POD_ID>/<DIND_CID>/docker/<DIND_CID>`下面，相对于嵌套的 KinD 节点容器的根 cgroup，在 kubelet 启动之前就存在了，这是上面我们讨论过的 cgroups 挂载造成的，通过 KinD entrypoint 脚本设置。而如果你在 KinD 节点容器里面做一个 `cat /kubepods/burstable/<POD_ID>/docker/<DIND_CID>/tasks`，你会看到 DinD 容器的进程。
 
-![k8s in k8s](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200612111432.png)
+![k8s in k8s](https://picdn.youdianzhishi.com/images/20200612111432.png)
 
 这就是最根本的原因，KinD 节点容器里面的 kubelet 看到了这个 cgroup，以为应该由它来管理，但是却找不到和这个 cgroup 相关联的 Pod，所以就会尝试来杀死属于这个 cgroup 的进程来删除这个 cgroup。这个操作的结果就是随机进程被杀死。解决这个问题的方法可以通过设置 kubelet 的`--cgroup-root` 参数，通过该标志来指示 KinD 节点容器内的 kubelet 为其 Pods 使用不通的 cgroup 根路径（比如 /kubelet）。这样就可以在 Kubernetes 集群中来启动 KinD 集群了，我们可以通过下面的 YAML 资源清单文件来修复这个问题。
 
@@ -217,45 +227,45 @@ metadata:
   name: kind-cluster
 spec:
   containers:
-  - image: jieyu/kind-cluster-buster:v0.1.0
-    name: kind-cluster
-    stdin: true
-    tty: true
-    args:
-    - /bin/bash
-    env:
-    - name: API_SERVER_ADDRESS
-      valueFrom:
-        fieldRef:
-          fieldPath: status.podIP
-    volumeMounts:
-    - mountPath: /var/lib/docker
-      name: varlibdocker
-    - mountPath: /lib/modules
-      name: libmodules
-      readOnly: true
-    securityContext:
-      privileged: true
-    ports:
-    - containerPort: 30001
-      name: api-server-port
-      protocol: TCP
-    readinessProbe:
-      failureThreshold: 15
-      httpGet:
-        path: /healthz
-        port: api-server-port
-        scheme: HTTPS
-      initialDelaySeconds: 120
-      periodSeconds: 20
-      successThreshold: 1
-      timeoutSeconds: 1
+    - image: jieyu/kind-cluster-buster:v0.1.0
+      name: kind-cluster
+      stdin: true
+      tty: true
+      args:
+        - /bin/bash
+      env:
+        - name: API_SERVER_ADDRESS
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+      volumeMounts:
+        - mountPath: /var/lib/docker
+          name: varlibdocker
+        - mountPath: /lib/modules
+          name: libmodules
+          readOnly: true
+      securityContext:
+        privileged: true
+      ports:
+        - containerPort: 30001
+          name: api-server-port
+          protocol: TCP
+      readinessProbe:
+        failureThreshold: 15
+        httpGet:
+          path: /healthz
+          port: api-server-port
+          scheme: HTTPS
+        initialDelaySeconds: 120
+        periodSeconds: 20
+        successThreshold: 1
+        timeoutSeconds: 1
   volumes:
-  - name: varlibdocker
-    emptyDir: {}
-  - name: libmodules
-    hostPath:
-      path: /lib/modules
+    - name: varlibdocker
+      emptyDir: {}
+    - name: libmodules
+      hostPath:
+        path: /lib/modules
 ```
 
 使用上面的资源清单文件创建完成后，稍等一会儿我们就可以进入 Pod 中来验证。
@@ -263,7 +273,7 @@ spec:
 ```bash
 $ kubectl exec -ti kind-cluster /bin/bash
 root@kind-cluster:/# kubectl get nodes
-NAME                 STATUS   ROLES    AGE   VERSION                                                                                                                   
+NAME                 STATUS   ROLES    AGE   VERSION
 kind-control-plane   Ready    master   72s   v1.17.0
 ```
 
@@ -274,13 +284,13 @@ $ docker run -ti --rm --privileged jieyu/kind-cluster-buster:v0.1.0 /bin/bash
 Waiting for dockerd...
 Setting up KIND cluster
 Creating cluster "kind" ...
- ✓ Ensuring node image (jieyu/kind-node:v1.17.0) 🖼 
- ✓ Preparing nodes 📦  
- ✓ Writing configuration 📜 
- ✓ Starting control-plane 🕹️ 
- ✓ Installing CNI 🔌 
- ✓ Installing StorageClass 💾 
- ✓ Waiting ≤ 15m0s for control-plane = Ready ⏳ 
+ ✓ Ensuring node image (jieyu/kind-node:v1.17.0) 🖼
+ ✓ Preparing nodes 📦
+ ✓ Writing configuration 📜
+ ✓ Starting control-plane 🕹️
+ ✓ Installing CNI 🔌
+ ✓ Installing StorageClass 💾
+ ✓ Waiting ≤ 15m0s for control-plane = Ready ⏳
  • Ready after 31s 💚
 Set kubectl context to "kind-kind"
 You can now use your cluster with:
@@ -296,7 +306,7 @@ root@d95fa1302557:/#
 
 下图是我在 KinD 搭建的 Kubernetes 集群中，创建的一个 Pod，然后在 Pod 中创建的一个独立的 Kubernetes 集群最终效果：
 
-![k8s in k8s](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200612115324.png)
+![k8s in k8s](https://picdn.youdianzhishi.com/images/20200612115324.png)
 
 ## 总结
 

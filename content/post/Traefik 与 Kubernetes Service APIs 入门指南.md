@@ -9,9 +9,9 @@ gitcomment: true
 category: "kubernetes"
 ---
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210212151242.png)
+![](https://picdn.youdianzhishi.com/images/20210212151242.png)
 
-[前面我们已经介绍了 Kubernetes 社区内部为 Kubernetes 开发了一种改进的定义和管理入口流量的新接口](* [Kubernetes Service APIs 简介](/post/kubernetes-service-apis-intro/))，也就是新的 `Kubernetes Service APIs`。Traefik 在2.4 版本中引入了对 Service APIs 的初始支持。本文我们将演示如何通过 Traefik 来使用新的 `Gateway`、`GatewayClass` 和 `HTTPRoute API` 将请求路由到后端的服务 Pod。
+[前面我们已经介绍了 Kubernetes 社区内部为 Kubernetes 开发了一种改进的定义和管理入口流量的新接口](\* [Kubernetes Service APIs 简介](/post/kubernetes-service-apis-intro/))，也就是新的 `Kubernetes Service APIs`。Traefik 在 2.4 版本中引入了对 Service APIs 的初始支持。本文我们将演示如何通过 Traefik 来使用新的 `Gateway`、`GatewayClass` 和 `HTTPRoute API` 将请求路由到后端的服务 Pod。
 
 <!--more-->
 
@@ -58,7 +58,7 @@ kubectl port-forward $(kubectl get pods --selector "app.kubernetes.io/name=traef
 
 然后使用浏览器通过 [http://localhost:9000/dashboard/](http://localhost:9000/dashboard/) 访问 Dashboard，正常应该看到 `KubernetesGateway` 这个 Provider 已经激活并准备好了服务。
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20210212145525.png)
+![](https://picdn.youdianzhishi.com/images/20210212145525.png)
 
 ## 测试
 
@@ -109,7 +109,7 @@ spec:
 在以前的方式中我们会创建一个 Ingress 或 IngressRoute 资源对象，这里我们将部署第一个简单呃 HTTPRoute 对象。
 
 ```yaml
-# 02-whoami-httproute.yaml  
+# 02-whoami-httproute.yaml
 ---
 kind: HTTPRoute
 apiVersion: networking.x-k8s.io/v1alpha1
@@ -156,39 +156,38 @@ X-Real-Ip: 10.42.0.1
 ```
 
 注意`app：traefik`标签选择器，它确保请求被路由到你的 Traefik 实例，这是上面通过 Helm Chart 包安装的默认标签，当然也可以进行自定义。
+
 <!--adsense-text-->
+
 ### 带路径的 Host 主机
 
 上面的例子可以很容易地限制流量只在一个给定的子路径上进行路由。
 
 ```yaml
 # 03-whoami-httproute-paths.yaml
---- 
+---
 apiVersion: networking.x-k8s.io/v1alpha1
 kind: HTTPRoute
-metadata: 
-  labels: 
+metadata:
+  labels:
     app: traefik
   name: http-app-1
   namespace: default
-spec: 
-  hostnames: 
+spec:
+  hostnames:
     - whoami
-  rules: 
-    - 
-      forwardTo: 
-        - 
-          port: 80
+  rules:
+    - forwardTo:
+        - port: 80
           serviceName: whoami
           weight: 1
-      matches: 
-        - 
-          path: 
+      matches:
+        - path:
             type: Exact
             value: /foo
 ```
 
-创建上面修改后的 HTTPRoute，你会发现之前的请求现在返回404错误，而请求 `/foo` 路径后缀则返回成功。
+创建上面修改后的 HTTPRoute，你会发现之前的请求现在返回 404 错误，而请求 `/foo` 路径后缀则返回成功。
 
 ```bash
 curl -H "Host: whoami" http://localhost/foo
@@ -215,17 +214,17 @@ X-Real-Ip: 10.42.0.1
 
 ### 使用静态证书的 TLS
 
-到目前为止，我们已经创建了一个简单的 HTTPRoute，下一步，我们需要通过 TLS 来保证这个路由的安全，首先需要先用一个证书创建一个Kubernetes Secret，如下所示：
+到目前为止，我们已经创建了一个简单的 HTTPRoute，下一步，我们需要通过 TLS 来保证这个路由的安全，首先需要先用一个证书创建一个 Kubernetes Secret，如下所示：
 
 ```yaml
 # 04-tls-dummy-cert.yaml
---- 
+---
 apiVersion: v1
-data: 
+data:
   tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVVVENDQXJtZ0F3SUJBZ0lRV2pNZ2Q4OUxOUXIwVC9WMDdGR1pEREFOQmdrcWhraUc5dzBCQVFzRkFEQ0IKaFRFZU1Cd0dBMVVFQ2hNVmJXdGpaWEowSUdSbGRtVnNiM0J0Wlc1MElFTkJNUzB3S3dZRFZRUUxEQ1JxWW1SQQpaSEpwZW5wMElDaEtaV0Z1TFVKaGNIUnBjM1JsSUVSdmRXMWxibXB2ZFNreE5EQXlCZ05WQkFNTUsyMXJZMlZ5CmRDQnFZbVJBWkhKcGVucDBJQ2hLWldGdUxVSmhjSFJwYzNSbElFUnZkVzFsYm1wdmRTa3dIaGNOTWpBeE1qQTAKTVRReE1qQXpXaGNOTWpNd016QTBNVFF4TWpBeldqQllNU2N3SlFZRFZRUUtFeDV0YTJObGNuUWdaR1YyWld4dgpjRzFsYm5RZ1kyVnlkR2xtYVdOaGRHVXhMVEFyQmdOVkJBc01KR3BpWkVCa2NtbDZlblFnS0VwbFlXNHRRbUZ3CmRHbHpkR1VnUkc5MWJXVnVhbTkxS1RDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUIKQU12bEc5d0ZKZklRSWRreDRXUy9sNGhQTVRQcmVUdmVQOS9MZlBYK2h2ekFtVC90V1BJbGxGY2JJNnZzemp0NQpEWlZUMFFuQzhHYzg0K1lPZXZHcFpNaTg0M20zdTdFSUlmY3dETUF4WWQ0ZjJJcENLVW9jSFNtVGpOaVhDSnhwCjVNd2tlVXdEc1dvVVZza1RxeVpOcWp0RWVIbGNuQTFHaGZSa3dEUkZxd1QxeVhaUTBoZHpkQzRCeFhhaVk0VEQKaFQ1dnFXQmlnUlh0M1VwSkhEL1NXUG4wTEVQOHM3ckhjUkZPY0RhV3ZWMW1jTkxNZUpveWNYUTJ0M2Z1Q0Fsegp3UWZOSjFQSk45QWlLalFJcXJ1MGFnMC9wU0kyQ3NkbEUzUTFpM29tZGpCQkZDcmxNMTZyY0wwNDdtWXZKOEVvCjFMdDVGQkxnVURBZktIOFRsaXU0ZG9jQ0F3RUFBYU5wTUdjd0RnWURWUjBQQVFIL0JBUURBZ1dnTUJNR0ExVWQKSlFRTU1Bb0dDQ3NHQVFVRkJ3TUJNQXdHQTFVZEV3RUIvd1FDTUFBd0h3WURWUjBqQkJnd0ZvQVV5cWNiZGhDego3Nm4xZjFtR3BaemtNb2JOYnJ3d0VRWURWUjBSQkFvd0NJSUdkMmh2WVcxcE1BMEdDU3FHU0liM0RRRUJDd1VBCkE0SUJnUUFzWlBndW1EdkRmNm13bXR1TExkWlZkZjdYWk13TjVNSkk5SlpUQ1NaRFRQRjRsdG91S2RCV0gxYm0Kd003VUE0OXVWSHplNVNDMDNlQ294Zk9Ddlczby94SFZjcDZGei9qSldlYlY4SWhJRi9JbGNRRyszTVRRMVJaVApwNkZOa3kvOEk3anF1R2V2b0xsbW9KamVRV2dxWGtFL0d1MFloVCtudVBJY1pGa0hsKzFWOThEUG5WaTJ3U0hHCkIwVU9RaFdxVkhRU0RzcjJLVzlPbmhTRzdKdERBcFcwVEltYmNCaWlXOTlWNG9Ga3VNYmZQOE9FTUY2ZXUzbW0KbUVuYk1pWFFaRHJUMWllMDhwWndHZVNhcTh1Rk82djRwOVVoWHVuc3Vpc01YTHJqQzFwNmlwaDdpMTYwZzRWawpmUXlYT09KY0o2WTl2a2drYzRLYUxBZVNzVUQvRDR1bmd6emVWQ3k0ZXhhMmlBakpzVHVRS3JkOFNUTGNNbUJkCnhtcXVKZXFWSEpoZEVMNDBMVGtEY1FPM1NzOUJpbjRaOEFXeTJkdkR1a1gwa084dm9IUnN4bWVKcnVyZ09MVmIKamVvbTVQMTVsMkkwY3FKd2lNNHZ3SlBsb25wMTdjamJUb0IzQTU5RjZqekdONWtCbjZTaWVmR3VLM21hVWdKegoxWndjamFjPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0t
   tls.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2Z0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktnd2dnU2tBZ0VBQW9JQkFRREw1UnZjQlNYeUVDSFoKTWVGa3Y1ZUlUekV6NjNrNzNqL2Z5M3oxL29iOHdKay83Vmp5SlpSWEd5T3I3TTQ3ZVEyVlU5RUp3dkJuUE9QbQpEbnJ4cVdUSXZPTjV0N3V4Q0NIM01BekFNV0hlSDlpS1FpbEtIQjBwazR6WWx3aWNhZVRNSkhsTUE3RnFGRmJKCkU2c21UYW83UkhoNVhKd05Sb1gwWk1BMFJhc0U5Y2wyVU5JWGMzUXVBY1Yyb21PRXc0VStiNmxnWW9FVjdkMUsKU1J3LzBsajU5Q3hEL0xPNngzRVJUbkEybHIxZFpuRFN6SGlhTW5GME5yZDM3Z2dKYzhFSHpTZFR5VGZRSWlvMApDS3E3dEdvTlA2VWlOZ3JIWlJOME5ZdDZKbll3UVJRcTVUTmVxM0M5T081bUx5ZkJLTlM3ZVJRUzRGQXdIeWgvCkU1WXJ1SGFIQWdNQkFBRUNnZ0VCQUl5SWpvbzQxaTJncHVQZitIMkxmTE5MK2hyU0cwNkRZajByTVNjUVZ4UVEKMzgvckZOcFp3b1BEUmZQekZUWnl1a1VKYjFRdUU2cmtraVA0S1E4MTlTeFMzT3NCRTVIeWpBNm5CTExYbHFBVwpEUmRHZ05UK3lhN2xiemU5NmdaOUNtRVdackJZLzBpaFdpdmZyYUNKK1dJK1VGYzkyS1ZoeldSa3FRR2VYMERiCnVSRXRpclJzUXVRb1hxNkhQS1FIeUVITHo2aWVVMHJsV3IyN0VyQkJ4RlRKTm51MnJ1MHV1Ly8wdG1SYjgzZWwKSUpXQnY1V1diSnl4dXNnMkhkc0tzTUh0eEVaYWh1UlpTNHU2TURQR3dSdjRaU0xpQm1FVVc3RUMwUEg3dCtGaAoxUDcrL0Yyd1pGSDAvSzl6eXUyc0lOMDJIbTBmSWtGejBxb09BSzQ5OXhrQ2dZRUE2SC9nVUJoOG9GUSt2cmZKCnQvbXdMeFBHZHhWb3FWR1hFVjhlQzNWbmxUSXJlREpNWm81b1hKZHNuQ0d2S1NaWUhXZ3o3SVpwLzRCL29vSWsKTDl4TEJSVTJwS0d1OGxBT1ZhYnpaVDk0TTZYSE1PTGQ0ZlUrS3ZqK1lLVm5laEM3TVNQL3RSOWhFMjN1MnRKZwp1eUdPRklFVlptNHZxS1hEelU3TTNnU0R5WXNDZ1lFQTRJRVFyZDl2MXp0T2k5REZ6WEdnY05LVmpuYmFTWnNXCm9JNm1WWFJZS1VNM1FyWUw4RjJTVmFFM0Y0QUZjOXRWQjhzV0cxdDk4T09Db0xrWTY2NjZqUFkwMXBWTDdXeTMKZXpwVEFaei9tRnc2czdic3N3VEtrTW5MejVaNW5nS3dhd3pRTXVoRGxLTmJiUi90enRZSEc0NDRrQ2tQS3JEbQphOG40bUt6ZlRuVUNnWUFTTWhmVERPZU1BS3ZjYnpQSlF6QkhydXVFWEZlUmtNSWE2Ty9JQThzMGdQV245WC9ICk12UDE4eC9iNUVMNkhIY2U3ZzNLUUFiQnFVUFQ2dzE3OVdpbG9EQmptQWZDRFFQaUxpdTBTOUJUY25EeFlYL3QKOUN5R1huQkNEZy9ZSE1FWnFuQ1RzejM4c0VqV05VcSt1blNOSkVFUmdDUVl0Y2hxSS9XaWxvWGQyd0tCZ1FEQworTlBYYlBqZ1h5MHoxN2d4VjhFU3VwQVFEY0E5dEdiT1FaVExHaU9Ha2sxbnJscG9BWnVZcWs0Q0pyaVZpYUlyCkJvREllWWpDcjVNK3FnR3VqU3lPUnpSVU40eWRRWkdIZjN1Zkp3NEM3L1k3SlY0amlzR3hSTSt3Rk9yQ0EydmIKVEdGMEZLcThaN0o2N3dQRVliUUNobDB4TmJkcVIvK1ZGTzdGQ1QxV0VRS0JnQThUaE9hZmNEUmdpd0IxRFdyRgozZ1lmT3I0dERENExrNjRYZlF6ajdtRXQyYlJzOFNEYXYwVGZPclVUUlpFTTkyTVFZMnlrbzhyMDJDbmpndmxCCm1aYnZCTEFYaVZLa0laai9TTkNYUnhzOFZkZ3psTkpzYVNZTUtsNloxK1Z3MnZUdDNQSnI0TXlhRWpHYUxlSmMKRGRTQjdYOU9ESk5acW10bGpoRzc5eXpQCi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0=
 kind: Secret
-metadata: 
+metadata:
   name: mysecret
   namespace: default
 type: kubernetes.io/tls
@@ -241,13 +240,12 @@ helm upgrade traefik -f 05-values.yaml traefik/traefik
 
 ```yaml
 # 05-values.yaml
---- 
-experimental: 
-  kubernetesGateway: 
+---
+experimental:
+  kubernetesGateway:
     appLabelSelector: traefik
     certificates:
-      - 
-        group: "core"
+      - group: "core"
         kind: "Secret"
         name: "mysecret"
     enabled: true
@@ -324,19 +322,19 @@ HTTPRoute 资源有一个 `weight` 选项，可以为两个服务分别分配不
 
 ```yaml
 # 07-whoami-nginx-canary.yaml
---- 
+---
 apiVersion: networking.x-k8s.io/v1alpha1
 kind: HTTPRoute
-metadata: 
-  labels: 
+metadata:
+  labels:
     app: traefik
   name: http-app-1
   namespace: default
-spec: 
-  hostnames: 
+spec:
+  hostnames:
     - whoami
-  rules: 
-    - forwardTo: 
+  rules:
+    - forwardTo:
         - port: 80
           serviceName: whoami
           weight: 3
@@ -345,7 +343,7 @@ spec:
           weight: 1
 ```
 
-创建上面的 HTTPRoute 后，现在我们可以再次访问 whoami 服务 http://localhost（没有 `foo/` 路径后缀），正常我们可以看到有大约25%的时间会看到 Nginx 的响应，而不是 whoami 的响应。
+创建上面的 HTTPRoute 后，现在我们可以再次访问 whoami 服务 http://localhost（没有 `foo/` 路径后缀），正常我们可以看到有大约 25%的时间会看到 Nginx 的响应，而不是 whoami 的响应。
 
 目前，Traefik 对 Service APIs 的实现只集中在 HTTP 和 HTTPS 上。然而，该规范还具有 TCP 功能，未来可能也会支持 UDP，这些都是后续需要实现的功能。当然现在开始你就可以使用 Traefik 2.4 来使用 Kubernetes Service APIs。
 

@@ -9,9 +9,9 @@ notoc: true
 category: "Kubernetes"
 ---
 
-[![office-env-k8s-network](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/HbjHRJ.jpg)](/post/office-env-k8s-network/)
+[![office-env-k8s-network](https://picdn.youdianzhishi.com/images/HbjHRJ.jpg)](/post/office-env-k8s-network/)
 
-在 kubernetes 的网络模型中，基于官方默认的 CNI 网络插件 Flannel，这种 Overlay Network（覆盖网络）可以轻松的实现 pod 间网络的互通。当我们把基于 spring cloud 的微服务迁移到 k8s 中后，无须任何改动，微服务 pod 可以通过 Eureka 注册后可以互相轻松访问。除此之外，我们可以通过 ingress + ingress controller ，在每个节点上，把基于 http 80端口、https 443端口的用户请求流量引入到集群服务中。
+在 kubernetes 的网络模型中，基于官方默认的 CNI 网络插件 Flannel，这种 Overlay Network（覆盖网络）可以轻松的实现 pod 间网络的互通。当我们把基于 spring cloud 的微服务迁移到 k8s 中后，无须任何改动，微服务 pod 可以通过 Eureka 注册后可以互相轻松访问。除此之外，我们可以通过 ingress + ingress controller ，在每个节点上，把基于 http 80 端口、https 443 端口的用户请求流量引入到集群服务中。
 
 <!--more-->
 
@@ -19,23 +19,26 @@ category: "Kubernetes"
 
 但是实际使用中，我们出现了以下需求：
 
-* 1.办公室网络 和 k8s pod 网络不通。开发在电脑完成某个微服务模块开发后，希望本地启动后，能注册到 k8s 中开发环境的服务中心进行调试，而不是本地起一堆依赖的服务。
-* 2.办公室网络 和 k8s svc 网络不通。在 k8s 中运行的 mysql、redis 等，无法通过 ingress 7层暴露，电脑无法通过客户端工具直接访问；如果我们通过 service 的 NodePort 模式，会导致维护量工作量巨大。
+- 1.办公室网络 和 k8s pod 网络不通。开发在电脑完成某个微服务模块开发后，希望本地启动后，能注册到 k8s 中开发环境的服务中心进行调试，而不是本地起一堆依赖的服务。
+- 2.办公室网络 和 k8s svc 网络不通。在 k8s 中运行的 mysql、redis 等，无法通过 ingress 7 层暴露，电脑无法通过客户端工具直接访问；如果我们通过 service 的 NodePort 模式，会导致维护量工作量巨大。
 
-##  网络互通配置
-k8s 集群中新加一台配置不高（2核4G）的 node 节点（node-30）专门做路由转发，连接办公室网络和 k8s 集群 pod、svc
+## 网络互通配置
+
+k8s 集群中新加一台配置不高（2 核 4G）的 node 节点（node-30）专门做路由转发，连接办公室网络和 k8s 集群 pod、svc
 
 - node-30 IP 地址 10.60.20.30
 - 内网 DNS IP 地址 10.60.20.1
-- pod 网段10.244.0.0/24，svc 网段10.96.0.0/12
+- pod 网段 10.244.0.0/24，svc 网段 10.96.0.0/12
 - 办公网段 192.168.0.0/22
 
-给 node-30节点打上污点标签（taints），不让 k8s 调度 pod 来占用资源：
+给 node-30 节点打上污点标签（taints），不让 k8s 调度 pod 来占用资源：
+
 ```shell
 kubectl taint nodes node-30 forward=node-30:NoSchedule
 ```
 
-node-30节点，做snat：
+node-30 节点，做 snat：
+
 ```shell
 # 开启转发
 # vim /etc/sysctl.d/k8s.conf
@@ -48,28 +51,30 @@ iptables -t nat -A POSTROUTING -s 192.168.0.0/22 -d 10.96.0.0/12 -j  MASQUERADE
 ```
 
 在办公室的出口路由器上，设置静态路由，将 k8s pod 和 service 的网段，路由到 node-30 节点上
+
 ```shell
 ip route 10.244.0.0 255.255.255.0 10.60.20.30
 ip route 10.96.0.0  255.240.0.0   10.60.20.30
 ```
 
-![1547110223634](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kaRF99.jpg)
+![1547110223634](https://picdn.youdianzhishi.com/images/kaRF99.jpg)
 
 ## DNS 解析配置
+
 以上步骤操作后，我们就可以在本地电脑通过访问 pod ip 和 service ip 去访问服务。但是在 k8s 中，由于 pod ip 随时都可能在变化，service ip 也不是开发、测试能轻松获取到的。我们希望内网 DNS 在解析 `*.cluster.local`，去`coreDNS`寻找解析结果。
 
-例如，我们约定将（项目A 、开发环境一 、数据库mysql）部署到 ProjectA-dev1 这个 namespace 下，由于本地到 k8s 集群 service 网络已经打通，我们在本地电脑使用 mysql 客户端连接时，只需要填写`mysql.ProjectA-dev1.svc.cluster.local`即可，DNS 查询请求到了内网DNS后，走向 CoreDNS，从而解析出 service ip。
+例如，我们约定将（项目 A 、开发环境一 、数据库 mysql）部署到 ProjectA-dev1 这个 namespace 下，由于本地到 k8s 集群 service 网络已经打通，我们在本地电脑使用 mysql 客户端连接时，只需要填写`mysql.ProjectA-dev1.svc.cluster.local`即可，DNS 查询请求到了内网 DNS 后，走向 CoreDNS，从而解析出 service ip。
 
 由于内网 DNS 在解析 `*.cluster.local`，需要访问 CoreDNS 寻找解析结果。这就需要保证网络可达
 
-- 方案一， 最简单的做法，我们把内网DNS架设在node-30这台节点上，那么他肯定访问到kube-dns 10.96.0.10
+- 方案一， 最简单的做法，我们把内网 DNS 架设在 node-30 这台节点上，那么他肯定访问到 kube-dns 10.96.0.10
 
 ```
 # kubectl  get svc  -n kube-system |grep kube-dns
 kube-dns   ClusterIP   10.96.0.10   <none>        53/UDP,53/TCP   20d
 ```
 
-- 方案二，由于我们实验场景内网DNS IP地址 10.60.20.1 ，并不在node-30上，我们需要打通10.60.20.1 访问 svc网段10.96.0.0/12即可
+- 方案二，由于我们实验场景内网 DNS IP 地址 10.60.20.1 ，并不在 node-30 上，我们需要打通 10.60.20.1 访问 svc 网段 10.96.0.0/12 即可
 
 ```
 #内网DNS（IP 10.60.20.1） 添加静态路由
@@ -80,19 +85,22 @@ iptables -t nat -A POSTROUTING -s 10.60.20.1/32 -d 10.96.0.0/12 -j MASQUERADE
 
 ```
 
-- 方案三（实验选择），由于我们实验场景内网DNS IP 10.60.20.1 并不在node-30上，我们可以用nodeSelector在node-30部署 一个nginx ingress controller， 用4层暴露出来coredns 的TCP/UDP 53端口。
+- 方案三（实验选择），由于我们实验场景内网 DNS IP 10.60.20.1 并不在 node-30 上，我们可以用 nodeSelector 在 node-30 部署 一个 nginx ingress controller， 用 4 层暴露出来 coredns 的 TCP/UDP 53 端口。
 
-给node-30打上标签：
+给 node-30 打上标签：
+
 ```shell
 kubectl label nodes node-30 node=dns-l4
 ```
 
-创建一个namespace：
+创建一个 namespace：
+
 ```shell
 kubectl create ns dns-l4
 ```
 
-在 namespace dns-l4 下部署 nginx-ingress controller，选择节点node-30，并Tolerate(容忍）其污点：
+在 namespace dns-l4 下部署 nginx-ingress controller，选择节点 node-30，并 Tolerate(容忍）其污点：
+
 ```yaml
 kind: ConfigMap
 apiVersion: v1
@@ -301,9 +309,9 @@ spec:
       hostNetwork: true
       serviceAccountName: nginx-ingress-serviceaccount
       tolerations:
-      - key: "node-30"
-        operator: "Exists"
-        effect: "NoSchedule"
+        - key: "node-30"
+          operator: "Exists"
+          effect: "NoSchedule"
       containers:
         - name: nginx-ingress-controller
           image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.21.0
@@ -356,14 +364,16 @@ spec:
             timeoutSeconds: 1
 ```
 
-  部署完成后，电脑验证，是否生效：
-  ```shell
-  nslookup -q=A kube-dns.kube-system.svc.cluster.local  10.60.20.30
-  ```
+部署完成后，电脑验证，是否生效：
 
-  ![1547110223634](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/RekH1e.jpg)
+```shell
+nslookup -q=A kube-dns.kube-system.svc.cluster.local  10.60.20.30
+```
+
+![1547110223634](https://picdn.youdianzhishi.com/images/RekH1e.jpg)
 
 这里我们用轻量级的`dnsmasq`来作为内网 dns 配置案例，将来自内网的`*.cluster.local`解析请求，走 KubeDNS 10.60.20.30：
+
 ```
 # vim /etc/dnsmasq.conf
 strict-order
@@ -374,6 +384,6 @@ server=/cluster.local/10.60.20.30
 
 完成以上步骤后，我们办公网络与 kubernetes 网络互通的需求也就实现了，同时我们可以直接用 k8s service 的域名规则去访问到 k8s 中的服务。
 
-![](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/eSx1ei.jpg)
+![](https://picdn.youdianzhishi.com/images/eSx1ei.jpg)
 
 <!--adsense-self-->

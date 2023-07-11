@@ -5,7 +5,13 @@ tags: ["kubernetes", "metrics-server"]
 slug: install-metrics-server
 keywords: ["kubernetes", "metrics-server", "安装", "helm"]
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1558429886-f2d4fa936469.jpeg", desc: "https://unsplash.com/photos/uShcDKPSaCE"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/photo-1558429886-f2d4fa936469.jpeg",
+      desc: "https://unsplash.com/photos/uShcDKPSaCE",
+    },
+  ]
 category: "kubernetes"
 notoc: true
 ---
@@ -15,8 +21,10 @@ kubernetes 集群资源监控之前可以通过 heapster 来获取数据，在 1
 <!--more-->
 
 查看 APIServer 参数配置，确保你的 APIServer 启动参数中包含下的一些参数配置。
+
 ```yaml
-...
+
+---
 - --requestheader-client-ca-file=/etc/kubernetes/certs/proxy-ca.crt
 - --proxy-client-cert-file=/etc/kubernetes/certs/proxy.crt
 - --proxy-client-key-file=/etc/kubernetes/certs/proxy.key
@@ -25,13 +33,12 @@ kubernetes 集群资源监控之前可以通过 heapster 来获取数据，在 1
 - --requestheader-group-headers=X-Remote-Group
 - --requestheader-username-headers=X-Remote-User
 - --enable-aggregator-routing=true
-...
 ```
 
 > 如果您未在 master 节点上运行 kube-proxy，则必须确保 kube-apiserver 启动参数中包含`--enable-aggregator-routing=true`
 
-
 ## 安装
+
 我们可以直接使用 metrics-server 官方提供的资源清单文件直接安装，地址：[https://github.com/kubernetes-incubator/metrics-server/tree/master/deploy](https://github.com/kubernetes-incubator/metrics-server/tree/master/deploy)
 
 ```shell
@@ -51,6 +58,7 @@ $ cd metrics-server
 ```
 
 我们可以使用微软的镜像来覆盖默认的 gcr.io 镜像，如下命名安装：
+
 ```shell
 $ helm install --name metric --namespace kube-system --set image.repository=gcr.azk8s.cn/google_containers/metrics-server-amd64 .
 NAME:   metric
@@ -105,6 +113,7 @@ command:
 ```
 
 等部署完成后，可以查看 Pod 日志是否正常：
+
 ```shell
 $ kubectl get pods -n kube-system -l release=metric
 NAME                                     READY     STATUS    RESTARTS   AGE
@@ -120,6 +129,7 @@ E0521 17:32:55.229771       1 manager.go:111] unable to fully collect metrics: [
 我们可以发现 Pod 中出现了一些错误信息：`xxx: no such host`，我们看到这个错误信息一般就可以确定是 DNS 解析不了造成的，我们可以看到 metrics-server 会通过 kubelet 的 10250 端口获取信息，使用的是 hostname，我们部署集群的时候在节点的 /etc/hosts 里面添加了节点的 hostname 和 ip 的映射，但是是我们的 metrics-server 的 Pod 内部并没有这个 hosts 信息，当然也就不识别 hostname 了，要解决这个问题，有两种方法：
 
 第一种方法就是在集群内部的 DNS 服务里面添加上 hostname 的解析，比如我们这里集群中使用的是 CoreDNS，我们就可以去修改下 CoreDNS 的 Configmap 信息，添加上 hosts 信息：
+
 ```shell
 $ kubectl edit configmap coredns -n kube-system
 apiVersion: v1
@@ -152,15 +162,17 @@ metadata:
 ```
 
 这样当在集群内部访问集群的 hostname 的时候就可以解析到对应的 ip 了，另外一种方法就是在 metrics-server 的启动参数中修改`kubelet-preferred-address-types`参数，如下：（custom-values.yaml）
+
 ```yaml
 image:
   repository: gcr.azk8s.cn/google_containers/metrics-server-amd64
 
 args:
-- --kubelet-preferred-address-types=InternalIP
+  - --kubelet-preferred-address-types=InternalIP
 ```
 
 我们这里使用第二种方式，然后重新安装：
+
 ```shell
 $ helm delete metric --purge
 $ helm install --name metric --namespace kube-system -f custom-values.yaml .
@@ -183,8 +195,8 @@ image:
   repository: gcr.azk8s.cn/google_containers/metrics-server-amd64
 
 args:
-- --kubelet-insecure-tls
-- --kubelet-preferred-address-types=InternalIP
+  - --kubelet-insecure-tls
+  - --kubelet-preferred-address-types=InternalIP
 ```
 
 然后再`重新安装`即可成功!
@@ -203,6 +215,5 @@ ydzs-node1    412m         10%       3338Mi          43%
 > 本篇文章使用的集群版本为 kubernetes v1.11.0 版本，采用 Kubeadm 方式安装。
 
 在安装的过程中或多或少可能会有一些问题，最好的办法就是一步一步的去排错，出现了错误不要着急，最重要的就是分析错误日志信息，很多错误日志提示其实已经非常明显了。
-
 
 <!--adsense-self-->

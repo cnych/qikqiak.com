@@ -6,7 +6,13 @@ tags: ["kubernetes", "sealed", "secrets", "ops"]
 slug: encrypt-k8s-secrets-with-sealed-secrets
 keywords: ["kubernetes", "sealed", "secrets", "ops", "gitops", "加密"]
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200620114105.png", desc: "Sealed Secrets"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/20200620114105.png",
+      desc: "Sealed Secrets",
+    },
+  ]
 category: "kubernetes"
 ---
 
@@ -62,16 +68,18 @@ metadata:
 SealedSecret 资源提供了多种方式来防止这种行为，它默认是命名空间范围的，一旦将 SealedSecret 限定在一个命名空间下面，就不能在其他命名空间中使用这个对象。
 
 比如，在 web 这个命名空间下面创建了一个名为 foo 带有 bar 这个值的 Secret 对象，我们就不能将这个 Secret 用于其他命名空间，即使需要相同的 Secret。虽然 SealedSecret 的控制器并没有为每个命名空间使用独立的解密密码，但是它在加密的过程中会考虑到命名空间和名称，所以达到的效果就类似于每个命名空间都有自己独立的解密密钥一样。
+
 <!--adsense-self-->
+
 另外一种情况是我们可能在上面的 web 命名空间上有一个用户，他只能查看某些 Secrets 而不是所有的，SealedSecret 也是允许这种操作的。当我们为 web 命名空间名为 foo 的 Secret 生成一个 SealedSecret 对象时，web 命名空间上的用户如果只是对名为 bar 的 Secret 对象有读取权限，那么就不能在 SealedSecret 资源对象中将 Secret 的名称改为 bar，并用它来查看该 Secret。
 
 虽然这些方法可以帮助我们防止 Secrets 被滥用，但是管理起来还是比较麻烦。默认配置中，我们没办法定义通用的 Secret 来用于多个命名空间。而且很有可能我们的团队非常小，Kubernetes 集群只是运维人员来访问和维护，那么我们可能不需要这种 RBAC 的权限控制方式。
 
 如果我们想定义跨命名空间的 SealedSecrets 对象，我们可以使用作用域来实现这个功能。
 
-我们可以使用3个作用域来创建 SealedSecrets：
+我们可以使用 3 个作用域来创建 SealedSecrets：
 
-- strict（默认）：这种情况下，我们需要考虑 Secret 的名称和命名空间来加密，一旦创建了对应的  SealedSecret，就不能更改它的名称和命名空间了。
+- strict（默认）：这种情况下，我们需要考虑 Secret 的名称和命名空间来加密，一旦创建了对应的 SealedSecret，就不能更改它的名称和命名空间了。
 - namespace-wide：这个作用域允许我们在加密的 Secret 的命名空间内重命名 SealedSecret 对象。
 - cluster-wide：这个作用域允许我们自由地在加密 Secret 的命名空间内重命名 SealedSecret，允许我们随意地将 Secret 移动到任何一个命名空间，随意命名。
 
@@ -83,8 +91,8 @@ $ kubeseal --scope cluster-wide --format yaml <secret.yaml >sealed-secret.yaml
 
 此外也可以在 Secret 中使用 annotation，在把配置传递给 kubeseal 之前使用作用域：
 
-- `sealedsecrets.bitnami.com/namespace-wide: "true"` 表示 `namespace-wide`
-- `sealedsecrets.bitnami.com/cluster-wide: "true"` 表示 `cluster-wide`
+- `sealedsecrets.bitnami.com/namespace-wide: "true"`  表示  `namespace-wide`
+- `sealedsecrets.bitnami.com/cluster-wide: "true"`  表示  `cluster-wide`
 
 如果没有指定任何注解，那么 kubeseal 默认使用 strict 这个作用域，如果设置了两个注解，那么作用域更大的优先。
 
@@ -228,7 +236,9 @@ This is a secret
 ```
 
 可以看到正确打印出了我们定义的密码信息 `This is a secret`。
+
 <!--adsense-text-->
+
 ### 修改命名空间
 
 由于上面我们的 Secret 中没有指定任何作用域信息，所以这个 Secret 只能在指定的 default （默认的）命名空间下面使用。比如这里我们将上面的 SealedSecret 对象修改到名为 test 的命名空间中去：

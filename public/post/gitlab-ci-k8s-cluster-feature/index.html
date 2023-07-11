@@ -1,423 +1,582 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
 
+    <title>
+      Gitlab CI 与 Kubernetes
+      的结合-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
+    </title>
+    <meta property="og:title" content="Gitlab CI 与 Kubernetes 的结合" />
+    <meta name="twitter:title" content="Gitlab CI 与 Kubernetes 的结合" />
 
-  <title>Gitlab CI 与 Kubernetes 的结合-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
-  <meta property="og:title" content="Gitlab CI 与 Kubernetes 的结合" />
-  <meta name="twitter:title" content="Gitlab CI 与 Kubernetes 的结合" />
+    <meta name="description" content="基于 Gitlab CI 和 Kubernetes 的 CI/CD" />
+    <meta
+      property="og:description"
+      content="基于 Gitlab CI 和 Kubernetes 的 CI/CD"
+    />
+    <meta
+      name="twitter:description"
+      content="基于 Gitlab CI 和 Kubernetes 的 CI/CD"
+    />
+    <meta name="author" content="" />
+    <link
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+      rel="icon"
+      type="image/x-icon"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      property="og:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      name="twitter:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta
+      property="og:url"
+      content="https://www.qikqiak.com/post/gitlab-ci-k8s-cluster-feature/"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="阳明的博客" />
 
-  <meta name="description" content="基于 Gitlab CI 和 Kubernetes 的 CI/CD">
-  <meta property="og:description" content="基于 Gitlab CI 和 Kubernetes 的 CI/CD">
-  <meta name="twitter:description" content="基于 Gitlab CI 和 Kubernetes 的 CI/CD">
-  <meta name="author" content=""/>
-  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
-  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
-  <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://www.qikqiak.com/post/gitlab-ci-k8s-cluster-feature/" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="阳明的博客" />
+    <meta name="generator" content="Hugo 0.55.6" />
+    <link
+      rel="canonical"
+      href="https://www.qikqiak.com/post/gitlab-ci-k8s-cluster-feature/"
+    />
+    <link
+      rel="alternate"
+      href="https://www.qikqiak.com/index.xml"
+      type="application/rss+xml"
+      title="阳明的博客"
+    />
 
-  <meta name="generator" content="Hugo 0.55.6" />
-  <link rel="canonical" href="https://www.qikqiak.com/post/gitlab-ci-k8s-cluster-feature/" />
-  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+    <link
+      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
+      rel="stylesheet"
+    />
 
-  
-  
-  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
-  
+    <link
+      rel="stylesheet"
+      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
+      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
+    />
 
-  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
+    />
 
-  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
-  
-  
-    
     <!--[if lt IE 9]>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+        rel="stylesheet"
+      />
     <![endif]-->
-<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
-<meta name="baidu-site-verification" content="F5ojAyqaKU" />
-<meta name="keywords" content="kubernetes, devops, gitlab, ci, CI/CD, runner">
-<script>
-var _hmt = _hmt || [];
-(function() {
-  var hm = document.createElement("script");
-  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-  var s = document.getElementsByTagName("script")[0];
-  s.parentNode.insertBefore(hm, s);
-})();
-</script>
+    <meta
+      name="google-site-verification"
+      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
+    />
+    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
+    <meta
+      name="keywords"
+      content="kubernetes, devops, gitlab, ci, CI/CD, runner"
+    />
+    <script>
+      var _hmt = _hmt || [];
+      (function () {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
 
+    <script type="application/javascript">
+      var doNotTrack = false;
+      if (!doNotTrack) {
+        window.ga =
+          window.ga ||
+          function () {
+            (ga.q = ga.q || []).push(arguments);
+          };
+        ga.l = +new Date();
+        ga("create", "UA-69668147-3", "auto");
 
-
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-	ga('create', 'UA-69668147-3', 'auto');
-	
-	ga('send', 'pageview');
-}
-</script>
-<script async src='https://www.google-analytics.com/analytics.js'></script>
-
-</head>
+        ga("send", "pageview");
+      }
+    </script>
+    <script async src="https://www.google-analytics.com/analytics.js"></script>
+  </head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
-        <span class="sr-only">切换导航</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
-        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
-      </a>
-    </div>
+      <div class="container">
+        <div class="navbar-header">
+          <button
+            type="button"
+            class="navbar-toggle"
+            data-toggle="collapse"
+            data-target="#main-navbar"
+          >
+            <span class="sr-only">切换导航</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a
+            class="navbar-brand"
+            href="https://www.qikqiak.com/"
+            title="阳明的博客"
+          >
+            <img
+              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
+              style="margin-top: -5px; height: 32px"
+              alt="阳明的博客"
+            />
+          </a>
+        </div>
 
-    <div class="collapse navbar-collapse" id="main-navbar">
-      <ul class="nav navbar-nav navbar-right">
-        
-          
+        <div class="collapse navbar-collapse" id="main-navbar">
+          <ul class="nav navbar-nav navbar-right">
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-          
-        
-          
+
             <li>
-              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+              <a
+                title="课程"
+                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
+                >课程</a
+              >
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/archives">Archive</a>
-                
-                  <a href="https://www.qikqiak.com/tags">tags</a>
-                
-                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-                
-                  <a href="https://www.qikqiak.com/tags/python">python</a>
-                
-                  <a href="https://www.qikqiak.com/tags/django">django</a>
-                
-                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
-                
+                <a href="https://www.qikqiak.com/archives">Archive</a>
+
+                <a href="https://www.qikqiak.com/tags">tags</a>
+
+                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+
+                <a href="https://www.qikqiak.com/tags/python">python</a>
+
+                <a href="https://www.qikqiak.com/tags/django">django</a>
+
+                <a href="https://www.qikqiak.com/tags/devops">devops</a>
               </div>
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-                
-                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-                
-                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-                
-                  <a href="https://md.qikqiak.com/">Markdown微信</a>
-                
+                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+
+                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+
+                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+
+                <a href="https://md.qikqiak.com/">Markdown微信</a>
               </div>
             </li>
-          
-        
-          
+
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+              <a title="关于" href="https://www.qikqiak.com/page/about/"
+                >关于</a
+              >
             </li>
-          
-        
-          
+
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
-          
-        
 
-        
-
-        
-
-        
-          <li>
-            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
-              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
-            </a>
-          </li>
-          
-
-      </ul>
-    </div>
-
-  </div>
-</nav>
-
-
-  <div id="modalSearch" class="modal fade" role="dialog">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-          <h4 class="modal-title">搜索</h4>
+            <li>
+              <a
+                href="#modalSearch"
+                data-toggle="modal"
+                data-target="#modalSearch"
+                style="outline: none"
+              >
+                <span
+                  id="searchGlyph"
+                  class="glyphicon glyphicon-search"
+                ></span>
+              </a>
+            </li>
+          </ul>
         </div>
-        <div class="modal-body">
-            
-<div class="aa-input-container" id="aa-input-container">
-    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
-    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
-    </svg>
-</div>
-<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+      </div>
+    </nav>
 
-<script>
-var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
-var index = client.initIndex('prod_blog');
+    <div id="modalSearch" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">
+              &times;
+            </button>
+            <h4 class="modal-title">搜索</h4>
+          </div>
+          <div class="modal-body">
+            <div class="aa-input-container" id="aa-input-container">
+              <input
+                type="search"
+                id="aa-search-input"
+                class="aa-input-search"
+                placeholder="Search for titles or URIs..."
+                name="search"
+                autocomplete="off"
+              />
+              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+                <path
+                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
+                />
+              </svg>
+            </div>
+            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-autocomplete('#aa-search-input',
-{ hint: false}, {
-    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
-    
-    displayKey: 'name',
-    
-    templates: {
-        
-        suggestion: function(suggestion) {
-            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
-            suggestion._highlightResult.title.value + '</a></span>';
-        }
-    }
-});
-</script>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+            <script>
+              var client = algoliasearch(
+                "1JDRAS0AZR",
+                "8804ac109158bb3bb60d74ce98fa332f"
+              );
+              var index = client.initIndex("prod_blog");
+
+              autocomplete(
+                "#aa-search-input",
+                { hint: false },
+                {
+                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
+
+                  displayKey: "name",
+
+                  templates: {
+                    suggestion: function (suggestion) {
+                      return (
+                        "<span>" +
+                        '<a href="https://www.qikqiak.com/post/' +
+                        suggestion.slug +
+                        '">' +
+                        suggestion._highlightResult.title.value +
+                        "</a></span>"
+                      );
+                    },
+                  },
+                }
+              );
+            </script>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">
+              close
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-    
-  
-  
-  
+    <div
+      id="header-big-imgs"
+      data-num-img="1"
+      data-img-src-1="https://picdn.youdianzhishi.com/images/a28fp.jpg"
+      data-img-desc-1="STEP"
+    ></div>
 
-
-
-
-  
-    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/a28fp.jpg" data-img-desc-1="STEP"></div>
-  
-
-  <header class="header-section has-img">
-    
+    <header class="header-section has-img">
       <div class="intro-header big-img">
-        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>Gitlab CI 与 Kubernetes 的结合</h1>
-                  
-                    
-                      <h2 class="post-subheading">基于 Gitlab CI 和 Kubernetes 的 CI/CD</h2>
-                    
-                  
-                  
-                    <span class="post-meta">
-  
-    发表于 March 21, 2019
-  
-  
-</span>
 
+                <h2 class="post-subheading">
+                  基于 Gitlab CI 和 Kubernetes 的 CI/CD
+                </h2>
 
-                  
+                <span class="post-meta"> 发表于 March 21, 2019 </span>
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline;"></span>
+        <span class="img-desc" style="display: inline"></span>
       </div>
-    
-    
-    
-    <div class="intro-header no-img">
-      
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <div class="post-heading">
-              <h1>Gitlab CI 与 Kubernetes 的结合</h1>
-                
-                  
-                    <h2 class="post-subheading">基于 Gitlab CI 和 Kubernetes 的 CI/CD</h2>
-                  
-                
-                
-                  <span class="post-meta">
-  
-    发表于 March 21, 2019
-  
-  
-</span>
 
+      <div class="intro-header no-img">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>Gitlab CI 与 Kubernetes 的结合</h1>
 
-                
+                <h2 class="post-subheading">
+                  基于 Gitlab CI 和 Kubernetes 的 CI/CD
+                </h2>
+
+                <span class="post-meta"> 发表于 March 21, 2019 </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    
-    
-  </header>
+    </header>
 
+    <div class="container" role="main">
+      <div class="row">
+        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+          <div>
+            <h5 id="tags" style="margin-top: 30px">
+              标签:
 
-    
+              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
+              &nbsp;
 
+              <a href="https://www.qikqiak.com/tags/devops/">devops</a> &nbsp;
 
+              <a href="https://www.qikqiak.com/tags/gitlab/">gitlab</a> &nbsp;
 
-<div class="container" role="main">
-  <div class="row">
-
-    
-    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <div>
-            
-            
-            <h5 id="tags" style="margin-top: 30px;">标签:
-              
-                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/devops/">devops</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/gitlab/">gitlab</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/ci/">ci</a> &nbsp;
-              
+              <a href="https://www.qikqiak.com/tags/ci/">ci</a> &nbsp;
             </h5>
-            
-        </div>
-  
-        <article role="main" class="blog-post" itemprop="articleBody" id="content">
-          
-            
-<aside class="toc">
-  <nav id="TableOfContents">
-<ul>
-<li>
-<ul>
-<li>
-<ul>
-<li><a href="#基本配置">基本配置</a></li>
-<li><a href="#gitlab-ci-yml">.gitlab-ci.yml</a></li>
-</ul></li>
-</ul></li>
-</ul>
-</nav>
-</aside>
+          </div>
 
-          
-  
-          
-          
-          
-  
-          
-          
-          
-  
-          
-          
-          
+          <article
+            role="main"
+            class="blog-post"
+            itemprop="articleBody"
+            id="content"
+          >
+            <aside class="toc">
+              <nav id="TableOfContents">
+                <ul>
+                  <li>
+                    <ul>
+                      <li>
+                        <ul>
+                          <li><a href="#基本配置">基本配置</a></li>
+                          <li><a href="#gitlab-ci-yml">.gitlab-ci.yml</a></li>
+                        </ul>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </nav>
+            </aside>
 
-          <p>上节课我们将 <a href="https://www.qikqiak.com/post/gitlab-runner-install-on-k8s/">Gitlab CI Runner 安装到了 Kubernetes</a> 集群中，接下来看看如何结合 Kubernetes 和 Gitlab CI 进行持续集成和持续部署。</p>
+            <p>
+              上节课我们将
+              <a
+                href="https://www.qikqiak.com/post/gitlab-runner-install-on-k8s/"
+                >Gitlab CI Runner 安装到了 Kubernetes</a
+              >
+              集群中，接下来看看如何结合 Kubernetes 和 Gitlab CI
+              进行持续集成和持续部署。
+            </p>
 
-<h3 id="基本配置">基本配置</h3>
+            <h3 id="基本配置">基本配置</h3>
 
-<p>首先将本节所用到的代码库从 Github 上获得：<a href="https://github.com/cnych/gitlab-ci-k8s-demo">cnych/gitlab-ci-k8s-demo</a>，可以在 Gitlab 上新建一个项目导入该仓库，当然也可以新建一个空白的仓库，然后将 Github 上面的项目 Clone 到本地后，更改远程仓库地址即可：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ git clone https://github.com/cnych/gitlab-ci-k8s-demo.git
+            <p>
+              首先将本节所用到的代码库从 Github 上获得：<a
+                href="https://github.com/cnych/gitlab-ci-k8s-demo"
+                >cnych/gitlab-ci-k8s-demo</a
+              >，可以在 Gitlab
+              上新建一个项目导入该仓库，当然也可以新建一个空白的仓库，然后将
+              Github 上面的项目 Clone 到本地后，更改远程仓库地址即可：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ git clone https://github.com/cnych/gitlab-ci-k8s-demo.git
 $ <span style="color:#8be9fd;font-style:italic">cd</span> gitlab-ci-k8s-demo
 <span style="color:#6272a4"># Change the remote of the repository</span>
 $ git remote set-url origin ssh://git@git.qikqiak.com:30022/root/gitlab-ci-k8s-demo.git
 <span style="color:#6272a4"># Now to push/&#34;import&#34; the repository run:</span>
-$ git push -u origin master</code></pre></div>
-<p>当我们把仓库推送到 Gitlab 以后，应该可以看到 Gitlab CI 开始执行构建任务了:
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/FLHIAa.jpg" alt="gitlab ci" /></p>
+$ git push -u origin master</code></pre>
+            </div>
+            <p>
+              当我们把仓库推送到 Gitlab 以后，应该可以看到 Gitlab CI
+              开始执行构建任务了:
+              <img
+                src="https://picdn.youdianzhishi.com/images/FLHIAa.jpg"
+                alt="gitlab ci"
+              />
+            </p>
 
-<p>此时 Runner Pod 所在的 namespace 下面也会出现两个新的 Pod：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-ops
+            <p>此时 Runner Pod 所在的 namespace 下面也会出现两个新的 Pod：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-ops
 NAME                                           READY     STATUS              RESTARTS   AGE
 gitlab-7bff969fbc-k5zl4                        <span style="color:#bd93f9">1</span>/1       Running             <span style="color:#bd93f9">0</span>          4d
 gitlab-ci-runner-0                             <span style="color:#bd93f9">1</span>/1       Running             <span style="color:#bd93f9">0</span>          4m
 gitlab-ci-runner-1                             <span style="color:#bd93f9">1</span>/1       Running             <span style="color:#bd93f9">0</span>          4m
 runner-9rixsyft-project-2-concurrent-06g5w4    <span style="color:#bd93f9">0</span>/2       ContainerCreating   <span style="color:#bd93f9">0</span>          4m
 runner-9rixsyft-project-2-concurrent-1t74t9    <span style="color:#bd93f9">0</span>/2       ContainerCreating   <span style="color:#bd93f9">0</span>          4m
-......</code></pre></div>
-<p>这两个新的 Pod 就是用来执行具体的 Job 任务的，这里同时出现两个证明第一步是并行执行的两个任务，从上面的 Pipeline 中也可以看到是 test 和 test2 这两个 Job。我们可以看到在执行 image_build 任务的时候出现了错误：</p>
+......</code></pre>
+            </div>
+            <p>
+              这两个新的 Pod 就是用来执行具体的 Job
+              任务的，这里同时出现两个证明第一步是并行执行的两个任务，从上面的
+              Pipeline 中也可以看到是 test 和 test2 这两个
+              Job。我们可以看到在执行 image_build 任务的时候出现了错误：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/FPwuTu.jpg" alt="pipeline"><figcaption>pipeline</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/FPwuTu.jpg"
+                alt="pipeline"
+              />
+              <figcaption>pipeline</figcaption>
+            </figure>
 
-<p>我们可以点击查看这个 Job 失败详细信息：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ docker login -u <span style="color:#f1fa8c">&#34;</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">CI_REGISTRY_USER</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">&#34;</span> -p <span style="color:#f1fa8c">&#34;</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">CI_REGISTRY_PASSWORD</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">CI_REGISTRY</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">&#34;</span>
+            <p>我们可以点击查看这个 Job 失败详细信息：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ docker login -u <span style="color:#f1fa8c">&#34;</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">CI_REGISTRY_USER</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">&#34;</span> -p <span style="color:#f1fa8c">&#34;</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">CI_REGISTRY_PASSWORD</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">CI_REGISTRY</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">&#34;</span>
 WARNING! Using --password via the CLI is insecure. Use --password-stdin.
 Error response from daemon: Get https://registry-1.docker.io/v2/: unauthorized: incorrect username or password
-ERROR: Job failed: <span style="color:#8be9fd;font-style:italic">command</span> terminated with <span style="color:#8be9fd;font-style:italic">exit</span> code <span style="color:#bd93f9">1</span></code></pre></div>
-<p>出现上面的错误是因为我们并没有在 Gitlab 中开启 Container Registry，所以环境变量中并没有这些值，还记得前面章节中我们安装的 <a href="https://www.qikqiak.com/tags/harbor/">Harbor</a>吗？我们这里使用 <a href="https://www.qikqiak.com/tags/harbor/">Harbor</a> 来作为我们的镜像仓库，这里我们只需要把 <a href="https://www.qikqiak.com/tags/harbor/">Harbor</a> 相关的配置以参数的形式配置到环境中就可以了。
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+ERROR: Job failed: <span style="color:#8be9fd;font-style:italic">command</span> terminated with <span style="color:#8be9fd;font-style:italic">exit</span> code <span style="color:#bd93f9">1</span></code></pre>
+            </div>
+            <p>
+              出现上面的错误是因为我们并没有在 Gitlab 中开启 Container
+              Registry，所以环境变量中并没有这些值，还记得前面章节中我们安装的
+              <a href="https://www.qikqiak.com/tags/harbor/">Harbor</a
+              >吗？我们这里使用
+              <a href="https://www.qikqiak.com/tags/harbor/">Harbor</a>
+              来作为我们的镜像仓库，这里我们只需要把
+              <a href="https://www.qikqiak.com/tags/harbor/">Harbor</a>
+              相关的配置以参数的形式配置到环境中就可以了。
+              <script
+                async
+                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+              ></script>
 
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-5376999672787220"
-     data-ad-slot="9165834656"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
+              <ins
+                class="adsbygoogle"
+                style="display: block"
+                data-ad-client="ca-pub-5376999672787220"
+                data-ad-slot="9165834656"
+                data-ad-format="auto"
+                data-full-width-responsive="true"
+              ></ins>
+              <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+              </script>
 
-定位到项目 -&gt; 设置 -&gt; CI/CD，展开<code>Environment variables</code>栏目，配置镜像仓库相关的参数值：</p>
+              定位到项目 -&gt; 设置 -&gt; CI/CD，展开<code
+                >Environment variables</code
+              >栏目，配置镜像仓库相关的参数值：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/NWlfR4.jpg" alt="gitlab ci env"><figcaption>gitlab ci env</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/NWlfR4.jpg"
+                alt="gitlab ci env"
+              />
+              <figcaption>gitlab ci env</figcaption>
+            </figure>
 
-<p>配置上后，我们在上面失败的 Job 任务上点击“重试”，在重试过后依然可以看到会出现下面的错误信息：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ docker login -u <span style="color:#f1fa8c">&#34;</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">CI_REGISTRY_USER</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">&#34;</span> -p <span style="color:#f1fa8c">&#34;</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">CI_REGISTRY_PASSWORD</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">CI_REGISTRY</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">&#34;</span>
+            <p>
+              配置上后，我们在上面失败的 Job
+              任务上点击“重试”，在重试过后依然可以看到会出现下面的错误信息：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ docker login -u <span style="color:#f1fa8c">&#34;</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">CI_REGISTRY_USER</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">&#34;</span> -p <span style="color:#f1fa8c">&#34;</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">CI_REGISTRY_PASSWORD</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">CI_REGISTRY</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">&#34;</span>
 WARNING! Using --password via the CLI is insecure. Use --password-stdin.
 Error response from daemon: Get https://registry.qikqiak.com/v2/: x509: certificate signed by unknown authority
-ERROR: Job failed: <span style="color:#8be9fd;font-style:italic">command</span> terminated with <span style="color:#8be9fd;font-style:italic">exit</span> code <span style="color:#bd93f9">1</span></code></pre></div>
-<p>从错误信息可以看出这是因为登录私有镜像仓库的时候证书验证错误，因为我们根本就没有提供任何证书，所以肯定会失败的，还记得我们之前在介绍 Harbor 的时候的解决方法吗？第一种是在 Docker 的启动参数中添加上<code>insecure-registries</code>，另外一种是在目录<code>/etc/docker/certs.d/</code>下面添加上私有仓库的 CA 证书，同样，我们只需要在 dind 中添加 insecure 的参数即可：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">services:
+ERROR: Job failed: <span style="color:#8be9fd;font-style:italic">command</span> terminated with <span style="color:#8be9fd;font-style:italic">exit</span> code <span style="color:#bd93f9">1</span></code></pre>
+            </div>
+            <p>
+              从错误信息可以看出这是因为登录私有镜像仓库的时候证书验证错误，因为我们根本就没有提供任何证书，所以肯定会失败的，还记得我们之前在介绍
+              Harbor 的时候的解决方法吗？第一种是在 Docker
+              的启动参数中添加上<code>insecure-registries</code>，另外一种是在目录<code>/etc/docker/certs.d/</code>下面添加上私有仓库的
+              CA 证书，同样，我们只需要在 dind 中添加 insecure 的参数即可：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">services:
 - name: docker:dind
-  command: [<span style="color:#f1fa8c">&#34;--insecure-registry=registry.qikqiak.com&#34;</span>]</code></pre></div>
-<blockquote>
-<p>其中<code>registry.qikqiak.com</code>就是我们之前配置的私有镜像仓库地址。</p>
-</blockquote>
+  command: [<span style="color:#f1fa8c">&#34;--insecure-registry=registry.qikqiak.com&#34;</span>]</code></pre>
+            </div>
+            <blockquote>
+              <p>
+                其中<code>registry.qikqiak.com</code>就是我们之前配置的私有镜像仓库地址。
+              </p>
+            </blockquote>
 
-<p>然后保存<code>.gitlab-ci.yml</code>文件，重新提交到代码仓库，可以看到又触发了正常的流水线构建了，在最后的阶段<code>deploy_review</code>仍然可以看到失败了，这是因为在最后的部署阶段我们使用<code>kubectl</code>工具操作集群的时候并没有关联上任何集群。</p>
+            <p>
+              然后保存<code>.gitlab-ci.yml</code>文件，重新提交到代码仓库，可以看到又触发了正常的流水线构建了，在最后的阶段<code>deploy_review</code>仍然可以看到失败了，这是因为在最后的部署阶段我们使用<code>kubectl</code>工具操作集群的时候并没有关联上任何集群。
+            </p>
 
-<p>我们在 Gitlab CI 中部署阶段使用到的镜像是<code>cnych/kubectl</code>，该镜像的<code>Dockerfile</code>文件可以在仓库 <a href="https://github.com/cnych/docker-kubectl">cnych/docker-kubectl</a> 中获取：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">FROM alpine:<span style="color:#bd93f9">3.8</span>
+            <p>
+              我们在 Gitlab CI
+              中部署阶段使用到的镜像是<code>cnych/kubectl</code>，该镜像的<code>Dockerfile</code>文件可以在仓库
+              <a href="https://github.com/cnych/docker-kubectl"
+                >cnych/docker-kubectl</a
+              >
+              中获取：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">FROM alpine:<span style="color:#bd93f9">3.8</span>
 
 MAINTAINER cnych &lt;icnych@gmail.com<span style="color:#f1fa8c">&gt;
 </span><span style="color:#f1fa8c">
@@ -433,25 +592,72 @@ RUN apk add --update ca-certificates \
  <span style="color:#ff79c6">&amp;&amp;</span> rm /var/cache/apk/*
 
  ENTRYPOINT [<span style="color:#f1fa8c">&#34;kubectl&#34;</span>]
- CMD [<span style="color:#f1fa8c">&#34;--help&#34;</span>]</code></pre></div>
-<p>我们知道<code>kubectl</code>在使用的时候默认会读取当前用户目录下面的<code>~/.kube/config</code>文件来链接集群，当然我们可以把连接集群的信息直接内置到上面的这个镜像中去，这样就可以直接操作集群了，但是也有一个不好的地方就是不方便操作，假如要切换一个集群还得重新制作一个镜像。所以一般我们这里直接在 Gitlab 上配置集成 Kubernetes 集群。</p>
+ CMD [<span style="color:#f1fa8c">&#34;--help&#34;</span>]</code></pre>
+            </div>
+            <p>
+              我们知道<code>kubectl</code>在使用的时候默认会读取当前用户目录下面的<code>~/.kube/config</code>文件来链接集群，当然我们可以把连接集群的信息直接内置到上面的这个镜像中去，这样就可以直接操作集群了，但是也有一个不好的地方就是不方便操作，假如要切换一个集群还得重新制作一个镜像。所以一般我们这里直接在
+              Gitlab 上配置集成 Kubernetes 集群。
+            </p>
 
-<p>在项目页面点击<code>Add Kubernetes Cluster</code> -&gt; <code>Add existing cluster</code>：</p>
+            <p>
+              在项目页面点击<code>Add Kubernetes Cluster</code> -&gt;
+              <code>Add existing cluster</code>：
+            </p>
 
-<p>1.Kubernetes cluster name 可以随便填</p>
+            <p>1.Kubernetes cluster name 可以随便填</p>
 
-<p>2.API URL 是你的集群的<code>apiserver</code>的地址， 一般可以通过输入<code>kubectl cluster-info</code>获取，Kubernetes master 地址就是需要的</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl cluster-info
+            <p>
+              2.API URL 是你的集群的<code>apiserver</code>的地址，
+              一般可以通过输入<code>kubectl cluster-info</code>获取，Kubernetes
+              master 地址就是需要的
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl cluster-info
 Kubernetes master is running at https://10.151.30.11:6443
 KubeDNS is running at https://10.151.30.11:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
 
-To further debug and diagnose cluster problems, use <span style="color:#f1fa8c">&#39;kubectl cluster-info dump&#39;</span>.</code></pre></div>
-<p>3.CA证书、Token、项目命名空间</p>
+To further debug and diagnose cluster problems, use <span style="color:#f1fa8c">&#39;kubectl cluster-info dump&#39;</span>.</code></pre>
+            </div>
+            <p>3.CA证书、Token、项目命名空间</p>
 
-<p>对于我们这个项目准备部署在一个名为<code>gitlab</code>的 namespace 下面，所以首先我们需要到目标集群中创建一个 namespace:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create ns gitlab</code></pre></div>
-<p>由于我们在部署阶段需要去创建、删除一些资源对象，所以我们也需要对象的 RBAC 权限，这里为了简单，我们直接新建一个 ServiceAccount，绑定上一个<code>cluster-admin</code>的权限：(gitlab-sa.yaml)</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">---
+            <p>
+              对于我们这个项目准备部署在一个名为<code>gitlab</code>的 namespace
+              下面，所以首先我们需要到目标集群中创建一个 namespace:
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl create ns gitlab</code></pre>
+            </div>
+            <p>
+              由于我们在部署阶段需要去创建、删除一些资源对象，所以我们也需要对象的
+              RBAC 权限，这里为了简单，我们直接新建一个
+              ServiceAccount，绑定上一个<code>cluster-admin</code>的权限：(gitlab-sa.yaml)
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -471,13 +677,33 @@ subjects:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: cluster-admin</code></pre></div>
-<p>然后创建上面的 ServiceAccount 对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f sa.yaml
+  name: cluster-admin</code></pre>
+            </div>
+            <p>然后创建上面的 ServiceAccount 对象：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl apply -f sa.yaml
 serviceaccount <span style="color:#f1fa8c">&#34;gitlab&#34;</span> created
-clusterrolebinding.rbac.authorization.k8s.io <span style="color:#f1fa8c">&#34;gitlab&#34;</span> created</code></pre></div>
-<p>可以通过上面创建的 ServiceAccount 获取 CA 证书和 Token：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get serviceaccount gitlab -n gitlab -o json | jq -r <span style="color:#f1fa8c">&#39;.secrets[0].name&#39;</span>
+clusterrolebinding.rbac.authorization.k8s.io <span style="color:#f1fa8c">&#34;gitlab&#34;</span> created</code></pre>
+            </div>
+            <p>可以通过上面创建的 ServiceAccount 获取 CA 证书和 Token：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get serviceaccount gitlab -n gitlab -o json | jq -r <span style="color:#f1fa8c">&#39;.secrets[0].name&#39;</span>
 gitlab-token-f9zp7
 
 <span style="color:#6272a4"># 然后根据上面的Secret找到CA证书</span>
@@ -486,45 +712,105 @@ xxxxxCA证书内容xxxxx
 
 <span style="color:#6272a4"># 当然要找到对应的 Token 也很简单</span>
 $ kubectl get secret gitlab-token-f9zp7  -n gitlab -o json | jq -r <span style="color:#f1fa8c">&#39;.data.token&#39;</span> | base64 -d
-xxxxxxtoken值xxxx</code></pre></div>
-<p>填写上面对应的值添加集群：</p>
+xxxxxxtoken值xxxx</code></pre>
+            </div>
+            <p>填写上面对应的值添加集群：</p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/Xbc1i5.jpg" alt="add k8s cluster"><figcaption>add k8s cluster</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/Xbc1i5.jpg"
+                alt="add k8s cluster"
+              />
+              <figcaption>add k8s cluster</figcaption>
+            </figure>
 
-<h3 id="gitlab-ci-yml">.gitlab-ci.yml</h3>
+            <h3 id="gitlab-ci-yml">.gitlab-ci.yml</h3>
 
-<p>现在 Gitlab CI 的环境都准备好了，我们可以来看下用于描述 Gitlab CI 的<code>.gitlab-ci.yml</code>文件。</p>
+            <p>
+              现在 Gitlab CI 的环境都准备好了，我们可以来看下用于描述 Gitlab CI
+              的<code>.gitlab-ci.yml</code>文件。
+            </p>
 
-<p>一个 Job 在<code>.gitlab-ci.yml</code>文件中一般如下定义：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># 运行golang测试用例</span>
+            <p>一个 Job 在<code>.gitlab-ci.yml</code>文件中一般如下定义：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># 运行golang测试用例</span>
 test:
   stage: test
   script:
-    - go test ./...</code></pre></div>
-<p>上面这个 Job 会在 test 这个 Stage 阶段运行。</p>
+    - go test ./...</code></pre>
+            </div>
+            <p>上面这个 Job 会在 test 这个 Stage 阶段运行。</p>
 
-<p>为了指定运行的 Stage 阶段，可以在<code>.gitlab-ci.yml</code>文件中放置任意一个简单的列表：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># 所有 Stage</span>
+            <p>
+              为了指定运行的 Stage
+              阶段，可以在<code>.gitlab-ci.yml</code>文件中放置任意一个简单的列表：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># 所有 Stage</span>
 stages:
   - test
   - build
   - release
-  - deploy</code></pre></div>
-<p>你可以指定用于在全局或者每个作业上执行命令的镜像：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># 对于未指定镜像的作业，会使用下面的镜像</span>
+  - deploy</code></pre>
+            </div>
+            <p>你可以指定用于在全局或者每个作业上执行命令的镜像：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># 对于未指定镜像的作业，会使用下面的镜像</span>
 image: golang:<span style="color:#bd93f9">1.10</span>.<span style="color:#bd93f9">3</span>-stretch
 <span style="color:#6272a4"># 或者对于特定的job使用指定的镜像</span>
 test:
   stage: test
   image: python:<span style="color:#bd93f9">3</span>
   script:
-    - echo Something in the test step in a python:<span style="color:#bd93f9">3</span> image</code></pre></div>
-<blockquote>
-<p>对于<code>.gitlab-ci.yml</code>文件的的其他部分，请查看如下文档介绍：<a href="https://docs.gitlab.com/ce/ci/yaml/README.html">https://docs.gitlab.com/ce/ci/yaml/README.html</a>。</p>
-</blockquote>
+    - echo Something in the test step in a python:<span style="color:#bd93f9">3</span> image</code></pre>
+            </div>
+            <blockquote>
+              <p>
+                对于<code>.gitlab-ci.yml</code>文件的的其他部分，请查看如下文档介绍：<a
+                  href="https://docs.gitlab.com/ce/ci/yaml/README.html"
+                  >https://docs.gitlab.com/ce/ci/yaml/README.html</a
+                >。
+              </p>
+            </blockquote>
 
-<p>在我们当前的项目中定义了 4 个构建阶段：test、build、release、review、deploy，完整的<code>.gitlab-ci.yml</code>文件如下：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">image:
+            <p>
+              在我们当前的项目中定义了 4
+              个构建阶段：test、build、release、review、deploy，完整的<code>.gitlab-ci.yml</code>文件如下：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">image:
   name: golang:<span style="color:#bd93f9">1.10</span>.<span style="color:#bd93f9">3</span>-stretch
   entrypoint: [<span style="color:#f1fa8c">&#34;/bin/sh&#34;</span>, <span style="color:#f1fa8c">&#34;-c&#34;</span>]
 
@@ -643,26 +929,69 @@ deploy_live:
     - kubectl apply -f service.yaml
     - kubectl apply -f ingress.yaml
     - kubectl rollout status -f deployment.yaml
-    - kubectl get all,ing -l ref=${CI_ENVIRONMENT_SLUG}</code></pre></div>
-<p>上面的<code>.gitlab-ci.yml</code>文件中还有一些特殊的属性，如限制运行的的<code>when</code>和<code>only</code>参数，例如<code>only: [&quot;tags&quot;]</code>表示只为创建的标签运行，更多的信息，我可以通过查看 Gitlab CI YAML 文件查看：<a href="https://docs.gitlab.com/ce/ci/yaml/README.html">https://docs.gitlab.com/ce/ci/yaml/README.html</a>
-<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-<ins class="adsbygoogle"
-     style="display:block; text-align:center;"
-     data-ad-layout="in-article"
-     data-ad-format="fluid"
-     data-ad-client="ca-pub-5376999672787220"
-     data-ad-slot="5684687044"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
+    - kubectl get all,ing -l ref=${CI_ENVIRONMENT_SLUG}</code></pre>
+            </div>
+            <p>
+              上面的<code>.gitlab-ci.yml</code>文件中还有一些特殊的属性，如限制运行的的<code>when</code>和<code>only</code>参数，例如<code
+                >only: [&quot;tags&quot;]</code
+              >表示只为创建的标签运行，更多的信息，我可以通过查看 Gitlab CI YAML
+              文件查看：<a href="https://docs.gitlab.com/ce/ci/yaml/README.html"
+                >https://docs.gitlab.com/ce/ci/yaml/README.html</a
+              >
+              <script
+                async
+                src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+              ></script>
+              <ins
+                class="adsbygoogle"
+                style="display: block; text-align: center"
+                data-ad-layout="in-article"
+                data-ad-format="fluid"
+                data-ad-client="ca-pub-5376999672787220"
+                data-ad-slot="5684687044"
+              ></ins>
+              <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+              </script>
 
-由于我们在<code>.gitlab-ci.yml</code>文件中将应用的镜像构建完成后推送到了我们的私有仓库，而 Kubernetes 资源清单文件中使用的私有镜像，所以我们需要配置一个<code>imagePullSecret</code>，否则在 Kubernetes 集群中是无法拉取我们的私有镜像的：(替换下面相关信息为自己的)</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create secret docker-registry myregistry --docker-server<span style="color:#ff79c6">=</span>registry.qikqiak.com --docker-username<span style="color:#ff79c6">=</span>xxxx --docker-password<span style="color:#ff79c6">=</span>xxxxxx --docker-email<span style="color:#ff79c6">=</span>xxxx -n gitlab
-secret <span style="color:#f1fa8c">&#34;myregistry&#34;</span> created</code></pre></div>
-<p>在下面的 Deployment 的资源清单文件中会使用到创建的<code>myregistry</code>。</p>
+              由于我们在<code>.gitlab-ci.yml</code>文件中将应用的镜像构建完成后推送到了我们的私有仓库，而
+              Kubernetes
+              资源清单文件中使用的私有镜像，所以我们需要配置一个<code>imagePullSecret</code>，否则在
+              Kubernetes
+              集群中是无法拉取我们的私有镜像的：(替换下面相关信息为自己的)
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl create secret docker-registry myregistry --docker-server<span style="color:#ff79c6">=</span>registry.qikqiak.com --docker-username<span style="color:#ff79c6">=</span>xxxx --docker-password<span style="color:#ff79c6">=</span>xxxxxx --docker-email<span style="color:#ff79c6">=</span>xxxx -n gitlab
+secret <span style="color:#f1fa8c">&#34;myregistry&#34;</span> created</code></pre>
+            </div>
+            <p>
+              在下面的 Deployment
+              的资源清单文件中会使用到创建的<code>myregistry</code>。
+            </p>
 
-<p>接下来为应用创建 Kubernetes 资源清单文件，添加到代码仓库中。首先创建 Deployment 资源：（deployment.yaml）</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">---
+            <p>
+              接下来为应用创建 Kubernetes
+              资源清单文件，添加到代码仓库中。首先创建 Deployment
+              资源：（deployment.yaml）
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -706,15 +1035,32 @@ spec:
             path: /health
             port: <span style="color:#bd93f9">8000</span>
           initialDelaySeconds: <span style="color:#bd93f9">3</span>
-          timeoutSeconds: <span style="color:#bd93f9">2</span></code></pre></div>
-<blockquote>
-<p>注意用上面创建的 myregistry 替换 imagePullSecrets。</p>
-</blockquote>
+          timeoutSeconds: <span style="color:#bd93f9">2</span></code></pre>
+            </div>
+            <blockquote>
+              <p>注意用上面创建的 myregistry 替换 imagePullSecrets。</p>
+            </blockquote>
 
-<p>这是一个基本的 Deployment 资源清单的描述，像<code>__CI_ENVIRONMENT_SLUG__</code>和<code>__VERSION__</code>这样的占位符用于区分不同的环境，<code>__CI_ENVIRONMENT_SLUG__</code>将由 dev 或 live（环境名称）和<code>__VERSION__</code>替换为镜像标签。</p>
+            <p>
+              这是一个基本的 Deployment
+              资源清单的描述，像<code>__CI_ENVIRONMENT_SLUG__</code>和<code>__VERSION__</code>这样的占位符用于区分不同的环境，<code>__CI_ENVIRONMENT_SLUG__</code>将由
+              dev 或 live（环境名称）和<code>__VERSION__</code>替换为镜像标签。
+            </p>
 
-<p>为了能够连接到部署的 Pod，还需要 Service。对应的 Service 资源清单如下（service.yaml）：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">---
+            <p>
+              为了能够连接到部署的 Pod，还需要 Service。对应的 Service
+              资源清单如下（service.yaml）：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">---
 apiVersion: v1
 kind: Service
 metadata:
@@ -736,11 +1082,32 @@ spec:
       protocol: TCP
   selector:
     app: gitlab-k8s-demo
-    ref: __CI_ENVIRONMENT_SLUG__</code></pre></div>
-<p>我们的应用程序运行8000端口上，端口名为<code>http-metrics</code>，如果你还记得前面我们监控的课程中应该还记得我们使用<code>prometheus-operator</code>为 Prometheus 创建了<code>自动发现</code>的配置，所以我们在<code>annotations</code>里面配置上上面的这几个注释后，Prometheus 就可以自动获取我们应用的监控指标数据了。</p>
+    ref: __CI_ENVIRONMENT_SLUG__</code></pre>
+            </div>
+            <p>
+              我们的应用程序运行8000端口上，端口名为<code>http-metrics</code>，如果你还记得前面我们监控的课程中应该还记得我们使用<code>prometheus-operator</code>为
+              Prometheus
+              创建了<code>自动发现</code>的配置，所以我们在<code>annotations</code>里面配置上上面的这几个注释后，Prometheus
+              就可以自动获取我们应用的监控指标数据了。
+            </p>
 
-<p>现在 Service 创建成功了，但是外部用户还不能访问到我们的应用，当然我们可以把 Service 设置成 NodePort 类型，另外一个常见的方式当然就是使用 Ingress 了，我们可以通过 Ingress 来将应用暴露给外面用户使用，对应的资源清单文件如下：（ingress.yaml）</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">---
+            <p>
+              现在 Service
+              创建成功了，但是外部用户还不能访问到我们的应用，当然我们可以把
+              Service 设置成 NodePort 类型，另外一个常见的方式当然就是使用
+              Ingress 了，我们可以通过 Ingress
+              来将应用暴露给外面用户使用，对应的资源清单文件如下：（ingress.yaml）
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">---
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
@@ -759,197 +1126,347 @@ spec:
       - path: /
         backend:
           serviceName: gitlab-k8s-demo-__CI_ENVIRONMENT_SLUG__
-          servicePort: <span style="color:#bd93f9">8000</span></code></pre></div>
-<blockquote>
-<p>当然如果想配置 https 访问的话我们可以自己用 CA 证书创建一个 tls 密钥，也可以使用<code>cert-manager</code>来自动为我们的应用程序添加 https。</p>
-</blockquote>
+          servicePort: <span style="color:#bd93f9">8000</span></code></pre>
+            </div>
+            <blockquote>
+              <p>
+                当然如果想配置 https 访问的话我们可以自己用 CA 证书创建一个 tls
+                密钥，也可以使用<code>cert-manager</code>来自动为我们的应用程序添加
+                https。
+              </p>
+            </blockquote>
 
-<p>当然要通过上面的域名进行访问，还需要进行 DNS 解析的，<code>__CI_ENVIRONMENT_SLUG__-gitlab-k8s-demo.qikqiak.com</code>其中<code>__CI_ENVIRONMENT_SLUG__</code>值为 live 或 dev，所以需要创建<code>dev-gitlab-k8s-demo.qikqiak.com</code> 和 <code>live-gitlab-k8s-demo.qikqiak.com</code> 两个域名的解析。</p>
+            <p>
+              当然要通过上面的域名进行访问，还需要进行 DNS
+              解析的，<code>__CI_ENVIRONMENT_SLUG__-gitlab-k8s-demo.qikqiak.com</code>其中<code>__CI_ENVIRONMENT_SLUG__</code>值为
+              live 或 dev，所以需要创建<code
+                >dev-gitlab-k8s-demo.qikqiak.com</code
+              >
+              和 <code>live-gitlab-k8s-demo.qikqiak.com</code> 两个域名的解析。
+            </p>
 
-<blockquote>
-<p>我们可以使用 DNS 解析服务商的 API 来自动创建域名解析，也可以使用 <a href="https://github.com/kubernetes-incubator">Kubernetes incubator</a> 孵化的项目 <a href="https://github.com/kubernetes-incubator/external-dns">external-dns operator</a> 来进行操作。</p>
-</blockquote>
+            <blockquote>
+              <p>
+                我们可以使用 DNS 解析服务商的 API 来自动创建域名解析，也可以使用
+                <a href="https://github.com/kubernetes-incubator"
+                  >Kubernetes incubator</a
+                >
+                孵化的项目
+                <a href="https://github.com/kubernetes-incubator/external-dns"
+                  >external-dns operator</a
+                >
+                来进行操作。
+              </p>
+            </blockquote>
 
-<p>所需要的资源清单和<code>.gitlab-ci.yml</code>文件已经准备好了，我们可以小小的添加一个文件去触发下 Gitlab CI 构建：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ touch test1
+            <p>
+              所需要的资源清单和<code>.gitlab-ci.yml</code>文件已经准备好了，我们可以小小的添加一个文件去触发下
+              Gitlab CI 构建：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ touch test1
 $ git add .
 $ git commit -m<span style="color:#f1fa8c">&#34;Testing the GitLab CI functionality #1&#34;</span>
-$ git push origin master</code></pre></div>
-<p>现在回到 Gitlab 中可以看到我们的项目触发了一个新的 Pipeline 的构建：</p>
+$ git push origin master</code></pre>
+            </div>
+            <p>
+              现在回到 Gitlab 中可以看到我们的项目触发了一个新的 Pipeline
+              的构建：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/M5aDxg.jpg" alt="gitlab pipeline"><figcaption>gitlab pipeline</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/M5aDxg.jpg"
+                alt="gitlab pipeline"
+              />
+              <figcaption>gitlab pipeline</figcaption>
+            </figure>
 
-<p>可以查看最后一个阶段（stage）是否正确，如果通过了，证明我们已经成功将应用程序部署到 Kubernetes 集群中了，一个成功的<code>review</code>阶段如下所示：</p>
+            <p>
+              可以查看最后一个阶段（stage）是否正确，如果通过了，证明我们已经成功将应用程序部署到
+              Kubernetes 集群中了，一个成功的<code>review</code>阶段如下所示：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/GZezTs.jpg" alt="review success"><figcaption>review success</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/GZezTs.jpg"
+                alt="review success"
+              />
+              <figcaption>review success</figcaption>
+            </figure>
 
-<p>整个 Pipeline 构建成功后，我们可以在项目的环境菜单下面看到多了一个环境：</p>
+            <p>
+              整个 Pipeline
+              构建成功后，我们可以在项目的环境菜单下面看到多了一个环境：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/PTl4AS.jpg" alt="env"><figcaption>env</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/PTl4AS.jpg"
+                alt="env"
+              />
+              <figcaption>env</figcaption>
+            </figure>
 
-<p>如果我们点击<code>终止</code>，就会调用<code>.gitlab-ci.yml</code>中定义的钩子<code>on_stop: stop_review</code>，点击<code>View deployment</code>就可以看到这次我们的部署结果（前提是DNS解析已经完成）：</p>
+            <p>
+              如果我们点击<code>终止</code>，就会调用<code>.gitlab-ci.yml</code>中定义的钩子<code
+                >on_stop: stop_review</code
+              >，点击<code>View deployment</code
+              >就可以看到这次我们的部署结果（前提是DNS解析已经完成）：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/OfDR1j.jpg" alt="view deployment"><figcaption>view deployment</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/OfDR1j.jpg"
+                alt="view deployment"
+              />
+              <figcaption>view deployment</figcaption>
+            </figure>
 
-<p>这就是关于 Gitlab CI 结合 Kubernetes 进行 CI/CD 的过程，具体详细的构建任务还需要结合我们自己的应用实际情况而定。下节课给大家介绍使用 Jenkins + Gitlab + Harbor + Helm + Kubernetes 来实现一个完整的 CI/CD 流水线作业。</p>
+            <p>
+              这就是关于 Gitlab CI 结合 Kubernetes 进行 CI/CD
+              的过程，具体详细的构建任务还需要结合我们自己的应用实际情况而定。下节课给大家介绍使用
+              Jenkins + Gitlab + Harbor + Helm + Kubernetes 来实现一个完整的
+              CI/CD 流水线作业。
+            </p>
 
-<p>参考链接：<a href="https://edenmal.moe/post/2017/Kubernetes-WYNTK-GitLab-CI-Kubernetes-Presentation/">https://edenmal.moe/post/2017/Kubernetes-WYNTK-GitLab-CI-Kubernetes-Presentation/</a></p>
+            <p>
+              参考链接：<a
+                href="https://edenmal.moe/post/2017/Kubernetes-WYNTK-GitLab-CI-Kubernetes-Presentation/"
+                >https://edenmal.moe/post/2017/Kubernetes-WYNTK-GitLab-CI-Kubernetes-Presentation/</a
+              >
+            </p>
 
-<p><a href="https://youdianzhishi.com/web/course/1030" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+            <p>
+              <a
+                href="https://youdianzhishi.com/web/course/1030"
+                title="从 Docker 到 Kubernetes 进阶课程"
+                ><img
+                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
+                  alt="Kubernetes进阶训练营"
+              /></a>
+            </p>
 
+            <h2>微信公众号</h2>
+            <p>
+              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+              kubernetes 讨论群里面共同学习。
+            </p>
+            <img
+              src="https://picdn.youdianzhishi.com/images/qrcode.png"
+              alt="wechat-account-qrcode"
+            />
 
-          <h2>微信公众号</h2>
-<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
-
-  
-          
             <div class="entry-shang text-center">
-    <p>「真诚赞赏，手留余香」</p>
-    <button class="zs show-zs btn btn-bred">赞赏</button>
-</div>
-<div class="zs-modal-bg"></div>
-<div class="zs-modal-box">
-    <div class="zs-modal-head">
-        <button type="button" class="close">×</button>
-        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
-        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-    </div>
-    <div class="zs-modal-body">
-        <div class="zs-modal-btns">
-            <button class="btn btn-blink" data-num="2">2元</button>
-            <button class="btn btn-blink" data-num="5">5元</button>
-            <button class="btn btn-blink" data-num="10">10元</button>
-            <button class="btn btn-blink" data-num="50">50元</button>
-            <button class="btn btn-blink" data-num="100">100元</button>
-            <button class="btn btn-blink" data-num="1">任意金额</button>
-        </div>
-        <div class="zs-modal-pay">
-            <button class="btn btn-bred" id="pay-text">2元</button>
-            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
-        </div>
-    </div>
-    <div class="zs-modal-footer">
-        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
-    </div>
-</div>
-          
-          
-            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
-    <center>
-    <a href="#" class="social-share-icon icon-weibo"></a>
-    <a href="#" class="social-share-icon icon-wechat"></a>
-    <a href="#" class="social-share-icon icon-twitter"></a>
-    <a href="#" class="social-share-icon icon-linkedin"></a>
-    <a href="#" class="social-share-icon icon-facebook"></a>
-    <a href="#" class="social-share-icon icon-qq"></a>
-    <a href="#" class="social-share-icon icon-qzone"></a>
-    </center>
-</div>
+              <p>「真诚赞赏，手留余香」</p>
+              <button class="zs show-zs btn btn-bred">赞赏</button>
+            </div>
+            <div class="zs-modal-bg"></div>
+            <div class="zs-modal-box">
+              <div class="zs-modal-head">
+                <button type="button" class="close">×</button>
+                <span class="author"
+                  ><img
+                    src="https://www.qikqiak.com/img/avatar.jpeg"
+                  />阳明</span
+                >
+                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+              </div>
+              <div class="zs-modal-body">
+                <div class="zs-modal-btns">
+                  <button class="btn btn-blink" data-num="2">2元</button>
+                  <button class="btn btn-blink" data-num="5">5元</button>
+                  <button class="btn btn-blink" data-num="10">10元</button>
+                  <button class="btn btn-blink" data-num="50">50元</button>
+                  <button class="btn btn-blink" data-num="100">100元</button>
+                  <button class="btn btn-blink" data-num="1">任意金额</button>
+                </div>
+                <div class="zs-modal-pay">
+                  <button class="btn btn-bred" id="pay-text">2元</button>
+                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+                  <img
+                    src="https://www.qikqiak.com/img/wechat-2.png"
+                    id="pay-image"
+                  />
+                </div>
+              </div>
+              <div class="zs-modal-footer">
+                <span class="zs-wechat"
+                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
+                /></span>
+              </div>
+            </div>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+            <div
+              class="social-share"
+              data-initialized="true"
+              style="margin-bottom: 20px; margin-top: 20px"
+            >
+              <center>
+                <a href="#" class="social-share-icon icon-weibo"></a>
+                <a href="#" class="social-share-icon icon-wechat"></a>
+                <a href="#" class="social-share-icon icon-twitter"></a>
+                <a href="#" class="social-share-icon icon-linkedin"></a>
+                <a href="#" class="social-share-icon icon-facebook"></a>
+                <a href="#" class="social-share-icon icon-qq"></a>
+                <a href="#" class="social-share-icon icon-qzone"></a>
+              </center>
+            </div>
 
-          
-        </article>
-  
-        
-          
+            <link
+              rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
+            />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+          </article>
 
-<h3>相关文章</h3>
-<ul style="margin-bottom: 25px;">
-    
-    <li><a href="https://www.qikqiak.com/post/gitlab-runner-install-on-k8s/">在 Kubernetes 上安装 Gitlab CI Runner</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/">在 Kubernetes 上安装 Gitlab</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/kubernetes-jenkins1/">基于 kubernetes 的动态 jenkins slave</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/kubernetes-jenkins3/">Jenkins Blue Ocean 的使用</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/kubernetes-jenkins2/">Jenkins Pipeline 部署 Kubernetes 应用(二)</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/skaffold-simple-local-develop-k8s-app-tools/">Skaffold-简化本地开发kubernetes应用的神器</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/harbor-quick-install/">在 Kubernetes 在快速安装 Harbor</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/harbor-code-analysis/">Harbor 源码浅析</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/k8s-deployment-strategies/">Kubernetes 部署策略详解</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/k8s-istio-course/">Istio 实训免费视频课程</a></li>
-    
-</ul>
+          <h3>相关文章</h3>
+          <ul style="margin-bottom: 25px">
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/gitlab-runner-install-on-k8s/"
+                >在 Kubernetes 上安装 Gitlab CI Runner</a
+              >
+            </li>
 
-        
-  
-        
-        <ul class="pager blog-pager">
-          
+            <li>
+              <a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/"
+                >在 Kubernetes 上安装 Gitlab</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/kubernetes-jenkins1/"
+                >基于 kubernetes 的动态 jenkins slave</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/kubernetes-jenkins3/"
+                >Jenkins Blue Ocean 的使用</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/kubernetes-jenkins2/"
+                >Jenkins Pipeline 部署 Kubernetes 应用(二)</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/skaffold-simple-local-develop-k8s-app-tools/"
+                >Skaffold-简化本地开发kubernetes应用的神器</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/harbor-quick-install/"
+                >在 Kubernetes 在快速安装 Harbor</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/harbor-code-analysis/"
+                >Harbor 源码浅析</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/k8s-deployment-strategies/"
+                >Kubernetes 部署策略详解</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/k8s-istio-course/"
+                >Istio 实训免费视频课程</a
+              >
+            </li>
+          </ul>
+
+          <ul class="pager blog-pager">
             <li class="previous">
-              <a href="https://www.qikqiak.com/post/gitlab-runner-install-on-k8s/" data-toggle="tooltip" data-placement="top" title="在 Kubernetes 上安装 Gitlab CI Runner">&larr; 前一篇</a>
+              <a
+                href="https://www.qikqiak.com/post/gitlab-runner-install-on-k8s/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="在 Kubernetes 上安装 Gitlab CI Runner"
+                >&larr; 前一篇</a
+              >
             </li>
-          
-          
-            <li class="next">
-              <a href="https://www.qikqiak.com/post/prometheus-book/" data-toggle="tooltip" data-placement="top" title="《深入浅出Prometheus》">后一篇 &rarr;</a>
-            </li>
-          
-        </ul>
-        
 
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-        
-        <ins class="adsbygoogle"
-            style="display:block"
+            <li class="next">
+              <a
+                href="https://www.qikqiak.com/post/prometheus-book/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="《深入浅出Prometheus》"
+                >后一篇 &rarr;</a
+              >
+            </li>
+          </ul>
+
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+          ></script>
+
+          <ins
+            class="adsbygoogle"
+            style="display: block"
             data-ad-client="ca-pub-5376999672787220"
             data-ad-slot="3700507799"
             data-ad-format="auto"
-            data-full-width-responsive="true"></ins>
-        <script>
+            data-full-width-responsive="true"
+          ></ins>
+          <script>
             (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
-  
-        
-    <div id="gitalk-container"></div>
-    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-    <script>
-    var gitalk = new Gitalk({
-        clientID: 'bdb76dbb2e9d0786e350',
-        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
-        repo: 'blog',
-        owner: 'cnych',
-        admin: ['cnych'],
-        labels: ['gitment'],
-        title: 'Gitlab CI 与 Kubernetes 的结合',
-        createIssueManually: true,
-        id: 'gitlab-ci-k8s-cluster-feature',      
-        distractionFreeMode: true  
-    });
-    gitalk.render('gitalk-container');
-</script>
+          </script>
 
-
-        
-          
-
-        
-  
+          <div id="gitalk-container"></div>
+          <link
+            rel="stylesheet"
+            href="https://unpkg.com/gitalk/dist/gitalk.css"
+          />
+          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+          <script>
+            var gitalk = new Gitalk({
+              clientID: "bdb76dbb2e9d0786e350",
+              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
+              repo: "blog",
+              owner: "cnych",
+              admin: ["cnych"],
+              labels: ["gitment"],
+              title: "Gitlab CI 与 Kubernetes 的结合",
+              createIssueManually: true,
+              id: "gitlab-ci-k8s-cluster-feature",
+              distractionFreeMode: true,
+            });
+            gitalk.render("gitalk-container");
+          </script>
+        </div>
       </div>
-    
-    
-  </div>
-</div>
+    </div>
 
     <footer>
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <ul class="list-inline text-center footer-links">
-          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
-          
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <ul class="list-inline text-center footer-links">
+              <img
+                src="https://www.qikqiak.com/img/wechatmp.png"
+                alt="k8s技术圈"
+              />
+
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -958,7 +1475,7 @@ $ git push origin master</code></pre></div>
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -967,7 +1484,7 @@ $ git push origin master</code></pre></div>
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -976,7 +1493,7 @@ $ git push origin master</code></pre></div>
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -985,121 +1502,158 @@ $ git push origin master</code></pre></div>
                   </span>
                 </a>
               </li>
-          
-          
-          <li>
-            <a href="https://www.qikqiak.com/index.xml" title="RSS">
-              <span class="fa-stack fa-lg">
-                <i class="fa fa-circle fa-stack-2x"></i>
-                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+
+              <li>
+                <a href="https://www.qikqiak.com/index.xml" title="RSS">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+            </ul>
+            <p class="credits copyright text-muted">
+              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/">阳明的博客</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/archive/">归档</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/friend/">友链</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://beian.miit.gov.cn/" target="_blank"
+                >蜀ICP备11027319号-5</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
+                >kubernetes.io</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
+                >Kubernetes中文社区</a
+              >
+            </p>
+            <p class="text-center text-muted">
+              <script
+                async
+                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
+              ></script>
+              <span id="busuanzi_container_site_pv" style="display: none">
+                本站总访问量<span id="busuanzi_value_site_pv"></span>次
               </span>
-            </a>
-          </li>
-          
-        </ul>
-        <p class="credits copyright text-muted">
-          
+              &nbsp;&bull;&nbsp;
+              <span id="busuanzi_container_site_uv" style="display: none">
+                访客数<span id="busuanzi_value_site_uv"></span>人次
+              </span>
+            </p>
 
-          &nbsp;&bull;&nbsp;
-          2023
-
-          
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/">阳明的博客</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/archive/">归档</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/friend/">友链</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
-          
-        </p>
-        <p class="text-center text-muted">
-          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-          <span id="busuanzi_container_site_pv" style="display:none">
-            本站总访问量<span id="busuanzi_value_site_pv"></span>次
-          </span>
-          &nbsp;&bull;&nbsp;
-          <span id="busuanzi_container_site_uv" style="display:none">
-            访客数<span id="busuanzi_value_site_uv"></span>人次
-          </span>
-        </p>
-        
-        <p class="credits theme-by text-muted">
-          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
-          
-        </p>
+            <p class="credits theme-by text-muted">
+              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
+              &nbsp;&bull;&nbsp; 主题
+              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+              移植自
+              <a href="https://github.com/rootsongjc/beautifulhugo"
+                >Beautiful Hugo</a
+              >
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</footer>
+    </footer>
 
+    <script
+      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
+      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
+    ></script>
 
-<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "UA-69668147-3");
+    </script>
+    <script>
+      (function () {
+        var bp = document.createElement("script");
+        var curProtocol = window.location.protocol.split(":")[0];
+        if (curProtocol === "https") {
+          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
+        } else {
+          bp.src = "http://push.zhanzhang.baidu.com/push.js";
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+      })();
+    </script>
+    <script>
+      $(document).ready(function () {
+        var int = setInterval(fixCount, 50);
 
-
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-69668147-3');
-</script>
-<script>
-(function(){
-    var bp = document.createElement('script');
-    var curProtocol = window.location.protocol.split(':')[0];
-    if (curProtocol === 'https') {
-        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
-    }
-    else {
-        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
-    }
-    var s = document.getElementsByTagName("script")[0];
-    s.parentNode.insertBefore(bp, s);
-})();
-</script>
-<script >
-$(document).ready(function() {
-  var int = setInterval(fixCount, 50);  
-  
-  var initPVCount = 584976;
-  var initUVCount = 153191;
-  function fixCount() {                   
-    if ($("#busuanzi_container_site_pv").css("display") != "none") {
-        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
-        clearInterval(int); 
-    }
-    if ($("#busuanzi_container_site_uv").css("display") != "none") {
-      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
-      clearInterval(int); 
-    }  
-  }           
-});
-</script>
- <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
-<script type="text/javascript">
-$('.carousel').slick({
-    dots: true,
-    arrows: true,
-    autoplay: true,
-    autoplaySpeed: 4000,
-    infinite: true,
-    speed: 500,
-    fade: true,
-    cssEase: 'linear',
-    centerMode: true,
-    prevArrow: '<button type="button" class="slick-prev"></button>',
-    nextArrow: '<button type="button" class="slick-next"></button>',
-});
-</script>
-
+        var initPVCount = 584976;
+        var initUVCount = 153191;
+        function fixCount() {
+          if ($("#busuanzi_container_site_pv").css("display") != "none") {
+            $("#busuanzi_value_site_pv").html(
+              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
+            );
+            clearInterval(int);
+          }
+          if ($("#busuanzi_container_site_uv").css("display") != "none") {
+            $("#busuanzi_value_site_uv").html(
+              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
+            );
+            clearInterval(int);
+          }
+        }
+      });
+    </script>
+    <script>
+      (function (w, d, s, id) {
+        if (typeof w.webpushr !== "undefined") return;
+        w.webpushr =
+          w.webpushr ||
+          function () {
+            (w.webpushr.q = w.webpushr.q || []).push(arguments);
+          };
+        var js,
+          fjs = d.getElementsByTagName(s)[0];
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "https://cdn.webpushr.com/app.min.js";
+        fjs.parentNode.appendChild(js);
+      })(window, document, "script", "webpushr-jssdk");
+      webpushr(
+        "init",
+        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
+      );
+    </script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
+    ></script>
+    <script type="text/javascript">
+      $(".carousel").slick({
+        dots: true,
+        arrows: true,
+        autoplay: true,
+        autoplaySpeed: 4000,
+        infinite: true,
+        speed: 500,
+        fade: true,
+        cssEase: "linear",
+        centerMode: true,
+        prevArrow: '<button type="button" class="slick-prev"></button>',
+        nextArrow: '<button type="button" class="slick-next"></button>',
+      });
+    </script>
   </body>
 </html>
-

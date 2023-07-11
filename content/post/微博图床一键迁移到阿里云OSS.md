@@ -5,15 +5,21 @@ tags: ["微博", "阿里云", "OSS", "图床"]
 keywords: ["微博", "阿里云", "OSS", "图床"]
 slug: sina-img-transfer-to-oss
 gitcomment: true
-bigimg: [{src: "https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/654ck.jpeg", desc: "sinaimgmover"}]
+bigimg:
+  [
+    {
+      src: "https://picdn.youdianzhishi.com/images/654ck.jpeg",
+      desc: "sinaimgmover",
+    },
+  ]
 category: "极客"
 ---
 
 今天发现博客上大量图片显示不出来了，打开`Chrome`控制台一看出现了大量的 403 图片
 
-![sina image 403](https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/2mmzz.png)
+![sina image 403](https://picdn.youdianzhishi.com/images/2mmzz.png)
 
-这就是薅微博图床的羊毛的后果，应该是微博图床这边升级了访问策略，幸运的是直接打开图片地址还是可以访问的，不然就有得ಥ_ಥ了，这么多图片丢失了那就坑爹了，怎么办？迁移呗~~
+这就是薅微博图床的羊毛的后果，应该是微博图床这边升级了访问策略，幸运的是直接打开图片地址还是可以访问的，不然就有得 ಥ_ಥ 了，这么多图片丢失了那就坑爹了，怎么办？迁移呗~~
 
 <!--more-->
 
@@ -44,6 +50,7 @@ Use "mover [command] --help" for more information about a command.
 ```
 
 示例：
+
 ```
 $ mover oss --bucket=bxdc-static --key=xxxx --secret=xxxx --post=/Users/ych/devs/workspace/www.qikqiak.com/content/page
 成功替换了图片：https://ws3.sinaimg.cn/large/006tKfTcgy1g1o2gcoqs2j30u021fe81.jpg
@@ -57,9 +64,9 @@ $ mover oss --bucket=bxdc-static --key=xxxx --secret=xxxx --post=/Users/ych/devs
 
 `v0.2`版本更新：
 
-* 提取公共接口
-* 使用 Cobra 制作 CLI
-* 优化代码
-* 支持横向扩展其他云服务
+- 提取公共接口
+- 使用 Cobra 制作 CLI
+- 优化代码
+- 支持横向扩展其他云服务
 
 源码地址：[https://github.com/cnych/sinaimgmover](https://github.com/cnych/sinaimgmover)
