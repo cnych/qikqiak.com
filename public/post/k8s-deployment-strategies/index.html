@@ -1,31 +1,23 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
 
+    <title>
+      Kubernetes
+      部署策略详解-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
+    </title>
+    <meta property="og:title" content="Kubernetes 部署策略详解" />
+    <meta name="twitter:title" content="Kubernetes 部署策略详解" />
 
-  <title>Kubernetes 部署策略详解-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
-  <meta property="og:title" content="Kubernetes 部署策略详解" />
-  <meta name="twitter:title" content="Kubernetes 部署策略详解" />
-
-  <meta name="description" content="在Kubernetes中有几种不同的方式发布应用，所以为了让应用在升级期间依然平稳提供服务，选择一个正确的发布策略就非常重要了。
-
-选择正确的部署策略是要依赖于我们的业务需求的，下面我们列出了一些可能会使用到的策略：
-
-
-重建(recreate)：停止旧版本部署新版本
-
-滚动更新(rolling-update)：一个接一个地以滚动更新方式发布新版本
-
-蓝绿(blue/green)：新版本与旧版本一起存在，然后切换流量
-
-金丝雀(canary)：将新版本面向一部分用户发布，然后继续全量发布
-
-A/B测(a/b testing)：以精确的方式（HTTP 头、cookie、权重等）向部分用户发布新版本。A/B测实际上是一种基于数据统计做出业务决策的技术。在 Kubernetes 中并不原生支持，需要额外的一些高级组件来完成改设置（比如Istio、Linkerd、Traefik、或者自定义 Nginx/Haproxy 等）。
-">
-  <meta property="og:description" content="在Kubernetes中有几种不同的方式发布应用，所以为了让应用在升级期间依然平稳提供服务，选择一个正确的发布策略就非常重要了。
+    <meta
+      name="description"
+      content="在Kubernetes中有几种不同的方式发布应用，所以为了让应用在升级期间依然平稳提供服务，选择一个正确的发布策略就非常重要了。
 
 选择正确的部署策略是要依赖于我们的业务需求的，下面我们列出了一些可能会使用到的策略：
 
@@ -39,8 +31,11 @@ A/B测(a/b testing)：以精确的方式（HTTP 头、cookie、权重等）向�
 金丝雀(canary)：将新版本面向一部分用户发布，然后继续全量发布
 
 A/B测(a/b testing)：以精确的方式（HTTP 头、cookie、权重等）向部分用户发布新版本。A/B测实际上是一种基于数据统计做出业务决策的技术。在 Kubernetes 中并不原生支持，需要额外的一些高级组件来完成改设置（比如Istio、Linkerd、Traefik、或者自定义 Nginx/Haproxy 等）。
-">
-  <meta name="twitter:description" content="在Kubernetes中有几种不同的方式发布应用，所以为了让应用在升级期间依然平稳提供服务，选择一个正确的发布策略就非常重要了。
+"
+    />
+    <meta
+      property="og:description"
+      content="在Kubernetes中有几种不同的方式发布应用，所以为了让应用在升级期间依然平稳提供服务，选择一个正确的发布策略就非常重要了。
 
 选择正确的部署策略是要依赖于我们的业务需求的，下面我们列出了一些可能会使用到的策略：
 
@@ -49,371 +44,489 @@ A/B测(a/b testing)：以精确的方式（HTTP 头、cookie、权重等）向�
 
 滚动更新(rolling-update)：一个接一个地以滚动更新方式发布新版本
 
-蓝绿(blue/green)：新版本与旧版本一 …">
-  <meta name="author" content=""/>
-  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
-  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
-  <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://www.qikqiak.com/post/k8s-deployment-strategies/" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="阳明的博客" />
+蓝绿(blue/green)：新版本与旧版本一起存在，然后切换流量
 
-  <meta name="generator" content="Hugo 0.55.6" />
-  <link rel="canonical" href="https://www.qikqiak.com/post/k8s-deployment-strategies/" />
-  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+金丝雀(canary)：将新版本面向一部分用户发布，然后继续全量发布
 
-  
-  
-  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
-  
+A/B测(a/b testing)：以精确的方式（HTTP 头、cookie、权重等）向部分用户发布新版本。A/B测实际上是一种基于数据统计做出业务决策的技术。在 Kubernetes 中并不原生支持，需要额外的一些高级组件来完成改设置（比如Istio、Linkerd、Traefik、或者自定义 Nginx/Haproxy 等）。
+"
+    />
+    <meta
+      name="twitter:description"
+      content="在Kubernetes中有几种不同的方式发布应用，所以为了让应用在升级期间依然平稳提供服务，选择一个正确的发布策略就非常重要了。
 
-  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+选择正确的部署策略是要依赖于我们的业务需求的，下面我们列出了一些可能会使用到的策略：
 
-  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
-  
-  
-    
+
+重建(recreate)：停止旧版本部署新版本
+
+滚动更新(rolling-update)：一个接一个地以滚动更新方式发布新版本
+
+蓝绿(blue/green)：新版本与旧版本一 …"
+    />
+    <meta name="author" content="" />
+    <link
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+      rel="icon"
+      type="image/x-icon"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      property="og:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      name="twitter:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta
+      property="og:url"
+      content="https://www.qikqiak.com/post/k8s-deployment-strategies/"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="阳明的博客" />
+
+    <meta name="generator" content="Hugo 0.55.6" />
+    <link
+      rel="canonical"
+      href="https://www.qikqiak.com/post/k8s-deployment-strategies/"
+    />
+    <link
+      rel="alternate"
+      href="https://www.qikqiak.com/index.xml"
+      type="application/rss+xml"
+      title="阳明的博客"
+    />
+
+    <link
+      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
+      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
+    />
+
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
+    />
+
     <!--[if lt IE 9]>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+        rel="stylesheet"
+      />
     <![endif]-->
-<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
-<meta name="baidu-site-verification" content="F5ojAyqaKU" />
-<meta name="keywords" content="kubernetes, deployment, 灰度, 蓝绿, AB测试">
-<script>
-var _hmt = _hmt || [];
-(function() {
-  var hm = document.createElement("script");
-  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-  var s = document.getElementsByTagName("script")[0];
-  s.parentNode.insertBefore(hm, s);
-})();
-</script>
+    <meta
+      name="google-site-verification"
+      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
+    />
+    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
+    <meta
+      name="keywords"
+      content="kubernetes, deployment, 灰度, 蓝绿, AB测试"
+    />
+    <script>
+      var _hmt = _hmt || [];
+      (function () {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
 
+    <script type="application/javascript">
+      var doNotTrack = false;
+      if (!doNotTrack) {
+        window.ga =
+          window.ga ||
+          function () {
+            (ga.q = ga.q || []).push(arguments);
+          };
+        ga.l = +new Date();
+        ga("create", "UA-69668147-3", "auto");
 
-
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-	ga('create', 'UA-69668147-3', 'auto');
-	
-	ga('send', 'pageview');
-}
-</script>
-<script async src='https://www.google-analytics.com/analytics.js'></script>
-
-</head>
+        ga("send", "pageview");
+      }
+    </script>
+    <script async src="https://www.google-analytics.com/analytics.js"></script>
+  </head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
-        <span class="sr-only">切换导航</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
-        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
-      </a>
-    </div>
+      <div class="container">
+        <div class="navbar-header">
+          <button
+            type="button"
+            class="navbar-toggle"
+            data-toggle="collapse"
+            data-target="#main-navbar"
+          >
+            <span class="sr-only">切换导航</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a
+            class="navbar-brand"
+            href="https://www.qikqiak.com/"
+            title="阳明的博客"
+          >
+            <img
+              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
+              style="margin-top: -5px; height: 32px"
+              alt="阳明的博客"
+            />
+          </a>
+        </div>
 
-    <div class="collapse navbar-collapse" id="main-navbar">
-      <ul class="nav navbar-nav navbar-right">
-        
-          
+        <div class="collapse navbar-collapse" id="main-navbar">
+          <ul class="nav navbar-nav navbar-right">
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-          
-        
-          
+
             <li>
-              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+              <a
+                title="课程"
+                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
+                >课程</a
+              >
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/archives">Archive</a>
-                
-                  <a href="https://www.qikqiak.com/tags">tags</a>
-                
-                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-                
-                  <a href="https://www.qikqiak.com/tags/python">python</a>
-                
-                  <a href="https://www.qikqiak.com/tags/django">django</a>
-                
-                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
-                
+                <a href="https://www.qikqiak.com/archives">Archive</a>
+
+                <a href="https://www.qikqiak.com/tags">tags</a>
+
+                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+
+                <a href="https://www.qikqiak.com/tags/python">python</a>
+
+                <a href="https://www.qikqiak.com/tags/django">django</a>
+
+                <a href="https://www.qikqiak.com/tags/devops">devops</a>
               </div>
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-                
-                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-                
-                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-                
-                  <a href="https://md.qikqiak.com/">Markdown微信</a>
-                
+                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+
+                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+
+                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+
+                <a href="https://md.qikqiak.com/">Markdown微信</a>
               </div>
             </li>
-          
-        
-          
+
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+              <a title="关于" href="https://www.qikqiak.com/page/about/"
+                >关于</a
+              >
             </li>
-          
-        
-          
+
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
-          
-        
 
-        
-
-        
-
-        
-          <li>
-            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
-              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
-            </a>
-          </li>
-          
-
-      </ul>
-    </div>
-
-  </div>
-</nav>
-
-
-  <div id="modalSearch" class="modal fade" role="dialog">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-          <h4 class="modal-title">搜索</h4>
+            <li>
+              <a
+                href="#modalSearch"
+                data-toggle="modal"
+                data-target="#modalSearch"
+                style="outline: none"
+              >
+                <span
+                  id="searchGlyph"
+                  class="glyphicon glyphicon-search"
+                ></span>
+              </a>
+            </li>
+          </ul>
         </div>
-        <div class="modal-body">
-            
-<div class="aa-input-container" id="aa-input-container">
-    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
-    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
-    </svg>
-</div>
-<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+      </div>
+    </nav>
 
-<script>
-var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
-var index = client.initIndex('prod_blog');
+    <div id="modalSearch" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">
+              &times;
+            </button>
+            <h4 class="modal-title">搜索</h4>
+          </div>
+          <div class="modal-body">
+            <div class="aa-input-container" id="aa-input-container">
+              <input
+                type="search"
+                id="aa-search-input"
+                class="aa-input-search"
+                placeholder="Search for titles or URIs..."
+                name="search"
+                autocomplete="off"
+              />
+              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+                <path
+                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
+                />
+              </svg>
+            </div>
+            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-autocomplete('#aa-search-input',
-{ hint: false}, {
-    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
-    
-    displayKey: 'name',
-    
-    templates: {
-        
-        suggestion: function(suggestion) {
-            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
-            suggestion._highlightResult.title.value + '</a></span>';
-        }
-    }
-});
-</script>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+            <script>
+              var client = algoliasearch(
+                "1JDRAS0AZR",
+                "8804ac109158bb3bb60d74ce98fa332f"
+              );
+              var index = client.initIndex("prod_blog");
+
+              autocomplete(
+                "#aa-search-input",
+                { hint: false },
+                {
+                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
+
+                  displayKey: "name",
+
+                  templates: {
+                    suggestion: function (suggestion) {
+                      return (
+                        "<span>" +
+                        '<a href="https://www.qikqiak.com/post/' +
+                        suggestion.slug +
+                        '">' +
+                        suggestion._highlightResult.title.value +
+                        "</a></span>"
+                      );
+                    },
+                  },
+                }
+              );
+            </script>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">
+              close
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-    
-  
-  
-  
+    <div
+      id="header-big-imgs"
+      data-num-img="1"
+      data-img-src-1="https://picdn.youdianzhishi.com/images/cfhel.jpg"
+      data-img-desc-1="部署策略"
+    ></div>
 
-
-
-
-  
-    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/cfhel.jpg" data-img-desc-1="部署策略"></div>
-  
-
-  <header class="header-section has-img">
-    
+    <header class="header-section has-img">
       <div class="intro-header big-img">
-        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>Kubernetes 部署策略详解</h1>
-                  
-                  
-                    <span class="post-meta">
-  
-    发表于 January 24, 2019
-  
-  
-</span>
 
-
-                  
+                <span class="post-meta"> 发表于 January 24, 2019 </span>
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline;"></span>
+        <span class="img-desc" style="display: inline"></span>
       </div>
-    
-    
-    
-    <div class="intro-header no-img">
-      
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <div class="post-heading">
-              <h1>Kubernetes 部署策略详解</h1>
-                
-                
-                  <span class="post-meta">
-  
-    发表于 January 24, 2019
-  
-  
-</span>
 
+      <div class="intro-header no-img">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>Kubernetes 部署策略详解</h1>
 
-                
+                <span class="post-meta"> 发表于 January 24, 2019 </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    
-    
-  </header>
+    </header>
 
+    <div class="container" role="main">
+      <div class="row">
+        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+          <div>
+            <h5 id="tags" style="margin-top: 30px">
+              标签:
 
-    
+              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
+              &nbsp;
 
-
-
-<div class="container" role="main">
-  <div class="row">
-
-    
-    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <div>
-            
-            
-            <h5 id="tags" style="margin-top: 30px;">标签:
-              
-                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/deployment/">deployment</a> &nbsp;
-              
+              <a href="https://www.qikqiak.com/tags/deployment/">deployment</a>
+              &nbsp;
             </h5>
-            
-        </div>
-  
-        <article role="main" class="blog-post" itemprop="articleBody" id="content">
-          
-            
-<aside class="toc">
-  <nav id="TableOfContents">
-<ul>
-<li>
-<ul>
-<li>
-<ul>
-<li><a href="#重建-recreate-最好在开发环境">重建(Recreate) - 最好在开发环境</a></li>
-<li><a href="#滚动更新-rolling-update">滚动更新(rolling-update)</a></li>
-<li><a href="#蓝-绿-blue-green-最好用来验证-api-版本问题">蓝/绿(blue/green) - 最好用来验证 API 版本问题</a></li>
-<li><a href="#金丝雀-canary-让部分用户参与测试">金丝雀(Canary) - 让部分用户参与测试</a></li>
-<li><a href="#a-b测试-a-b-testing-最适合部分用户的功能测试">A/B测试(A/B testing) - 最适合部分用户的功能测试</a></li>
-<li><a href="#总结">总结</a></li>
-</ul></li>
-</ul></li>
-</ul>
-</nav>
-</aside>
+          </div>
 
-          
-  
-          
-          
-          
-  
-          
-          
-          
-  
-          
-          
-          
+          <article
+            role="main"
+            class="blog-post"
+            itemprop="articleBody"
+            id="content"
+          >
+            <aside class="toc">
+              <nav id="TableOfContents">
+                <ul>
+                  <li>
+                    <ul>
+                      <li>
+                        <ul>
+                          <li>
+                            <a href="#重建-recreate-最好在开发环境"
+                              >重建(Recreate) - 最好在开发环境</a
+                            >
+                          </li>
+                          <li>
+                            <a href="#滚动更新-rolling-update"
+                              >滚动更新(rolling-update)</a
+                            >
+                          </li>
+                          <li>
+                            <a
+                              href="#蓝-绿-blue-green-最好用来验证-api-版本问题"
+                              >蓝/绿(blue/green) - 最好用来验证 API 版本问题</a
+                            >
+                          </li>
+                          <li>
+                            <a href="#金丝雀-canary-让部分用户参与测试"
+                              >金丝雀(Canary) - 让部分用户参与测试</a
+                            >
+                          </li>
+                          <li>
+                            <a
+                              href="#a-b测试-a-b-testing-最适合部分用户的功能测试"
+                              >A/B测试(A/B testing) -
+                              最适合部分用户的功能测试</a
+                            >
+                          </li>
+                          <li><a href="#总结">总结</a></li>
+                        </ul>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </nav>
+            </aside>
 
-          <p>在<code>Kubernetes</code>中有几种不同的方式发布应用，所以为了让应用在升级期间依然平稳提供服务，选择一个正确的发布策略就非常重要了。</p>
+            <p>
+              在<code>Kubernetes</code>中有几种不同的方式发布应用，所以为了让应用在升级期间依然平稳提供服务，选择一个正确的发布策略就非常重要了。
+            </p>
 
-<p>选择正确的部署策略是要依赖于我们的业务需求的，下面我们列出了一些可能会使用到的策略：</p>
+            <p>
+              选择正确的部署策略是要依赖于我们的业务需求的，下面我们列出了一些可能会使用到的策略：
+            </p>
 
-<ul>
-<li><p>重建(recreate)：停止旧版本部署新版本</p></li>
+            <ul>
+              <li><p>重建(recreate)：停止旧版本部署新版本</p></li>
 
-<li><p>滚动更新(rolling-update)：一个接一个地以滚动更新方式发布新版本</p></li>
+              <li>
+                <p>
+                  滚动更新(rolling-update)：一个接一个地以滚动更新方式发布新版本
+                </p>
+              </li>
 
-<li><p>蓝绿(blue/green)：新版本与旧版本一起存在，然后切换流量</p></li>
+              <li>
+                <p>蓝绿(blue/green)：新版本与旧版本一起存在，然后切换流量</p>
+              </li>
 
-<li><p>金丝雀(canary)：将新版本面向一部分用户发布，然后继续全量发布</p></li>
+              <li>
+                <p>
+                  金丝雀(canary)：将新版本面向一部分用户发布，然后继续全量发布
+                </p>
+              </li>
 
-<li><p>A/B测(a/b testing)：以精确的方式（HTTP 头、cookie、权重等）向部分用户发布新版本。<code>A/B测</code>实际上是一种基于数据统计做出业务决策的技术。在 Kubernetes 中并不原生支持，需要额外的一些高级组件来完成改设置（比如Istio、Linkerd、Traefik、或者自定义 Nginx/Haproxy 等）。</p></li>
-</ul>
+              <li>
+                <p>
+                  A/B测(a/b testing)：以精确的方式（HTTP
+                  头、cookie、权重等）向部分用户发布新版本。<code>A/B测</code>实际上是一种基于数据统计做出业务决策的技术。在
+                  Kubernetes
+                  中并不原生支持，需要额外的一些高级组件来完成改设置（比如Istio、Linkerd、Traefik、或者自定义
+                  Nginx/Haproxy 等）。
+                </p>
+              </li>
+            </ul>
 
-<p>你可以在<code>Kubernetes</code>集群上来对上面的这些策略进行测试，下面的仓库中有需要使用到的资源清单：<a href="https://github.com/ContainerSolutions/k8s-deployment-strategies">https://github.com/ContainerSolutions/k8s-deployment-strategies</a></p>
+            <p>
+              你可以在<code>Kubernetes</code>集群上来对上面的这些策略进行测试，下面的仓库中有需要使用到的资源清单：<a
+                href="https://github.com/ContainerSolutions/k8s-deployment-strategies"
+                >https://github.com/ContainerSolutions/k8s-deployment-strategies</a
+              >
+            </p>
 
-<p>接下来我们来介绍下每种策略，看看在什么场景下面适合哪种策略。</p>
+            <p>接下来我们来介绍下每种策略，看看在什么场景下面适合哪种策略。</p>
 
-<h3 id="重建-recreate-最好在开发环境">重建(Recreate) - 最好在开发环境</h3>
+            <h3 id="重建-recreate-最好在开发环境">
+              重建(Recreate) - 最好在开发环境
+            </h3>
 
-<p>策略定义为<code>Recreate</code>的<code>Deployment</code>，会终止所有正在运行的实例，然后用较新的版本来重新创建它们。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">spec:
+            <p>
+              策略定义为<code>Recreate</code>的<code>Deployment</code>，会终止所有正在运行的实例，然后用较新的版本来重新创建它们。
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">spec:
   replicas: <span style="color:#bd93f9">3</span>
   strategy:
-    type: Recreate</code></pre></div>
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/RCXtdC.jpg" alt="Recreate"><figcaption>Recreate</figcaption></figure>
+    type: Recreate</code></pre>
+            </div>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/RCXtdC.jpg"
+                alt="Recreate"
+              />
+              <figcaption>Recreate</figcaption>
+            </figure>
 
-<p>重新创建策略是一个虚拟部署，包括关闭版本A，然后在关闭版本A后部署版本B. 此技术意味着服务的停机时间取决于应用程序的关闭和启动持续时间。</p>
+            <p>
+              重新创建策略是一个虚拟部署，包括关闭版本A，然后在关闭版本A后部署版本B.
+              此技术意味着服务的停机时间取决于应用程序的关闭和启动持续时间。
+            </p>
 
-<p>我们这里创建两个相关的资源清单文件，app-v1.yaml：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+            <p>我们这里创建两个相关的资源清单文件，app-v1.yaml：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: v1
 kind: Service
 metadata:
   name: my-app
@@ -474,9 +587,19 @@ spec:
           httpGet:
             path: /ready
             port: probe
-          periodSeconds: <span style="color:#bd93f9">5</span></code></pre></div>
-<p>app-v2.yaml 文件内容如下：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
+          periodSeconds: <span style="color:#bd93f9">5</span></code></pre>
+            </div>
+            <p>app-v2.yaml 文件内容如下：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: my-app
@@ -519,22 +642,45 @@ spec:
           httpGet:
             path: /ready
             port: probe
-          periodSeconds: <span style="color:#bd93f9">5</span></code></pre></div>
-<p>上面两个资源清单文件中的 Deployment 定义几乎是一直的，唯一不同的是定义的环境变量<code>VERSION</code>值不同，接下来按照下面的步骤来验证<code>Recreate</code>策略：</p>
+          periodSeconds: <span style="color:#bd93f9">5</span></code></pre>
+            </div>
+            <p>
+              上面两个资源清单文件中的 Deployment
+              定义几乎是一直的，唯一不同的是定义的环境变量<code>VERSION</code>值不同，接下来按照下面的步骤来验证<code>Recreate</code>策略：
+            </p>
 
-<ol>
-<li>版本1提供服务</li>
-<li>删除版本1</li>
-<li>部署版本2</li>
-<li>等待所有副本准备就绪</li>
-</ol>
+            <ol>
+              <li>版本1提供服务</li>
+              <li>删除版本1</li>
+              <li>部署版本2</li>
+              <li>等待所有副本准备就绪</li>
+            </ol>
 
-<p>首先部署第一个应用：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f app-v1.yaml
+            <p>首先部署第一个应用：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl apply -f app-v1.yaml
 service <span style="color:#f1fa8c">&#34;my-app&#34;</span> created
-deployment.apps <span style="color:#f1fa8c">&#34;my-app&#34;</span> created</code></pre></div>
-<p>测试版本1是否部署成功：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>my-app
+deployment.apps <span style="color:#f1fa8c">&#34;my-app&#34;</span> created</code></pre>
+            </div>
+            <p>测试版本1是否部署成功：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get pods -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>my-app
 NAME                      READY     STATUS    RESTARTS   AGE
 my-app-7b4874cd75-m5kct   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          19m
 my-app-7b4874cd75-pc444   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          19m
@@ -543,54 +689,147 @@ $ kubectl get svc my-app
 NAME      TYPE       CLUSTER-IP      EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>        AGE
 my-app    NodePort   <span style="color:#bd93f9">10</span>.108.238.76   &lt;none&gt;        <span style="color:#bd93f9">80</span>:32532/TCP   5m
 $ curl http://127.0.0.1:32532
-Host: my-app-7b4874cd75-pc444, Version: v1.0.0</code></pre></div>
-<p>可以看到版本1的应用正常运行了。为了查看部署的运行情况，打开一个新终端并运行以下命令：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ watch kubectl get po -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>my-app</code></pre></div>
-<p>然后部署版本2的应用：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f app-v2.yaml</code></pre></div>
-<p>这个时候可以观察上面新开的终端中的 Pod 列表的变化，可以看到之前的3个 Pod 都会先处于<code>Terminating</code>状态，并且3个 Pod 都被删除后才开始创建新的 Pod。</p>
+Host: my-app-7b4874cd75-pc444, Version: v1.0.0</code></pre>
+            </div>
+            <p>
+              可以看到版本1的应用正常运行了。为了查看部署的运行情况，打开一个新终端并运行以下命令：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ watch kubectl get po -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>my-app</code></pre>
+            </div>
+            <p>然后部署版本2的应用：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl apply -f app-v2.yaml</code></pre>
+            </div>
+            <p>
+              这个时候可以观察上面新开的终端中的 Pod
+              列表的变化，可以看到之前的3个 Pod
+              都会先处于<code>Terminating</code>状态，并且3个 Pod
+              都被删除后才开始创建新的 Pod。
+            </p>
 
-<p>然后测试第二个版本应用的部署进度：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ <span style="color:#ff79c6">while</span> sleep <span style="color:#bd93f9">0</span>.1; <span style="color:#ff79c6">do</span> curl http://127.0.0.1:32532; <span style="color:#ff79c6">done</span>
+            <p>然后测试第二个版本应用的部署进度：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ <span style="color:#ff79c6">while</span> sleep <span style="color:#bd93f9">0</span>.1; <span style="color:#ff79c6">do</span> curl http://127.0.0.1:32532; <span style="color:#ff79c6">done</span>
 curl: <span style="color:#ff79c6">(</span><span style="color:#bd93f9">7</span><span style="color:#ff79c6">)</span> Failed connect to <span style="color:#bd93f9">127</span>.0.0.1:32532; Connection refused
 curl: <span style="color:#ff79c6">(</span><span style="color:#bd93f9">7</span><span style="color:#ff79c6">)</span> Failed connect to <span style="color:#bd93f9">127</span>.0.0.1:32532; Connection refused
 ......
 Host: my-app-f885c8d45-sp44p, Version: v2.0.0
 Host: my-app-f885c8d45-t8g7g, Version: v2.0.0
 Host: my-app-f885c8d45-sp44p, Version: v2.0.0
-......</code></pre></div>
-<p>可以看到最开始的阶段服务都是处于不可访问的状态，然后到第二个版本的应用部署成功后才正常访问，可以看到现在访问的数据是版本2了。</p>
+......</code></pre>
+            </div>
+            <p>
+              可以看到最开始的阶段服务都是处于不可访问的状态，然后到第二个版本的应用部署成功后才正常访问，可以看到现在访问的数据是版本2了。
+            </p>
 
-<p>最后，可以执行下面的命令来清空上面的资源对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl delete all -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>my-app</code></pre></div>
-<p>结论:</p>
+            <p>最后，可以执行下面的命令来清空上面的资源对象：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl delete all -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>my-app</code></pre>
+            </div>
+            <p>结论:</p>
 
-<ul>
-<li><p>应用状态全部更新</p></li>
+            <ul>
+              <li><p>应用状态全部更新</p></li>
 
-<li><p>停机时间取决于应用程序的关闭和启动消耗的时间</p></li>
-</ul>
+              <li><p>停机时间取决于应用程序的关闭和启动消耗的时间</p></li>
+            </ul>
 
-<h3 id="滚动更新-rolling-update">滚动更新(rolling-update)</h3>
+            <h3 id="滚动更新-rolling-update">滚动更新(rolling-update)</h3>
 
-<p>滚动更新通过逐个替换实例来逐步部署新版本的应用，直到所有实例都被替换完成为止。它通常遵循以下过程：在负载均衡器后面使用版本 A 的实例池，然后部署版本 B 的一个实例，当服务准备好接收流量时(Readiness Probe 正常)，将该实例添加到实例池中，然后从实例池中删除一个版本 A 的实例并关闭，如下图所示：</p>
+            <p>
+              滚动更新通过逐个替换实例来逐步部署新版本的应用，直到所有实例都被替换完成为止。它通常遵循以下过程：在负载均衡器后面使用版本
+              A 的实例池，然后部署版本 B
+              的一个实例，当服务准备好接收流量时(Readiness Probe
+              正常)，将该实例添加到实例池中，然后从实例池中删除一个版本 A
+              的实例并关闭，如下图所示：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/30iUcb.jpg" alt="ramped"><figcaption>ramped</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/30iUcb.jpg"
+                alt="ramped"
+              />
+              <figcaption>ramped</figcaption>
+            </figure>
 
-<p>下图是滚动更新过程应用接收流量的示意图：</p>
+            <p>下图是滚动更新过程应用接收流量的示意图：</p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/OIhAqJ.jpg" alt="rolling-update requests"><figcaption>rolling-update requests</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/OIhAqJ.jpg"
+                alt="rolling-update requests"
+              />
+              <figcaption>rolling-update requests</figcaption>
+            </figure>
 
-<p>下面是 Kubernetes 中通过 Deployment 来进行滚动更新的关键参数：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">spec:
+            <p>
+              下面是 Kubernetes 中通过 Deployment 来进行滚动更新的关键参数：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">spec:
   replicas: <span style="color:#bd93f9">3</span>
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: <span style="color:#bd93f9">2</span>        <span style="color:#6272a4"># 一次可以添加多少个Pod</span>
-      maxUnavailable: <span style="color:#bd93f9">1</span>  <span style="color:#6272a4"># 滚动更新期间最大多少个Pod不可用</span></code></pre></div>
-<p>现在仍然使用上面的 app-v1.yaml 这个资源清单文件，新建一个定义滚动更新的资源清单文件 app-v2-rolling-update.yaml，文件内容如下:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
+      maxUnavailable: <span style="color:#bd93f9">1</span>  <span style="color:#6272a4"># 滚动更新期间最大多少个Pod不可用</span></code></pre>
+            </div>
+            <p>
+              现在仍然使用上面的 app-v1.yaml
+              这个资源清单文件，新建一个定义滚动更新的资源清单文件
+              app-v2-rolling-update.yaml，文件内容如下:
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: my-app
@@ -639,21 +878,45 @@ spec:
             port: probe
           <span style="color:#6272a4"># 初始延迟设置高点可以更好地观察滚动更新过程</span>
           initialDelaySeconds: <span style="color:#bd93f9">15</span>
-          periodSeconds: <span style="color:#bd93f9">5</span></code></pre></div>
-<p>上面的资源清单中我们在环境变量中定义了版本2，然后通过设置<code>strategy.type=RollingUpdate</code>来定义该 Deployment 使用滚动更新的策略来更新应用，接下来我们按下面的步骤来验证滚动更新策略：</p>
+          periodSeconds: <span style="color:#bd93f9">5</span></code></pre>
+            </div>
+            <p>
+              上面的资源清单中我们在环境变量中定义了版本2，然后通过设置<code>strategy.type=RollingUpdate</code>来定义该
+              Deployment
+              使用滚动更新的策略来更新应用，接下来我们按下面的步骤来验证滚动更新策略：
+            </p>
 
-<ol>
-<li>版本1提供服务</li>
-<li>部署版本2</li>
-<li>等待直到所有副本都被版本2替换完成</li>
-</ol>
+            <ol>
+              <li>版本1提供服务</li>
+              <li>部署版本2</li>
+              <li>等待直到所有副本都被版本2替换完成</li>
+            </ol>
 
-<p>同样，首先部署版本1应用：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f app-v1.yaml
+            <p>同样，首先部署版本1应用：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl apply -f app-v1.yaml
 service <span style="color:#f1fa8c">&#34;my-app&#34;</span> created
-deployment.apps <span style="color:#f1fa8c">&#34;my-app&#34;</span> created</code></pre></div>
-<p>测试版本1是否部署成功：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>my-app
+deployment.apps <span style="color:#f1fa8c">&#34;my-app&#34;</span> created</code></pre>
+            </div>
+            <p>测试版本1是否部署成功：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get pods -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>my-app
 NAME                      READY     STATUS    RESTARTS   AGE
 my-app-7b4874cd75-h8c4d   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          47s
 my-app-7b4874cd75-p4l8f   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          47s
@@ -662,14 +925,48 @@ $ kubectl get svc my-app
 NAME      TYPE       CLUSTER-IP      EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>        AGE
 my-app    NodePort   <span style="color:#bd93f9">10</span>.109.99.184   &lt;none&gt;        <span style="color:#bd93f9">80</span>:30486/TCP   1m
 $ curl http://127.0.0.1:30486
-Host: my-app-7b4874cd75-qnt7p, Version: v1.0.0</code></pre></div>
-<p>同样，在一个新终端中执行下面命令观察 Pod 变化：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ watch kubectl get pod -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>my-app</code></pre></div>
-<p>然后部署滚动更新版本2应用：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f app-v2-rolling-update.yaml
-deployment.apps <span style="color:#f1fa8c">&#34;my-app&#34;</span> configured</code></pre></div>
-<p>这个时候在上面的 watch 终端中可以看到多了很多 Pod，还在创建当中，并没有一开始就删除之前的 Pod，同样，这个时候执行下面命令，测试应用状态：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ <span style="color:#ff79c6">while</span> sleep <span style="color:#bd93f9">0</span>.1; <span style="color:#ff79c6">do</span> curl http://127.0.0.1:30486; <span style="color:#ff79c6">done</span>
+Host: my-app-7b4874cd75-qnt7p, Version: v1.0.0</code></pre>
+            </div>
+            <p>同样，在一个新终端中执行下面命令观察 Pod 变化：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ watch kubectl get pod -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>my-app</code></pre>
+            </div>
+            <p>然后部署滚动更新版本2应用：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl apply -f app-v2-rolling-update.yaml
+deployment.apps <span style="color:#f1fa8c">&#34;my-app&#34;</span> configured</code></pre>
+            </div>
+            <p>
+              这个时候在上面的 watch 终端中可以看到多了很多
+              Pod，还在创建当中，并没有一开始就删除之前的
+              Pod，同样，这个时候执行下面命令，测试应用状态：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ <span style="color:#ff79c6">while</span> sleep <span style="color:#bd93f9">0</span>.1; <span style="color:#ff79c6">do</span> curl http://127.0.0.1:30486; <span style="color:#ff79c6">done</span>
 Host: my-app-7b4874cd75-vrlj7, Version: v1.0.0
 ......
 Host: my-app-7b4874cd75-vrlj7, Version: v1.0.0
@@ -679,44 +976,134 @@ Host: my-app-7b4874cd75-p4l8f, Version: v1.0.0
 Host: my-app-6b5479d97f-s5ctz, Version: v2.0.0
 Host: my-app-7b4874cd75-5ldqx, Version: v1.0.0
 ......
-Host: my-app-6b5479d97f-5z6ww, Version: v2.0.0</code></pre></div>
-<p>我们可以看到上面的应用并没有出现不可用的情况，最开始访问到的都是版本1的应用，然后偶尔会出现版本2的应用，直到最后全都变成了版本2的应用，而这个时候看上面 watch 终端中 Pod 已经全部变成10个版本2的应用了，我们可以看到这就是一个逐步替换的过程。</p>
+Host: my-app-6b5479d97f-5z6ww, Version: v2.0.0</code></pre>
+            </div>
+            <p>
+              我们可以看到上面的应用并没有出现不可用的情况，最开始访问到的都是版本1的应用，然后偶尔会出现版本2的应用，直到最后全都变成了版本2的应用，而这个时候看上面
+              watch 终端中 Pod
+              已经全部变成10个版本2的应用了，我们可以看到这就是一个逐步替换的过程。
+            </p>
 
-<p>如果在滚动更新过程中发现新版本应用有问题，我们可以通过下面的命令来进行一键回滚：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl rollout undo deploy my-app
-deployment.apps <span style="color:#f1fa8c">&#34;my-app&#34;</span></code></pre></div>
-<p>如果你想保持两个版本的应用都存在，那么我们也可以执行 pause 命令来暂停更新：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl rollout pause deploy my-app
-deployment.apps <span style="color:#f1fa8c">&#34;my-app&#34;</span> paused</code></pre></div>
-<p>这个时候我们再去循环访问我们的应用就可以看到偶尔会出现版本1的应用信息了。</p>
+            <p>
+              如果在滚动更新过程中发现新版本应用有问题，我们可以通过下面的命令来进行一键回滚：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl rollout undo deploy my-app
+deployment.apps <span style="color:#f1fa8c">&#34;my-app&#34;</span></code></pre>
+            </div>
+            <p>
+              如果你想保持两个版本的应用都存在，那么我们也可以执行 pause
+              命令来暂停更新：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl rollout pause deploy my-app
+deployment.apps <span style="color:#f1fa8c">&#34;my-app&#34;</span> paused</code></pre>
+            </div>
+            <p>
+              这个时候我们再去循环访问我们的应用就可以看到偶尔会出现版本1的应用信息了。
+            </p>
 
-<p>如果新版本应用程序没问题了，也可以继续恢复更新：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl rollout resume deploy my-app
-deployment.apps <span style="color:#f1fa8c">&#34;my-app&#34;</span> resumed</code></pre></div>
-<p>最后，可以执行下面的命令来清空上面的资源对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl delete all -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>my-app</code></pre></div>
-<p>结论：</p>
+            <p>如果新版本应用程序没问题了，也可以继续恢复更新：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl rollout resume deploy my-app
+deployment.apps <span style="color:#f1fa8c">&#34;my-app&#34;</span> resumed</code></pre>
+            </div>
+            <p>最后，可以执行下面的命令来清空上面的资源对象：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl delete all -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>my-app</code></pre>
+            </div>
+            <p>结论：</p>
 
-<ul>
-<li>版本在实例之间缓慢替换</li>
-<li>rollout/rollback 可能需要一定时间</li>
-<li>无法控制流量</li>
-</ul>
+            <ul>
+              <li>版本在实例之间缓慢替换</li>
+              <li>rollout/rollback 可能需要一定时间</li>
+              <li>无法控制流量</li>
+            </ul>
 
-<h3 id="蓝-绿-blue-green-最好用来验证-api-版本问题">蓝/绿(blue/green) - 最好用来验证 API 版本问题</h3>
+            <h3 id="蓝-绿-blue-green-最好用来验证-api-版本问题">
+              蓝/绿(blue/green) - 最好用来验证 API 版本问题
+            </h3>
 
-<p>蓝/绿发布是版本2 与版本1 一起发布，然后流量切换到版本2，也称为红/黑部署。蓝/绿发布与滚动更新不同，版本2(<code>绿</code>) 与版本1(<code>蓝</code>)一起部署，在测试新版本满足要求后，然后更新更新 Kubernetes 中扮演负载均衡器角色的 Service 对象，通过替换 label selector 中的版本标签来将流量发送到新版本，如下图所示：</p>
+            <p>
+              蓝/绿发布是版本2 与版本1
+              一起发布，然后流量切换到版本2，也称为红/黑部署。蓝/绿发布与滚动更新不同，版本2(<code>绿</code>)
+              与版本1(<code>蓝</code>)一起部署，在测试新版本满足要求后，然后更新更新
+              Kubernetes 中扮演负载均衡器角色的 Service 对象，通过替换 label
+              selector 中的版本标签来将流量发送到新版本，如下图所示：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/mEQW8i.jpg" alt="blug/green"><figcaption>blug/green</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/mEQW8i.jpg"
+                alt="blug/green"
+              />
+              <figcaption>blug/green</figcaption>
+            </figure>
 
-<p>下面是蓝绿发布策略下应用方法的示例图：</p>
+            <p>下面是蓝绿发布策略下应用方法的示例图：</p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/FxTxRP.jpg" alt="blue/green request"><figcaption>blue/green request</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/FxTxRP.jpg"
+                alt="blue/green request"
+              />
+              <figcaption>blue/green request</figcaption>
+            </figure>
 
-<p>在 Kubernetes 中，我们可以用两种方法来实现蓝绿发布，通过单个 Service 对象或者 Ingress 控制器来实现蓝绿发布，实际操作都是类似的，都是通过 label 标签去控制。</p>
+            <p>
+              在 Kubernetes 中，我们可以用两种方法来实现蓝绿发布，通过单个
+              Service 对象或者 Ingress
+              控制器来实现蓝绿发布，实际操作都是类似的，都是通过 label
+              标签去控制。
+            </p>
 
-<p>实现蓝绿发布的关键点就在于 Service 对象中 label selector 标签的匹配方法，比如我们重新定义版本1 的资源清单文件 app-v1-single-svc.yaml，文件内容如下：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+            <p>
+              实现蓝绿发布的关键点就在于 Service 对象中 label selector
+              标签的匹配方法，比如我们重新定义版本1 的资源清单文件
+              app-v1-single-svc.yaml，文件内容如下：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: v1
 kind: Service
 metadata:
   name: my-app
@@ -775,13 +1162,39 @@ spec:
           httpGet:
             path: /ready
             port: probe
-          periodSeconds: <span style="color:#bd93f9">5</span></code></pre></div>
-<p>上面定义的资源对象中，最重要的就是 Service 中 label selector 的定义：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">selector:
+          periodSeconds: <span style="color:#bd93f9">5</span></code></pre>
+            </div>
+            <p>
+              上面定义的资源对象中，最重要的就是 Service 中 label selector
+              的定义：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">selector:
   app: my-app
-  version: v1.<span style="color:#bd93f9">0.0</span></code></pre></div>
-<p>版本2 的应用定义和以前一样，新建文件 app-v2-single-svc.yaml，文件内容如下：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
+  version: v1.<span style="color:#bd93f9">0.0</span></code></pre>
+            </div>
+            <p>
+              版本2 的应用定义和以前一样，新建文件
+              app-v2-single-svc.yaml，文件内容如下：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: my-app-v2
@@ -823,23 +1236,45 @@ spec:
           httpGet:
             path: /ready
             port: probe
-          periodSeconds: <span style="color:#bd93f9">5</span></code></pre></div>
-<p>然后按照下面的步骤来验证使用单个 Service 对象实现蓝/绿部署的策略：</p>
+          periodSeconds: <span style="color:#bd93f9">5</span></code></pre>
+            </div>
+            <p>
+              然后按照下面的步骤来验证使用单个 Service 对象实现蓝/绿部署的策略：
+            </p>
 
-<ol>
-<li>版本1 应用提供服务</li>
-<li>部署版本2 应用</li>
-<li>等到版本2 应用全部部署完成</li>
-<li>切换入口流量从版本1 到版本2</li>
-<li>关闭版本1 应用</li>
-</ol>
+            <ol>
+              <li>版本1 应用提供服务</li>
+              <li>部署版本2 应用</li>
+              <li>等到版本2 应用全部部署完成</li>
+              <li>切换入口流量从版本1 到版本2</li>
+              <li>关闭版本1 应用</li>
+            </ol>
 
-<p>首先，部署版本1 应用：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f app-v1-single-svc.yaml
+            <p>首先，部署版本1 应用：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl apply -f app-v1-single-svc.yaml
 service <span style="color:#f1fa8c">&#34;my-app&#34;</span> created
-deployment.apps <span style="color:#f1fa8c">&#34;my-app-v1&#34;</span> created</code></pre></div>
-<p>测试版本1 应用是否部署成功：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>my-app
+deployment.apps <span style="color:#f1fa8c">&#34;my-app-v1&#34;</span> created</code></pre>
+            </div>
+            <p>测试版本1 应用是否部署成功：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get pods -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>my-app
 NAME                         READY     STATUS    RESTARTS   AGE
 my-app-v1-7b4874cd75-7xh6s   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          41s
 my-app-v1-7b4874cd75-dmq8f   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          41s
@@ -848,68 +1283,203 @@ $ kubectl get svc -l <span style="color:#8be9fd;font-style:italic">app</span><sp
 NAME      TYPE       CLUSTER-IP       EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>        AGE
 my-app    NodePort   <span style="color:#bd93f9">10</span>.106.184.144   &lt;none&gt;        <span style="color:#bd93f9">80</span>:31539/TCP   50s
 $ curl http://127.0.0.1:31539
-Host: my-app-v1-7b4874cd75-7xh6s, Version: v1.0.0</code></pre></div>
-<p>同样，新开一个终端，执行如下命令观察 Pod 变化：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ watch kubectl get pod -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>my-app</code></pre></div>
-<p>然后部署版本2 应用：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f app-v2-single-svc.yaml
-deployment.apps <span style="color:#f1fa8c">&#34;my-app-v2&#34;</span> created</code></pre></div>
-<p>然后在上面 watch 终端中可以看到会多3个<code>my-app-v2</code>开头的 Pod，待这些 Pod 部署成功后，我们再去访问当前的应用：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ <span style="color:#ff79c6">while</span> sleep <span style="color:#bd93f9">0</span>.1; <span style="color:#ff79c6">do</span> curl http://127.0.0.1:31539; <span style="color:#ff79c6">done</span>
+Host: my-app-v1-7b4874cd75-7xh6s, Version: v1.0.0</code></pre>
+            </div>
+            <p>同样，新开一个终端，执行如下命令观察 Pod 变化：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ watch kubectl get pod -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>my-app</code></pre>
+            </div>
+            <p>然后部署版本2 应用：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl apply -f app-v2-single-svc.yaml
+deployment.apps <span style="color:#f1fa8c">&#34;my-app-v2&#34;</span> created</code></pre>
+            </div>
+            <p>
+              然后在上面 watch 终端中可以看到会多3个<code>my-app-v2</code>开头的
+              Pod，待这些 Pod 部署成功后，我们再去访问当前的应用：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ <span style="color:#ff79c6">while</span> sleep <span style="color:#bd93f9">0</span>.1; <span style="color:#ff79c6">do</span> curl http://127.0.0.1:31539; <span style="color:#ff79c6">done</span>
 Host: my-app-v1-7b4874cd75-dmq8f, Version: v1.0.0
 Host: my-app-v1-7b4874cd75-dmq8f, Version: v1.0.0
-......</code></pre></div>
-<p>我们会发现访问到的都是版本1 的应用，和我们刚刚部署的版本2 没有任何关系，这是因为我们 Service 对象中通过 label selector 匹配的是<code>version=v1.0.0</code>这个标签，我们可以通过修改 Service 对象的匹配标签，将流量路由到标签<code>version=v2.0.0</code>的 Pod 去：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl patch service my-app -p <span style="color:#f1fa8c">&#39;{&#34;spec&#34;:{&#34;selector&#34;:{&#34;version&#34;:&#34;v2.0.0&#34;}}}&#39;</span>
-service <span style="color:#f1fa8c">&#34;my-app&#34;</span> patched</code></pre></div>
-<p>然后再去访问应用，可以发现现在都是版本2 的信息了：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ <span style="color:#ff79c6">while</span> sleep <span style="color:#bd93f9">0</span>.1; <span style="color:#ff79c6">do</span> curl http://127.0.0.1:31539; <span style="color:#ff79c6">done</span>
+......</code></pre>
+            </div>
+            <p>
+              我们会发现访问到的都是版本1 的应用，和我们刚刚部署的版本2
+              没有任何关系，这是因为我们 Service 对象中通过 label selector
+              匹配的是<code>version=v1.0.0</code>这个标签，我们可以通过修改
+              Service
+              对象的匹配标签，将流量路由到标签<code>version=v2.0.0</code>的 Pod
+              去：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl patch service my-app -p <span style="color:#f1fa8c">&#39;{&#34;spec&#34;:{&#34;selector&#34;:{&#34;version&#34;:&#34;v2.0.0&#34;}}}&#39;</span>
+service <span style="color:#f1fa8c">&#34;my-app&#34;</span> patched</code></pre>
+            </div>
+            <p>然后再去访问应用，可以发现现在都是版本2 的信息了：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ <span style="color:#ff79c6">while</span> sleep <span style="color:#bd93f9">0</span>.1; <span style="color:#ff79c6">do</span> curl http://127.0.0.1:31539; <span style="color:#ff79c6">done</span>
 Host: my-app-v2-f885c8d45-r5m6z, Version: v2.0.0
 Host: my-app-v2-f885c8d45-r5m6z, Version: v2.0.0
-......</code></pre></div>
-<p>如果你需要回滚到版本1，同样只需要更改 Service 的匹配标签即可：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl patch service my-app -p <span style="color:#f1fa8c">&#39;{&#34;spec&#34;:{&#34;selector&#34;:{&#34;version&#34;:&#34;v1.0.0&#34;}}}&#39;</span></code></pre></div>
-<p>如果新版本已经完全符合我们的需求了，就可以删除版本1 的应用了：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl delete deploy my-app-v1</code></pre></div>
-<p>最后，同样，执行如下命令清理上述资源对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl delete all -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>my-app</code></pre></div>
-<p>结论：</p>
+......</code></pre>
+            </div>
+            <p>
+              如果你需要回滚到版本1，同样只需要更改 Service 的匹配标签即可：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl patch service my-app -p <span style="color:#f1fa8c">&#39;{&#34;spec&#34;:{&#34;selector&#34;:{&#34;version&#34;:&#34;v1.0.0&#34;}}}&#39;</span></code></pre>
+            </div>
+            <p>
+              如果新版本已经完全符合我们的需求了，就可以删除版本1 的应用了：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl delete deploy my-app-v1</code></pre>
+            </div>
+            <p>最后，同样，执行如下命令清理上述资源对象：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl delete all -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>my-app</code></pre>
+            </div>
+            <p>结论：</p>
 
-<ul>
-<li><p>实时部署/回滚</p></li>
+            <ul>
+              <li><p>实时部署/回滚</p></li>
 
-<li><p>避免版本问题，因为一次更改是整个应用的改变</p></li>
+              <li><p>避免版本问题，因为一次更改是整个应用的改变</p></li>
 
-<li><p>需要两倍的资源</p></li>
+              <li><p>需要两倍的资源</p></li>
 
-<li><p>在发布到生产之前，应该对整个应用进行适当的测试</p></li>
-</ul>
+              <li><p>在发布到生产之前，应该对整个应用进行适当的测试</p></li>
+            </ul>
 
-<h3 id="金丝雀-canary-让部分用户参与测试">金丝雀(Canary) - 让部分用户参与测试</h3>
+            <h3 id="金丝雀-canary-让部分用户参与测试">
+              金丝雀(Canary) - 让部分用户参与测试
+            </h3>
 
-<p>金丝雀部署是让部分用户访问到新版本应用，在 Kubernetes 中，可以使用两个具有相同 Pod 标签的 Deployment 来实现金丝雀部署。新版本的副本和旧版本的一起发布。在一段时间后如果没有检测到错误，则可以扩展新版本的副本数量并删除旧版本的应用。</p>
+            <p>
+              金丝雀部署是让部分用户访问到新版本应用，在 Kubernetes
+              中，可以使用两个具有相同 Pod 标签的 Deployment
+              来实现金丝雀部署。新版本的副本和旧版本的一起发布。在一段时间后如果没有检测到错误，则可以扩展新版本的副本数量并删除旧版本的应用。
+            </p>
 
-<p>如果需要按照具体的百分比来进行金丝雀发布，需要尽可能的启动多的 Pod 副本，这样计算流量百分比的时候才方便，比如，如果你想将 1% 的流量发送到版本 B，那么我们就需要有一个运行版本 B 的 Pod 和 99 个运行版本 A 的 Pod，当然如果你对具体的控制策略不在意的话也就无所谓了，如果你需要更精确的控制策略，建议使用服务网格（如 Istio），它们可以更好地控制流量。</p>
+            <p>
+              如果需要按照具体的百分比来进行金丝雀发布，需要尽可能的启动多的 Pod
+              副本，这样计算流量百分比的时候才方便，比如，如果你想将 1%
+              的流量发送到版本 B，那么我们就需要有一个运行版本 B 的 Pod 和 99
+              个运行版本 A 的
+              Pod，当然如果你对具体的控制策略不在意的话也就无所谓了，如果你需要更精确的控制策略，建议使用服务网格（如
+              Istio），它们可以更好地控制流量。
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/RvcM4f.jpg" alt="Canary"><figcaption>Canary</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/RvcM4f.jpg"
+                alt="Canary"
+              />
+              <figcaption>Canary</figcaption>
+            </figure>
 
-<p>在下面的例子中，我们使用 Kubernetes 原生特性来实现一个穷人版的金丝雀发布，如果你想要对流量进行更加细粒度的控制，请使用豪华版本的 Istio。下面是金丝雀发布的应用请求示意图：</p>
+            <p>
+              在下面的例子中，我们使用 Kubernetes
+              原生特性来实现一个穷人版的金丝雀发布，如果你想要对流量进行更加细粒度的控制，请使用豪华版本的
+              Istio。下面是金丝雀发布的应用请求示意图：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/OclNv8.jpg" alt="canary requests"><figcaption>canary requests</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/OclNv8.jpg"
+                alt="canary requests"
+              />
+              <figcaption>canary requests</figcaption>
+            </figure>
 
-<p>接下来我们按照下面的步骤来验证金丝雀策略：</p>
+            <p>接下来我们按照下面的步骤来验证金丝雀策略：</p>
 
-<ol>
-<li>10个副本的版本1 应用提供服务</li>
-<li>版本2 应用部署1个副本（意味着小于10%的流量）</li>
-<li>等待足够的时间来确认版本2 应用足够稳定没有任何错误信息</li>
-<li>将版本2 应用扩容到10个副本</li>
-<li>等待所有实例完成</li>
-<li>关闭版本1 应用</li>
-</ol>
+            <ol>
+              <li>10个副本的版本1 应用提供服务</li>
+              <li>版本2 应用部署1个副本（意味着小于10%的流量）</li>
+              <li>等待足够的时间来确认版本2 应用足够稳定没有任何错误信息</li>
+              <li>将版本2 应用扩容到10个副本</li>
+              <li>等待所有实例完成</li>
+              <li>关闭版本1 应用</li>
+            </ol>
 
-<p>首先，创建版本1 的应用资源清单，app-v1-canary.yaml，内容如下：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+            <p>
+              首先，创建版本1 的应用资源清单，app-v1-canary.yaml，内容如下：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: v1
 kind: Service
 metadata:
   name: my-app
@@ -966,9 +1536,23 @@ spec:
           httpGet:
             path: /ready
             port: probe
-          periodSeconds: <span style="color:#bd93f9">5</span></code></pre></div>
-<p>其中核心的部分也是 Service 对象中的 label selector 标签，不在具有版本相关的标签了，然后定义版本2 的资源清单文件，app-v2-canary.yaml，文件内容如下：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
+          periodSeconds: <span style="color:#bd93f9">5</span></code></pre>
+            </div>
+            <p>
+              其中核心的部分也是 Service 对象中的 label selector
+              标签，不在具有版本相关的标签了，然后定义版本2
+              的资源清单文件，app-v2-canary.yaml，文件内容如下：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: my-app-v2
@@ -1010,257 +1594,480 @@ spec:
           httpGet:
             path: /ready
             port: probe
-          periodSeconds: <span style="color:#bd93f9">5</span></code></pre></div>
-<p>版本1 和版本2 的 Pod 都具有一个共同的标签<code>app=my-app</code>，所以对应的 Service 会匹配两个版本的 Pod。</p>
+          periodSeconds: <span style="color:#bd93f9">5</span></code></pre>
+            </div>
+            <p>
+              版本1 和版本2 的 Pod
+              都具有一个共同的标签<code>app=my-app</code>，所以对应的 Service
+              会匹配两个版本的 Pod。
+            </p>
 
-<p>首先，部署版本1 应用：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f app-v1-canary.yaml
+            <p>首先，部署版本1 应用：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl apply -f app-v1-canary.yaml
 service <span style="color:#f1fa8c">&#34;my-app&#34;</span> created
-deployment.apps <span style="color:#f1fa8c">&#34;my-app-v1&#34;</span> created</code></pre></div>
-<p>然后测试版本1 应用是否正确部署了：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get svc -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>my-app
+deployment.apps <span style="color:#f1fa8c">&#34;my-app-v1&#34;</span> created</code></pre>
+            </div>
+            <p>然后测试版本1 应用是否正确部署了：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get svc -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>my-app
 NAME          TYPE        CLUSTER-IP       EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>        AGE
 my-app        NodePort    <span style="color:#bd93f9">10</span>.105.133.213   &lt;none&gt;        <span style="color:#bd93f9">80</span>:30760/TCP   47s
 $ curl http://127.0.0.1:30760
-Host: my-app-v1-7b4874cd75-tsh2s, Version: v1.0.0</code></pre></div>
-<p>同样，新开一个终端，查看 Pod 的变化：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ watch kubectl get po</code></pre></div>
-<p>然后部署版本2 应用：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f app-v2-canary.yaml
-deployment.apps <span style="color:#f1fa8c">&#34;my-app-v2&#34;</span> created</code></pre></div>
-<p>然后在 watch 终端页面可以看到多了一个 Pod，现在一共 11 个 Pod，其中只有1 个 Pod 运行新版本应用，然后同样可以循环访问该应用，查看是否会有版本2 的应用信息：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ <span style="color:#ff79c6">while</span> sleep <span style="color:#bd93f9">0</span>.1; <span style="color:#ff79c6">do</span> curl http://127.0.0.1:30760; <span style="color:#ff79c6">done</span>
+Host: my-app-v1-7b4874cd75-tsh2s, Version: v1.0.0</code></pre>
+            </div>
+            <p>同样，新开一个终端，查看 Pod 的变化：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ watch kubectl get po</code></pre>
+            </div>
+            <p>然后部署版本2 应用：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl apply -f app-v2-canary.yaml
+deployment.apps <span style="color:#f1fa8c">&#34;my-app-v2&#34;</span> created</code></pre>
+            </div>
+            <p>
+              然后在 watch 终端页面可以看到多了一个 Pod，现在一共 11 个
+              Pod，其中只有1 个 Pod
+              运行新版本应用，然后同样可以循环访问该应用，查看是否会有版本2
+              的应用信息：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ <span style="color:#ff79c6">while</span> sleep <span style="color:#bd93f9">0</span>.1; <span style="color:#ff79c6">do</span> curl http://127.0.0.1:30760; <span style="color:#ff79c6">done</span>
 Host: my-app-v1-7b4874cd75-bhxbp, Version: v1.0.0
 Host: my-app-v1-7b4874cd75-wmcqc, Version: v1.0.0
 Host: my-app-v1-7b4874cd75-tsh2s, Version: v1.0.0
 Host: my-app-v1-7b4874cd75-ml58j, Version: v1.0.0
 Host: my-app-v1-7b4874cd75-spsdv, Version: v1.0.0
 Host: my-app-v2-f885c8d45-mc2fx, Version: v2.0.0
-......</code></pre></div>
-<p>正常情况下可以看到大部分都是返回的版本1 的应用信息，偶尔会出现版本2 的应用信息，这就证明我们的金丝雀发布成功了，待确认了版本2 的这个应用没有任何问题后，可以将版本2 应用扩容到10 个副本：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl scale --replicas<span style="color:#ff79c6">=</span><span style="color:#bd93f9">10</span> deploy my-app-v2
-deployment.extensions <span style="color:#f1fa8c">&#34;my-app-v2&#34;</span> scaled</code></pre></div>
-<p>其实这个时候访问应用的话新版本和旧版本的流量分配是1:1了，确认了版本2 正常后，就可以删除版本1 的应用了：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl delete deploy my-app-v1
-deployment.extensions <span style="color:#f1fa8c">&#34;my-app-v1&#34;</span> deleted</code></pre></div>
-<p>最终留下的是 10 个新版本的 Pod 了，到这里我们的整个金丝雀发布就完成了。</p>
+......</code></pre>
+            </div>
+            <p>
+              正常情况下可以看到大部分都是返回的版本1
+              的应用信息，偶尔会出现版本2
+              的应用信息，这就证明我们的金丝雀发布成功了，待确认了版本2
+              的这个应用没有任何问题后，可以将版本2 应用扩容到10 个副本：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl scale --replicas<span style="color:#ff79c6">=</span><span style="color:#bd93f9">10</span> deploy my-app-v2
+deployment.extensions <span style="color:#f1fa8c">&#34;my-app-v2&#34;</span> scaled</code></pre>
+            </div>
+            <p>
+              其实这个时候访问应用的话新版本和旧版本的流量分配是1:1了，确认了版本2
+              正常后，就可以删除版本1 的应用了：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl delete deploy my-app-v1
+deployment.extensions <span style="color:#f1fa8c">&#34;my-app-v1&#34;</span> deleted</code></pre>
+            </div>
+            <p>
+              最终留下的是 10 个新版本的 Pod
+              了，到这里我们的整个金丝雀发布就完成了。
+            </p>
 
-<p>同样，最后，执行下面的命令删除上面的资源对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl delete all -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>my-app</code></pre></div>
-<p>结论：</p>
+            <p>同样，最后，执行下面的命令删除上面的资源对象：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl delete all -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>my-app</code></pre>
+            </div>
+            <p>结论：</p>
 
-<ul>
-<li>部分用户获取新版本</li>
-<li>方便错误和性能监控</li>
-<li>快速回滚</li>
-<li>发布较慢</li>
-<li>流量精准控制很浪费（99％A / 1％B = 99 Pod A，1 Pod B）</li>
-</ul>
+            <ul>
+              <li>部分用户获取新版本</li>
+              <li>方便错误和性能监控</li>
+              <li>快速回滚</li>
+              <li>发布较慢</li>
+              <li>流量精准控制很浪费（99％A / 1％B = 99 Pod A，1 Pod B）</li>
+            </ul>
 
-<blockquote>
-<p>如果你对新功能的发布没有信心，建议使用金丝雀发布的策略。</p>
-</blockquote>
+            <blockquote>
+              <p>如果你对新功能的发布没有信心，建议使用金丝雀发布的策略。</p>
+            </blockquote>
 
-<h3 id="a-b测试-a-b-testing-最适合部分用户的功能测试">A/B测试(A/B testing) - 最适合部分用户的功能测试</h3>
+            <h3 id="a-b测试-a-b-testing-最适合部分用户的功能测试">
+              A/B测试(A/B testing) - 最适合部分用户的功能测试
+            </h3>
 
-<p>A/B 测试实际上是一种基于统计信息而非部署策略来制定业务决策的技术，与业务结合非常紧密。但是它们也是相关的，也可以使用金丝雀发布来实现。</p>
+            <p>
+              A/B
+              测试实际上是一种基于统计信息而非部署策略来制定业务决策的技术，与业务结合非常紧密。但是它们也是相关的，也可以使用金丝雀发布来实现。
+            </p>
 
-<p>除了基于权重在版本之间进行流量控制之外，A/B 测试还可以基于一些其他参数（比如 Cookie、User Agent、地区等等）来精确定位给定的用户群，该技术广泛用于测试一些功能特性的效果，然后按照效果来进行确定。</p>
+            <p>
+              除了基于权重在版本之间进行流量控制之外，A/B
+              测试还可以基于一些其他参数（比如 Cookie、User
+              Agent、地区等等）来精确定位给定的用户群，该技术广泛用于测试一些功能特性的效果，然后按照效果来进行确定。
+            </p>
 
-<blockquote>
-<p>我们经常可以在<code>今日头条</code>的客户端中就会发现有大量的 A/B 测试，同一个地区的用户看到的客户端有很大不同。</p>
-</blockquote>
+            <blockquote>
+              <p>
+                我们经常可以在<code>今日头条</code>的客户端中就会发现有大量的
+                A/B 测试，同一个地区的用户看到的客户端有很大不同。
+              </p>
+            </blockquote>
 
-<p>要使用这些细粒度的控制，仍然还是建议使用 Istio，可以根据权重或 HTTP 头等来动态请求路由控制流量转发。</p>
+            <p>
+              要使用这些细粒度的控制，仍然还是建议使用 Istio，可以根据权重或
+              HTTP 头等来动态请求路由控制流量转发。
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/b4qVNZ.jpg" alt="ab test"><figcaption>ab test</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/b4qVNZ.jpg"
+                alt="ab test"
+              />
+              <figcaption>ab test</figcaption>
+            </figure>
 
-<p>下面是使用 Istio 进行规则设置的示例，因为 Istio 还不太稳定，以下示例规则将来可能会更改：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">route:
+            <p>
+              下面是使用 Istio 进行规则设置的示例，因为 Istio
+              还不太稳定，以下示例规则将来可能会更改：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">route:
 - tags:
   version: v1.<span style="color:#bd93f9">0.0</span>
   weight: <span style="color:#bd93f9">90</span>
 - tags:
   version: v2.<span style="color:#bd93f9">0.0</span>
-  weight: <span style="color:#bd93f9">10</span></code></pre></div>
-<p>关于在 Istio 中具体如何做 A/B 测试，我们这里就不再详细介绍了，我们在<code>istio-book</code>文档中有相关的介绍。</p>
+  weight: <span style="color:#bd93f9">10</span></code></pre>
+            </div>
+            <p>
+              关于在 Istio 中具体如何做 A/B
+              测试，我们这里就不再详细介绍了，我们在<code>istio-book</code>文档中有相关的介绍。
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/2lK8wZ.jpg" alt="ab test request"><figcaption>ab test request</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/2lK8wZ.jpg"
+                alt="ab test request"
+              />
+              <figcaption>ab test request</figcaption>
+            </figure>
 
-<p>结论：</p>
+            <p>结论：</p>
 
-<ul>
-<li>几个版本并行运行</li>
-<li>完全控制流量分配</li>
-<li>特定的一个访问错误难以排查，需要分布式跟踪</li>
-<li>Kubernetes 没有直接的支持，需要其他额外的工具</li>
-</ul>
+            <ul>
+              <li>几个版本并行运行</li>
+              <li>完全控制流量分配</li>
+              <li>特定的一个访问错误难以排查，需要分布式跟踪</li>
+              <li>Kubernetes 没有直接的支持，需要其他额外的工具</li>
+            </ul>
 
-<h3 id="总结">总结</h3>
+            <h3 id="总结">总结</h3>
 
-<p>发布应用有许多种方法，当发布到开发/测试环境的时候，<code>重建</code>或者<code>滚动更新</code>通常是一个不错的选择。在生产环境，<code>滚动更新</code>或者<code>蓝绿发布</code>比较合适，但是新版本的提前测试是非常有必要的。如果你对新版本的应用不是很有信心的话，那应该使用<code>金丝雀</code>发布，将用户的影响降到最低。最后，如果你的公司需要在特定的用户群体中进行新功能的测试，例如，移动端用户请求路由到版本 A，桌面端用户请求路由到版本 B，那么你就看使用<code>A/B 测试</code>，通过使用 Kubernetes 服务网关的配置，可以根据某些请求参数来确定用户应路由的服务。</p>
+            <p>
+              发布应用有许多种方法，当发布到开发/测试环境的时候，<code>重建</code>或者<code>滚动更新</code>通常是一个不错的选择。在生产环境，<code>滚动更新</code>或者<code>蓝绿发布</code>比较合适，但是新版本的提前测试是非常有必要的。如果你对新版本的应用不是很有信心的话，那应该使用<code>金丝雀</code>发布，将用户的影响降到最低。最后，如果你的公司需要在特定的用户群体中进行新功能的测试，例如，移动端用户请求路由到版本
+              A，桌面端用户请求路由到版本 B，那么你就看使用<code>A/B 测试</code
+              >，通过使用 Kubernetes
+              服务网关的配置，可以根据某些请求参数来确定用户应路由的服务。
+            </p>
 
-<p>如果您有任何问题或反馈，请随时在下面留言。</p>
+            <p>如果您有任何问题或反馈，请随时在下面留言。</p>
 
-<blockquote>
-<p>本文主要参考链接：<a href="https://container-solutions.com/kubernetes-deployment-strategies/">https://container-solutions.com/kubernetes-deployment-strategies/</a></p>
-</blockquote>
+            <blockquote>
+              <p>
+                本文主要参考链接：<a
+                  href="https://container-solutions.com/kubernetes-deployment-strategies/"
+                  >https://container-solutions.com/kubernetes-deployment-strategies/</a
+                >
+              </p>
+            </blockquote>
 
-<p><a href="https://youdianzhishi.com/web/course/1030" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+            <p>
+              <a
+                href="https://youdianzhishi.com/web/course/1030"
+                title="从 Docker 到 Kubernetes 进阶课程"
+                ><img
+                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
+                  alt="Kubernetes进阶训练营"
+              /></a>
+            </p>
 
+            <h2>微信公众号</h2>
+            <p>
+              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+              kubernetes 讨论群里面共同学习。
+            </p>
+            <img
+              src="https://picdn.youdianzhishi.com/images/qrcode.png"
+              alt="wechat-account-qrcode"
+            />
 
-          <h2>微信公众号</h2>
-<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
-
-  
-          
             <div class="entry-shang text-center">
-    <p>「真诚赞赏，手留余香」</p>
-    <button class="zs show-zs btn btn-bred">赞赏</button>
-</div>
-<div class="zs-modal-bg"></div>
-<div class="zs-modal-box">
-    <div class="zs-modal-head">
-        <button type="button" class="close">×</button>
-        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
-        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-    </div>
-    <div class="zs-modal-body">
-        <div class="zs-modal-btns">
-            <button class="btn btn-blink" data-num="2">2元</button>
-            <button class="btn btn-blink" data-num="5">5元</button>
-            <button class="btn btn-blink" data-num="10">10元</button>
-            <button class="btn btn-blink" data-num="50">50元</button>
-            <button class="btn btn-blink" data-num="100">100元</button>
-            <button class="btn btn-blink" data-num="1">任意金额</button>
-        </div>
-        <div class="zs-modal-pay">
-            <button class="btn btn-bred" id="pay-text">2元</button>
-            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
-        </div>
-    </div>
-    <div class="zs-modal-footer">
-        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
-    </div>
-</div>
-          
-          
-            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
-    <center>
-    <a href="#" class="social-share-icon icon-weibo"></a>
-    <a href="#" class="social-share-icon icon-wechat"></a>
-    <a href="#" class="social-share-icon icon-twitter"></a>
-    <a href="#" class="social-share-icon icon-linkedin"></a>
-    <a href="#" class="social-share-icon icon-facebook"></a>
-    <a href="#" class="social-share-icon icon-qq"></a>
-    <a href="#" class="social-share-icon icon-qzone"></a>
-    </center>
-</div>
+              <p>「真诚赞赏，手留余香」</p>
+              <button class="zs show-zs btn btn-bred">赞赏</button>
+            </div>
+            <div class="zs-modal-bg"></div>
+            <div class="zs-modal-box">
+              <div class="zs-modal-head">
+                <button type="button" class="close">×</button>
+                <span class="author"
+                  ><img
+                    src="https://www.qikqiak.com/img/avatar.jpeg"
+                  />阳明</span
+                >
+                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+              </div>
+              <div class="zs-modal-body">
+                <div class="zs-modal-btns">
+                  <button class="btn btn-blink" data-num="2">2元</button>
+                  <button class="btn btn-blink" data-num="5">5元</button>
+                  <button class="btn btn-blink" data-num="10">10元</button>
+                  <button class="btn btn-blink" data-num="50">50元</button>
+                  <button class="btn btn-blink" data-num="100">100元</button>
+                  <button class="btn btn-blink" data-num="1">任意金额</button>
+                </div>
+                <div class="zs-modal-pay">
+                  <button class="btn btn-bred" id="pay-text">2元</button>
+                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+                  <img
+                    src="https://www.qikqiak.com/img/wechat-2.png"
+                    id="pay-image"
+                  />
+                </div>
+              </div>
+              <div class="zs-modal-footer">
+                <span class="zs-wechat"
+                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
+                /></span>
+              </div>
+            </div>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+            <div
+              class="social-share"
+              data-initialized="true"
+              style="margin-bottom: 20px; margin-top: 20px"
+            >
+              <center>
+                <a href="#" class="social-share-icon icon-weibo"></a>
+                <a href="#" class="social-share-icon icon-wechat"></a>
+                <a href="#" class="social-share-icon icon-twitter"></a>
+                <a href="#" class="social-share-icon icon-linkedin"></a>
+                <a href="#" class="social-share-icon icon-facebook"></a>
+                <a href="#" class="social-share-icon icon-qq"></a>
+                <a href="#" class="social-share-icon icon-qzone"></a>
+              </center>
+            </div>
 
-          
-        </article>
-  
-        
-          
+            <link
+              rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
+            />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+          </article>
 
-<h3>相关文章</h3>
-<ul style="margin-bottom: 25px;">
-    
-    <li><a href="https://www.qikqiak.com/post/kubernetes-rollout-update/">Kubernetes Deployment滚动升级</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/k8s-istio-course/">Istio 实训免费视频课程</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/k8s-cka-course/">Kubernetes CKA 实训免费视频课程</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/office-env-k8s-network/">办公环境下 kubernetes 网络互通方案</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/kubernetes-logs-architecture/">kubernetes 日志架构</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/shengdan-promotion/">圣诞元旦课程优惠活动</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/prometheus-operator-advance/">Prometheus Operator 高级配置</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/prometheus-operator-custom-alert/">Prometheus Operator 自定义报警</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/prometheus-operator-monitor-etcd/">Prometheus Operator 监控 etcd 集群</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/grafana-log-tool-loki/">Grafana 日志聚合工具 Loki</a></li>
-    
-</ul>
+          <h3>相关文章</h3>
+          <ul style="margin-bottom: 25px">
+            <li>
+              <a href="https://www.qikqiak.com/post/kubernetes-rollout-update/"
+                >Kubernetes Deployment滚动升级</a
+              >
+            </li>
 
-        
-  
-        
-        <ul class="pager blog-pager">
-          
+            <li>
+              <a href="https://www.qikqiak.com/post/k8s-istio-course/"
+                >Istio 实训免费视频课程</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/k8s-cka-course/"
+                >Kubernetes CKA 实训免费视频课程</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/office-env-k8s-network/"
+                >办公环境下 kubernetes 网络互通方案</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/kubernetes-logs-architecture/"
+                >kubernetes 日志架构</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/shengdan-promotion/"
+                >圣诞元旦课程优惠活动</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/prometheus-operator-advance/"
+                >Prometheus Operator 高级配置</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/prometheus-operator-custom-alert/"
+                >Prometheus Operator 自定义报警</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/prometheus-operator-monitor-etcd/"
+                >Prometheus Operator 监控 etcd 集群</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/grafana-log-tool-loki/"
+                >Grafana 日志聚合工具 Loki</a
+              >
+            </li>
+          </ul>
+
+          <ul class="pager blog-pager">
             <li class="previous">
-              <a href="https://www.qikqiak.com/post/helm-monitor-plugin/" data-toggle="tooltip" data-placement="top" title="Helm monitor 插件(附视频)">&larr; 前一篇</a>
+              <a
+                href="https://www.qikqiak.com/post/helm-monitor-plugin/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="Helm monitor 插件(附视频)"
+                >&larr; 前一篇</a
+              >
             </li>
-          
-          
-            <li class="next">
-              <a href="https://www.qikqiak.com/post/how-to-add-datetimefield-in-django-without-microsecond/" data-toggle="tooltip" data-placement="top" title="在 Django 中如何添加没有微秒的 DateTimeField 属性">后一篇 &rarr;</a>
-            </li>
-          
-        </ul>
-        
 
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-        
-        <ins class="adsbygoogle"
-            style="display:block"
+            <li class="next">
+              <a
+                href="https://www.qikqiak.com/post/how-to-add-datetimefield-in-django-without-microsecond/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="在 Django 中如何添加没有微秒的 DateTimeField 属性"
+                >后一篇 &rarr;</a
+              >
+            </li>
+          </ul>
+
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+          ></script>
+
+          <ins
+            class="adsbygoogle"
+            style="display: block"
             data-ad-client="ca-pub-5376999672787220"
             data-ad-slot="3700507799"
             data-ad-format="auto"
-            data-full-width-responsive="true"></ins>
-        <script>
+            data-full-width-responsive="true"
+          ></ins>
+          <script>
             (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
-  
-        
-    <div id="gitalk-container"></div>
-    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-    <script>
-    var gitalk = new Gitalk({
-        clientID: 'bdb76dbb2e9d0786e350',
-        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
-        repo: 'blog',
-        owner: 'cnych',
-        admin: ['cnych'],
-        labels: ['gitment'],
-        title: 'Kubernetes 部署策略详解',
-        createIssueManually: true,
-        id: 'k8s-deployment-strategies',      
-        distractionFreeMode: true  
-    });
-    gitalk.render('gitalk-container');
-</script>
+          </script>
 
-
-        
-          
-
-        
-  
+          <div id="gitalk-container"></div>
+          <link
+            rel="stylesheet"
+            href="https://unpkg.com/gitalk/dist/gitalk.css"
+          />
+          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+          <script>
+            var gitalk = new Gitalk({
+              clientID: "bdb76dbb2e9d0786e350",
+              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
+              repo: "blog",
+              owner: "cnych",
+              admin: ["cnych"],
+              labels: ["gitment"],
+              title: "Kubernetes 部署策略详解",
+              createIssueManually: true,
+              id: "k8s-deployment-strategies",
+              distractionFreeMode: true,
+            });
+            gitalk.render("gitalk-container");
+          </script>
+        </div>
       </div>
-    
-    
-  </div>
-</div>
+    </div>
 
     <footer>
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <ul class="list-inline text-center footer-links">
-          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
-          
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <ul class="list-inline text-center footer-links">
+              <img
+                src="https://www.qikqiak.com/img/wechatmp.png"
+                alt="k8s技术圈"
+              />
+
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -1269,7 +2076,7 @@ deployment.extensions <span style="color:#f1fa8c">&#34;my-app-v1&#34;</span> del
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -1278,7 +2085,7 @@ deployment.extensions <span style="color:#f1fa8c">&#34;my-app-v1&#34;</span> del
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -1287,7 +2094,7 @@ deployment.extensions <span style="color:#f1fa8c">&#34;my-app-v1&#34;</span> del
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -1296,121 +2103,158 @@ deployment.extensions <span style="color:#f1fa8c">&#34;my-app-v1&#34;</span> del
                   </span>
                 </a>
               </li>
-          
-          
-          <li>
-            <a href="https://www.qikqiak.com/index.xml" title="RSS">
-              <span class="fa-stack fa-lg">
-                <i class="fa fa-circle fa-stack-2x"></i>
-                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+
+              <li>
+                <a href="https://www.qikqiak.com/index.xml" title="RSS">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+            </ul>
+            <p class="credits copyright text-muted">
+              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/">阳明的博客</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/archive/">归档</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/friend/">友链</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://beian.miit.gov.cn/" target="_blank"
+                >蜀ICP备11027319号-5</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
+                >kubernetes.io</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
+                >Kubernetes中文社区</a
+              >
+            </p>
+            <p class="text-center text-muted">
+              <script
+                async
+                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
+              ></script>
+              <span id="busuanzi_container_site_pv" style="display: none">
+                本站总访问量<span id="busuanzi_value_site_pv"></span>次
               </span>
-            </a>
-          </li>
-          
-        </ul>
-        <p class="credits copyright text-muted">
-          
+              &nbsp;&bull;&nbsp;
+              <span id="busuanzi_container_site_uv" style="display: none">
+                访客数<span id="busuanzi_value_site_uv"></span>人次
+              </span>
+            </p>
 
-          &nbsp;&bull;&nbsp;
-          2023
-
-          
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/">阳明的博客</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/archive/">归档</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/friend/">友链</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
-          
-        </p>
-        <p class="text-center text-muted">
-          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-          <span id="busuanzi_container_site_pv" style="display:none">
-            本站总访问量<span id="busuanzi_value_site_pv"></span>次
-          </span>
-          &nbsp;&bull;&nbsp;
-          <span id="busuanzi_container_site_uv" style="display:none">
-            访客数<span id="busuanzi_value_site_uv"></span>人次
-          </span>
-        </p>
-        
-        <p class="credits theme-by text-muted">
-          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
-          
-        </p>
+            <p class="credits theme-by text-muted">
+              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
+              &nbsp;&bull;&nbsp; 主题
+              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+              移植自
+              <a href="https://github.com/rootsongjc/beautifulhugo"
+                >Beautiful Hugo</a
+              >
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</footer>
+    </footer>
 
+    <script
+      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
+      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
+    ></script>
 
-<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "UA-69668147-3");
+    </script>
+    <script>
+      (function () {
+        var bp = document.createElement("script");
+        var curProtocol = window.location.protocol.split(":")[0];
+        if (curProtocol === "https") {
+          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
+        } else {
+          bp.src = "http://push.zhanzhang.baidu.com/push.js";
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+      })();
+    </script>
+    <script>
+      $(document).ready(function () {
+        var int = setInterval(fixCount, 50);
 
-
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-69668147-3');
-</script>
-<script>
-(function(){
-    var bp = document.createElement('script');
-    var curProtocol = window.location.protocol.split(':')[0];
-    if (curProtocol === 'https') {
-        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
-    }
-    else {
-        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
-    }
-    var s = document.getElementsByTagName("script")[0];
-    s.parentNode.insertBefore(bp, s);
-})();
-</script>
-<script >
-$(document).ready(function() {
-  var int = setInterval(fixCount, 50);  
-  
-  var initPVCount = 584976;
-  var initUVCount = 153191;
-  function fixCount() {                   
-    if ($("#busuanzi_container_site_pv").css("display") != "none") {
-        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
-        clearInterval(int); 
-    }
-    if ($("#busuanzi_container_site_uv").css("display") != "none") {
-      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
-      clearInterval(int); 
-    }  
-  }           
-});
-</script>
- <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
-<script type="text/javascript">
-$('.carousel').slick({
-    dots: true,
-    arrows: true,
-    autoplay: true,
-    autoplaySpeed: 4000,
-    infinite: true,
-    speed: 500,
-    fade: true,
-    cssEase: 'linear',
-    centerMode: true,
-    prevArrow: '<button type="button" class="slick-prev"></button>',
-    nextArrow: '<button type="button" class="slick-next"></button>',
-});
-</script>
-
+        var initPVCount = 584976;
+        var initUVCount = 153191;
+        function fixCount() {
+          if ($("#busuanzi_container_site_pv").css("display") != "none") {
+            $("#busuanzi_value_site_pv").html(
+              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
+            );
+            clearInterval(int);
+          }
+          if ($("#busuanzi_container_site_uv").css("display") != "none") {
+            $("#busuanzi_value_site_uv").html(
+              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
+            );
+            clearInterval(int);
+          }
+        }
+      });
+    </script>
+    <script>
+      (function (w, d, s, id) {
+        if (typeof w.webpushr !== "undefined") return;
+        w.webpushr =
+          w.webpushr ||
+          function () {
+            (w.webpushr.q = w.webpushr.q || []).push(arguments);
+          };
+        var js,
+          fjs = d.getElementsByTagName(s)[0];
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "https://cdn.webpushr.com/app.min.js";
+        fjs.parentNode.appendChild(js);
+      })(window, document, "script", "webpushr-jssdk");
+      webpushr(
+        "init",
+        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
+      );
+    </script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
+    ></script>
+    <script type="text/javascript">
+      $(".carousel").slick({
+        dots: true,
+        arrows: true,
+        autoplay: true,
+        autoplaySpeed: 4000,
+        infinite: true,
+        speed: 500,
+        fade: true,
+        cssEase: "linear",
+        centerMode: true,
+        prevArrow: '<button type="button" class="slick-prev"></button>',
+        nextArrow: '<button type="button" class="slick-next"></button>',
+      });
+    </script>
   </body>
 </html>
-

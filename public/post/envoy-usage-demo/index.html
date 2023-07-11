@@ -1,362 +1,445 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
 
+    <title>
+      Envoy
+      简单入门示例-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
+    </title>
+    <meta property="og:title" content="Envoy 简单入门示例" />
+    <meta name="twitter:title" content="Envoy 简单入门示例" />
 
-  <title>Envoy 简单入门示例-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
-  <meta property="og:title" content="Envoy 简单入门示例" />
-  <meta name="twitter:title" content="Envoy 简单入门示例" />
+    <meta
+      name="description"
+      content="Envoy 是为云原生应用而设计的开源边缘和服务代理，也是 Istio Service Mesh 默认的数据平面，本文我们通过一个简单的示例来介绍 Envoy 的基本使用。"
+    />
+    <meta
+      property="og:description"
+      content="Envoy 是为云原生应用而设计的开源边缘和服务代理，也是 Istio Service Mesh 默认的数据平面，本文我们通过一个简单的示例来介绍 Envoy 的基本使用。"
+    />
+    <meta
+      name="twitter:description"
+      content="Envoy 是为云原生应用而设计的开源边缘和服务代理，也是 Istio Service Mesh 默认的数据平面，本文我们通过一个简单的示例来介绍 Envoy 的基本使用。"
+    />
+    <meta name="author" content="" />
+    <link
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+      rel="icon"
+      type="image/x-icon"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      property="og:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      name="twitter:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta
+      property="og:url"
+      content="https://www.qikqiak.com/post/envoy-usage-demo/"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="阳明的博客" />
 
-  <meta name="description" content="Envoy 是为云原生应用而设计的开源边缘和服务代理，也是 Istio Service Mesh 默认的数据平面，本文我们通过一个简单的示例来介绍 Envoy 的基本使用。">
-  <meta property="og:description" content="Envoy 是为云原生应用而设计的开源边缘和服务代理，也是 Istio Service Mesh 默认的数据平面，本文我们通过一个简单的示例来介绍 Envoy 的基本使用。">
-  <meta name="twitter:description" content="Envoy 是为云原生应用而设计的开源边缘和服务代理，也是 Istio Service Mesh 默认的数据平面，本文我们通过一个简单的示例来介绍 Envoy 的基本使用。">
-  <meta name="author" content=""/>
-  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
-  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
-  <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://www.qikqiak.com/post/envoy-usage-demo/" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="阳明的博客" />
+    <meta name="generator" content="Hugo 0.55.6" />
+    <link
+      rel="canonical"
+      href="https://www.qikqiak.com/post/envoy-usage-demo/"
+    />
+    <link
+      rel="alternate"
+      href="https://www.qikqiak.com/index.xml"
+      type="application/rss+xml"
+      title="阳明的博客"
+    />
 
-  <meta name="generator" content="Hugo 0.55.6" />
-  <link rel="canonical" href="https://www.qikqiak.com/post/envoy-usage-demo/" />
-  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+    <link
+      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
+      rel="stylesheet"
+    />
 
-  
-  
-  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
-  
+    <link
+      rel="stylesheet"
+      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
+      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
+    />
 
-  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
+    />
 
-  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
-  
-  
-    
     <!--[if lt IE 9]>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+        rel="stylesheet"
+      />
     <![endif]-->
-<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
-<meta name="baidu-site-verification" content="F5ojAyqaKU" />
-<meta name="keywords" content="envoy, kubernetes">
-<script>
-var _hmt = _hmt || [];
-(function() {
-  var hm = document.createElement("script");
-  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-  var s = document.getElementsByTagName("script")[0];
-  s.parentNode.insertBefore(hm, s);
-})();
-</script>
+    <meta
+      name="google-site-verification"
+      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
+    />
+    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
+    <meta name="keywords" content="envoy, kubernetes" />
+    <script>
+      var _hmt = _hmt || [];
+      (function () {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
 
+    <script type="application/javascript">
+      var doNotTrack = false;
+      if (!doNotTrack) {
+        window.ga =
+          window.ga ||
+          function () {
+            (ga.q = ga.q || []).push(arguments);
+          };
+        ga.l = +new Date();
+        ga("create", "UA-69668147-3", "auto");
 
-
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-	ga('create', 'UA-69668147-3', 'auto');
-	
-	ga('send', 'pageview');
-}
-</script>
-<script async src='https://www.google-analytics.com/analytics.js'></script>
-
-</head>
+        ga("send", "pageview");
+      }
+    </script>
+    <script async src="https://www.google-analytics.com/analytics.js"></script>
+  </head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
-        <span class="sr-only">切换导航</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
-        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
-      </a>
-    </div>
+      <div class="container">
+        <div class="navbar-header">
+          <button
+            type="button"
+            class="navbar-toggle"
+            data-toggle="collapse"
+            data-target="#main-navbar"
+          >
+            <span class="sr-only">切换导航</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a
+            class="navbar-brand"
+            href="https://www.qikqiak.com/"
+            title="阳明的博客"
+          >
+            <img
+              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
+              style="margin-top: -5px; height: 32px"
+              alt="阳明的博客"
+            />
+          </a>
+        </div>
 
-    <div class="collapse navbar-collapse" id="main-navbar">
-      <ul class="nav navbar-nav navbar-right">
-        
-          
+        <div class="collapse navbar-collapse" id="main-navbar">
+          <ul class="nav navbar-nav navbar-right">
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-          
-        
-          
+
             <li>
-              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+              <a
+                title="课程"
+                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
+                >课程</a
+              >
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/archives">Archive</a>
-                
-                  <a href="https://www.qikqiak.com/tags">tags</a>
-                
-                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-                
-                  <a href="https://www.qikqiak.com/tags/python">python</a>
-                
-                  <a href="https://www.qikqiak.com/tags/django">django</a>
-                
-                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
-                
+                <a href="https://www.qikqiak.com/archives">Archive</a>
+
+                <a href="https://www.qikqiak.com/tags">tags</a>
+
+                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+
+                <a href="https://www.qikqiak.com/tags/python">python</a>
+
+                <a href="https://www.qikqiak.com/tags/django">django</a>
+
+                <a href="https://www.qikqiak.com/tags/devops">devops</a>
               </div>
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-                
-                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-                
-                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-                
-                  <a href="https://md.qikqiak.com/">Markdown微信</a>
-                
+                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+
+                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+
+                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+
+                <a href="https://md.qikqiak.com/">Markdown微信</a>
               </div>
             </li>
-          
-        
-          
+
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+              <a title="关于" href="https://www.qikqiak.com/page/about/"
+                >关于</a
+              >
             </li>
-          
-        
-          
+
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
-          
-        
 
-        
-
-        
-
-        
-          <li>
-            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
-              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
-            </a>
-          </li>
-          
-
-      </ul>
-    </div>
-
-  </div>
-</nav>
-
-
-  <div id="modalSearch" class="modal fade" role="dialog">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-          <h4 class="modal-title">搜索</h4>
+            <li>
+              <a
+                href="#modalSearch"
+                data-toggle="modal"
+                data-target="#modalSearch"
+                style="outline: none"
+              >
+                <span
+                  id="searchGlyph"
+                  class="glyphicon glyphicon-search"
+                ></span>
+              </a>
+            </li>
+          </ul>
         </div>
-        <div class="modal-body">
-            
-<div class="aa-input-container" id="aa-input-container">
-    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
-    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
-    </svg>
-</div>
-<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+      </div>
+    </nav>
 
-<script>
-var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
-var index = client.initIndex('prod_blog');
+    <div id="modalSearch" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">
+              &times;
+            </button>
+            <h4 class="modal-title">搜索</h4>
+          </div>
+          <div class="modal-body">
+            <div class="aa-input-container" id="aa-input-container">
+              <input
+                type="search"
+                id="aa-search-input"
+                class="aa-input-search"
+                placeholder="Search for titles or URIs..."
+                name="search"
+                autocomplete="off"
+              />
+              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+                <path
+                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
+                />
+              </svg>
+            </div>
+            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-autocomplete('#aa-search-input',
-{ hint: false}, {
-    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
-    
-    displayKey: 'name',
-    
-    templates: {
-        
-        suggestion: function(suggestion) {
-            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
-            suggestion._highlightResult.title.value + '</a></span>';
-        }
-    }
-});
-</script>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+            <script>
+              var client = algoliasearch(
+                "1JDRAS0AZR",
+                "8804ac109158bb3bb60d74ce98fa332f"
+              );
+              var index = client.initIndex("prod_blog");
+
+              autocomplete(
+                "#aa-search-input",
+                { hint: false },
+                {
+                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
+
+                  displayKey: "name",
+
+                  templates: {
+                    suggestion: function (suggestion) {
+                      return (
+                        "<span>" +
+                        '<a href="https://www.qikqiak.com/post/' +
+                        suggestion.slug +
+                        '">' +
+                        suggestion._highlightResult.title.value +
+                        "</a></span>"
+                      );
+                    },
+                  },
+                }
+              );
+            </script>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">
+              close
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-    
-  
-  
-  
+    <div
+      id="header-big-imgs"
+      data-num-img="1"
+      data-img-src-1="https://picdn.youdianzhishi.com/images/20200403112418.png"
+      data-img-desc-1="https://unsplash.com/photos/ITkhmqFN4dI"
+    ></div>
 
-
-
-
-  
-    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200403112418.png" data-img-desc-1="https://unsplash.com/photos/ITkhmqFN4dI"></div>
-  
-
-  <header class="header-section has-img">
-    
+    <header class="header-section has-img">
       <div class="intro-header big-img">
-        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>Envoy 简单入门示例</h1>
-                  
-                  
-                    <span class="post-meta">
-  
-    发表于 April 3, 2020
-  
-  
-</span>
 
-
-                  
+                <span class="post-meta"> 发表于 April 3, 2020 </span>
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline;"></span>
+        <span class="img-desc" style="display: inline"></span>
       </div>
-    
-    
-    
-    <div class="intro-header no-img">
-      
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <div class="post-heading">
-              <h1>Envoy 简单入门示例</h1>
-                
-                
-                  <span class="post-meta">
-  
-    发表于 April 3, 2020
-  
-  
-</span>
 
+      <div class="intro-header no-img">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>Envoy 简单入门示例</h1>
 
-                
+                <span class="post-meta"> 发表于 April 3, 2020 </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    
-    
-  </header>
+    </header>
 
+    <div class="container" role="main">
+      <div class="row">
+        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+          <div>
+            <h5 id="tags" style="margin-top: 30px">
+              标签:
 
-    
+              <a href="https://www.qikqiak.com/tags/envoy/">envoy</a> &nbsp;
 
+              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
+              &nbsp;
 
-
-<div class="container" role="main">
-  <div class="row">
-
-    
-    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <div>
-            
-            
-            <h5 id="tags" style="margin-top: 30px;">标签:
-              
-                  <a href="https://www.qikqiak.com/tags/envoy/">envoy</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/istio/">istio</a> &nbsp;
-              
+              <a href="https://www.qikqiak.com/tags/istio/">istio</a> &nbsp;
             </h5>
-            
-        </div>
-  
-        <article role="main" class="blog-post" itemprop="articleBody" id="content">
-          
-            
-          
-  
-          
-          
-          
-  
-          
-          
-          
-  
-          
-          
-          
+          </div>
 
-          <p><a href="https://www.envoyproxy.io/">Envoy</a> 是为云原生应用而设计的开源边缘和服务代理，也是 Istio Service Mesh 默认的数据平面，本文我们通过一个简单的示例来介绍 Envoy 的基本使用。</p>
+          <article
+            role="main"
+            class="blog-post"
+            itemprop="articleBody"
+            id="content"
+          >
+            <p>
+              <a href="https://www.envoyproxy.io/">Envoy</a>
+              是为云原生应用而设计的开源边缘和服务代理，也是 Istio Service Mesh
+              默认的数据平面，本文我们通过一个简单的示例来介绍 Envoy
+              的基本使用。
+            </p>
 
-<h2 id="1-配置">1. 配置</h2>
+            <h2 id="1-配置">1. 配置</h2>
 
-<h3 id="创建代理配置">创建代理配置</h3>
+            <h3 id="创建代理配置">创建代理配置</h3>
 
-<p>Envoy 使用 YAML 配置文件来控制代理的行为。在下面的步骤中，我们将使用静态配置接口来构建配置，也意味着所有设置都是预定义在配置文件中的。此外 Envoy 也支持动态配置，这样可以通过外部一些源来自动发现进行设置。</p>
+            <p>
+              Envoy 使用 YAML
+              配置文件来控制代理的行为。在下面的步骤中，我们将使用静态配置接口来构建配置，也意味着所有设置都是预定义在配置文件中的。此外
+              Envoy 也支持动态配置，这样可以通过外部一些源来自动发现进行设置。
+            </p>
 
-<h3 id="资源">资源</h3>
+            <h3 id="资源">资源</h3>
 
-<p>Envoy 配置的第一行定义了正在使用的接口配置，在这里我们将配置静态 API，因此第一行应为 <code>static_resources</code>：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">static_resources:</code></pre></div>
-<h3 id="监听器">监听器</h3>
+            <p>
+              Envoy 配置的第一行定义了正在使用的接口配置，在这里我们将配置静态
+              API，因此第一行应为 <code>static_resources</code>：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">static_resources:</code></pre>
+            </div>
+            <h3 id="监听器">监听器</h3>
 
-<p>在配置的开始定义了监听器（Listeners）。监听器是 Envoy 监听请求的网络配置，例如 IP 地址和端口。我们这里的 Envoy 在 Docker 容器内运行，因此它需要监听 IP 地址 <code>0.0.0.0</code>，在这种情况下，Envoy 将在端口 <code>10000</code> 上进行监听。</p>
+            <p>
+              在配置的开始定义了监听器（Listeners）。监听器是 Envoy
+              监听请求的网络配置，例如 IP 地址和端口。我们这里的 Envoy 在 Docker
+              容器内运行，因此它需要监听 IP 地址
+              <code>0.0.0.0</code>，在这种情况下，Envoy 将在端口
+              <code>10000</code> 上进行监听。
+            </p>
 
-<p>下面是定义监听器的配置：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">static_resources:
+            <p>下面是定义监听器的配置：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">static_resources:
   listeners:
   - name: listener_0
     address:
-      socket_address: { address: <span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">0.0</span>, port_value: <span style="color:#bd93f9">10000</span> }</code></pre></div>
-<h3 id="过滤器">过滤器</h3>
+      socket_address: { address: <span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">0.0</span>, port_value: <span style="color:#bd93f9">10000</span> }</code></pre>
+            </div>
+            <h3 id="过滤器">过滤器</h3>
 
-<p>通过 Envoy 监听传入的流量，下一步是定义如何处理这些请求。每个监听器都有一组过滤器，并且不同的监听器可以具有一组不同的过滤器。</p>
+            <p>
+              通过 Envoy
+              监听传入的流量，下一步是定义如何处理这些请求。每个监听器都有一组过滤器，并且不同的监听器可以具有一组不同的过滤器。
+            </p>
 
-<p>在我们这个示例中，我们将所有流量代理到 <code>baidu.com</code>，配置完成后我们应该能够通过请求 Envoy 的端点就可以直接看到百度的主页了，而无需更改 URL 地址。</p>
+            <p>
+              在我们这个示例中，我们将所有流量代理到
+              <code>baidu.com</code>，配置完成后我们应该能够通过请求 Envoy
+              的端点就可以直接看到百度的主页了，而无需更改 URL 地址。
+            </p>
 
-<p>过滤器是通过 <code>filter_chains</code> 来定义的，每个过滤器的目的是找到传入请求的匹配项，以使其与目标地址进行匹配：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">static_resources:
+            <p>
+              过滤器是通过
+              <code>filter_chains</code>
+              来定义的，每个过滤器的目的是找到传入请求的匹配项，以使其与目标地址进行匹配：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">static_resources:
   listeners:
   - name: listener_0
     address:
@@ -376,22 +459,60 @@ autocomplete('#aa-search-input',
               - match: { prefix: <span style="color:#f1fa8c">&#34;/&#34;</span> }
                 route: { host_rewrite: www.baidu.com, cluster: service_baidu }
           http_filters:
-          - name: envoy.router</code></pre></div>
-<p>该过滤器使用了 <code>envoy.http_connection_manager</code>，这是为 HTTP 连接设计的一个内置过滤器:</p>
+          - name: envoy.router</code></pre>
+            </div>
+            <p>
+              该过滤器使用了 <code>envoy.http_connection_manager</code>，这是为
+              HTTP 连接设计的一个内置过滤器:
+            </p>
 
-<ul>
-<li><code>stat_prefix</code>：为连接管理器发出统计信息时使用的一个前缀。</li>
-<li><code>route_config</code>：路由配置，如果虚拟主机匹配上了则检查路由。在我们这里的配置中，无论请求的主机域名是什么，<code>route_config</code> 都匹配所有传入的 HTTP 请求。</li>
-<li><code>routes</code>：如果 URL 前缀匹配，则一组路由规则定义了下一步将发生的状况。<code>/</code> 表示匹配根路由。</li>
-<li><code>host_rewrite</code>：更改 HTTP 请求的入站 Host 头信息。</li>
-<li><code>cluster</code>: 将要处理请求的集群名称，下面会有相应的实现。</li>
-<li><code>http_filters</code>: 该过滤器允许 Envoy 在处理请求时去适应和修改请求。</li>
-</ul>
+            <ul>
+              <li>
+                <code>stat_prefix</code
+                >：为连接管理器发出统计信息时使用的一个前缀。
+              </li>
+              <li>
+                <code>route_config</code
+                >：路由配置，如果虚拟主机匹配上了则检查路由。在我们这里的配置中，无论请求的主机域名是什么，<code
+                  >route_config</code
+                >
+                都匹配所有传入的 HTTP 请求。
+              </li>
+              <li>
+                <code>routes</code>：如果 URL
+                前缀匹配，则一组路由规则定义了下一步将发生的状况。<code>/</code>
+                表示匹配根路由。
+              </li>
+              <li>
+                <code>host_rewrite</code>：更改 HTTP 请求的入站 Host 头信息。
+              </li>
+              <li>
+                <code>cluster</code>:
+                将要处理请求的集群名称，下面会有相应的实现。
+              </li>
+              <li>
+                <code>http_filters</code>: 该过滤器允许 Envoy
+                在处理请求时去适应和修改请求。
+              </li>
+            </ul>
 
-<h3 id="集群">集群</h3>
+            <h3 id="集群">集群</h3>
 
-<p>当请求于过滤器匹配时，该请求将会传递到集群。下面的配置就是将主机定义为访问 HTTPS 的 baidu.com 域名，如果定义了多个主机，则 Envoy 将执行轮询（Round Robin）策略。配置如下所示：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">static_resources:
+            <p>
+              当请求于过滤器匹配时，该请求将会传递到集群。下面的配置就是将主机定义为访问
+              HTTPS 的 baidu.com 域名，如果定义了多个主机，则 Envoy
+              将执行轮询（Round Robin）策略。配置如下所示：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">static_resources:
   listeners:
   - name: listener_0
     address:
@@ -420,225 +541,389 @@ autocomplete('#aa-search-input',
     dns_lookup_family: V4_ONLY
     lb_policy: ROUND_ROBIN
     hosts: [{ socket_address: { address: www.baidu.com, port_value: <span style="color:#bd93f9">443</span> }}]
-    tls_context: { sni: baidu.com }</code></pre></div>
-<h3 id="管理">管理</h3>
+    tls_context: { sni: baidu.com }</code></pre>
+            </div>
+            <h3 id="管理">管理</h3>
 
-<p>最后，还需要配置一个管理模块：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">admin:
+            <p>最后，还需要配置一个管理模块：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">admin:
   access_log_path: /tmp/admin_access.log
   address:
-    socket_address: { address: <span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">0.0</span>, port_value: <span style="color:#bd93f9">9901</span> }</code></pre></div>
-<p>上面的配置定义了 Envoy 的静态配置模板，监听器定义了 Envoy 的端口和 IP 地址，监听器具有一组过滤器来匹配传入的请求，匹配请求后，将请求转发到集群。
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+    socket_address: { address: <span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">0.0</span>, port_value: <span style="color:#bd93f9">9901</span> }</code></pre>
+            </div>
+            <p>
+              上面的配置定义了 Envoy 的静态配置模板，监听器定义了 Envoy 的端口和
+              IP
+              地址，监听器具有一组过滤器来匹配传入的请求，匹配请求后，将请求转发到集群。
+              <script
+                async
+                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+              ></script>
 
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-5376999672787220"
-     data-ad-slot="9165834656"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
-</p>
+              <ins
+                class="adsbygoogle"
+                style="display: block"
+                data-ad-client="ca-pub-5376999672787220"
+                data-ad-slot="9165834656"
+                data-ad-format="auto"
+                data-full-width-responsive="true"
+              ></ins>
+              <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+              </script>
+            </p>
 
-<h2 id="2-开启代理">2. 开启代理</h2>
+            <h2 id="2-开启代理">2. 开启代理</h2>
 
-<p>配置完成后，可以通过 Docker 容器来启动 Envoy，将上面的配置文件通过 Volume 挂载到容器中的 <code>/etc/envoy/envoy.yaml</code> 文件。</p>
+            <p>
+              配置完成后，可以通过 Docker 容器来启动 Envoy，将上面的配置文件通过
+              Volume 挂载到容器中的 <code>/etc/envoy/envoy.yaml</code> 文件。
+            </p>
 
-<p>然后使用以下命令启动绑定到端口 80 的 Envoy 容器：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ docker run --name<span style="color:#ff79c6">=</span>envoy -d <span style="color:#f1fa8c">\
+            <p>然后使用以下命令启动绑定到端口 80 的 Envoy 容器：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ docker run --name<span style="color:#ff79c6">=</span>envoy -d <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -p <span style="color:#bd93f9">80</span>:10000 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -v <span style="color:#ff79c6">$(</span><span style="color:#8be9fd;font-style:italic">pwd</span><span style="color:#ff79c6">)</span>/manifests/1.getting-started/envoy.yaml:/etc/envoy/envoy.yaml <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>  envoyproxy/envoy:latest</code></pre></div>
-<p>启动后，我们可以在本地的 80 端口上去访问应用 <code>curl localhost</code> 来测试代理是否成功。同样我们也可以通过在本地浏览器中访问 <code>localhost</code> 来查看：</p>
+</span><span style="color:#f1fa8c"></span>  envoyproxy/envoy:latest</code></pre>
+            </div>
+            <p>
+              启动后，我们可以在本地的 80 端口上去访问应用
+              <code>curl localhost</code>
+              来测试代理是否成功。同样我们也可以通过在本地浏览器中访问
+              <code>localhost</code> 来查看：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200402202659.png" alt="envoy proxy baidu"><figcaption>envoy proxy baidu</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/20200402202659.png"
+                alt="envoy proxy baidu"
+              />
+              <figcaption>envoy proxy baidu</figcaption>
+            </figure>
 
-<p>可以看到请求被代理到了 <code>baidu.com</code>，而且应该也可以看到 URL 地址没有变化，还是 <code>localhost</code>。</p>
+            <p>
+              可以看到请求被代理到了 <code>baidu.com</code>，而且应该也可以看到
+              URL 地址没有变化，还是 <code>localhost</code>。
+            </p>
 
-<h2 id="3-管理视图">3. 管理视图</h2>
+            <h2 id="3-管理视图">3. 管理视图</h2>
 
-<p>Envoy 提供了一个管理视图，可以让我们去查看配置、统计信息、日志以及其他 Envoy 内部的一些数据。</p>
+            <p>
+              Envoy
+              提供了一个管理视图，可以让我们去查看配置、统计信息、日志以及其他
+              Envoy 内部的一些数据。
+            </p>
 
-<p>我们可以通过添加其他的资源定义来配置 admin，其中也可以定义管理视图的端口，不过需要注意该端口不要和其他监听器配置冲突。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">admin:
+            <p>
+              我们可以通过添加其他的资源定义来配置
+              admin，其中也可以定义管理视图的端口，不过需要注意该端口不要和其他监听器配置冲突。
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">admin:
   access_log_path: /tmp/admin_access.log
   address:
-    socket_address: { address: <span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">0.0</span>, port_value: <span style="color:#bd93f9">9901</span> }</code></pre></div>
-<p>当然我们也可以通过 Docker 容器将管理端口暴露给外部用户。上面的配置就会将管理页面暴露给外部用户，当然我们这里仅仅用于演示是可以的，如果你是用于线上环境还需要做好一些安全保护措施，可以查看 <a href="https://www.envoyproxy.io/docs/envoy/latest/operations/admin">Envoy 的相关文档</a> 了解更多安全配置。</p>
+    socket_address: { address: <span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">0.0</span>, port_value: <span style="color:#bd93f9">9901</span> }</code></pre>
+            </div>
+            <p>
+              当然我们也可以通过 Docker
+              容器将管理端口暴露给外部用户。上面的配置就会将管理页面暴露给外部用户，当然我们这里仅仅用于演示是可以的，如果你是用于线上环境还需要做好一些安全保护措施，可以查看
+              <a
+                href="https://www.envoyproxy.io/docs/envoy/latest/operations/admin"
+                >Envoy 的相关文档</a
+              >
+              了解更多安全配置。
+            </p>
 
-<p>要将管理页面也暴露给外部用户，我们使用如下命令运行另外一个容器：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ docker run --name<span style="color:#ff79c6">=</span>envoy-with-admin -d <span style="color:#f1fa8c">\
+            <p>
+              要将管理页面也暴露给外部用户，我们使用如下命令运行另外一个容器：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ docker run --name<span style="color:#ff79c6">=</span>envoy-with-admin -d <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>    -p <span style="color:#bd93f9">9901</span>:9901 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>    -p <span style="color:#bd93f9">10000</span>:10000 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>    -v <span style="color:#ff79c6">$(</span><span style="color:#8be9fd;font-style:italic">pwd</span><span style="color:#ff79c6">)</span>/manifests/1.getting-started/envoy.yaml:/etc/envoy/envoy.yaml <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>    envoyproxy/envoy:latest</code></pre></div>
-<p>运行成功后，现在我们可以在浏览器里面输入 <code>localhost:9901</code> 来访问 Envoy 的管理页面：</p>
+</span><span style="color:#f1fa8c"></span>    envoyproxy/envoy:latest</code></pre>
+            </div>
+            <p>
+              运行成功后，现在我们可以在浏览器里面输入
+              <code>localhost:9901</code> 来访问 Envoy 的管理页面：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200402204612.png" alt="envoy admin view"><figcaption>envoy admin view</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/20200402204612.png"
+                alt="envoy admin view"
+              />
+              <figcaption>envoy admin view</figcaption>
+            </figure>
 
-<blockquote>
-<p>需要注意的是当前的管理页面不仅允许执行一些破坏性的操作（比如，关闭服务），而且还可能暴露一些私有信息（比如统计信息、集群名称、证书信息等）。所以应该只允许通过安全网络去访问管理页面。</p>
-</blockquote>
+            <blockquote>
+              <p>
+                需要注意的是当前的管理页面不仅允许执行一些破坏性的操作（比如，关闭服务），而且还可能暴露一些私有信息（比如统计信息、集群名称、证书信息等）。所以应该只允许通过安全网络去访问管理页面。
+              </p>
+            </blockquote>
 
-<p>当然 Envoy 还有很多用法，本文只是一个最简单的入门示例，后续再慢慢深入。</p>
+            <p>
+              当然 Envoy
+              还有很多用法，本文只是一个最简单的入门示例，后续再慢慢深入。
+            </p>
 
-<p><a href="https://youdianzhishi.com/web/course/1030" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+            <p>
+              <a
+                href="https://youdianzhishi.com/web/course/1030"
+                title="从 Docker 到 Kubernetes 进阶课程"
+                ><img
+                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
+                  alt="Kubernetes进阶训练营"
+              /></a>
+            </p>
 
+            <h2>微信公众号</h2>
+            <p>
+              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+              kubernetes 讨论群里面共同学习。
+            </p>
+            <img
+              src="https://picdn.youdianzhishi.com/images/qrcode.png"
+              alt="wechat-account-qrcode"
+            />
 
-          <h2>微信公众号</h2>
-<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
-
-  
-          
             <div class="entry-shang text-center">
-    <p>「真诚赞赏，手留余香」</p>
-    <button class="zs show-zs btn btn-bred">赞赏</button>
-</div>
-<div class="zs-modal-bg"></div>
-<div class="zs-modal-box">
-    <div class="zs-modal-head">
-        <button type="button" class="close">×</button>
-        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
-        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-    </div>
-    <div class="zs-modal-body">
-        <div class="zs-modal-btns">
-            <button class="btn btn-blink" data-num="2">2元</button>
-            <button class="btn btn-blink" data-num="5">5元</button>
-            <button class="btn btn-blink" data-num="10">10元</button>
-            <button class="btn btn-blink" data-num="50">50元</button>
-            <button class="btn btn-blink" data-num="100">100元</button>
-            <button class="btn btn-blink" data-num="1">任意金额</button>
-        </div>
-        <div class="zs-modal-pay">
-            <button class="btn btn-bred" id="pay-text">2元</button>
-            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
-        </div>
-    </div>
-    <div class="zs-modal-footer">
-        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
-    </div>
-</div>
-          
-          
-            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
-    <center>
-    <a href="#" class="social-share-icon icon-weibo"></a>
-    <a href="#" class="social-share-icon icon-wechat"></a>
-    <a href="#" class="social-share-icon icon-twitter"></a>
-    <a href="#" class="social-share-icon icon-linkedin"></a>
-    <a href="#" class="social-share-icon icon-facebook"></a>
-    <a href="#" class="social-share-icon icon-qq"></a>
-    <a href="#" class="social-share-icon icon-qzone"></a>
-    </center>
-</div>
+              <p>「真诚赞赏，手留余香」</p>
+              <button class="zs show-zs btn btn-bred">赞赏</button>
+            </div>
+            <div class="zs-modal-bg"></div>
+            <div class="zs-modal-box">
+              <div class="zs-modal-head">
+                <button type="button" class="close">×</button>
+                <span class="author"
+                  ><img
+                    src="https://www.qikqiak.com/img/avatar.jpeg"
+                  />阳明</span
+                >
+                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+              </div>
+              <div class="zs-modal-body">
+                <div class="zs-modal-btns">
+                  <button class="btn btn-blink" data-num="2">2元</button>
+                  <button class="btn btn-blink" data-num="5">5元</button>
+                  <button class="btn btn-blink" data-num="10">10元</button>
+                  <button class="btn btn-blink" data-num="50">50元</button>
+                  <button class="btn btn-blink" data-num="100">100元</button>
+                  <button class="btn btn-blink" data-num="1">任意金额</button>
+                </div>
+                <div class="zs-modal-pay">
+                  <button class="btn btn-bred" id="pay-text">2元</button>
+                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+                  <img
+                    src="https://www.qikqiak.com/img/wechat-2.png"
+                    id="pay-image"
+                  />
+                </div>
+              </div>
+              <div class="zs-modal-footer">
+                <span class="zs-wechat"
+                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
+                /></span>
+              </div>
+            </div>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+            <div
+              class="social-share"
+              data-initialized="true"
+              style="margin-bottom: 20px; margin-top: 20px"
+            >
+              <center>
+                <a href="#" class="social-share-icon icon-weibo"></a>
+                <a href="#" class="social-share-icon icon-wechat"></a>
+                <a href="#" class="social-share-icon icon-twitter"></a>
+                <a href="#" class="social-share-icon icon-linkedin"></a>
+                <a href="#" class="social-share-icon icon-facebook"></a>
+                <a href="#" class="social-share-icon icon-qq"></a>
+                <a href="#" class="social-share-icon icon-qzone"></a>
+              </center>
+            </div>
 
-          
-        </article>
-  
-        
-          
+            <link
+              rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
+            />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+          </article>
 
-<h3>相关文章</h3>
-<ul style="margin-bottom: 25px;">
-    
-    <li><a href="https://www.qikqiak.com/post/install-kubesphere-on-k8s/">在现有 Kubernetes 集群上安装 KubeSphere</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/k8s-admission-webhook/">深入理解 Kubernetes Admission Webhook</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/k8s-istio-course/">Istio 实训免费视频课程</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/ingress-nginx-how-to-work/">ingress-nginx 控制器工作原理[译]</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/use-crd-create-grafana-dashboard/">用 Kubernetes 资源对象创建 Grafana Dashboard</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/alertmanager-when-alert/">AlertManager 何时报警</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/install-kafka-in-kubernetes/">在 Kubernetes 集群上部署 Kafka</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/k8s-cluster-balancer/">Kubernetes 集群均衡器 Descheduler</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/k8s-ui-kubevious/">带时光机的 Kubernetes Dashboard - Kubevious</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/get-client-realip/">获取客户端访问真实 IP</a></li>
-    
-</ul>
+          <h3>相关文章</h3>
+          <ul style="margin-bottom: 25px">
+            <li>
+              <a href="https://www.qikqiak.com/post/install-kubesphere-on-k8s/"
+                >在现有 Kubernetes 集群上安装 KubeSphere</a
+              >
+            </li>
 
-        
-  
-        
-        <ul class="pager blog-pager">
-          
+            <li>
+              <a href="https://www.qikqiak.com/post/k8s-admission-webhook/"
+                >深入理解 Kubernetes Admission Webhook</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/k8s-istio-course/"
+                >Istio 实训免费视频课程</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/ingress-nginx-how-to-work/"
+                >ingress-nginx 控制器工作原理[译]</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/use-crd-create-grafana-dashboard/"
+                >用 Kubernetes 资源对象创建 Grafana Dashboard</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/alertmanager-when-alert/"
+                >AlertManager 何时报警</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/install-kafka-in-kubernetes/"
+                >在 Kubernetes 集群上部署 Kafka</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/k8s-cluster-balancer/"
+                >Kubernetes 集群均衡器 Descheduler</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/k8s-ui-kubevious/"
+                >带时光机的 Kubernetes Dashboard - Kubevious</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/get-client-realip/"
+                >获取客户端访问真实 IP</a
+              >
+            </li>
+          </ul>
+
+          <ul class="pager blog-pager">
             <li class="previous">
-              <a href="https://www.qikqiak.com/post/ingress-nginx-how-to-work/" data-toggle="tooltip" data-placement="top" title="ingress-nginx 控制器工作原理[译]">&larr; 前一篇</a>
+              <a
+                href="https://www.qikqiak.com/post/ingress-nginx-how-to-work/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="ingress-nginx 控制器工作原理[译]"
+                >&larr; 前一篇</a
+              >
             </li>
-          
-          
-            <li class="next">
-              <a href="https://www.qikqiak.com/post/k8s-hpa-usage/" data-toggle="tooltip" data-placement="top" title="Kubernetes HPA 使用详解">后一篇 &rarr;</a>
-            </li>
-          
-        </ul>
-        
 
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-        
-        <ins class="adsbygoogle"
-            style="display:block"
+            <li class="next">
+              <a
+                href="https://www.qikqiak.com/post/k8s-hpa-usage/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="Kubernetes HPA 使用详解"
+                >后一篇 &rarr;</a
+              >
+            </li>
+          </ul>
+
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+          ></script>
+
+          <ins
+            class="adsbygoogle"
+            style="display: block"
             data-ad-client="ca-pub-5376999672787220"
             data-ad-slot="3700507799"
             data-ad-format="auto"
-            data-full-width-responsive="true"></ins>
-        <script>
+            data-full-width-responsive="true"
+          ></ins>
+          <script>
             (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
-  
-        
-    <div id="gitalk-container"></div>
-    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-    <script>
-    var gitalk = new Gitalk({
-        clientID: 'bdb76dbb2e9d0786e350',
-        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
-        repo: 'blog',
-        owner: 'cnych',
-        admin: ['cnych'],
-        labels: ['gitment'],
-        title: 'Envoy 简单入门示例',
-        createIssueManually: true,
-        id: 'envoy-usage-demo',      
-        distractionFreeMode: true  
-    });
-    gitalk.render('gitalk-container');
-</script>
+          </script>
 
-
-        
-          
-
-        
-  
+          <div id="gitalk-container"></div>
+          <link
+            rel="stylesheet"
+            href="https://unpkg.com/gitalk/dist/gitalk.css"
+          />
+          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+          <script>
+            var gitalk = new Gitalk({
+              clientID: "bdb76dbb2e9d0786e350",
+              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
+              repo: "blog",
+              owner: "cnych",
+              admin: ["cnych"],
+              labels: ["gitment"],
+              title: "Envoy 简单入门示例",
+              createIssueManually: true,
+              id: "envoy-usage-demo",
+              distractionFreeMode: true,
+            });
+            gitalk.render("gitalk-container");
+          </script>
+        </div>
       </div>
-    
-    
-  </div>
-</div>
+    </div>
 
     <footer>
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <ul class="list-inline text-center footer-links">
-          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
-          
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <ul class="list-inline text-center footer-links">
+              <img
+                src="https://www.qikqiak.com/img/wechatmp.png"
+                alt="k8s技术圈"
+              />
+
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -647,7 +932,7 @@ autocomplete('#aa-search-input',
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -656,7 +941,7 @@ autocomplete('#aa-search-input',
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -665,7 +950,7 @@ autocomplete('#aa-search-input',
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -674,121 +959,158 @@ autocomplete('#aa-search-input',
                   </span>
                 </a>
               </li>
-          
-          
-          <li>
-            <a href="https://www.qikqiak.com/index.xml" title="RSS">
-              <span class="fa-stack fa-lg">
-                <i class="fa fa-circle fa-stack-2x"></i>
-                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+
+              <li>
+                <a href="https://www.qikqiak.com/index.xml" title="RSS">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+            </ul>
+            <p class="credits copyright text-muted">
+              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/">阳明的博客</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/archive/">归档</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/friend/">友链</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://beian.miit.gov.cn/" target="_blank"
+                >蜀ICP备11027319号-5</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
+                >kubernetes.io</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
+                >Kubernetes中文社区</a
+              >
+            </p>
+            <p class="text-center text-muted">
+              <script
+                async
+                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
+              ></script>
+              <span id="busuanzi_container_site_pv" style="display: none">
+                本站总访问量<span id="busuanzi_value_site_pv"></span>次
               </span>
-            </a>
-          </li>
-          
-        </ul>
-        <p class="credits copyright text-muted">
-          
+              &nbsp;&bull;&nbsp;
+              <span id="busuanzi_container_site_uv" style="display: none">
+                访客数<span id="busuanzi_value_site_uv"></span>人次
+              </span>
+            </p>
 
-          &nbsp;&bull;&nbsp;
-          2023
-
-          
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/">阳明的博客</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/archive/">归档</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/friend/">友链</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
-          
-        </p>
-        <p class="text-center text-muted">
-          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-          <span id="busuanzi_container_site_pv" style="display:none">
-            本站总访问量<span id="busuanzi_value_site_pv"></span>次
-          </span>
-          &nbsp;&bull;&nbsp;
-          <span id="busuanzi_container_site_uv" style="display:none">
-            访客数<span id="busuanzi_value_site_uv"></span>人次
-          </span>
-        </p>
-        
-        <p class="credits theme-by text-muted">
-          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
-          
-        </p>
+            <p class="credits theme-by text-muted">
+              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
+              &nbsp;&bull;&nbsp; 主题
+              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+              移植自
+              <a href="https://github.com/rootsongjc/beautifulhugo"
+                >Beautiful Hugo</a
+              >
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</footer>
+    </footer>
 
+    <script
+      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
+      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
+    ></script>
 
-<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "UA-69668147-3");
+    </script>
+    <script>
+      (function () {
+        var bp = document.createElement("script");
+        var curProtocol = window.location.protocol.split(":")[0];
+        if (curProtocol === "https") {
+          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
+        } else {
+          bp.src = "http://push.zhanzhang.baidu.com/push.js";
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+      })();
+    </script>
+    <script>
+      $(document).ready(function () {
+        var int = setInterval(fixCount, 50);
 
-
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-69668147-3');
-</script>
-<script>
-(function(){
-    var bp = document.createElement('script');
-    var curProtocol = window.location.protocol.split(':')[0];
-    if (curProtocol === 'https') {
-        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
-    }
-    else {
-        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
-    }
-    var s = document.getElementsByTagName("script")[0];
-    s.parentNode.insertBefore(bp, s);
-})();
-</script>
-<script >
-$(document).ready(function() {
-  var int = setInterval(fixCount, 50);  
-  
-  var initPVCount = 584976;
-  var initUVCount = 153191;
-  function fixCount() {                   
-    if ($("#busuanzi_container_site_pv").css("display") != "none") {
-        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
-        clearInterval(int); 
-    }
-    if ($("#busuanzi_container_site_uv").css("display") != "none") {
-      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
-      clearInterval(int); 
-    }  
-  }           
-});
-</script>
- <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
-<script type="text/javascript">
-$('.carousel').slick({
-    dots: true,
-    arrows: true,
-    autoplay: true,
-    autoplaySpeed: 4000,
-    infinite: true,
-    speed: 500,
-    fade: true,
-    cssEase: 'linear',
-    centerMode: true,
-    prevArrow: '<button type="button" class="slick-prev"></button>',
-    nextArrow: '<button type="button" class="slick-next"></button>',
-});
-</script>
-
+        var initPVCount = 584976;
+        var initUVCount = 153191;
+        function fixCount() {
+          if ($("#busuanzi_container_site_pv").css("display") != "none") {
+            $("#busuanzi_value_site_pv").html(
+              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
+            );
+            clearInterval(int);
+          }
+          if ($("#busuanzi_container_site_uv").css("display") != "none") {
+            $("#busuanzi_value_site_uv").html(
+              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
+            );
+            clearInterval(int);
+          }
+        }
+      });
+    </script>
+    <script>
+      (function (w, d, s, id) {
+        if (typeof w.webpushr !== "undefined") return;
+        w.webpushr =
+          w.webpushr ||
+          function () {
+            (w.webpushr.q = w.webpushr.q || []).push(arguments);
+          };
+        var js,
+          fjs = d.getElementsByTagName(s)[0];
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "https://cdn.webpushr.com/app.min.js";
+        fjs.parentNode.appendChild(js);
+      })(window, document, "script", "webpushr-jssdk");
+      webpushr(
+        "init",
+        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
+      );
+    </script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
+    ></script>
+    <script type="text/javascript">
+      $(".carousel").slick({
+        dots: true,
+        arrows: true,
+        autoplay: true,
+        autoplaySpeed: 4000,
+        infinite: true,
+        speed: 500,
+        fade: true,
+        cssEase: "linear",
+        centerMode: true,
+        prevArrow: '<button type="button" class="slick-prev"></button>',
+        nextArrow: '<button type="button" class="slick-next"></button>',
+      });
+    </script>
   </body>
 </html>
-

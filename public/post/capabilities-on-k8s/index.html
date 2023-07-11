@@ -1,491 +1,828 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
 
+    <title>
+      在 Kubernetes 中配置 Container
+      Capabilities-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
+    </title>
+    <meta
+      property="og:title"
+      content="在 Kubernetes 中配置 Container Capabilities"
+    />
+    <meta
+      name="twitter:title"
+      content="在 Kubernetes 中配置 Container Capabilities"
+    />
 
-  <title>在 Kubernetes 中配置 Container Capabilities-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
-  <meta property="og:title" content="在 Kubernetes 中配置 Container Capabilities" />
-  <meta name="twitter:title" content="在 Kubernetes 中配置 Container Capabilities" />
-
-  <meta name="description" content="我们在使用 Kubernetes 过程中，偶尔会遇到如下所示的一段配置：
+    <meta
+      name="description"
+      content="我们在使用 Kubernetes 过程中，偶尔会遇到如下所示的一段配置：
 securityContext:
   capabilities:
     drop:
     - ALL
     add:
     - NET_BIND_SERVICE
-实际上这是配置对应的容器的 Capabilities，在我们使用 docker run 的时候可以通过 --cap-add 和 --cap-drop 命令来给容器添加 Linux Capabilities。对于大部分同学可能又要疑问 Linux Capabilities 是什么呢？">
-  <meta property="og:description" content="我们在使用 Kubernetes 过程中，偶尔会遇到如下所示的一段配置：
+实际上这是配置对应的容器的 Capabilities，在我们使用 docker run 的时候可以通过 --cap-add 和 --cap-drop 命令来给容器添加 Linux Capabilities。对于大部分同学可能又要疑问 Linux Capabilities 是什么呢？"
+    />
+    <meta
+      property="og:description"
+      content="我们在使用 Kubernetes 过程中，偶尔会遇到如下所示的一段配置：
 securityContext:
   capabilities:
     drop:
     - ALL
     add:
     - NET_BIND_SERVICE
-实际上这是配置对应的容器的 Capabilities，在我们使用 docker run 的时候可以通过 --cap-add 和 --cap-drop 命令来给容器添加 Linux Capabilities。对于大部分同学可能又要疑问 Linux Capabilities 是什么呢？">
-  <meta name="twitter:description" content="我们在使用 Kubernetes 过程中，偶尔会遇到如下所示的一段配置：
+实际上这是配置对应的容器的 Capabilities，在我们使用 docker run 的时候可以通过 --cap-add 和 --cap-drop 命令来给容器添加 Linux Capabilities。对于大部分同学可能又要疑问 Linux Capabilities 是什么呢？"
+    />
+    <meta
+      name="twitter:description"
+      content="我们在使用 Kubernetes 过程中，偶尔会遇到如下所示的一段配置：
 securityContext:
   capabilities:
     drop:
     - ALL
     add:
     - NET_BIND_SERVICE
-实际上这是配置对应的容器的 Capabilities，在我们使用 docker run 的时候可以通过 --cap-add 和 --cap-drop 命令来 …">
-  <meta name="author" content=""/>
-  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
-  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
-  <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://www.qikqiak.com/post/capabilities-on-k8s/" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="阳明的博客" />
+实际上这是配置对应的容器的 Capabilities，在我们使用 docker run 的时候可以通过 --cap-add 和 --cap-drop 命令来 …"
+    />
+    <meta name="author" content="" />
+    <link
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+      rel="icon"
+      type="image/x-icon"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      property="og:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      name="twitter:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta
+      property="og:url"
+      content="https://www.qikqiak.com/post/capabilities-on-k8s/"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="阳明的博客" />
 
-  <meta name="generator" content="Hugo 0.55.6" />
-  <link rel="canonical" href="https://www.qikqiak.com/post/capabilities-on-k8s/" />
-  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+    <meta name="generator" content="Hugo 0.55.6" />
+    <link
+      rel="canonical"
+      href="https://www.qikqiak.com/post/capabilities-on-k8s/"
+    />
+    <link
+      rel="alternate"
+      href="https://www.qikqiak.com/index.xml"
+      type="application/rss+xml"
+      title="阳明的博客"
+    />
 
-  
-  
-  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
-  
+    <link
+      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
+      rel="stylesheet"
+    />
 
-  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+    <link
+      rel="stylesheet"
+      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
+      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
+    />
 
-  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
-  
-  
-    
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
+    />
+
     <!--[if lt IE 9]>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+        rel="stylesheet"
+      />
     <![endif]-->
-<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
-<meta name="baidu-site-verification" content="F5ojAyqaKU" />
-<meta name="keywords" content="kubernetes, Capabilities, docker, Container, 安全">
-<script>
-var _hmt = _hmt || [];
-(function() {
-  var hm = document.createElement("script");
-  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-  var s = document.getElementsByTagName("script")[0];
-  s.parentNode.insertBefore(hm, s);
-})();
-</script>
+    <meta
+      name="google-site-verification"
+      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
+    />
+    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
+    <meta
+      name="keywords"
+      content="kubernetes, Capabilities, docker, Container, 安全"
+    />
+    <script>
+      var _hmt = _hmt || [];
+      (function () {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
 
+    <script type="application/javascript">
+      var doNotTrack = false;
+      if (!doNotTrack) {
+        window.ga =
+          window.ga ||
+          function () {
+            (ga.q = ga.q || []).push(arguments);
+          };
+        ga.l = +new Date();
+        ga("create", "UA-69668147-3", "auto");
 
-
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-	ga('create', 'UA-69668147-3', 'auto');
-	
-	ga('send', 'pageview');
-}
-</script>
-<script async src='https://www.google-analytics.com/analytics.js'></script>
-
-</head>
+        ga("send", "pageview");
+      }
+    </script>
+    <script async src="https://www.google-analytics.com/analytics.js"></script>
+  </head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
-        <span class="sr-only">切换导航</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
-        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
-      </a>
-    </div>
+      <div class="container">
+        <div class="navbar-header">
+          <button
+            type="button"
+            class="navbar-toggle"
+            data-toggle="collapse"
+            data-target="#main-navbar"
+          >
+            <span class="sr-only">切换导航</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a
+            class="navbar-brand"
+            href="https://www.qikqiak.com/"
+            title="阳明的博客"
+          >
+            <img
+              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
+              style="margin-top: -5px; height: 32px"
+              alt="阳明的博客"
+            />
+          </a>
+        </div>
 
-    <div class="collapse navbar-collapse" id="main-navbar">
-      <ul class="nav navbar-nav navbar-right">
-        
-          
+        <div class="collapse navbar-collapse" id="main-navbar">
+          <ul class="nav navbar-nav navbar-right">
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-          
-        
-          
+
             <li>
-              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+              <a
+                title="课程"
+                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
+                >课程</a
+              >
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/archives">Archive</a>
-                
-                  <a href="https://www.qikqiak.com/tags">tags</a>
-                
-                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-                
-                  <a href="https://www.qikqiak.com/tags/python">python</a>
-                
-                  <a href="https://www.qikqiak.com/tags/django">django</a>
-                
-                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
-                
+                <a href="https://www.qikqiak.com/archives">Archive</a>
+
+                <a href="https://www.qikqiak.com/tags">tags</a>
+
+                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+
+                <a href="https://www.qikqiak.com/tags/python">python</a>
+
+                <a href="https://www.qikqiak.com/tags/django">django</a>
+
+                <a href="https://www.qikqiak.com/tags/devops">devops</a>
               </div>
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-                
-                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-                
-                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-                
-                  <a href="https://md.qikqiak.com/">Markdown微信</a>
-                
+                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+
+                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+
+                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+
+                <a href="https://md.qikqiak.com/">Markdown微信</a>
               </div>
             </li>
-          
-        
-          
+
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+              <a title="关于" href="https://www.qikqiak.com/page/about/"
+                >关于</a
+              >
             </li>
-          
-        
-          
+
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
-          
-        
 
-        
-
-        
-
-        
-          <li>
-            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
-              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
-            </a>
-          </li>
-          
-
-      </ul>
-    </div>
-
-  </div>
-</nav>
-
-
-  <div id="modalSearch" class="modal fade" role="dialog">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-          <h4 class="modal-title">搜索</h4>
+            <li>
+              <a
+                href="#modalSearch"
+                data-toggle="modal"
+                data-target="#modalSearch"
+                style="outline: none"
+              >
+                <span
+                  id="searchGlyph"
+                  class="glyphicon glyphicon-search"
+                ></span>
+              </a>
+            </li>
+          </ul>
         </div>
-        <div class="modal-body">
-            
-<div class="aa-input-container" id="aa-input-container">
-    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
-    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
-    </svg>
-</div>
-<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+      </div>
+    </nav>
 
-<script>
-var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
-var index = client.initIndex('prod_blog');
+    <div id="modalSearch" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">
+              &times;
+            </button>
+            <h4 class="modal-title">搜索</h4>
+          </div>
+          <div class="modal-body">
+            <div class="aa-input-container" id="aa-input-container">
+              <input
+                type="search"
+                id="aa-search-input"
+                class="aa-input-search"
+                placeholder="Search for titles or URIs..."
+                name="search"
+                autocomplete="off"
+              />
+              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+                <path
+                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
+                />
+              </svg>
+            </div>
+            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-autocomplete('#aa-search-input',
-{ hint: false}, {
-    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
-    
-    displayKey: 'name',
-    
-    templates: {
-        
-        suggestion: function(suggestion) {
-            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
-            suggestion._highlightResult.title.value + '</a></span>';
-        }
-    }
-});
-</script>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+            <script>
+              var client = algoliasearch(
+                "1JDRAS0AZR",
+                "8804ac109158bb3bb60d74ce98fa332f"
+              );
+              var index = client.initIndex("prod_blog");
+
+              autocomplete(
+                "#aa-search-input",
+                { hint: false },
+                {
+                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
+
+                  displayKey: "name",
+
+                  templates: {
+                    suggestion: function (suggestion) {
+                      return (
+                        "<span>" +
+                        '<a href="https://www.qikqiak.com/post/' +
+                        suggestion.slug +
+                        '">' +
+                        suggestion._highlightResult.title.value +
+                        "</a></span>"
+                      );
+                    },
+                  },
+                }
+              );
+            </script>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">
+              close
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-    
-  
-  
-  
+    <div
+      id="header-big-imgs"
+      data-num-img="1"
+      data-img-src-1="https://picdn.youdianzhishi.com/images/photo-1574012437553-8fda4179ae82.jpeg"
+      data-img-desc-1="https://unsplash.com/photos/6T0rb_X_3Bs"
+    ></div>
 
-
-
-
-  
-    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1574012437553-8fda4179ae82.jpeg" data-img-desc-1="https://unsplash.com/photos/6T0rb_X_3Bs"></div>
-  
-
-  <header class="header-section has-img">
-    
+    <header class="header-section has-img">
       <div class="intro-header big-img">
-        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>在 Kubernetes 中配置 Container Capabilities</h1>
-                  
-                  
-                    <span class="post-meta">
-  
-    发表于 November 18, 2019
-  
-  
-</span>
 
-
-                  
+                <span class="post-meta"> 发表于 November 18, 2019 </span>
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline;"></span>
+        <span class="img-desc" style="display: inline"></span>
       </div>
-    
-    
-    
-    <div class="intro-header no-img">
-      
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <div class="post-heading">
-              <h1>在 Kubernetes 中配置 Container Capabilities</h1>
-                
-                
-                  <span class="post-meta">
-  
-    发表于 November 18, 2019
-  
-  
-</span>
 
+      <div class="intro-header no-img">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>在 Kubernetes 中配置 Container Capabilities</h1>
 
-                
+                <span class="post-meta"> 发表于 November 18, 2019 </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    
-    
-  </header>
+    </header>
 
+    <div class="container" role="main">
+      <div class="row">
+        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+          <div>
+            <h5 id="tags" style="margin-top: 30px">
+              标签:
 
-    
+              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
+              &nbsp;
 
+              <a href="https://www.qikqiak.com/tags/capabilities/"
+                >Capabilities</a
+              >
+              &nbsp;
 
-
-<div class="container" role="main">
-  <div class="row">
-
-    
-    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <div>
-            
-            
-            <h5 id="tags" style="margin-top: 30px;">标签:
-              
-                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/capabilities/">Capabilities</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/docker/">docker</a> &nbsp;
-              
+              <a href="https://www.qikqiak.com/tags/docker/">docker</a> &nbsp;
             </h5>
-            
-        </div>
-  
-        <article role="main" class="blog-post" itemprop="articleBody" id="content">
-          
-            
-<aside class="toc">
-  <nav id="TableOfContents">
-<ul>
-<li>
-<ul>
-<li><a href="#linux-capabilities">Linux Capabilities</a>
-<ul>
-<li><a href="#什么是-capabilities">什么是 Capabilities</a></li>
-<li><a href="#如何使用-capabilities">如何使用 Capabilities</a></li>
-</ul></li>
-<li><a href="#docker-container-capabilities">Docker Container Capabilities</a></li>
-<li><a href="#kubernetes-配置-capabilities">Kubernetes 配置 Capabilities</a></li>
-<li><a href="#参考文档">参考文档</a></li>
-</ul></li>
-</ul>
-</nav>
-</aside>
+          </div>
 
-          
-  
-          
-          
-          
-  
-          
-          
-          
-  
-          
-          
-          
+          <article
+            role="main"
+            class="blog-post"
+            itemprop="articleBody"
+            id="content"
+          >
+            <aside class="toc">
+              <nav id="TableOfContents">
+                <ul>
+                  <li>
+                    <ul>
+                      <li>
+                        <a href="#linux-capabilities">Linux Capabilities</a>
+                        <ul>
+                          <li>
+                            <a href="#什么是-capabilities"
+                              >什么是 Capabilities</a
+                            >
+                          </li>
+                          <li>
+                            <a href="#如何使用-capabilities"
+                              >如何使用 Capabilities</a
+                            >
+                          </li>
+                        </ul>
+                      </li>
+                      <li>
+                        <a href="#docker-container-capabilities"
+                          >Docker Container Capabilities</a
+                        >
+                      </li>
+                      <li>
+                        <a href="#kubernetes-配置-capabilities"
+                          >Kubernetes 配置 Capabilities</a
+                        >
+                      </li>
+                      <li><a href="#参考文档">参考文档</a></li>
+                    </ul>
+                  </li>
+                </ul>
+              </nav>
+            </aside>
 
-          <p>我们在使用 Kubernetes 过程中，偶尔会遇到如下所示的一段配置：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">securityContext:
+            <p>我们在使用 Kubernetes 过程中，偶尔会遇到如下所示的一段配置：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">securityContext:
   capabilities:
     drop:
     - ALL
     add:
-    - NET_BIND_SERVICE</code></pre></div>
-<p>实际上这是配置对应的容器的 <code>Capabilities</code>，在我们使用 <code>docker run</code> 的时候可以通过 <code>--cap-add</code> 和 <code>--cap-drop</code> 命令来给容器添加 <code>Linux Capabilities</code>。对于大部分同学可能又要疑问 <code>Linux Capabilities</code> 是什么呢？</p>
+    - NET_BIND_SERVICE</code></pre>
+            </div>
+            <p>
+              实际上这是配置对应的容器的 <code>Capabilities</code>，在我们使用
+              <code>docker run</code> 的时候可以通过 <code>--cap-add</code> 和
+              <code>--cap-drop</code> 命令来给容器添加
+              <code>Linux Capabilities</code>。对于大部分同学可能又要疑问
+              <code>Linux Capabilities</code> 是什么呢？
+            </p>
 
-<h2 id="linux-capabilities">Linux Capabilities</h2>
+            <h2 id="linux-capabilities">Linux Capabilities</h2>
 
-<p>要了解 <code>Linux Capabilities</code>，这就得从 Linux 的权限控制发展来说明。在 Linux 2.2 版本之前，当内核对进程进行权限验证的时候，Linux 将进程划分为两类：特权进程（UID=0，也就是超级用户）和非特权进程（UID!=0），特权进程拥有所有的内核权限，而非特权进程则根据进程凭证（effective UID, effective GID，supplementary group 等）进行权限检查。</p>
+            <p>
+              要了解 <code>Linux Capabilities</code>，这就得从 Linux
+              的权限控制发展来说明。在 Linux 2.2
+              版本之前，当内核对进程进行权限验证的时候，Linux
+              将进程划分为两类：特权进程（UID=0，也就是超级用户）和非特权进程（UID!=0），特权进程拥有所有的内核权限，而非特权进程则根据进程凭证（effective
+              UID, effective GID，supplementary group 等）进行权限检查。
+            </p>
 
-<p>比如我们以常用的 <code>passwd</code> 命令为例，修改用户密码需要具有 root 权限，而普通用户是没有这个权限的。但是实际上普通用户又可以修改自己的密码，这是怎么回事呢？在 Linux 的权限控制机制中，有一类比较特殊的权限设置，比如 SUID(Set User ID on execution)，允许用户以可执行文件的 owner 的权限来运行可执行文件。因为程序文件 <code>/bin/passwd</code> 被设置了 <code>SUID</code> 标识，所以普通用户在执行 passwd 命令时，进程是以 passwd 的所有者，也就是 root 用户的身份运行，从而就可以修改密码了。</p>
+            <p>
+              比如我们以常用的
+              <code>passwd</code> 命令为例，修改用户密码需要具有 root
+              权限，而普通用户是没有这个权限的。但是实际上普通用户又可以修改自己的密码，这是怎么回事呢？在
+              Linux 的权限控制机制中，有一类比较特殊的权限设置，比如 SUID(Set
+              User ID on execution)，允许用户以可执行文件的 owner
+              的权限来运行可执行文件。因为程序文件
+              <code>/bin/passwd</code> 被设置了
+              <code>SUID</code> 标识，所以普通用户在执行 passwd 命令时，进程是以
+              passwd 的所有者，也就是 root
+              用户的身份运行，从而就可以修改密码了。
+            </p>
 
-<p>但是使用 <code>SUID</code> 却带来了新的安全隐患，当我们运行设置了 <code>SUID</code> 的命令时，通常只是需要很小一部分的特权，但是 <code>SUID</code> 却给了它 root 具有的全部权限，一旦 被设置了 <code>SUID</code> 的命令出现漏洞，是不是就很容易被利用了。</p>
+            <p>
+              但是使用 <code>SUID</code> 却带来了新的安全隐患，当我们运行设置了
+              <code>SUID</code> 的命令时，通常只是需要很小一部分的特权，但是
+              <code>SUID</code> 却给了它 root 具有的全部权限，一旦 被设置了
+              <code>SUID</code> 的命令出现漏洞，是不是就很容易被利用了。
+            </p>
 
-<p>为此 Linux 引入了 <code>Capabilities</code> 机制来对 root 权限进行了更加细粒度的控制，实现按需进行授权，这样就大大减小了系统的安全隐患。</p>
+            <p>
+              为此 Linux 引入了 <code>Capabilities</code> 机制来对 root
+              权限进行了更加细粒度的控制，实现按需进行授权，这样就大大减小了系统的安全隐患。
+            </p>
 
-<h3 id="什么是-capabilities">什么是 Capabilities</h3>
+            <h3 id="什么是-capabilities">什么是 Capabilities</h3>
 
-<p>从内核 2.2 开始，Linux 将传统上与超级用户 root 关联的特权划分为不同的单元，称为 <code>capabilites</code>。<code>Capabilites</code>  每个单元都可以独立启用和禁用。这样当系统在作权限检查的时候就变成了：<strong>在执行特权操作时，如果进程的有效身份不是 root，就去检查是否具有该特权操作所对应的 capabilites，并以此决定是否可以进行该特权操作</strong>。比如如果我们要设置系统时间，就得具有 <code>CAP_SYS_TIME</code> 这个 capabilites。下面是从 <a href="http://man7.org/linux/man-pages/man7/capabilities.7.html">capabilities man page</a> 中摘取的 capabilites 列表：</p>
+            <p>
+              从内核 2.2 开始，Linux 将传统上与超级用户 root
+              关联的特权划分为不同的单元，称为 <code>capabilites</code>。<code
+                >Capabilites</code
+              >
+              每个单元都可以独立启用和禁用。这样当系统在作权限检查的时候就变成了：<strong
+                >在执行特权操作时，如果进程的有效身份不是
+                root，就去检查是否具有该特权操作所对应的
+                capabilites，并以此决定是否可以进行该特权操作</strong
+              >。比如如果我们要设置系统时间，就得具有
+              <code>CAP_SYS_TIME</code> 这个 capabilites。下面是从
+              <a href="http://man7.org/linux/man-pages/man7/capabilities.7.html"
+                >capabilities man page</a
+              >
+              中摘取的 capabilites 列表：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/capabilities.png" alt="linux capabilities list"><figcaption>linux capabilities list</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/capabilities.png"
+                alt="linux capabilities list"
+              />
+              <figcaption>linux capabilities list</figcaption>
+            </figure>
 
-<h3 id="如何使用-capabilities">如何使用 Capabilities</h3>
+            <h3 id="如何使用-capabilities">如何使用 Capabilities</h3>
 
-<p>我们可以通过 <code>getcap</code> 和 <code>setcap</code> 两条命令来分别查看和设置程序文件的 <code>capabilities</code> 属性。比如当前我们是<code>zuiapp</code> 这个用户，使用 <code>getcap</code> 命令查看 <code>ping</code> 命令目前具有的 <code>capabilities</code>：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ ll /bin/ping
+            <p>
+              我们可以通过 <code>getcap</code> 和
+              <code>setcap</code> 两条命令来分别查看和设置程序文件的
+              <code>capabilities</code> 属性。比如当前我们是<code>zuiapp</code>
+              这个用户，使用 <code>getcap</code> 命令查看
+              <code>ping</code> 命令目前具有的 <code>capabilities</code>：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ ll /bin/ping
 -rwxr-xr-x. <span style="color:#bd93f9">1</span> root root <span style="color:#bd93f9">62088</span> Nov  <span style="color:#bd93f9">7</span>  <span style="color:#bd93f9">2016</span> /bin/ping
 $ getcap /bin/ping
-/bin/ping <span style="color:#ff79c6">=</span> cap_net_admin,cap_net_raw+p</code></pre></div>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+/bin/ping <span style="color:#ff79c6">=</span> cap_net_admin,cap_net_raw+p</code></pre>
+            </div>
+            <script
+              async
+              src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+            ></script>
 
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-5376999672787220"
-     data-ad-slot="9165834656"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
+            <ins
+              class="adsbygoogle"
+              style="display: block"
+              data-ad-client="ca-pub-5376999672787220"
+              data-ad-slot="9165834656"
+              data-ad-format="auto"
+              data-full-width-responsive="true"
+            ></ins>
+            <script>
+              (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
 
-
-<p>我们可以看到具有 <code>cap_net_admin</code> 这个属性，所以我们现在可以执行 <code>ping</code> 命令：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ ping www.qikqiak.com
+            <p>
+              我们可以看到具有
+              <code>cap_net_admin</code> 这个属性，所以我们现在可以执行
+              <code>ping</code> 命令：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ ping www.qikqiak.com
 PING www.qikqiak.com.w.kunlungr.com <span style="color:#ff79c6">(</span><span style="color:#bd93f9">115</span>.223.14.186<span style="color:#ff79c6">)</span> <span style="color:#bd93f9">56</span><span style="color:#ff79c6">(</span><span style="color:#bd93f9">84</span><span style="color:#ff79c6">)</span> bytes of data.
 <span style="color:#bd93f9">64</span> bytes from <span style="color:#bd93f9">115</span>.223.14.186 <span style="color:#ff79c6">(</span><span style="color:#bd93f9">115</span>.223.14.186<span style="color:#ff79c6">)</span>: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">1</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">54</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">7</span>.87 ms
-<span style="color:#bd93f9">64</span> bytes from <span style="color:#bd93f9">115</span>.223.14.186 <span style="color:#ff79c6">(</span><span style="color:#bd93f9">115</span>.223.14.186<span style="color:#ff79c6">)</span>: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">2</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">54</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">7</span>.85 ms</code></pre></div>
-<p>但是如果我们把命令的 <code>capabilities</code> 属性移除掉：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ sudo setcap cap_net_admin,cap_net_raw-p /bin/ping
+<span style="color:#bd93f9">64</span> bytes from <span style="color:#bd93f9">115</span>.223.14.186 <span style="color:#ff79c6">(</span><span style="color:#bd93f9">115</span>.223.14.186<span style="color:#ff79c6">)</span>: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">2</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">54</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">7</span>.85 ms</code></pre>
+            </div>
+            <p>但是如果我们把命令的 <code>capabilities</code> 属性移除掉：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ sudo setcap cap_net_admin,cap_net_raw-p /bin/ping
 $ getcap /bin/ping
-/bin/ping <span style="color:#ff79c6">=</span></code></pre></div>
-<p>这个时候我们执行 <code>ping</code> 命令可以发现已经没有权限了：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ ping www.qikqiak.com
-ping: socket: Operation not permitted</code></pre></div>
-<p>因为 ping 命令在执行时需要访问网络，所需的 <code>capabilities</code> 为 <code>cap_net_admin</code> 和 <code>cap_net_raw</code>，所以我们可以通过 <code>setcap</code> 命令可来添加它们：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ sudo setcap cap_net_admin,cap_net_raw+p /bin/ping
+/bin/ping <span style="color:#ff79c6">=</span></code></pre>
+            </div>
+            <p>
+              这个时候我们执行 <code>ping</code> 命令可以发现已经没有权限了：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ ping www.qikqiak.com
+ping: socket: Operation not permitted</code></pre>
+            </div>
+            <p>
+              因为 ping 命令在执行时需要访问网络，所需的
+              <code>capabilities</code> 为 <code>cap_net_admin</code> 和
+              <code>cap_net_raw</code>，所以我们可以通过
+              <code>setcap</code> 命令可来添加它们：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ sudo setcap cap_net_admin,cap_net_raw+p /bin/ping
 $ getcap /bin/ping
 /bin/ping <span style="color:#ff79c6">=</span> cap_net_admin,cap_net_raw+p
 $ ping www.qikqiak.com
 PING www.qikqiak.com.w.kunlungr.com <span style="color:#ff79c6">(</span><span style="color:#bd93f9">115</span>.223.14.188<span style="color:#ff79c6">)</span> <span style="color:#bd93f9">56</span><span style="color:#ff79c6">(</span><span style="color:#bd93f9">84</span><span style="color:#ff79c6">)</span> bytes of data.
-<span style="color:#bd93f9">64</span> bytes from <span style="color:#bd93f9">115</span>.223.14.188 <span style="color:#ff79c6">(</span><span style="color:#bd93f9">115</span>.223.14.188<span style="color:#ff79c6">)</span>: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">1</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">54</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">7</span>.39 ms</code></pre></div>
-<p>命令中的 <code>p</code> 表示 <code>Permitted</code> 集合(接下来会介绍)，<code>+</code> 号表示把指定的<code>capabilities</code> 添加到这些集合中，<code>-</code> 号表示从集合中移除。</p>
+<span style="color:#bd93f9">64</span> bytes from <span style="color:#bd93f9">115</span>.223.14.188 <span style="color:#ff79c6">(</span><span style="color:#bd93f9">115</span>.223.14.188<span style="color:#ff79c6">)</span>: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">1</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">54</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">7</span>.39 ms</code></pre>
+            </div>
+            <p>
+              命令中的 <code>p</code> 表示
+              <code>Permitted</code> 集合(接下来会介绍)，<code>+</code>
+              号表示把指定的<code>capabilities</code> 添加到这些集合中，<code
+                >-</code
+              >
+              号表示从集合中移除。
+            </p>
 
-<p>对于可执行文件的属性中有三个集合来保存三类 <code>capabilities</code>，它们分别是：</p>
+            <p>
+              对于可执行文件的属性中有三个集合来保存三类
+              <code>capabilities</code>，它们分别是：
+            </p>
 
-<ul>
-<li>Permitted：在进程执行时，Permitted 集合中的 capabilites 自动被加入到进程的 Permitted 集合中。</li>
-<li>Inheritable：Inheritable 集合中的 capabilites 会与进程的 Inheritable 集合执行与操作，以确定进程在执行 execve 函数后哪些 capabilites 被继承。</li>
-<li>Effective：Effective 只是一个 bit。如果设置为开启，那么在执行 execve 函数后，Permitted 集合中新增的 capabilities 会自动出现在进程的 Effective 集合中。</li>
-</ul>
+            <ul>
+              <li>
+                Permitted：在进程执行时，Permitted 集合中的 capabilites
+                自动被加入到进程的 Permitted 集合中。
+              </li>
+              <li>
+                Inheritable：Inheritable 集合中的 capabilites 会与进程的
+                Inheritable 集合执行与操作，以确定进程在执行 execve 函数后哪些
+                capabilites 被继承。
+              </li>
+              <li>
+                Effective：Effective 只是一个 bit。如果设置为开启，那么在执行
+                execve 函数后，Permitted 集合中新增的 capabilities
+                会自动出现在进程的 Effective 集合中。
+              </li>
+            </ul>
 
-<p>对于进程中有五种 <code>capabilities</code> 集合类型，相比文件的 <code>capabilites</code>，进程的 <code>capabilities</code> 多了两个集合，分别是 <code>Bounding</code> 和 <code>Ambient</code>。</p>
+            <p>
+              对于进程中有五种 <code>capabilities</code> 集合类型，相比文件的
+              <code>capabilites</code>，进程的
+              <code>capabilities</code> 多了两个集合，分别是
+              <code>Bounding</code> 和 <code>Ambient</code>。
+            </p>
 
-<p>我们可以通过下面的命名来查看当前进程的 <code>capabilities</code> 信息：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ cat /proc/7029/status | grep <span style="color:#f1fa8c">&#39;Cap&#39;</span>  <span style="color:#6272a4">#7029为PID</span>
+            <p>
+              我们可以通过下面的命名来查看当前进程的
+              <code>capabilities</code> 信息：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ cat /proc/7029/status | grep <span style="color:#f1fa8c">&#39;Cap&#39;</span>  <span style="color:#6272a4">#7029为PID</span>
 CapInh:	<span style="color:#bd93f9">0000000000000000</span>
 CapPrm:	<span style="color:#bd93f9">0000000000000000</span>
 CapEff:	<span style="color:#bd93f9">0000000000000000</span>
 CapBnd:	0000001fffffffff
-CapAmb:	<span style="color:#bd93f9">0000000000000000</span></code></pre></div>
-<p>然后我们可以使用 <code>capsh</code> 命令把它们转义为可读的格式，这样基本可以看出进程具有的 <code>capabilities</code> 了：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ capsh --decode<span style="color:#ff79c6">=</span>0000001fffffffff
-<span style="color:#8be9fd;font-style:italic">0x0000001fffffffff</span><span style="color:#ff79c6">=</span>cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_linux_immutable,cap_net_bind_service,cap_net_broadcast,cap_net_admin,cap_net_raw,cap_ipc_lock,cap_ipc_owner,cap_sys_module,cap_sys_rawio,cap_sys_chroot,cap_sys_ptrace,cap_sys_pacct,cap_sys_admin,cap_sys_boot,cap_sys_nice,cap_sys_resource,cap_sys_time,cap_sys_tty_config,cap_mknod,cap_lease,cap_audit_write,cap_audit_control,cap_setfcap,cap_mac_override,cap_mac_admin,cap_syslog,35,36</code></pre></div>
-<h2 id="docker-container-capabilities">Docker Container Capabilities</h2>
+CapAmb:	<span style="color:#bd93f9">0000000000000000</span></code></pre>
+            </div>
+            <p>
+              然后我们可以使用
+              <code>capsh</code>
+              命令把它们转义为可读的格式，这样基本可以看出进程具有的
+              <code>capabilities</code> 了：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ capsh --decode<span style="color:#ff79c6">=</span>0000001fffffffff
+<span style="color:#8be9fd;font-style:italic">0x0000001fffffffff</span><span style="color:#ff79c6">=</span>cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_linux_immutable,cap_net_bind_service,cap_net_broadcast,cap_net_admin,cap_net_raw,cap_ipc_lock,cap_ipc_owner,cap_sys_module,cap_sys_rawio,cap_sys_chroot,cap_sys_ptrace,cap_sys_pacct,cap_sys_admin,cap_sys_boot,cap_sys_nice,cap_sys_resource,cap_sys_time,cap_sys_tty_config,cap_mknod,cap_lease,cap_audit_write,cap_audit_control,cap_setfcap,cap_mac_override,cap_mac_admin,cap_syslog,35,36</code></pre>
+            </div>
+            <h2 id="docker-container-capabilities">
+              Docker Container Capabilities
+            </h2>
 
-<p>我们说 Docker 容器本质上就是一个进程，所以理论上容器就会和进程一样会有一些默认的开放权限，默认情况下 Docker 会删除必须的 <code>capabilities</code> 之外的所有 <code>capabilities</code>，因为在容器中我们经常会以 root 用户来运行，使用 <code>capabilities</code> 现在后，容器中的使用的 root 用户权限就比我们平时在宿主机上使用的 root 用户权限要少很多了，这样即使出现了安全漏洞，也很难破坏或者获取宿主机的 root 权限，所以 Docker 支持 <code>Capabilities</code> 对于容器的安全性来说是非常有必要的。</p>
+            <p>
+              我们说 Docker
+              容器本质上就是一个进程，所以理论上容器就会和进程一样会有一些默认的开放权限，默认情况下
+              Docker 会删除必须的 <code>capabilities</code> 之外的所有
+              <code>capabilities</code>，因为在容器中我们经常会以 root
+              用户来运行，使用 <code>capabilities</code> 现在后，容器中的使用的
+              root 用户权限就比我们平时在宿主机上使用的 root
+              用户权限要少很多了，这样即使出现了安全漏洞，也很难破坏或者获取宿主机的
+              root 权限，所以 Docker 支持
+              <code>Capabilities</code> 对于容器的安全性来说是非常有必要的。
+            </p>
 
-<p>不过我们在运行容器的时候可以通过指定 <code>--privileded</code> 参数来开启容器的超级权限，这个参数一定要慎用，因为他会获取系统 root 用户所有能力赋值给容器，并且会扫描宿主机的所有设备文件挂载到容器内部，所以是非常危险的操作。</p>
+            <p>
+              不过我们在运行容器的时候可以通过指定
+              <code>--privileded</code>
+              参数来开启容器的超级权限，这个参数一定要慎用，因为他会获取系统
+              root
+              用户所有能力赋值给容器，并且会扫描宿主机的所有设备文件挂载到容器内部，所以是非常危险的操作。
+            </p>
 
-<p>但是如果你确实需要一些特殊的权限，我们可以通过 <code>--cap-add</code> 和 <code>--cap-drop</code> 这两个参数来动态调整，可以最大限度地保证容器的使用安全。下面表格中列出的 <code>Capabilities</code> 是 Docker 默认给容器添加的，我们可以通过 <code>--cap-drop</code> 去除其中一个或者多个：</p>
+            <p>
+              但是如果你确实需要一些特殊的权限，我们可以通过
+              <code>--cap-add</code> 和
+              <code>--cap-drop</code>
+              这两个参数来动态调整，可以最大限度地保证容器的使用安全。下面表格中列出的
+              <code>Capabilities</code> 是 Docker 默认给容器添加的，我们可以通过
+              <code>--cap-drop</code> 去除其中一个或者多个：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/docker-add-capabilities.png" alt="docker capabilities"><figcaption>docker capabilities</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/docker-add-capabilities.png"
+                alt="docker capabilities"
+              />
+              <figcaption>docker capabilities</figcaption>
+            </figure>
 
-<p>下面表格中列出的 <code>Capabilities</code> 是 Docker 默认删除的，我们可以通过<code>--cap-add</code>添加其中一个或者多个：</p>
+            <p>
+              下面表格中列出的 <code>Capabilities</code> 是 Docker
+              默认删除的，我们可以通过<code>--cap-add</code>添加其中一个或者多个：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/docker-drop-capabilities.png" alt="docker drop capabilities"><figcaption>docker drop capabilities</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/docker-drop-capabilities.png"
+                alt="docker drop capabilities"
+              />
+              <figcaption>docker drop capabilities</figcaption>
+            </figure>
 
-<blockquote>
-<p><code>--cap-add</code>和<code>--cap-drop</code> 这两参数都支持<code>ALL</code>值，比如如果你想让某个容器拥有除了<code>MKNOD</code>之外的所有内核权限，那么可以执行下面的命令：
-<code>$ sudo docker run --cap-add=ALL --cap-drop=MKNOD ...</code></p>
-</blockquote>
+            <blockquote>
+              <p>
+                <code>--cap-add</code>和<code>--cap-drop</code>
+                这两参数都支持<code>ALL</code>值，比如如果你想让某个容器拥有除了<code>MKNOD</code>之外的所有内核权限，那么可以执行下面的命令：
+                <code
+                  >$ sudo docker run --cap-add=ALL --cap-drop=MKNOD ...</code
+                >
+              </p>
+            </blockquote>
 
-<p>比如现在我们需要修改网络接口数据，默认情况下是没有权限的，因为需要的 <code>NET_ADMIN</code> 这个 <code>Capabilities</code> 默认被移除了：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ docker run -it --rm busybox /bin/sh
+            <p>
+              比如现在我们需要修改网络接口数据，默认情况下是没有权限的，因为需要的
+              <code>NET_ADMIN</code> 这个
+              <code>Capabilities</code> 默认被移除了：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ docker run -it --rm busybox /bin/sh
 / <span style="color:#6272a4"># ip link add dummy0 type dummy</span>
 ip: RTNETLINK answers: Operation not permitted
-/ #</code></pre></div>
-<p>所以在不使用 <code>--privileged</code> 的情况下（不建议）我们可以使用 <code>--cap-add=NET_ADMIN</code> 将这个 <code>Capabilities</code> 添加回来：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ docker run -it --rm --cap-add<span style="color:#ff79c6">=</span>NET_ADMIN busybox /bin/sh
+/ #</code></pre>
+            </div>
+            <p>
+              所以在不使用
+              <code>--privileged</code> 的情况下（不建议）我们可以使用
+              <code>--cap-add=NET_ADMIN</code> 将这个
+              <code>Capabilities</code> 添加回来：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ docker run -it --rm --cap-add<span style="color:#ff79c6">=</span>NET_ADMIN busybox /bin/sh
 / <span style="color:#6272a4"># ip link add dummy0 type dummy</span>
-/ # </code></pre></div>
-<p>可以看到已经 OK 了。</p>
+/ # </code></pre>
+            </div>
+            <p>可以看到已经 OK 了。</p>
 
-<h2 id="kubernetes-配置-capabilities">Kubernetes 配置 Capabilities</h2>
+            <h2 id="kubernetes-配置-capabilities">
+              Kubernetes 配置 Capabilities
+            </h2>
 
-<p>上面我介绍了在 Docker 容器下如何来配置 <code>Capabilities</code>，在 Kubernetes 中也可以很方便的来定义，我们只需要添加到 Pod 定义的 <code>spec.containers.sercurityContext.capabilities</code>中即可，也可以进行 <code>add</code> 和 <code>drop</code> 配置，同样上面的示例，我们要给 busybox 容器添加 <code>NET_ADMIN</code> 这个 <code>Capabilities</code>，对应的 YAML 文件可以这样定义：(cpb-demo.yaml)</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+            <p>
+              上面我介绍了在 Docker 容器下如何来配置
+              <code>Capabilities</code>，在 Kubernetes
+              中也可以很方便的来定义，我们只需要添加到 Pod 定义的
+              <code>spec.containers.sercurityContext.capabilities</code
+              >中即可，也可以进行 <code>add</code> 和
+              <code>drop</code> 配置，同样上面的示例，我们要给 busybox 容器添加
+              <code>NET_ADMIN</code> 这个 <code>Capabilities</code>，对应的 YAML
+              文件可以这样定义：(cpb-demo.yaml)
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: v1
 kind: Pod
 metadata:
   name: cpb-demo
@@ -501,179 +838,279 @@ spec:
         add: <span style="color:#6272a4"># 添加</span>
         - NET_ADMIN
         drop:  <span style="color:#6272a4"># 删除</span>
-        - KILL</code></pre></div>
-<p>我们在 <code>securityContext</code> 下面添加了 <code>capabilities</code> 字段，其中添加了 <code>NET_ADMIN</code> 并且删除了 <code>KILL</code> 这个默认的容器 <code>Capabilities</code>，这样我们就可以在 Pod 中修改网络接口数据了：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f cpb-demo.yaml
+        - KILL</code></pre>
+            </div>
+            <p>
+              我们在 <code>securityContext</code> 下面添加了
+              <code>capabilities</code> 字段，其中添加了
+              <code>NET_ADMIN</code> 并且删除了 <code>KILL</code> 这个默认的容器
+              <code>Capabilities</code>，这样我们就可以在 Pod
+              中修改网络接口数据了：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl apply -f cpb-demo.yaml
 $ kubectl get pods
 NAME                      READY   STATUS    RESTARTS   AGE
 cpb-demo                  <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          2m9s
 $ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -it cpb-demo /bin/sh
 / <span style="color:#6272a4"># ip link add dummy0 type dummy</span>
-/ #</code></pre></div>
-<p>在 Kubernetes 中通过 <code>sercurityContext.capabilities</code> 进行配置容器的 <code>Capabilities</code>，当然最终还是通过 Docker 的 <code>libcontainer</code> 去借助 <code>Linux kernel capabilities</code> 实现的权限管理。</p>
+/ #</code></pre>
+            </div>
+            <p>
+              在 Kubernetes 中通过
+              <code>sercurityContext.capabilities</code> 进行配置容器的
+              <code>Capabilities</code>，当然最终还是通过 Docker 的
+              <code>libcontainer</code> 去借助
+              <code>Linux kernel capabilities</code> 实现的权限管理。
+            </p>
 
-<h2 id="参考文档">参考文档</h2>
+            <h2 id="参考文档">参考文档</h2>
 
-<ul>
-<li><a href="https://www.cnblogs.com/sparkdev/p/11417781.html">Linux Capabilities 简介</a></li>
-<li><a href="https://hustcat.github.io/docker-config-capabilities/">Docker解析：配置与权限管理</a></li>
-</ul>
+            <ul>
+              <li>
+                <a href="https://www.cnblogs.com/sparkdev/p/11417781.html"
+                  >Linux Capabilities 简介</a
+                >
+              </li>
+              <li>
+                <a href="https://hustcat.github.io/docker-config-capabilities/"
+                  >Docker解析：配置与权限管理</a
+                >
+              </li>
+            </ul>
 
-<p><a href="https://youdianzhishi.com/web/course/1030" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+            <p>
+              <a
+                href="https://youdianzhishi.com/web/course/1030"
+                title="从 Docker 到 Kubernetes 进阶课程"
+                ><img
+                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
+                  alt="Kubernetes进阶训练营"
+              /></a>
+            </p>
 
+            <h2>微信公众号</h2>
+            <p>
+              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+              kubernetes 讨论群里面共同学习。
+            </p>
+            <img
+              src="https://picdn.youdianzhishi.com/images/qrcode.png"
+              alt="wechat-account-qrcode"
+            />
 
-          <h2>微信公众号</h2>
-<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
-
-  
-          
             <div class="entry-shang text-center">
-    <p>「真诚赞赏，手留余香」</p>
-    <button class="zs show-zs btn btn-bred">赞赏</button>
-</div>
-<div class="zs-modal-bg"></div>
-<div class="zs-modal-box">
-    <div class="zs-modal-head">
-        <button type="button" class="close">×</button>
-        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
-        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-    </div>
-    <div class="zs-modal-body">
-        <div class="zs-modal-btns">
-            <button class="btn btn-blink" data-num="2">2元</button>
-            <button class="btn btn-blink" data-num="5">5元</button>
-            <button class="btn btn-blink" data-num="10">10元</button>
-            <button class="btn btn-blink" data-num="50">50元</button>
-            <button class="btn btn-blink" data-num="100">100元</button>
-            <button class="btn btn-blink" data-num="1">任意金额</button>
-        </div>
-        <div class="zs-modal-pay">
-            <button class="btn btn-bred" id="pay-text">2元</button>
-            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
-        </div>
-    </div>
-    <div class="zs-modal-footer">
-        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
-    </div>
-</div>
-          
-          
-            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
-    <center>
-    <a href="#" class="social-share-icon icon-weibo"></a>
-    <a href="#" class="social-share-icon icon-wechat"></a>
-    <a href="#" class="social-share-icon icon-twitter"></a>
-    <a href="#" class="social-share-icon icon-linkedin"></a>
-    <a href="#" class="social-share-icon icon-facebook"></a>
-    <a href="#" class="social-share-icon icon-qq"></a>
-    <a href="#" class="social-share-icon icon-qzone"></a>
-    </center>
-</div>
+              <p>「真诚赞赏，手留余香」</p>
+              <button class="zs show-zs btn btn-bred">赞赏</button>
+            </div>
+            <div class="zs-modal-bg"></div>
+            <div class="zs-modal-box">
+              <div class="zs-modal-head">
+                <button type="button" class="close">×</button>
+                <span class="author"
+                  ><img
+                    src="https://www.qikqiak.com/img/avatar.jpeg"
+                  />阳明</span
+                >
+                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+              </div>
+              <div class="zs-modal-body">
+                <div class="zs-modal-btns">
+                  <button class="btn btn-blink" data-num="2">2元</button>
+                  <button class="btn btn-blink" data-num="5">5元</button>
+                  <button class="btn btn-blink" data-num="10">10元</button>
+                  <button class="btn btn-blink" data-num="50">50元</button>
+                  <button class="btn btn-blink" data-num="100">100元</button>
+                  <button class="btn btn-blink" data-num="1">任意金额</button>
+                </div>
+                <div class="zs-modal-pay">
+                  <button class="btn btn-bred" id="pay-text">2元</button>
+                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+                  <img
+                    src="https://www.qikqiak.com/img/wechat-2.png"
+                    id="pay-image"
+                  />
+                </div>
+              </div>
+              <div class="zs-modal-footer">
+                <span class="zs-wechat"
+                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
+                /></span>
+              </div>
+            </div>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+            <div
+              class="social-share"
+              data-initialized="true"
+              style="margin-bottom: 20px; margin-top: 20px"
+            >
+              <center>
+                <a href="#" class="social-share-icon icon-weibo"></a>
+                <a href="#" class="social-share-icon icon-wechat"></a>
+                <a href="#" class="social-share-icon icon-twitter"></a>
+                <a href="#" class="social-share-icon icon-linkedin"></a>
+                <a href="#" class="social-share-icon icon-facebook"></a>
+                <a href="#" class="social-share-icon icon-qq"></a>
+                <a href="#" class="social-share-icon icon-qzone"></a>
+              </center>
+            </div>
 
-          
-        </article>
-  
-        
-          
+            <link
+              rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
+            />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+          </article>
 
-<h3>相关文章</h3>
-<ul style="margin-bottom: 25px;">
-    
-    <li><a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/">在 Kubernetes 上安装 Gitlab</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/harbor-quick-install/">在 Kubernetes 在快速安装 Harbor</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/harbor-code-analysis/">Harbor 源码浅析</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/dockerfile-best-practice/">Dockerfile 最佳实践</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/pod-init-container/">初始化容器</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/write-kubernets-golang-service-step-by-step/">手摸手教你写 Kubernetes 的 golang 服务</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/install-docker-registry-harbor-in-kubernetes/">在kubernetes 集群上搭建docker 私有仓库Harbor</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/manual-install-high-available-kubernetes-cluster/">手动搭建高可用的kubernetes 集群</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/boosting-kubeclt-productivity/">提高 kubectl 使用生产力[译]</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/use-kubeadm-upgrade-k8s/">使用 kubeadm 更新 kubernetes 集群</a></li>
-    
-</ul>
+          <h3>相关文章</h3>
+          <ul style="margin-bottom: 25px">
+            <li>
+              <a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/"
+                >在 Kubernetes 上安装 Gitlab</a
+              >
+            </li>
 
-        
-  
-        
-        <ul class="pager blog-pager">
-          
+            <li>
+              <a href="https://www.qikqiak.com/post/harbor-quick-install/"
+                >在 Kubernetes 在快速安装 Harbor</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/harbor-code-analysis/"
+                >Harbor 源码浅析</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/dockerfile-best-practice/"
+                >Dockerfile 最佳实践</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/pod-init-container/"
+                >初始化容器</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/write-kubernets-golang-service-step-by-step/"
+                >手摸手教你写 Kubernetes 的 golang 服务</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/install-docker-registry-harbor-in-kubernetes/"
+                >在kubernetes 集群上搭建docker 私有仓库Harbor</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/manual-install-high-available-kubernetes-cluster/"
+                >手动搭建高可用的kubernetes 集群</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/boosting-kubeclt-productivity/"
+                >提高 kubectl 使用生产力[译]</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/use-kubeadm-upgrade-k8s/"
+                >使用 kubeadm 更新 kubernetes 集群</a
+              >
+            </li>
+          </ul>
+
+          <ul class="pager blog-pager">
             <li class="previous">
-              <a href="https://www.qikqiak.com/post/gloo-1.0-release/" data-toggle="tooltip" data-placement="top" title="Gloo 1.0 正式版发布">&larr; 前一篇</a>
+              <a
+                href="https://www.qikqiak.com/post/gloo-1.0-release/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="Gloo 1.0 正式版发布"
+                >&larr; 前一篇</a
+              >
             </li>
-          
-          
-            <li class="next">
-              <a href="https://www.qikqiak.com/post/deploy-k8s-app-with-oam/" data-toggle="tooltip" data-placement="top" title="使用 OAM 部署 Kubernetes 应用">后一篇 &rarr;</a>
-            </li>
-          
-        </ul>
-        
 
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-        
-        <ins class="adsbygoogle"
-            style="display:block"
+            <li class="next">
+              <a
+                href="https://www.qikqiak.com/post/deploy-k8s-app-with-oam/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="使用 OAM 部署 Kubernetes 应用"
+                >后一篇 &rarr;</a
+              >
+            </li>
+          </ul>
+
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+          ></script>
+
+          <ins
+            class="adsbygoogle"
+            style="display: block"
             data-ad-client="ca-pub-5376999672787220"
             data-ad-slot="3700507799"
             data-ad-format="auto"
-            data-full-width-responsive="true"></ins>
-        <script>
+            data-full-width-responsive="true"
+          ></ins>
+          <script>
             (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
-  
-        
-    <div id="gitalk-container"></div>
-    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-    <script>
-    var gitalk = new Gitalk({
-        clientID: 'bdb76dbb2e9d0786e350',
-        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
-        repo: 'blog',
-        owner: 'cnych',
-        admin: ['cnych'],
-        labels: ['gitment'],
-        title: '在 Kubernetes 中配置 Container Capabilities',
-        createIssueManually: true,
-        id: 'capabilities-on-k8s',      
-        distractionFreeMode: true  
-    });
-    gitalk.render('gitalk-container');
-</script>
+          </script>
 
-
-        
-          
-
-        
-  
+          <div id="gitalk-container"></div>
+          <link
+            rel="stylesheet"
+            href="https://unpkg.com/gitalk/dist/gitalk.css"
+          />
+          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+          <script>
+            var gitalk = new Gitalk({
+              clientID: "bdb76dbb2e9d0786e350",
+              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
+              repo: "blog",
+              owner: "cnych",
+              admin: ["cnych"],
+              labels: ["gitment"],
+              title: "在 Kubernetes 中配置 Container Capabilities",
+              createIssueManually: true,
+              id: "capabilities-on-k8s",
+              distractionFreeMode: true,
+            });
+            gitalk.render("gitalk-container");
+          </script>
+        </div>
       </div>
-    
-    
-  </div>
-</div>
+    </div>
 
     <footer>
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <ul class="list-inline text-center footer-links">
-          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
-          
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <ul class="list-inline text-center footer-links">
+              <img
+                src="https://www.qikqiak.com/img/wechatmp.png"
+                alt="k8s技术圈"
+              />
+
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -682,7 +1119,7 @@ $ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -it cpb-demo
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -691,7 +1128,7 @@ $ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -it cpb-demo
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -700,7 +1137,7 @@ $ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -it cpb-demo
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -709,121 +1146,158 @@ $ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -it cpb-demo
                   </span>
                 </a>
               </li>
-          
-          
-          <li>
-            <a href="https://www.qikqiak.com/index.xml" title="RSS">
-              <span class="fa-stack fa-lg">
-                <i class="fa fa-circle fa-stack-2x"></i>
-                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+
+              <li>
+                <a href="https://www.qikqiak.com/index.xml" title="RSS">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+            </ul>
+            <p class="credits copyright text-muted">
+              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/">阳明的博客</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/archive/">归档</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/friend/">友链</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://beian.miit.gov.cn/" target="_blank"
+                >蜀ICP备11027319号-5</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
+                >kubernetes.io</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
+                >Kubernetes中文社区</a
+              >
+            </p>
+            <p class="text-center text-muted">
+              <script
+                async
+                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
+              ></script>
+              <span id="busuanzi_container_site_pv" style="display: none">
+                本站总访问量<span id="busuanzi_value_site_pv"></span>次
               </span>
-            </a>
-          </li>
-          
-        </ul>
-        <p class="credits copyright text-muted">
-          
+              &nbsp;&bull;&nbsp;
+              <span id="busuanzi_container_site_uv" style="display: none">
+                访客数<span id="busuanzi_value_site_uv"></span>人次
+              </span>
+            </p>
 
-          &nbsp;&bull;&nbsp;
-          2023
-
-          
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/">阳明的博客</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/archive/">归档</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/friend/">友链</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
-          
-        </p>
-        <p class="text-center text-muted">
-          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-          <span id="busuanzi_container_site_pv" style="display:none">
-            本站总访问量<span id="busuanzi_value_site_pv"></span>次
-          </span>
-          &nbsp;&bull;&nbsp;
-          <span id="busuanzi_container_site_uv" style="display:none">
-            访客数<span id="busuanzi_value_site_uv"></span>人次
-          </span>
-        </p>
-        
-        <p class="credits theme-by text-muted">
-          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
-          
-        </p>
+            <p class="credits theme-by text-muted">
+              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
+              &nbsp;&bull;&nbsp; 主题
+              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+              移植自
+              <a href="https://github.com/rootsongjc/beautifulhugo"
+                >Beautiful Hugo</a
+              >
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</footer>
+    </footer>
 
+    <script
+      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
+      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
+    ></script>
 
-<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "UA-69668147-3");
+    </script>
+    <script>
+      (function () {
+        var bp = document.createElement("script");
+        var curProtocol = window.location.protocol.split(":")[0];
+        if (curProtocol === "https") {
+          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
+        } else {
+          bp.src = "http://push.zhanzhang.baidu.com/push.js";
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+      })();
+    </script>
+    <script>
+      $(document).ready(function () {
+        var int = setInterval(fixCount, 50);
 
-
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-69668147-3');
-</script>
-<script>
-(function(){
-    var bp = document.createElement('script');
-    var curProtocol = window.location.protocol.split(':')[0];
-    if (curProtocol === 'https') {
-        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
-    }
-    else {
-        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
-    }
-    var s = document.getElementsByTagName("script")[0];
-    s.parentNode.insertBefore(bp, s);
-})();
-</script>
-<script >
-$(document).ready(function() {
-  var int = setInterval(fixCount, 50);  
-  
-  var initPVCount = 584976;
-  var initUVCount = 153191;
-  function fixCount() {                   
-    if ($("#busuanzi_container_site_pv").css("display") != "none") {
-        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
-        clearInterval(int); 
-    }
-    if ($("#busuanzi_container_site_uv").css("display") != "none") {
-      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
-      clearInterval(int); 
-    }  
-  }           
-});
-</script>
- <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
-<script type="text/javascript">
-$('.carousel').slick({
-    dots: true,
-    arrows: true,
-    autoplay: true,
-    autoplaySpeed: 4000,
-    infinite: true,
-    speed: 500,
-    fade: true,
-    cssEase: 'linear',
-    centerMode: true,
-    prevArrow: '<button type="button" class="slick-prev"></button>',
-    nextArrow: '<button type="button" class="slick-next"></button>',
-});
-</script>
-
+        var initPVCount = 584976;
+        var initUVCount = 153191;
+        function fixCount() {
+          if ($("#busuanzi_container_site_pv").css("display") != "none") {
+            $("#busuanzi_value_site_pv").html(
+              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
+            );
+            clearInterval(int);
+          }
+          if ($("#busuanzi_container_site_uv").css("display") != "none") {
+            $("#busuanzi_value_site_uv").html(
+              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
+            );
+            clearInterval(int);
+          }
+        }
+      });
+    </script>
+    <script>
+      (function (w, d, s, id) {
+        if (typeof w.webpushr !== "undefined") return;
+        w.webpushr =
+          w.webpushr ||
+          function () {
+            (w.webpushr.q = w.webpushr.q || []).push(arguments);
+          };
+        var js,
+          fjs = d.getElementsByTagName(s)[0];
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "https://cdn.webpushr.com/app.min.js";
+        fjs.parentNode.appendChild(js);
+      })(window, document, "script", "webpushr-jssdk");
+      webpushr(
+        "init",
+        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
+      );
+    </script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
+    ></script>
+    <script type="text/javascript">
+      $(".carousel").slick({
+        dots: true,
+        arrows: true,
+        autoplay: true,
+        autoplaySpeed: 4000,
+        infinite: true,
+        speed: 500,
+        fade: true,
+        cssEase: "linear",
+        centerMode: true,
+        prevArrow: '<button type="button" class="slick-prev"></button>',
+        nextArrow: '<button type="button" class="slick-next"></button>',
+      });
+    </script>
   </body>
 </html>
-

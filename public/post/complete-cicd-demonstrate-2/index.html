@@ -1,348 +1,408 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
 
+    <title>
+      基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的
+      CI/CD(二)-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
+    </title>
+    <meta
+      property="og:title"
+      content="基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(二)"
+    />
+    <meta
+      name="twitter:title"
+      content="基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(二)"
+    />
 
-  <title>基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(二)-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
-  <meta property="og:title" content="基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(二)" />
-  <meta name="twitter:title" content="基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(二)" />
+    <meta
+      name="description"
+      content="上节课我们完成了最基本的流水线流程，接下来的工作就是来实现之前的具体 Pipeline 脚本了。"
+    />
+    <meta
+      property="og:description"
+      content="上节课我们完成了最基本的流水线流程，接下来的工作就是来实现之前的具体 Pipeline 脚本了。"
+    />
+    <meta
+      name="twitter:description"
+      content="上节课我们完成了最基本的流水线流程，接下来的工作就是来实现之前的具体 Pipeline 脚本了。"
+    />
+    <meta name="author" content="" />
+    <link
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+      rel="icon"
+      type="image/x-icon"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      property="og:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      name="twitter:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta
+      property="og:url"
+      content="https://www.qikqiak.com/post/complete-cicd-demonstrate-2/"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="阳明的博客" />
 
-  <meta name="description" content="上节课我们完成了最基本的流水线流程，接下来的工作就是来实现之前的具体 Pipeline 脚本了。">
-  <meta property="og:description" content="上节课我们完成了最基本的流水线流程，接下来的工作就是来实现之前的具体 Pipeline 脚本了。">
-  <meta name="twitter:description" content="上节课我们完成了最基本的流水线流程，接下来的工作就是来实现之前的具体 Pipeline 脚本了。">
-  <meta name="author" content=""/>
-  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
-  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
-  <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://www.qikqiak.com/post/complete-cicd-demonstrate-2/" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="阳明的博客" />
+    <meta name="generator" content="Hugo 0.55.6" />
+    <link
+      rel="canonical"
+      href="https://www.qikqiak.com/post/complete-cicd-demonstrate-2/"
+    />
+    <link
+      rel="alternate"
+      href="https://www.qikqiak.com/index.xml"
+      type="application/rss+xml"
+      title="阳明的博客"
+    />
 
-  <meta name="generator" content="Hugo 0.55.6" />
-  <link rel="canonical" href="https://www.qikqiak.com/post/complete-cicd-demonstrate-2/" />
-  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+    <link
+      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
+      rel="stylesheet"
+    />
 
-  
-  
-  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
-  
+    <link
+      rel="stylesheet"
+      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
+      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
+    />
 
-  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
+    />
 
-  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
-  
-  
-    
     <!--[if lt IE 9]>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+        rel="stylesheet"
+      />
     <![endif]-->
-<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
-<meta name="baidu-site-verification" content="F5ojAyqaKU" />
-<meta name="keywords" content="kubernetes, Jenkins, Gitlab, Harbor, Helm, Docker, Pipeline, CI/CD, 流水线, devops">
-<script>
-var _hmt = _hmt || [];
-(function() {
-  var hm = document.createElement("script");
-  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-  var s = document.getElementsByTagName("script")[0];
-  s.parentNode.insertBefore(hm, s);
-})();
-</script>
+    <meta
+      name="google-site-verification"
+      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
+    />
+    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
+    <meta
+      name="keywords"
+      content="kubernetes, Jenkins, Gitlab, Harbor, Helm, Docker, Pipeline, CI/CD, 流水线, devops"
+    />
+    <script>
+      var _hmt = _hmt || [];
+      (function () {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
 
+    <script type="application/javascript">
+      var doNotTrack = false;
+      if (!doNotTrack) {
+        window.ga =
+          window.ga ||
+          function () {
+            (ga.q = ga.q || []).push(arguments);
+          };
+        ga.l = +new Date();
+        ga("create", "UA-69668147-3", "auto");
 
-
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-	ga('create', 'UA-69668147-3', 'auto');
-	
-	ga('send', 'pageview');
-}
-</script>
-<script async src='https://www.google-analytics.com/analytics.js'></script>
-
-</head>
+        ga("send", "pageview");
+      }
+    </script>
+    <script async src="https://www.google-analytics.com/analytics.js"></script>
+  </head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
-        <span class="sr-only">切换导航</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
-        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
-      </a>
-    </div>
+      <div class="container">
+        <div class="navbar-header">
+          <button
+            type="button"
+            class="navbar-toggle"
+            data-toggle="collapse"
+            data-target="#main-navbar"
+          >
+            <span class="sr-only">切换导航</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a
+            class="navbar-brand"
+            href="https://www.qikqiak.com/"
+            title="阳明的博客"
+          >
+            <img
+              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
+              style="margin-top: -5px; height: 32px"
+              alt="阳明的博客"
+            />
+          </a>
+        </div>
 
-    <div class="collapse navbar-collapse" id="main-navbar">
-      <ul class="nav navbar-nav navbar-right">
-        
-          
+        <div class="collapse navbar-collapse" id="main-navbar">
+          <ul class="nav navbar-nav navbar-right">
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-          
-        
-          
+
             <li>
-              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+              <a
+                title="课程"
+                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
+                >课程</a
+              >
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/archives">Archive</a>
-                
-                  <a href="https://www.qikqiak.com/tags">tags</a>
-                
-                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-                
-                  <a href="https://www.qikqiak.com/tags/python">python</a>
-                
-                  <a href="https://www.qikqiak.com/tags/django">django</a>
-                
-                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
-                
+                <a href="https://www.qikqiak.com/archives">Archive</a>
+
+                <a href="https://www.qikqiak.com/tags">tags</a>
+
+                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+
+                <a href="https://www.qikqiak.com/tags/python">python</a>
+
+                <a href="https://www.qikqiak.com/tags/django">django</a>
+
+                <a href="https://www.qikqiak.com/tags/devops">devops</a>
               </div>
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-                
-                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-                
-                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-                
-                  <a href="https://md.qikqiak.com/">Markdown微信</a>
-                
+                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+
+                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+
+                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+
+                <a href="https://md.qikqiak.com/">Markdown微信</a>
               </div>
             </li>
-          
-        
-          
+
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+              <a title="关于" href="https://www.qikqiak.com/page/about/"
+                >关于</a
+              >
             </li>
-          
-        
-          
+
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
-          
-        
 
-        
-
-        
-
-        
-          <li>
-            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
-              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
-            </a>
-          </li>
-          
-
-      </ul>
-    </div>
-
-  </div>
-</nav>
-
-
-  <div id="modalSearch" class="modal fade" role="dialog">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-          <h4 class="modal-title">搜索</h4>
+            <li>
+              <a
+                href="#modalSearch"
+                data-toggle="modal"
+                data-target="#modalSearch"
+                style="outline: none"
+              >
+                <span
+                  id="searchGlyph"
+                  class="glyphicon glyphicon-search"
+                ></span>
+              </a>
+            </li>
+          </ul>
         </div>
-        <div class="modal-body">
-            
-<div class="aa-input-container" id="aa-input-container">
-    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
-    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
-    </svg>
-</div>
-<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+      </div>
+    </nav>
 
-<script>
-var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
-var index = client.initIndex('prod_blog');
+    <div id="modalSearch" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">
+              &times;
+            </button>
+            <h4 class="modal-title">搜索</h4>
+          </div>
+          <div class="modal-body">
+            <div class="aa-input-container" id="aa-input-container">
+              <input
+                type="search"
+                id="aa-search-input"
+                class="aa-input-search"
+                placeholder="Search for titles or URIs..."
+                name="search"
+                autocomplete="off"
+              />
+              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+                <path
+                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
+                />
+              </svg>
+            </div>
+            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-autocomplete('#aa-search-input',
-{ hint: false}, {
-    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
-    
-    displayKey: 'name',
-    
-    templates: {
-        
-        suggestion: function(suggestion) {
-            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
-            suggestion._highlightResult.title.value + '</a></span>';
-        }
-    }
-});
-</script>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+            <script>
+              var client = algoliasearch(
+                "1JDRAS0AZR",
+                "8804ac109158bb3bb60d74ce98fa332f"
+              );
+              var index = client.initIndex("prod_blog");
+
+              autocomplete(
+                "#aa-search-input",
+                { hint: false },
+                {
+                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
+
+                  displayKey: "name",
+
+                  templates: {
+                    suggestion: function (suggestion) {
+                      return (
+                        "<span>" +
+                        '<a href="https://www.qikqiak.com/post/' +
+                        suggestion.slug +
+                        '">' +
+                        suggestion._highlightResult.title.value +
+                        "</a></span>"
+                      );
+                    },
+                  },
+                }
+              );
+            </script>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">
+              close
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-    
-  
-  
-  
+    <div
+      id="header-big-imgs"
+      data-num-img="1"
+      data-img-src-1="https://picdn.youdianzhishi.com/images/ked0s.jpeg"
+      data-img-desc-1="https://unsplash.com/photos/Lvcm9B-8LAg"
+    ></div>
 
-
-
-
-  
-    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/ked0s.jpeg" data-img-desc-1="https://unsplash.com/photos/Lvcm9B-8LAg"></div>
-  
-
-  <header class="header-section has-img">
-    
+    <header class="header-section has-img">
       <div class="intro-header big-img">
-        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
-                <h1>基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(二)</h1>
-                  
-                  
-                    <span class="post-meta">
-  
-    发表于 May 4, 2019
-  
-  
-</span>
+                <h1>
+                  基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(二)
+                </h1>
 
-
-                  
+                <span class="post-meta"> 发表于 May 4, 2019 </span>
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline;"></span>
+        <span class="img-desc" style="display: inline"></span>
       </div>
-    
-    
-    
-    <div class="intro-header no-img">
-      
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <div class="post-heading">
-              <h1>基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(二)</h1>
-                
-                
-                  <span class="post-meta">
-  
-    发表于 May 4, 2019
-  
-  
-</span>
 
+      <div class="intro-header no-img">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>
+                  基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(二)
+                </h1>
 
-                
+                <span class="post-meta"> 发表于 May 4, 2019 </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    
-    
-  </header>
+    </header>
 
+    <div class="container" role="main">
+      <div class="row">
+        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+          <div>
+            <h5 id="tags" style="margin-top: 30px">
+              标签:
 
-    
+              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
+              &nbsp;
 
+              <a href="https://www.qikqiak.com/tags/jenkins/">Jenkins</a> &nbsp;
 
+              <a href="https://www.qikqiak.com/tags/gitlab/">Gitlab</a> &nbsp;
 
-<div class="container" role="main">
-  <div class="row">
+              <a href="https://www.qikqiak.com/tags/harbor/">Harbor</a> &nbsp;
 
-    
-    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <div>
-            
-            
-            <h5 id="tags" style="margin-top: 30px;">标签:
-              
-                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/jenkins/">Jenkins</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/gitlab/">Gitlab</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/harbor/">Harbor</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/helm/">Helm</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/docker/">Docker</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/pipeline/">Pipeline</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/devops/">devops</a> &nbsp;
-              
+              <a href="https://www.qikqiak.com/tags/helm/">Helm</a> &nbsp;
+
+              <a href="https://www.qikqiak.com/tags/docker/">Docker</a> &nbsp;
+
+              <a href="https://www.qikqiak.com/tags/pipeline/">Pipeline</a>
+              &nbsp;
+
+              <a href="https://www.qikqiak.com/tags/devops/">devops</a> &nbsp;
             </h5>
-            
-        </div>
-  
-        <article role="main" class="blog-post" itemprop="articleBody" id="content">
-          
-  
-          
-          
-          
-  
-          
-          
-          
-  
-          
-          
-          
+          </div>
 
-          <p><a href="https://www.qikqiak.com/post/complete-cicd-demonstrate-1/">上节课我们完成了最基本的流水线流程</a>，接下来的工作就是来实现之前的具体 Pipeline 脚本了。</p>
+          <article
+            role="main"
+            class="blog-post"
+            itemprop="articleBody"
+            id="content"
+          >
+            <p>
+              <a
+                href="https://www.qikqiak.com/post/complete-cicd-demonstrate-1/"
+                >上节课我们完成了最基本的流水线流程</a
+              >，接下来的工作就是来实现之前的具体 Pipeline 脚本了。
+            </p>
 
-<h2 id="pipeline">Pipeline</h2>
+            <h2 id="pipeline">Pipeline</h2>
 
-<p>第一个阶段：单元测试，我们可以在这个阶段是运行一些单元测试或者静态代码分析的脚本，我们这里直接忽略。</p>
+            <p>
+              第一个阶段：单元测试，我们可以在这个阶段是运行一些单元测试或者静态代码分析的脚本，我们这里直接忽略。
+            </p>
 
-<p>第二个阶段：代码编译打包，我们可以看到我们是在一个<code>maven</code>的容器中来执行的，所以我们只需要在该容器中获取到代码，然后在代码目录下面执行 maven 打包命令即可，如下所示：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-groovy" data-lang="groovy">  stage<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;代码编译打包&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+            <p>
+              第二个阶段：代码编译打包，我们可以看到我们是在一个<code>maven</code>的容器中来执行的，所以我们只需要在该容器中获取到代码，然后在代码目录下面执行
+              maven 打包命令即可，如下所示：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-groovy" data-lang="groovy">  stage<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;代码编译打包&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
     <span style="color:#ff79c6">try</span> <span style="color:#ff79c6">{</span>
       container<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;maven&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
         echo <span style="color:#f1fa8c">&#34;2. 代码编译打包阶段&#34;</span>
@@ -352,9 +412,23 @@ autocomplete('#aa-search-input',
       println <span style="color:#f1fa8c">&#34;构建失败 - ${currentBuild.fullDisplayName}&#34;</span>
       <span style="color:#ff79c6">throw</span><span style="color:#ff79c6">(</span>exc<span style="color:#ff79c6">)</span>
     <span style="color:#ff79c6">}</span>
-  <span style="color:#ff79c6">}</span></code></pre></div>
-<p>第三个阶段：构建 Docker 镜像，要构建 Docker 镜像，就需要提供镜像的名称和 tag，要推送到 Harbor 仓库，就需要提供登录的用户名和密码，所以我们这里使用到了<code>withCredentials</code>方法，在里面可以提供一个<code>credentialsId</code>为<code>dockerhub</code>的认证信息，如下：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-groovy" data-lang="groovy">stage<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;构建 Docker 镜像&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+  <span style="color:#ff79c6">}</span></code></pre>
+            </div>
+            <p>
+              第三个阶段：构建 Docker 镜像，要构建 Docker
+              镜像，就需要提供镜像的名称和 tag，要推送到 Harbor
+              仓库，就需要提供登录的用户名和密码，所以我们这里使用到了<code>withCredentials</code>方法，在里面可以提供一个<code>credentialsId</code>为<code>dockerhub</code>的认证信息，如下：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-groovy" data-lang="groovy">stage<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;构建 Docker 镜像&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
   withCredentials<span style="color:#ff79c6">([[</span>$class<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#39;UsernamePasswordMultiBinding&#39;</span><span style="color:#ff79c6">,</span>
     <span style="color:#8be9fd;font-style:italic">credentialsId:</span> <span style="color:#f1fa8c">&#39;dockerhub&#39;</span><span style="color:#ff79c6">,</span>
     <span style="color:#8be9fd;font-style:italic">usernameVariable:</span> <span style="color:#f1fa8c">&#39;DOCKER_HUB_USER&#39;</span><span style="color:#ff79c6">,</span>
@@ -368,20 +442,60 @@ autocomplete('#aa-search-input',
 </span><span style="color:#f1fa8c">          &#34;&#34;&#34;</span>
       <span style="color:#ff79c6">}</span>
   <span style="color:#ff79c6">}</span>
-<span style="color:#ff79c6">}</span></code></pre></div>
-<p>其中 ${image} 和 ${imageTag} 我们可以在上面定义成全局变量：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-groovy" data-lang="groovy"><span style="color:#8be9fd">def</span> imageTag <span style="color:#ff79c6">=</span> sh<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">script:</span> <span style="color:#f1fa8c">&#34;git rev-parse --short HEAD&#34;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">returnStdout:</span> <span style="color:#ff79c6">true</span><span style="color:#ff79c6">).</span><span style="color:#50fa7b">trim</span><span style="color:#ff79c6">()</span>
+<span style="color:#ff79c6">}</span></code></pre>
+            </div>
+            <p>其中 ${image} 和 ${imageTag} 我们可以在上面定义成全局变量：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-groovy" data-lang="groovy"><span style="color:#8be9fd">def</span> imageTag <span style="color:#ff79c6">=</span> sh<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">script:</span> <span style="color:#f1fa8c">&#34;git rev-parse --short HEAD&#34;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">returnStdout:</span> <span style="color:#ff79c6">true</span><span style="color:#ff79c6">).</span><span style="color:#50fa7b">trim</span><span style="color:#ff79c6">()</span>
 <span style="color:#8be9fd">def</span> dockerRegistryUrl <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;registry.qikqiak.com&#34;</span>
 <span style="color:#8be9fd">def</span> imageEndpoint <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;course/polling-app-server&#34;</span>
-<span style="color:#8be9fd">def</span> image <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;${dockerRegistryUrl}/${imageEndpoint}&#34;</span></code></pre></div>
-<p>docker 的用户名和密码信息则需要通过<code>凭据</code>来进行添加，进入 jenkins 首页 -&gt; 左侧菜单<code>凭据</code> -&gt; <code>添加凭据</code>，选择用户名和密码类型的，其中 ID 一定要和上面的<code>credentialsId</code>的值保持一致：</p>
+<span style="color:#8be9fd">def</span> image <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;${dockerRegistryUrl}/${imageEndpoint}&#34;</span></code></pre>
+            </div>
+            <p>
+              docker
+              的用户名和密码信息则需要通过<code>凭据</code>来进行添加，进入
+              jenkins 首页 -&gt; 左侧菜单<code>凭据</code> -&gt;
+              <code>添加凭据</code>，选择用户名和密码类型的，其中 ID
+              一定要和上面的<code>credentialsId</code>的值保持一致：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/6uXfeq.jpg" alt="add docker hub credential"><figcaption>add docker hub credential</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/6uXfeq.jpg"
+                alt="add docker hub credential"
+              />
+              <figcaption>add docker hub credential</figcaption>
+            </figure>
 
-<p>第四个阶段：运行 kubectl 工具，其实在我们当前使用的流水线中是用不到 kubectl 工具的，那么为什么我们这里要使用呢？这还不是因为我们暂时还没有去写应用的 Helm Chart 包吗？所以我们先去用原始的 YAML 文件来编写应用部署的资源清单文件，这也是我们写出 Chart 包前提，因为只有知道了应用如何部署才可能知道 Chart 包如何编写，所以我们先编写应用部署资源清单。</p>
+            <p>
+              第四个阶段：运行 kubectl
+              工具，其实在我们当前使用的流水线中是用不到 kubectl
+              工具的，那么为什么我们这里要使用呢？这还不是因为我们暂时还没有去写应用的
+              Helm Chart 包吗？所以我们先去用原始的 YAML
+              文件来编写应用部署的资源清单文件，这也是我们写出 Chart
+              包前提，因为只有知道了应用如何部署才可能知道 Chart
+              包如何编写，所以我们先编写应用部署资源清单。
+            </p>
 
-<p>首先当然就是 Deployment 控制器了，如下所示：（k8s.yaml）</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: extensions/v1beta1
+            <p>首先当然就是 Deployment 控制器了，如下所示：（k8s.yaml）</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: polling-server
@@ -487,9 +601,23 @@ spec:
   ports:
   - name: dbport
     port: <span style="color:#bd93f9">3306</span>
-    targetPort: dbport</code></pre></div>
-<p>可以看到我们上面的 YAML 文件中添加使用的镜像是用标签代替的：<code>&lt;IMAGE&gt;:&lt;IMAGE_TAG&gt;</code>，这是因为我们的镜像地址是动态的，下依赖我们在上一个阶段打包出来的镜像地址的，所以我们这里用标签代替，然后将标签替换成真正的值即可，另外为了保证应用的稳定性，我们还在应用中添加了健康检查，所以需要在代码中添加一个健康检查的 Controller：（src/main/java/com/example/polls/controller/StatusController.java）</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#ff79c6">package</span> com.example.polls.controller<span style="color:#ff79c6">;</span>
+    targetPort: dbport</code></pre>
+            </div>
+            <p>
+              可以看到我们上面的 YAML
+              文件中添加使用的镜像是用标签代替的：<code>&lt;IMAGE&gt;:&lt;IMAGE_TAG&gt;</code>，这是因为我们的镜像地址是动态的，下依赖我们在上一个阶段打包出来的镜像地址的，所以我们这里用标签代替，然后将标签替换成真正的值即可，另外为了保证应用的稳定性，我们还在应用中添加了健康检查，所以需要在代码中添加一个健康检查的
+              Controller：（src/main/java/com/example/polls/controller/StatusController.java）
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-java" data-lang="java"><span style="color:#ff79c6">package</span> com.example.polls.controller<span style="color:#ff79c6">;</span>
 
 <span style="color:#ff79c6">import</span> org.springframework.web.bind.annotation.*<span style="color:#ff79c6">;</span>
 
@@ -502,11 +630,38 @@ spec:
         <span style="color:#ff79c6">return</span> <span style="color:#f1fa8c">&#34;UP&#34;</span><span style="color:#ff79c6">;</span>
     <span style="color:#ff79c6">}</span>
 
-<span style="color:#ff79c6">}</span></code></pre></div>
-<p>最后就是环境变量了，还记得前面我们更改了资源文件中数据库的配置吗？（src/main/resources/application.properties）因为要尽量通用，我们在部署应用的时候很有可能已经有一个外部的数据库服务了，所以这个时候通过环境变量传入进来即可。另外由于我们这里使用的是私有镜像仓库，所以需要在集群中提前创建一个对应的 Secret 对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create secret docker-registry myreg --docker-server<span style="color:#ff79c6">=</span>registry.qikqiak.com --docker-username<span style="color:#ff79c6">=</span>DOCKER_USER --docker-password<span style="color:#ff79c6">=</span>DOCKER_PASSWORD --docker-email<span style="color:#ff79c6">=</span>DOCKER_EMAIL --namespace course</code></pre></div>
-<p>在代码根目录下面创建一个 manifests 的目录，用来存放上面的资源清单文件，正常来说是不是我们只需要在镜像构建成功后，将上面的 k8s.yaml 文件中的镜像标签替换掉就 OK，所以这一步的动作如下：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-groovy" data-lang="groovy">stage<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;运行 Kubectl&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+<span style="color:#ff79c6">}</span></code></pre>
+            </div>
+            <p>
+              最后就是环境变量了，还记得前面我们更改了资源文件中数据库的配置吗？（src/main/resources/application.properties）因为要尽量通用，我们在部署应用的时候很有可能已经有一个外部的数据库服务了，所以这个时候通过环境变量传入进来即可。另外由于我们这里使用的是私有镜像仓库，所以需要在集群中提前创建一个对应的
+              Secret 对象：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl create secret docker-registry myreg --docker-server<span style="color:#ff79c6">=</span>registry.qikqiak.com --docker-username<span style="color:#ff79c6">=</span>DOCKER_USER --docker-password<span style="color:#ff79c6">=</span>DOCKER_PASSWORD --docker-email<span style="color:#ff79c6">=</span>DOCKER_EMAIL --namespace course</code></pre>
+            </div>
+            <p>
+              在代码根目录下面创建一个 manifests
+              的目录，用来存放上面的资源清单文件，正常来说是不是我们只需要在镜像构建成功后，将上面的
+              k8s.yaml 文件中的镜像标签替换掉就 OK，所以这一步的动作如下：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-groovy" data-lang="groovy">stage<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;运行 Kubectl&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
   container<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;kubectl&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
     echo <span style="color:#f1fa8c">&#34;查看 K8S 集群 Pod 列表&#34;</span>
     sh <span style="color:#f1fa8c">&#34;kubectl get pods&#34;</span>
@@ -516,11 +671,42 @@ spec:
 </span><span style="color:#f1fa8c">      kubectl apply -f k8s.yaml
 </span><span style="color:#f1fa8c">    &#34;&#34;&#34;</span>
   <span style="color:#ff79c6">}</span>
-<span style="color:#ff79c6">}</span></code></pre></div>
-<p>第五阶段：运行 Helm 工具，就是直接使用 Helm 来部署应用了，现在有了上面的基本的资源对象了，要创建 Chart 模板就相对容易了，Chart 模板仓库地址：<a href="https://github.com/cnych/polling-helm">https://github.com/cnych/polling-helm</a>，我们可以根据<code>values.yaml</code>文件来进行自定义安装，模板中我们定义了可以指定使用外部数据库服务或者内部独立的数据库服务，具体的我们可以去看模板中的定义。首先我们可以先使用这个模板在集群中来测试下。首先在集群中 Clone 上面的 Chart 模板：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ git clone https://github.com/cnych/polling-helm.git</code></pre></div>
-<p>然后我们使用内部的数据库服务，新建一个 custom.yaml 文件来覆盖 values.yaml 文件中的值：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">persistence:
+<span style="color:#ff79c6">}</span></code></pre>
+            </div>
+            <p>
+              第五阶段：运行 Helm 工具，就是直接使用 Helm
+              来部署应用了，现在有了上面的基本的资源对象了，要创建 Chart
+              模板就相对容易了，Chart 模板仓库地址：<a
+                href="https://github.com/cnych/polling-helm"
+                >https://github.com/cnych/polling-helm</a
+              >，我们可以根据<code>values.yaml</code>文件来进行自定义安装，模板中我们定义了可以指定使用外部数据库服务或者内部独立的数据库服务，具体的我们可以去看模板中的定义。首先我们可以先使用这个模板在集群中来测试下。首先在集群中
+              Clone 上面的 Chart 模板：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ git clone https://github.com/cnych/polling-helm.git</code></pre>
+            </div>
+            <p>
+              然后我们使用内部的数据库服务，新建一个 custom.yaml 文件来覆盖
+              values.yaml 文件中的值：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">persistence:
   enabled: <span style="color:#ff79c6">true</span>
   persistentVolumeClaim:
     database:
@@ -533,15 +719,38 @@ database:
     <span style="color:#6272a4"># 数据库用户</span>
     username: <span style="color:#f1fa8c">&#34;polling&#34;</span>
     <span style="color:#6272a4"># 数据库用户密码</span>
-    password: <span style="color:#f1fa8c">&#34;polling321&#34;</span></code></pre></div>
-<p>可以看到我们这里使用了一个名为<code>database</code>的 StorgeClass 对象，所以还得创建先创建这个资源对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: storage.k8s.io/v1
+    password: <span style="color:#f1fa8c">&#34;polling321&#34;</span></code></pre>
+            </div>
+            <p>
+              可以看到我们这里使用了一个名为<code>database</code>的 StorgeClass
+              对象，所以还得创建先创建这个资源对象：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: database
-provisioner: fuseim.pri/ifs</code></pre></div>
-<p>然后我们就可以在 Chart 根目录下面安装应用，执行下面的命令：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ helm upgrade --install polling -f custom.yaml . --namespace course
+provisioner: fuseim.pri/ifs</code></pre>
+            </div>
+            <p>然后我们就可以在 Chart 根目录下面安装应用，执行下面的命令：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ helm upgrade --install polling -f custom.yaml . --namespace course
 Release <span style="color:#f1fa8c">&#34;polling&#34;</span> does not exist. Installing it now.
 NAME:   polling
 LAST DEPLOYED: Sat May  <span style="color:#bd93f9">4</span> <span style="color:#bd93f9">23</span>:31:42 <span style="color:#bd93f9">2019</span>
@@ -583,65 +792,203 @@ NOTES:
 <span style="color:#bd93f9">1</span>. Get the application URL by running these commands:
   http://ui.polling.domain
 
-You have new mail in /var/spool/mail/root</code></pre></div>
-<blockquote>
-<p>注意我们这里安装也是使用的<code>helm upgrade</code>命令，这样有助于安装和更新的时候命令统一。</p>
-</blockquote>
+You have new mail in /var/spool/mail/root</code></pre>
+            </div>
+            <blockquote>
+              <p>
+                注意我们这里安装也是使用的<code>helm upgrade</code
+                >命令，这样有助于安装和更新的时候命令统一。
+              </p>
+            </blockquote>
 
-<p>安装完成后，查看下 Pod 的运行状态：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n course
+            <p>安装完成后，查看下 Pod 的运行状态：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get pods -n course
 NAME                                   READY     STATUS    RESTARTS   AGE
 polling-polling-api-6b699478d6-lqwhw   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          3m
 polling-polling-database-0             <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          3m
-polling-polling-ui-587bbfb7b5-xr2ff    <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          3m</code></pre></div>
-<p>然后我们可以在本地<code>/etc/hosts</code>里面加上<code>http://ui.polling.domain</code>的的映射，这样我们就可以通过这个域名来访问我们安装的应用了，可以注册、登录、发表投票内容了：</p>
+polling-polling-ui-587bbfb7b5-xr2ff    <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          3m</code></pre>
+            </div>
+            <p>
+              然后我们可以在本地<code>/etc/hosts</code>里面加上<code>http://ui.polling.domain</code>的的映射，这样我们就可以通过这个域名来访问我们安装的应用了，可以注册、登录、发表投票内容了：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/oblr3.png" alt="polling app"><figcaption>polling app</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/oblr3.png"
+                alt="polling app"
+              />
+              <figcaption>polling app</figcaption>
+            </figure>
 
-<p>这样我们就完成了使用 Helm Chart 安装应用的过程，但是现在我们使用的包还是直接使用的 git 仓库中的，平常我们正常安装的时候都是使用的 Chart 仓库中的包，所以我们需要将该 Chart 包上传到一个仓库中去，比较幸运的是我们的 Harbor 也是支持 Helm Chart 包的。我们可以选择手动通过 Harbor 的 Dashboard 将 Chart 包进行上传，也可以通过使用<code>Helm Push</code>插件：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ helm plugin install https://github.com/chartmuseum/helm-push
+            <p>
+              这样我们就完成了使用 Helm Chart
+              安装应用的过程，但是现在我们使用的包还是直接使用的 git
+              仓库中的，平常我们正常安装的时候都是使用的 Chart
+              仓库中的包，所以我们需要将该 Chart
+              包上传到一个仓库中去，比较幸运的是我们的 Harbor 也是支持 Helm
+              Chart 包的。我们可以选择手动通过 Harbor 的 Dashboard 将 Chart
+              包进行上传，也可以通过使用<code>Helm Push</code>插件：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ helm plugin install https://github.com/chartmuseum/helm-push
 Downloading and installing helm-push v0.7.1 ...
 https://github.com/chartmuseum/helm-push/releases/download/v0.7.1/helm-push_0.7.1_linux_amd64.tar.gz
 
-Installed plugin: push</code></pre></div>
-<p>当然我们需要首先将 Harbor 提供的仓库添加到 helm repo 中，由于是私有仓库，所以在添加的时候我们需要添加用户名和密码：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ helm repo add course https://registry.qikqiak.com/chartrepo/course --username<span style="color:#ff79c6">=</span>&lt;harbor用户名&gt; --password<span style="color:#ff79c6">=</span>&lt;harbor密码&gt;
-<span style="color:#f1fa8c">&#34;course&#34;</span> has been added to your repositories</code></pre></div>
-<p>这里的 repo 的地址是<code>&lt;Harbor URL&gt;/chartrepo/&lt;Harbor中项目名称&gt;</code>，Harbor 中每个项目是分开的 repo，如果不提供项目名称，则默认使用<code>library</code>这个项目。</p>
+Installed plugin: push</code></pre>
+            </div>
+            <p>
+              当然我们需要首先将 Harbor 提供的仓库添加到 helm repo
+              中，由于是私有仓库，所以在添加的时候我们需要添加用户名和密码：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ helm repo add course https://registry.qikqiak.com/chartrepo/course --username<span style="color:#ff79c6">=</span>&lt;harbor用户名&gt; --password<span style="color:#ff79c6">=</span>&lt;harbor密码&gt;
+<span style="color:#f1fa8c">&#34;course&#34;</span> has been added to your repositories</code></pre>
+            </div>
+            <p>
+              这里的 repo 的地址是<code
+                >&lt;Harbor URL&gt;/chartrepo/&lt;Harbor中项目名称&gt;</code
+              >，Harbor 中每个项目是分开的
+              repo，如果不提供项目名称，则默认使用<code>library</code>这个项目。
+            </p>
 
-<blockquote>
-<p>需要注意的是如果你的 Harbor 是采用的自建的 https 证书，这里就需要提供 ca 证书和私钥文件了，否则会出现证书校验失败的错误<code>x509: certificate signed by unknown authority</code>。我们这里是通过<code>cert-manager</code>为 Harbor 提供的一个信任的 https 证书，所以没有指定 ca 证书相关的参数。</p>
-</blockquote>
+            <blockquote>
+              <p>
+                需要注意的是如果你的 Harbor 是采用的自建的 https
+                证书，这里就需要提供 ca
+                证书和私钥文件了，否则会出现证书校验失败的错误<code
+                  >x509: certificate signed by unknown authority</code
+                >。我们这里是通过<code>cert-manager</code>为 Harbor
+                提供的一个信任的 https 证书，所以没有指定 ca 证书相关的参数。
+              </p>
+            </blockquote>
 
-<p>然后我们将上面的<code>polling-helm</code>这个 Chart 包上传到 Harbor 仓库中去：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ helm push polling-helm course
+            <p>
+              然后我们将上面的<code>polling-helm</code>这个 Chart 包上传到
+              Harbor 仓库中去：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ helm push polling-helm course
 Pushing polling-0.1.0.tgz to course...
-Done.</code></pre></div>
-<p>这个时候我们登录的 Harbor 仓库中去，查看 course 这个项目下面的<code>Helm Charts</code>就可以发现多了一个 polling 的应用了：</p>
+Done.</code></pre>
+            </div>
+            <p>
+              这个时候我们登录的 Harbor 仓库中去，查看 course
+              这个项目下面的<code>Helm Charts</code>就可以发现多了一个 polling
+              的应用了：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/96e57.png" alt="helm chart"><figcaption>helm chart</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/96e57.png"
+                alt="helm chart"
+              />
+              <figcaption>helm chart</figcaption>
+            </figure>
 
-<p>我们也可以在右下角看到有添加仓库和安装 Chart 的相关命令。</p>
+            <p>我们也可以在右下角看到有添加仓库和安装 Chart 的相关命令。</p>
 
-<p>到这里 Helm 相关的工作就准备好了。那么我们如何在 Jenkins Pipeline 中去使用 Helm 呢？我们可以回顾下，我们平时的一个 CI/CD 的流程：开发代码 -&gt; 提交代码 -&gt; 触发镜像构建 -&gt; 修改镜像tag -&gt; 推送到镜像仓库中去 -&gt; 然后更改 YAML 文件镜像版本 -&gt; 使用 kubectl 工具更新应用。</p>
+            <p>
+              到这里 Helm 相关的工作就准备好了。那么我们如何在 Jenkins Pipeline
+              中去使用 Helm 呢？我们可以回顾下，我们平时的一个 CI/CD
+              的流程：开发代码 -&gt; 提交代码 -&gt; 触发镜像构建 -&gt;
+              修改镜像tag -&gt; 推送到镜像仓库中去 -&gt; 然后更改 YAML
+              文件镜像版本 -&gt; 使用 kubectl 工具更新应用。
+            </p>
 
-<p>现在我们是不是直接使用 Helm 了，就不需要去手动更改 YAML 文件了，也不需要使用 kubectl 工具来更新应用了，而是只需要去覆盖下 helm 中的镜像版本，直接 upgrade 是不是就可以达到应用更新的结果了。我们可以去查看下 chart 包的 values.yaml 文件中关于 api 服务的定义：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">api:
+            <p>
+              现在我们是不是直接使用 Helm 了，就不需要去手动更改 YAML
+              文件了，也不需要使用 kubectl 工具来更新应用了，而是只需要去覆盖下
+              helm 中的镜像版本，直接 upgrade
+              是不是就可以达到应用更新的结果了。我们可以去查看下 chart 包的
+              values.yaml 文件中关于 api 服务的定义：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">api:
   image:
     repository: cnych/polling-api
     tag: <span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">7</span>
-    pullPolicy: IfNotPresent</code></pre></div>
-<p>我们是不是只需要将上面关于 api 服务使用的镜像用我们这里 Jenkins 构建后的替换掉就可以了，这样我们更改上面的最后<code>运行 Helm</code>的阶段如下：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-groovy" data-lang="groovy">stage<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;运行 Helm&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+    pullPolicy: IfNotPresent</code></pre>
+            </div>
+            <p>
+              我们是不是只需要将上面关于 api 服务使用的镜像用我们这里 Jenkins
+              构建后的替换掉就可以了，这样我们更改上面的最后<code
+                >运行 Helm</code
+              >的阶段如下：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-groovy" data-lang="groovy">stage<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;运行 Helm&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
   container<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;helm&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
     echo <span style="color:#f1fa8c">&#34;更新 polling 应用&#34;</span>
     sh <span style="color:#f1fa8c">&#34;&#34;&#34;
 </span><span style="color:#f1fa8c">      helm upgrade --install polling polling --set persistence.persistentVolumeClaim.database.storageClass=database --set database.type=internal --set database.internal.database=polling --set database.internal.username=polling --set database.internal.password=polling321 --set api.image.repository=${image} --set api.image.tag=${imageTag} --set imagePullSecrets[0].name=myreg --namespace course
 </span><span style="color:#f1fa8c">    &#34;&#34;&#34;</span>
   <span style="color:#ff79c6">}</span>
-<span style="color:#ff79c6">}</span></code></pre></div>
-<p>当然我们可以将需要更改的值都放入一个 YAML 之中来进行修改，我们这里通过<code>--set</code>来覆盖对应的值，这样整个 API 服务的完整 Jenkinsfile 文件如下所示：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-groovy" data-lang="groovy"><span style="color:#8be9fd">def</span> label <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;slave-${UUID.randomUUID().toString()}&#34;</span>
+<span style="color:#ff79c6">}</span></code></pre>
+            </div>
+            <p>
+              当然我们可以将需要更改的值都放入一个 YAML
+              之中来进行修改，我们这里通过<code>--set</code>来覆盖对应的值，这样整个
+              API 服务的完整 Jenkinsfile 文件如下所示：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-groovy" data-lang="groovy"><span style="color:#8be9fd">def</span> label <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;slave-${UUID.randomUUID().toString()}&#34;</span>
 
 <span style="color:#8be9fd">def</span> <span style="color:#50fa7b">helmLint</span><span style="color:#ff79c6">(</span>String chartDir<span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
     println <span style="color:#f1fa8c">&#34;校验 chart 模板&#34;</span>
@@ -752,184 +1099,306 @@ podTemplate<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-s
       <span style="color:#ff79c6">}</span>
     <span style="color:#ff79c6">}</span>
   <span style="color:#ff79c6">}</span>
-<span style="color:#ff79c6">}</span></code></pre></div>
-<p>由于我们没有将 chart 包放入到 API 服务的代码仓库中，这是因为我们这里使用的 chart 包涉及到两个应用，一个 API 服务，一个是前端展示的服务，所以我们这里是通过脚本里面去主动获取到 chart 包来进行安装的，如果 chart 包跟随代码仓库一起管理当然就要简单许多了。</p>
+<span style="color:#ff79c6">}</span></code></pre>
+            </div>
+            <p>
+              由于我们没有将 chart 包放入到 API
+              服务的代码仓库中，这是因为我们这里使用的 chart
+              包涉及到两个应用，一个 API
+              服务，一个是前端展示的服务，所以我们这里是通过脚本里面去主动获取到
+              chart 包来进行安装的，如果 chart
+              包跟随代码仓库一起管理当然就要简单许多了。
+            </p>
 
-<p>现在我们去更新 Jenkinsfile 文件，然后提交到 gitlab 中，然后去观察下 Jenkins 中的构建是否成功，我们重点观察下 Helm 阶段：</p>
+            <p>
+              现在我们去更新 Jenkinsfile 文件，然后提交到 gitlab
+              中，然后去观察下 Jenkins 中的构建是否成功，我们重点观察下 Helm
+              阶段：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/yfilp.png" alt="jenkins helm console"><figcaption>jenkins helm console</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/yfilp.png"
+                alt="jenkins helm console"
+              />
+              <figcaption>jenkins helm console</figcaption>
+            </figure>
 
-<p>当然我们还可以去做一些必要的判断工作，比如根据分支判断是否需要自动部署等等，同样也可以切换到 Blue Occean 界面查看构建结果。</p>
+            <p>
+              当然我们还可以去做一些必要的判断工作，比如根据分支判断是否需要自动部署等等，同样也可以切换到
+              Blue Occean 界面查看构建结果。
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/sq24p.jpg" alt="jenkins blue occean"><figcaption>jenkins blue occean</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/sq24p.jpg"
+                alt="jenkins blue occean"
+              />
+              <figcaption>jenkins blue occean</figcaption>
+            </figure>
 
-<p>现在大家可以尝试去修改下代码，然后提交代码到 gitlab 上，观察下 Jenkins 是否能够自动帮我们完成整个 CI/CD 的过程。</p>
+            <p>
+              现在大家可以尝试去修改下代码，然后提交代码到 gitlab 上，观察下
+              Jenkins 是否能够自动帮我们完成整个 CI/CD 的过程。
+            </p>
 
-<p>作业：现在还有一个前端展示的项目：<a href="https://github.com/cnych/polling-app-client">https://github.com/cnych/polling-app-client</a>，大家针对这个项目使用上面的 gitlab + jenkins + harbor + helm 来完成一个 Jenkins Pipeline 流水线的编写，尝试去修改下前端页面内容，看是否能够生效。</p>
+            <p>
+              作业：现在还有一个前端展示的项目：<a
+                href="https://github.com/cnych/polling-app-client"
+                >https://github.com/cnych/polling-app-client</a
+              >，大家针对这个项目使用上面的 gitlab + jenkins + harbor + helm
+              来完成一个 Jenkins Pipeline
+              流水线的编写，尝试去修改下前端页面内容，看是否能够生效。
+            </p>
 
-<h2 id="相关链接">相关链接：</h2>
+            <h2 id="相关链接">相关链接：</h2>
 
-<ul>
-<li><a href="https://github.com/cnych/polling-helm">https://github.com/cnych/polling-helm</a></li>
-<li><a href="https://github.com/cnych/polling-app-server">https://github.com/cnych/polling-app-server</a></li>
-<li><a href="https://github.com/cnych/polling-app-client">https://github.com/cnych/polling-app-client</a></li>
-</ul>
+            <ul>
+              <li>
+                <a href="https://github.com/cnych/polling-helm"
+                  >https://github.com/cnych/polling-helm</a
+                >
+              </li>
+              <li>
+                <a href="https://github.com/cnych/polling-app-server"
+                  >https://github.com/cnych/polling-app-server</a
+                >
+              </li>
+              <li>
+                <a href="https://github.com/cnych/polling-app-client"
+                  >https://github.com/cnych/polling-app-client</a
+                >
+              </li>
+            </ul>
 
-<p><a href="https://youdianzhishi.com/web/course/1030" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+            <p>
+              <a
+                href="https://youdianzhishi.com/web/course/1030"
+                title="从 Docker 到 Kubernetes 进阶课程"
+                ><img
+                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
+                  alt="Kubernetes进阶训练营"
+              /></a>
+            </p>
 
+            <h2>微信公众号</h2>
+            <p>
+              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+              kubernetes 讨论群里面共同学习。
+            </p>
+            <img
+              src="https://picdn.youdianzhishi.com/images/qrcode.png"
+              alt="wechat-account-qrcode"
+            />
 
-          <h2>微信公众号</h2>
-<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
-
-  
-          
             <div class="entry-shang text-center">
-    <p>「真诚赞赏，手留余香」</p>
-    <button class="zs show-zs btn btn-bred">赞赏</button>
-</div>
-<div class="zs-modal-bg"></div>
-<div class="zs-modal-box">
-    <div class="zs-modal-head">
-        <button type="button" class="close">×</button>
-        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
-        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-    </div>
-    <div class="zs-modal-body">
-        <div class="zs-modal-btns">
-            <button class="btn btn-blink" data-num="2">2元</button>
-            <button class="btn btn-blink" data-num="5">5元</button>
-            <button class="btn btn-blink" data-num="10">10元</button>
-            <button class="btn btn-blink" data-num="50">50元</button>
-            <button class="btn btn-blink" data-num="100">100元</button>
-            <button class="btn btn-blink" data-num="1">任意金额</button>
-        </div>
-        <div class="zs-modal-pay">
-            <button class="btn btn-bred" id="pay-text">2元</button>
-            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
-        </div>
-    </div>
-    <div class="zs-modal-footer">
-        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
-    </div>
-</div>
-          
-          
-            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
-    <center>
-    <a href="#" class="social-share-icon icon-weibo"></a>
-    <a href="#" class="social-share-icon icon-wechat"></a>
-    <a href="#" class="social-share-icon icon-twitter"></a>
-    <a href="#" class="social-share-icon icon-linkedin"></a>
-    <a href="#" class="social-share-icon icon-facebook"></a>
-    <a href="#" class="social-share-icon icon-qq"></a>
-    <a href="#" class="social-share-icon icon-qzone"></a>
-    </center>
-</div>
+              <p>「真诚赞赏，手留余香」</p>
+              <button class="zs show-zs btn btn-bred">赞赏</button>
+            </div>
+            <div class="zs-modal-bg"></div>
+            <div class="zs-modal-box">
+              <div class="zs-modal-head">
+                <button type="button" class="close">×</button>
+                <span class="author"
+                  ><img
+                    src="https://www.qikqiak.com/img/avatar.jpeg"
+                  />阳明</span
+                >
+                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+              </div>
+              <div class="zs-modal-body">
+                <div class="zs-modal-btns">
+                  <button class="btn btn-blink" data-num="2">2元</button>
+                  <button class="btn btn-blink" data-num="5">5元</button>
+                  <button class="btn btn-blink" data-num="10">10元</button>
+                  <button class="btn btn-blink" data-num="50">50元</button>
+                  <button class="btn btn-blink" data-num="100">100元</button>
+                  <button class="btn btn-blink" data-num="1">任意金额</button>
+                </div>
+                <div class="zs-modal-pay">
+                  <button class="btn btn-bred" id="pay-text">2元</button>
+                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+                  <img
+                    src="https://www.qikqiak.com/img/wechat-2.png"
+                    id="pay-image"
+                  />
+                </div>
+              </div>
+              <div class="zs-modal-footer">
+                <span class="zs-wechat"
+                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
+                /></span>
+              </div>
+            </div>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+            <div
+              class="social-share"
+              data-initialized="true"
+              style="margin-bottom: 20px; margin-top: 20px"
+            >
+              <center>
+                <a href="#" class="social-share-icon icon-weibo"></a>
+                <a href="#" class="social-share-icon icon-wechat"></a>
+                <a href="#" class="social-share-icon icon-twitter"></a>
+                <a href="#" class="social-share-icon icon-linkedin"></a>
+                <a href="#" class="social-share-icon icon-facebook"></a>
+                <a href="#" class="social-share-icon icon-qq"></a>
+                <a href="#" class="social-share-icon icon-qzone"></a>
+              </center>
+            </div>
 
-          
-        </article>
-  
-        
-          
+            <link
+              rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
+            />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+          </article>
 
-<h3>相关文章</h3>
-<ul style="margin-bottom: 25px;">
-    
-    <li><a href="https://www.qikqiak.com/post/complete-cicd-demonstrate-1/">基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(一)</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/gitlab-ci-k8s-cluster-feature/">Gitlab CI 与 Kubernetes 的结合</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/gitlab-runner-install-on-k8s/">在 Kubernetes 上安装 Gitlab CI Runner</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/">在 Kubernetes 上安装 Gitlab</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/kubernetes-jenkins3/">Jenkins Blue Ocean 的使用</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/kubernetes-jenkins2/">Jenkins Pipeline 部署 Kubernetes 应用(二)</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/kubernetes-jenkins1/">基于 kubernetes 的动态 jenkins slave</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/what-is-oci-runc-containerd-cri-docker/">名称解释OCI、runc、containerd、Docker、CRI、CRI-O</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/install-docker-registry-harbor-in-kubernetes/">在kubernetes 集群上搭建docker 私有仓库Harbor</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/skaffold-simple-local-develop-k8s-app-tools/">Skaffold-简化本地开发kubernetes应用的神器</a></li>
-    
-</ul>
+          <h3>相关文章</h3>
+          <ul style="margin-bottom: 25px">
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/complete-cicd-demonstrate-1/"
+                >基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的
+                CI/CD(一)</a
+              >
+            </li>
 
-        
-  
-        
-        <ul class="pager blog-pager">
-          
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/gitlab-ci-k8s-cluster-feature/"
+                >Gitlab CI 与 Kubernetes 的结合</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/gitlab-runner-install-on-k8s/"
+                >在 Kubernetes 上安装 Gitlab CI Runner</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/"
+                >在 Kubernetes 上安装 Gitlab</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/kubernetes-jenkins3/"
+                >Jenkins Blue Ocean 的使用</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/kubernetes-jenkins2/"
+                >Jenkins Pipeline 部署 Kubernetes 应用(二)</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/kubernetes-jenkins1/"
+                >基于 kubernetes 的动态 jenkins slave</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/what-is-oci-runc-containerd-cri-docker/"
+                >名称解释OCI、runc、containerd、Docker、CRI、CRI-O</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/install-docker-registry-harbor-in-kubernetes/"
+                >在kubernetes 集群上搭建docker 私有仓库Harbor</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/skaffold-simple-local-develop-k8s-app-tools/"
+                >Skaffold-简化本地开发kubernetes应用的神器</a
+              >
+            </li>
+          </ul>
+
+          <ul class="pager blog-pager">
             <li class="previous">
-              <a href="https://www.qikqiak.com/post/helm-chart-tips-and-tricks/" data-toggle="tooltip" data-placement="top" title="Helm Chart 模板开发技巧">&larr; 前一篇</a>
+              <a
+                href="https://www.qikqiak.com/post/helm-chart-tips-and-tricks/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="Helm Chart 模板开发技巧"
+                >&larr; 前一篇</a
+              >
             </li>
-          
-          
-            <li class="next">
-              <a href="https://www.qikqiak.com/post/groovy-simple-tutorial/" data-toggle="tooltip" data-placement="top" title="Groovy 简明教程">后一篇 &rarr;</a>
-            </li>
-          
-        </ul>
-        
 
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-        
-        <ins class="adsbygoogle"
-            style="display:block"
+            <li class="next">
+              <a
+                href="https://www.qikqiak.com/post/groovy-simple-tutorial/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="Groovy 简明教程"
+                >后一篇 &rarr;</a
+              >
+            </li>
+          </ul>
+
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+          ></script>
+
+          <ins
+            class="adsbygoogle"
+            style="display: block"
             data-ad-client="ca-pub-5376999672787220"
             data-ad-slot="3700507799"
             data-ad-format="auto"
-            data-full-width-responsive="true"></ins>
-        <script>
+            data-full-width-responsive="true"
+          ></ins>
+          <script>
             (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
-  
-        
-    <div id="gitalk-container"></div>
-    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-    <script>
-    var gitalk = new Gitalk({
-        clientID: 'bdb76dbb2e9d0786e350',
-        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
-        repo: 'blog',
-        owner: 'cnych',
-        admin: ['cnych'],
-        labels: ['gitment'],
-        title: '基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI\/CD(二)',
-        createIssueManually: true,
-        id: 'complete-cicd-demonstrate-2',      
-        distractionFreeMode: true  
-    });
-    gitalk.render('gitalk-container');
-</script>
+          </script>
 
-
-        
-          
-
-        
-  
+          <div id="gitalk-container"></div>
+          <link
+            rel="stylesheet"
+            href="https://unpkg.com/gitalk/dist/gitalk.css"
+          />
+          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+          <script>
+            var gitalk = new Gitalk({
+              clientID: "bdb76dbb2e9d0786e350",
+              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
+              repo: "blog",
+              owner: "cnych",
+              admin: ["cnych"],
+              labels: ["gitment"],
+              title:
+                "基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI\/CD(二)",
+              createIssueManually: true,
+              id: "complete-cicd-demonstrate-2",
+              distractionFreeMode: true,
+            });
+            gitalk.render("gitalk-container");
+          </script>
+        </div>
       </div>
-    
-    
-  </div>
-</div>
+    </div>
 
     <footer>
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <ul class="list-inline text-center footer-links">
-          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
-          
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <ul class="list-inline text-center footer-links">
+              <img
+                src="https://www.qikqiak.com/img/wechatmp.png"
+                alt="k8s技术圈"
+              />
+
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -938,7 +1407,7 @@ podTemplate<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-s
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -947,7 +1416,7 @@ podTemplate<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-s
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -956,7 +1425,7 @@ podTemplate<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-s
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -965,121 +1434,158 @@ podTemplate<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-s
                   </span>
                 </a>
               </li>
-          
-          
-          <li>
-            <a href="https://www.qikqiak.com/index.xml" title="RSS">
-              <span class="fa-stack fa-lg">
-                <i class="fa fa-circle fa-stack-2x"></i>
-                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+
+              <li>
+                <a href="https://www.qikqiak.com/index.xml" title="RSS">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+            </ul>
+            <p class="credits copyright text-muted">
+              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/">阳明的博客</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/archive/">归档</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/friend/">友链</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://beian.miit.gov.cn/" target="_blank"
+                >蜀ICP备11027319号-5</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
+                >kubernetes.io</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
+                >Kubernetes中文社区</a
+              >
+            </p>
+            <p class="text-center text-muted">
+              <script
+                async
+                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
+              ></script>
+              <span id="busuanzi_container_site_pv" style="display: none">
+                本站总访问量<span id="busuanzi_value_site_pv"></span>次
               </span>
-            </a>
-          </li>
-          
-        </ul>
-        <p class="credits copyright text-muted">
-          
+              &nbsp;&bull;&nbsp;
+              <span id="busuanzi_container_site_uv" style="display: none">
+                访客数<span id="busuanzi_value_site_uv"></span>人次
+              </span>
+            </p>
 
-          &nbsp;&bull;&nbsp;
-          2023
-
-          
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/">阳明的博客</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/archive/">归档</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/friend/">友链</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
-          
-        </p>
-        <p class="text-center text-muted">
-          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-          <span id="busuanzi_container_site_pv" style="display:none">
-            本站总访问量<span id="busuanzi_value_site_pv"></span>次
-          </span>
-          &nbsp;&bull;&nbsp;
-          <span id="busuanzi_container_site_uv" style="display:none">
-            访客数<span id="busuanzi_value_site_uv"></span>人次
-          </span>
-        </p>
-        
-        <p class="credits theme-by text-muted">
-          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
-          
-        </p>
+            <p class="credits theme-by text-muted">
+              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
+              &nbsp;&bull;&nbsp; 主题
+              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+              移植自
+              <a href="https://github.com/rootsongjc/beautifulhugo"
+                >Beautiful Hugo</a
+              >
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</footer>
+    </footer>
 
+    <script
+      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
+      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
+    ></script>
 
-<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "UA-69668147-3");
+    </script>
+    <script>
+      (function () {
+        var bp = document.createElement("script");
+        var curProtocol = window.location.protocol.split(":")[0];
+        if (curProtocol === "https") {
+          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
+        } else {
+          bp.src = "http://push.zhanzhang.baidu.com/push.js";
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+      })();
+    </script>
+    <script>
+      $(document).ready(function () {
+        var int = setInterval(fixCount, 50);
 
-
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-69668147-3');
-</script>
-<script>
-(function(){
-    var bp = document.createElement('script');
-    var curProtocol = window.location.protocol.split(':')[0];
-    if (curProtocol === 'https') {
-        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
-    }
-    else {
-        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
-    }
-    var s = document.getElementsByTagName("script")[0];
-    s.parentNode.insertBefore(bp, s);
-})();
-</script>
-<script >
-$(document).ready(function() {
-  var int = setInterval(fixCount, 50);  
-  
-  var initPVCount = 584976;
-  var initUVCount = 153191;
-  function fixCount() {                   
-    if ($("#busuanzi_container_site_pv").css("display") != "none") {
-        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
-        clearInterval(int); 
-    }
-    if ($("#busuanzi_container_site_uv").css("display") != "none") {
-      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
-      clearInterval(int); 
-    }  
-  }           
-});
-</script>
- <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
-<script type="text/javascript">
-$('.carousel').slick({
-    dots: true,
-    arrows: true,
-    autoplay: true,
-    autoplaySpeed: 4000,
-    infinite: true,
-    speed: 500,
-    fade: true,
-    cssEase: 'linear',
-    centerMode: true,
-    prevArrow: '<button type="button" class="slick-prev"></button>',
-    nextArrow: '<button type="button" class="slick-next"></button>',
-});
-</script>
-
+        var initPVCount = 584976;
+        var initUVCount = 153191;
+        function fixCount() {
+          if ($("#busuanzi_container_site_pv").css("display") != "none") {
+            $("#busuanzi_value_site_pv").html(
+              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
+            );
+            clearInterval(int);
+          }
+          if ($("#busuanzi_container_site_uv").css("display") != "none") {
+            $("#busuanzi_value_site_uv").html(
+              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
+            );
+            clearInterval(int);
+          }
+        }
+      });
+    </script>
+    <script>
+      (function (w, d, s, id) {
+        if (typeof w.webpushr !== "undefined") return;
+        w.webpushr =
+          w.webpushr ||
+          function () {
+            (w.webpushr.q = w.webpushr.q || []).push(arguments);
+          };
+        var js,
+          fjs = d.getElementsByTagName(s)[0];
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "https://cdn.webpushr.com/app.min.js";
+        fjs.parentNode.appendChild(js);
+      })(window, document, "script", "webpushr-jssdk");
+      webpushr(
+        "init",
+        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
+      );
+    </script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
+    ></script>
+    <script type="text/javascript">
+      $(".carousel").slick({
+        dots: true,
+        arrows: true,
+        autoplay: true,
+        autoplaySpeed: 4000,
+        infinite: true,
+        speed: 500,
+        fade: true,
+        cssEase: "linear",
+        centerMode: true,
+        prevArrow: '<button type="button" class="slick-prev"></button>',
+        nextArrow: '<button type="button" class="slick-next"></button>',
+      });
+    </script>
   </body>
 </html>
-

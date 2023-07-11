@@ -1,362 +1,514 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
 
+    <title>
+      自定义
+      Traefik（本地）插件-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
+    </title>
+    <meta property="og:title" content="自定义 Traefik（本地）插件" />
+    <meta name="twitter:title" content="自定义 Traefik（本地）插件" />
 
-  <title>自定义 Traefik（本地）插件-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
-  <meta property="og:title" content="自定义 Traefik（本地）插件" />
-  <meta name="twitter:title" content="自定义 Traefik（本地）插件" />
+    <meta
+      name="description"
+      content="
 
-  <meta name="description" content="
+虽然 Traefik 已经默认实现了很多中间件，可以满足大部分我们日常的需求，但是在实际工作中，用户仍然还是有自定义中间件的需求，为解决这个问题，官方推出了一个 Traefik Pilot 的功能了，此外在 Traefik v2.5 版本还推出了支持本地插件的功能。"
+    />
+    <meta
+      property="og:description"
+      content="
 
-虽然 Traefik 已经默认实现了很多中间件，可以满足大部分我们日常的需求，但是在实际工作中，用户仍然还是有自定义中间件的需求，为解决这个问题，官方推出了一个 Traefik Pilot 的功能了，此外在 Traefik v2.5 版本还推出了支持本地插件的功能。">
-  <meta property="og:description" content="
+虽然 Traefik 已经默认实现了很多中间件，可以满足大部分我们日常的需求，但是在实际工作中，用户仍然还是有自定义中间件的需求，为解决这个问题，官方推出了一个 Traefik Pilot 的功能了，此外在 Traefik v2.5 版本还推出了支持本地插件的功能。"
+    />
+    <meta
+      name="twitter:description"
+      content="
 
-虽然 Traefik 已经默认实现了很多中间件，可以满足大部分我们日常的需求，但是在实际工作中，用户仍然还是有自定义中间件的需求，为解决这个问题，官方推出了一个 Traefik Pilot 的功能了，此外在 Traefik v2.5 版本还推出了支持本地插件的功能。">
-  <meta name="twitter:description" content="
+虽然 Traefik 已经默认实现了很多中间件，可以满足大部分我们日常的需求，但是在实际工作中，用户仍然还是有自定义中间件的需求，为解决这个问题，官方推出了一个 Traefik Pilot 的功能了，此外在 Traefik v2.5 版本还推出了支持本地插件的功能。"
+    />
+    <meta name="author" content="" />
+    <link
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+      rel="icon"
+      type="image/x-icon"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      property="og:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      name="twitter:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta
+      property="og:url"
+      content="https://www.qikqiak.com/post/custom-traefik-local-middleware/"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="阳明的博客" />
 
-虽然 Traefik 已经默认实现了很多中间件，可以满足大部分我们日常的需求，但是在实际工作中，用户仍然还是有自定义中间件的需求，为解决这个问题，官方推出了一个 Traefik Pilot 的功能了，此外在 Traefik v2.5 版本还推出了支持本地插件的功能。">
-  <meta name="author" content=""/>
-  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
-  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
-  <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://www.qikqiak.com/post/custom-traefik-local-middleware/" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="阳明的博客" />
+    <meta name="generator" content="Hugo 0.55.6" />
+    <link
+      rel="canonical"
+      href="https://www.qikqiak.com/post/custom-traefik-local-middleware/"
+    />
+    <link
+      rel="alternate"
+      href="https://www.qikqiak.com/index.xml"
+      type="application/rss+xml"
+      title="阳明的博客"
+    />
 
-  <meta name="generator" content="Hugo 0.55.6" />
-  <link rel="canonical" href="https://www.qikqiak.com/post/custom-traefik-local-middleware/" />
-  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+    <link
+      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
+      rel="stylesheet"
+    />
 
-  
-  
-  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
-  
+    <link
+      rel="stylesheet"
+      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
+      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
+    />
 
-  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
+    />
 
-  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
-  
-  
-    
     <!--[if lt IE 9]>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+        rel="stylesheet"
+      />
     <![endif]-->
-<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
-<meta name="baidu-site-verification" content="F5ojAyqaKU" />
-<meta name="keywords" content="traefik, 中间件, middleware, kubernetes">
-<script>
-var _hmt = _hmt || [];
-(function() {
-  var hm = document.createElement("script");
-  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-  var s = document.getElementsByTagName("script")[0];
-  s.parentNode.insertBefore(hm, s);
-})();
-</script>
+    <meta
+      name="google-site-verification"
+      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
+    />
+    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
+    <meta name="keywords" content="traefik, 中间件, middleware, kubernetes" />
+    <script>
+      var _hmt = _hmt || [];
+      (function () {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
 
+    <script type="application/javascript">
+      var doNotTrack = false;
+      if (!doNotTrack) {
+        window.ga =
+          window.ga ||
+          function () {
+            (ga.q = ga.q || []).push(arguments);
+          };
+        ga.l = +new Date();
+        ga("create", "UA-69668147-3", "auto");
 
-
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-	ga('create', 'UA-69668147-3', 'auto');
-	
-	ga('send', 'pageview');
-}
-</script>
-<script async src='https://www.google-analytics.com/analytics.js'></script>
-
-</head>
+        ga("send", "pageview");
+      }
+    </script>
+    <script async src="https://www.google-analytics.com/analytics.js"></script>
+  </head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
-        <span class="sr-only">切换导航</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
-        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
-      </a>
-    </div>
+      <div class="container">
+        <div class="navbar-header">
+          <button
+            type="button"
+            class="navbar-toggle"
+            data-toggle="collapse"
+            data-target="#main-navbar"
+          >
+            <span class="sr-only">切换导航</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a
+            class="navbar-brand"
+            href="https://www.qikqiak.com/"
+            title="阳明的博客"
+          >
+            <img
+              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
+              style="margin-top: -5px; height: 32px"
+              alt="阳明的博客"
+            />
+          </a>
+        </div>
 
-    <div class="collapse navbar-collapse" id="main-navbar">
-      <ul class="nav navbar-nav navbar-right">
-        
-          
+        <div class="collapse navbar-collapse" id="main-navbar">
+          <ul class="nav navbar-nav navbar-right">
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-          
-        
-          
+
             <li>
-              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+              <a
+                title="课程"
+                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
+                >课程</a
+              >
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/archives">Archive</a>
-                
-                  <a href="https://www.qikqiak.com/tags">tags</a>
-                
-                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-                
-                  <a href="https://www.qikqiak.com/tags/python">python</a>
-                
-                  <a href="https://www.qikqiak.com/tags/django">django</a>
-                
-                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
-                
+                <a href="https://www.qikqiak.com/archives">Archive</a>
+
+                <a href="https://www.qikqiak.com/tags">tags</a>
+
+                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+
+                <a href="https://www.qikqiak.com/tags/python">python</a>
+
+                <a href="https://www.qikqiak.com/tags/django">django</a>
+
+                <a href="https://www.qikqiak.com/tags/devops">devops</a>
               </div>
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-                
-                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-                
-                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-                
-                  <a href="https://md.qikqiak.com/">Markdown微信</a>
-                
+                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+
+                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+
+                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+
+                <a href="https://md.qikqiak.com/">Markdown微信</a>
               </div>
             </li>
-          
-        
-          
+
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+              <a title="关于" href="https://www.qikqiak.com/page/about/"
+                >关于</a
+              >
             </li>
-          
-        
-          
+
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
-          
-        
 
-        
-
-        
-
-        
-          <li>
-            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
-              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
-            </a>
-          </li>
-          
-
-      </ul>
-    </div>
-
-  </div>
-</nav>
-
-
-  <div id="modalSearch" class="modal fade" role="dialog">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-          <h4 class="modal-title">搜索</h4>
-        </div>
-        <div class="modal-body">
-            
-<div class="aa-input-container" id="aa-input-container">
-    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
-    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
-    </svg>
-</div>
-<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
-
-<script>
-var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
-var index = client.initIndex('prod_blog');
-
-autocomplete('#aa-search-input',
-{ hint: false}, {
-    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
-    
-    displayKey: 'name',
-    
-    templates: {
-        
-        suggestion: function(suggestion) {
-            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
-            suggestion._highlightResult.title.value + '</a></span>';
-        }
-    }
-});
-</script>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+            <li>
+              <a
+                href="#modalSearch"
+                data-toggle="modal"
+                data-target="#modalSearch"
+                style="outline: none"
+              >
+                <span
+                  id="searchGlyph"
+                  class="glyphicon glyphicon-search"
+                ></span>
+              </a>
+            </li>
+          </ul>
         </div>
       </div>
-    </div>
-  </div>
+    </nav>
 
-    
-  
-  
-  
-
-
-
-
-  
-
-  <header class="header-section ">
-    
-    
-    
-    <div class="intro-header no-img">
-      
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <div class="post-heading">
-              <h1>自定义 Traefik（本地）插件</h1>
-                
-                
-                  <span class="post-meta">
-  
-    发表于 December 27, 2021
-  
-  
-</span>
-
-
-                
+    <div id="modalSearch" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">
+              &times;
+            </button>
+            <h4 class="modal-title">搜索</h4>
+          </div>
+          <div class="modal-body">
+            <div class="aa-input-container" id="aa-input-container">
+              <input
+                type="search"
+                id="aa-search-input"
+                class="aa-input-search"
+                placeholder="Search for titles or URIs..."
+                name="search"
+                autocomplete="off"
+              />
+              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+                <path
+                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
+                />
+              </svg>
             </div>
+            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+            <script>
+              var client = algoliasearch(
+                "1JDRAS0AZR",
+                "8804ac109158bb3bb60d74ce98fa332f"
+              );
+              var index = client.initIndex("prod_blog");
+
+              autocomplete(
+                "#aa-search-input",
+                { hint: false },
+                {
+                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
+
+                  displayKey: "name",
+
+                  templates: {
+                    suggestion: function (suggestion) {
+                      return (
+                        "<span>" +
+                        '<a href="https://www.qikqiak.com/post/' +
+                        suggestion.slug +
+                        '">' +
+                        suggestion._highlightResult.title.value +
+                        "</a></span>"
+                      );
+                    },
+                  },
+                }
+              );
+            </script>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">
+              close
+            </button>
           </div>
         </div>
       </div>
     </div>
-    
-    
-  </header>
 
+    <header class="header-section">
+      <div class="intro-header no-img">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>自定义 Traefik（本地）插件</h1>
 
-    
-
-
-
-<div class="container" role="main">
-  <div class="row">
-
-    
-    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <div>
-            
-            
-            <h5 id="tags" style="margin-top: 30px;">标签:
-              
-                  <a href="https://www.qikqiak.com/tags/traefik/">traefik</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/%E6%8F%92%E4%BB%B6/">插件</a> &nbsp;
-              
-            </h5>
-            
+                <span class="post-meta"> 发表于 December 27, 2021 </span>
+              </div>
+            </div>
+          </div>
         </div>
-  
-        <article role="main" class="blog-post" itemprop="articleBody" id="content">
-          
-  
-          
-          
-          
-  
-          
-          
-          
-  
-          
-          
-          
+      </div>
+    </header>
 
-          <figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20211227113321.png" alt="自定义traefik插件"><figcaption>自定义traefik插件</figcaption></figure>
+    <div class="container" role="main">
+      <div class="row">
+        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+          <div>
+            <h5 id="tags" style="margin-top: 30px">
+              标签:
 
-<p>虽然 Traefik 已经默认实现了很多中间件，可以满足大部分我们日常的需求，但是在实际工作中，用户仍然还是有自定义中间件的需求，为解决这个问题，官方推出了一个 <a href="https://pilot.traefik.io/">Traefik Pilot</a> 的功能了，此外在 Traefik v2.5 版本还推出了支持本地插件的功能。</p>
+              <a href="https://www.qikqiak.com/tags/traefik/">traefik</a> &nbsp;
 
-<h2 id="traefik-pilot">Traefik Pilot</h2>
+              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
+              &nbsp;
 
-<p><code>Traefik Pilot</code> 是一个 SaaS 平台，和 Traefik 进行链接来扩展其功能，它提供了很多功能，通过一个全局控制面板和 Dashboard 来增强对 Traefik 的观测和控制：</p>
+              <a href="https://www.qikqiak.com/tags/%E6%8F%92%E4%BB%B6/"
+                >插件</a
+              >
+              &nbsp;
+            </h5>
+          </div>
 
-<ul>
-<li>Traefik 代理和代理组的网络活动的指标</li>
-<li>服务健康问题和安全漏洞警报</li>
-<li>扩展 Traefik 功能的插件</li>
-</ul>
+          <article
+            role="main"
+            class="blog-post"
+            itemprop="articleBody"
+            id="content"
+          >
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/20211227113321.png"
+                alt="自定义traefik插件"
+              />
+              <figcaption>自定义traefik插件</figcaption>
+            </figure>
 
-<p>在 Traefik 可以使用 <code>Traefik Pilot</code> 的功能之前，必须先连接它们，我们只需要对 Traefik 的静态配置进行少量更改即可。</p>
+            <p>
+              虽然 Traefik
+              已经默认实现了很多中间件，可以满足大部分我们日常的需求，但是在实际工作中，用户仍然还是有自定义中间件的需求，为解决这个问题，官方推出了一个
+              <a href="https://pilot.traefik.io/">Traefik Pilot</a>
+              的功能了，此外在 Traefik v2.5 版本还推出了支持本地插件的功能。
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20201225100314.png" alt="pilot"><figcaption>pilot</figcaption></figure>
+            <h2 id="traefik-pilot">Traefik Pilot</h2>
 
-<blockquote>
-<p>Traefik 代理必须要能访问互联网才能连接到 <code>Traefik Pilot</code>，通过 HTTPS 在 443 端口上建立连接。</p>
-</blockquote>
+            <p>
+              <code>Traefik Pilot</code> 是一个 SaaS 平台，和 Traefik
+              进行链接来扩展其功能，它提供了很多功能，通过一个全局控制面板和
+              Dashboard 来增强对 Traefik 的观测和控制：
+            </p>
 
-<p>首先我们需要在 <code>Traefik Pilot</code> 主页上(<a href="https://pilot.traefik.io/">https://pilot.traefik.io/</a>)创建一个帐户，注册新的 <code>Traefik</code> 实例并开始使用 <code>Traefik Pilot</code>。登录后，可以通过选择 <code>Register New Traefik Instance</code>来创建新实例。</p>
+            <ul>
+              <li>Traefik 代理和代理组的网络活动的指标</li>
+              <li>服务健康问题和安全漏洞警报</li>
+              <li>扩展 Traefik 功能的插件</li>
+            </ul>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20201225100714.png" alt="创建实例"><figcaption>创建实例</figcaption></figure>
+            <p>
+              在 Traefik 可以使用
+              <code>Traefik Pilot</code>
+              的功能之前，必须先连接它们，我们只需要对 Traefik
+              的静态配置进行少量更改即可。
+            </p>
 
-<p>另外，当我们的 Traefik 尚未连接到 <code>Traefik Pilot</code> 时，Traefik Web UI 中将出现一个响铃图标，我们可以选择 <code>Connect with Traefik Pilot</code> 导航到 Traefik Pilot UI 进行操作。</p>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/20201225100314.png"
+                alt="pilot"
+              />
+              <figcaption>pilot</figcaption>
+            </figure>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20201225100905.png" alt="Pilot UI"><figcaption>Pilot UI</figcaption></figure>
+            <blockquote>
+              <p>
+                Traefik 代理必须要能访问互联网才能连接到
+                <code>Traefik Pilot</code>，通过 HTTPS 在 443 端口上建立连接。
+              </p>
+            </blockquote>
 
-<p>登录完成后，<code>Traefik Pilot</code> 会生成一个新实例的令牌，我们需要将这个 Token 令牌添加到 Traefik 静态配置中。</p>
+            <p>
+              首先我们需要在 <code>Traefik Pilot</code> 主页上(<a
+                href="https://pilot.traefik.io/"
+                >https://pilot.traefik.io/</a
+              >)创建一个帐户，注册新的 <code>Traefik</code> 实例并开始使用
+              <code>Traefik Pilot</code>。登录后，可以通过选择
+              <code>Register New Traefik Instance</code>来创建新实例。
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20201225101104.png" alt="Pilot 配置"><figcaption>Pilot 配置</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/20201225100714.png"
+                alt="创建实例"
+              />
+              <figcaption>创建实例</figcaption>
+            </figure>
 
-<p>在 Traefik 安装配置文件中启用 Pilot 的配置：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># Activate Pilot integration</span>
+            <p>
+              另外，当我们的 Traefik 尚未连接到
+              <code>Traefik Pilot</code> 时，Traefik Web UI
+              中将出现一个响铃图标，我们可以选择
+              <code>Connect with Traefik Pilot</code> 导航到 Traefik Pilot UI
+              进行操作。
+            </p>
+
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/20201225100905.png"
+                alt="Pilot UI"
+              />
+              <figcaption>Pilot UI</figcaption>
+            </figure>
+
+            <p>
+              登录完成后，<code>Traefik Pilot</code>
+              会生成一个新实例的令牌，我们需要将这个 Token 令牌添加到 Traefik
+              静态配置中。
+            </p>
+
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/20201225101104.png"
+                alt="Pilot 配置"
+              />
+              <figcaption>Pilot 配置</figcaption>
+            </figure>
+
+            <p>在 Traefik 安装配置文件中启用 Pilot 的配置：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># Activate Pilot integration</span>
 pilot:
   enabled: <span style="color:#ff79c6">true</span>
-  token: <span style="color:#f1fa8c">&#34;e079ea6e-536a-48c6-b3e3-f7cfaf94f477&#34;</span></code></pre></div>
-<p>更新完成后，我们在 Traefik 的 Web UI 中就可以看到 Traefik Pilot UI 相关的信息了。</p>
+  token: <span style="color:#f1fa8c">&#34;e079ea6e-536a-48c6-b3e3-f7cfaf94f477&#34;</span></code></pre>
+            </div>
+            <p>
+              更新完成后，我们在 Traefik 的 Web UI 中就可以看到 Traefik Pilot UI
+              相关的信息了。
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20201225101951.png" alt="更新完成"><figcaption>更新完成</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/20201225101951.png"
+                alt="更新完成"
+              />
+              <figcaption>更新完成</figcaption>
+            </figure>
 
-<p>接下来我们就可以在 Traefik Pilot 的插件页面选择我们想要使用的插件，比如我们这里使用 <a href="https://github.com/traefik/plugindemo">Demo Plugin</a> 这个插件。</p>
+            <p>
+              接下来我们就可以在 Traefik Pilot
+              的插件页面选择我们想要使用的插件，比如我们这里使用
+              <a href="https://github.com/traefik/plugindemo">Demo Plugin</a>
+              这个插件。
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20201225102230.png" alt="Demo 插件"><figcaption>Demo 插件</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/20201225102230.png"
+                alt="Demo 插件"
+              />
+              <figcaption>Demo 插件</figcaption>
+            </figure>
 
-<p>点击右上角的 <code>Install Plugin</code> 按钮安装插件会弹出一个对话框提示我们如何安装。</p>
+            <p>
+              点击右上角的
+              <code>Install Plugin</code>
+              按钮安装插件会弹出一个对话框提示我们如何安装。
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20201225102357.png" alt="插件提示"><figcaption>插件提示</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/20201225102357.png"
+                alt="插件提示"
+              />
+              <figcaption>插件提示</figcaption>
+            </figure>
 
-<p>首先我们需要将当前 Traefik 注册到 Traefik Pilot（已完成），然后需要以静态配置的方式添加这个插件到 Traefik 中，然后添加插件启动参数：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># Activate Pilot integration</span>
+            <p>
+              首先我们需要将当前 Traefik 注册到 Traefik
+              Pilot（已完成），然后需要以静态配置的方式添加这个插件到 Traefik
+              中，然后添加插件启动参数：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># Activate Pilot integration</span>
 pilot:
   enabled: <span style="color:#ff79c6">true</span>
   token: <span style="color:#f1fa8c">&#34;e079ea6e-536a-48c6-b3e3-f7cfaf94f477&#34;</span>
@@ -365,9 +517,19 @@ additionalArguments:
 <span style="color:#6272a4"># 添加 demo plugin 的支持</span>
 - --experimental.plugins.plugindemo.modulename=github.com/traefik/plugindemo
 - --experimental.plugins.plugindemo.version=v0.<span style="color:#bd93f9">2.1</span>
-<span style="color:#6272a4"># 其他配置</span></code></pre></div>
-<p>更新完成后创建一个如下所示的 Middleware 对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">➜ cat &lt;&lt;EOF | kubectl apply -f -
+<span style="color:#6272a4"># 其他配置</span></code></pre>
+            </div>
+            <p>更新完成后创建一个如下所示的 Middleware 对象：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">➜ cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
@@ -378,9 +540,19 @@ spec:
       Headers:
         X-Demo: test
         Foo: bar
-EOF</code></pre></div>
-<p>然后添加到上面的 whoami 应用的 IngressRoute 对象中去：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: traefik.containo.us/v1alpha1
+EOF</code></pre>
+            </div>
+            <p>然后添加到上面的 whoami 应用的 IngressRoute 对象中去：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
   name: ingressroute-demo
@@ -395,34 +567,84 @@ spec:
     - name: whoami  <span style="color:#6272a4"># K8s Service</span>
       port: <span style="color:#bd93f9">80</span>
     middlewares:
-    - name: myplugin  <span style="color:#6272a4"># 使用上面新建的 middleware</span></code></pre></div>
-<p>更新完成后，当我们去访问 <code>http://who.qikqiak.com/notls</code> 的时候就可以看到新增了两个上面插件中定义的两个 Header。</p>
+    - name: myplugin  <span style="color:#6272a4"># 使用上面新建的 middleware</span></code></pre>
+            </div>
+            <p>
+              更新完成后，当我们去访问
+              <code>http://who.qikqiak.com/notls</code>
+              的时候就可以看到新增了两个上面插件中定义的两个 Header。
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20201225104027.png" alt="自定义插件显示"><figcaption>自定义插件显示</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/20201225104027.png"
+                alt="自定义插件显示"
+              />
+              <figcaption>自定义插件显示</figcaption>
+            </figure>
 
-<p>当然除了使用 Traefik Pilot 上开发者提供的插件之外，我们也可以根据自己的需求自行开发自己的插件，可以自行参考文档：<a href="https://doc.traefik.io/traefik-pilot/plugins/plugin-dev/">https://doc.traefik.io/traefik-pilot/plugins/plugin-dev/</a>。</p>
+            <p>
+              当然除了使用 Traefik Pilot
+              上开发者提供的插件之外，我们也可以根据自己的需求自行开发自己的插件，可以自行参考文档：<a
+                href="https://doc.traefik.io/traefik-pilot/plugins/plugin-dev/"
+                >https://doc.traefik.io/traefik-pilot/plugins/plugin-dev/</a
+              >。
+            </p>
 
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+            <script
+              async
+              src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+            ></script>
 
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-5376999672787220"
-     data-ad-slot="9165834656"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
+            <ins
+              class="adsbygoogle"
+              style="display: block"
+              data-ad-client="ca-pub-5376999672787220"
+              data-ad-slot="9165834656"
+              data-ad-format="auto"
+              data-full-width-responsive="true"
+            ></ins>
+            <script>
+              (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
 
+            <h2 id="私有插件">私有插件</h2>
 
-<h2 id="私有插件">私有插件</h2>
+            <p>
+              上面我们介绍了可以使用 Traefik Pilot 来使用插件，但是这是一个 SaaS
+              服务平台，对于大部分企业场景下面不是很适用，我们更多的场景下需要在本地环境加载插件，为解决这个问题，在
+              Traefik v2.5
+              版本后，就提供了一种直接从本地存储目录加载插件的新方法，不需要启用
+              Traefik Pilot，只需要将插件源码放入一个名为
+              <code>/plugins-local</code>
+              的新目录，相对于当前工作目录去创建这个目录，比如我们直接使用的是
+              traefik 的 docker 镜像，则入口点则是根目录 <code>/</code>，Traefik
+              本身会去构建你的插件，所以我们要做的就是编写源代码，并把它放在正确的目录下，让
+              Traefik 来加载它即可。
+            </p>
 
-<p>上面我们介绍了可以使用 Traefik Pilot 来使用插件，但是这是一个 SaaS 服务平台，对于大部分企业场景下面不是很适用，我们更多的场景下需要在本地环境加载插件，为解决这个问题，在 Traefik v2.5 版本后，就提供了一种直接从本地存储目录加载插件的新方法，不需要启用 Traefik Pilot，只需要将插件源码放入一个名为 <code>/plugins-local</code> 的新目录，相对于当前工作目录去创建这个目录，比如我们直接使用的是 traefik 的 docker 镜像，则入口点则是根目录 <code>/</code>，Traefik 本身会去构建你的插件，所以我们要做的就是编写源代码，并把它放在正确的目录下，让 Traefik 来加载它即可。</p>
+            <p>
+              需要注意的是由于在每次启动的时候插件只加载一次，所以如果我们希望重新加载你的插件源码的时候需要重新启动
+              Traefik。
+            </p>
 
-<p>需要注意的是由于在每次启动的时候插件只加载一次，所以如果我们希望重新加载你的插件源码的时候需要重新启动 Traefik。</p>
-
-<p>下面我们使用一个简单的自定义插件示例来说明如何使用私有插件。首先我们定义一个名为 <code>Dockerfile.demo</code> 的 Dockerfile 文件，先从 git 仓库中克隆插件源码，然后以 <code>traefik:v2.5</code> 为基础镜像，将插件源码拷贝刀 <code>/plugins-local</code> 目录，如下所示：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-docker" data-lang="docker"><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> alpine:3</span>
+            <p>
+              下面我们使用一个简单的自定义插件示例来说明如何使用私有插件。首先我们定义一个名为
+              <code>Dockerfile.demo</code> 的 Dockerfile 文件，先从 git
+              仓库中克隆插件源码，然后以
+              <code>traefik:v2.5</code> 为基础镜像，将插件源码拷贝刀
+              <code>/plugins-local</code> 目录，如下所示：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-docker" data-lang="docker"><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> alpine:3</span>
 ARG <span style="color:#8be9fd;font-style:italic">PLUGIN_MODULE</span><span style="color:#ff79c6">=</span>github.com/traefik/plugindemo
 ARG <span style="color:#8be9fd;font-style:italic">PLUGIN_GIT_REPO</span><span style="color:#ff79c6">=</span>https://github.com/traefik/plugindemo.git
 ARG <span style="color:#8be9fd;font-style:italic">PLUGIN_GIT_BRANCH</span><span style="color:#ff79c6">=</span>master
@@ -431,15 +653,41 @@ ARG <span style="color:#8be9fd;font-style:italic">PLUGIN_GIT_BRANCH</span><span 
 </span><span style="color:#f1fa8c"></span>      --depth <span style="color:#bd93f9">1</span> --single-branch --branch <span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">PLUGIN_GIT_BRANCH</span><span style="color:#f1fa8c">}</span>
 
 <span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> traefik:v2.5</span>
-COPY --from<span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span> /plugins-local /plugins-local</code></pre></div>
-<p>我们这里使用的演示插件和上面 Pilot 中演示的是同一个插件，我们可以通过该插件去自定义请求头信息。</p>
+COPY --from<span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span> /plugins-local /plugins-local</code></pre>
+            </div>
+            <p>
+              我们这里使用的演示插件和上面 Pilot
+              中演示的是同一个插件，我们可以通过该插件去自定义请求头信息。
+            </p>
 
-<p>然后在 <code>Dockerfile.demo</code> 目录下面，构建镜像：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">➜ docker build -f Dockerfile.demo -t cnych/traefik-private-demo-plugin:2.5.4 .
+            <p>然后在 <code>Dockerfile.demo</code> 目录下面，构建镜像：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">➜ docker build -f Dockerfile.demo -t cnych/traefik-private-demo-plugin:2.5.4 .
 <span style="color:#6272a4"># 推送到镜像仓库</span>
-➜ docker push cnych/traefik-private-demo-plugin:2.5.4</code></pre></div>
-<p>镜像构建完成后就可以使用这个镜像来测试 demo 插件了，将镜像修改成上面我们自定义的镜像地址：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">image:
+➜ docker push cnych/traefik-private-demo-plugin:2.5.4</code></pre>
+            </div>
+            <p>
+              镜像构建完成后就可以使用这个镜像来测试 demo
+              插件了，将镜像修改成上面我们自定义的镜像地址：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">image:
   name: cnych/traefik-private-demo-plugin
   tag: <span style="color:#bd93f9">2.5</span>.<span style="color:#bd93f9">4</span>
 
@@ -452,9 +700,24 @@ pilot:
 additionalArguments:
 <span style="color:#6272a4"># 添加 demo plugin 的本地支持</span>
 - --experimental.localPlugins.plugindemo.moduleName=github.com/traefik/plugindemo
-<span style="color:#6272a4"># 其他省略</span></code></pre></div>
-<p>注意上面我们添加 Traefik 的启动参数的时候使用的 <code>--experimental.localPlugins</code>。更新完成后就可以使用我们的私有插件来创建一个 Middleware 对象了：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">➜ cat &lt;&lt;EOF | kubectl apply -f -
+<span style="color:#6272a4"># 其他省略</span></code></pre>
+            </div>
+            <p>
+              注意上面我们添加 Traefik 的启动参数的时候使用的
+              <code>--experimental.localPlugins</code
+              >。更新完成后就可以使用我们的私有插件来创建一个 Middleware
+              对象了：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">➜ cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
@@ -465,9 +728,19 @@ spec:
       Headers:
         X-Demo: private-demo
         Foo: bar
-EOF</code></pre></div>
-<p>然后添加到上面的 whoami 应用的 IngressRoute 对象中去：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: traefik.containo.us/v1alpha1
+EOF</code></pre>
+            </div>
+            <p>然后添加到上面的 whoami 应用的 IngressRoute 对象中去：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
   name: ingressroute-demo
@@ -482,166 +755,246 @@ spec:
     - name: whoami  <span style="color:#6272a4"># K8s Service</span>
       port: <span style="color:#bd93f9">80</span>
     middlewares:
-    - name: my-private-plugin  <span style="color:#6272a4"># 使用上面新建的 middleware</span></code></pre></div>
-<p>更新上面的资源对象后，我们再去访问 <code>http://who.qikqiak.com/notls</code> 就可以看到新增了两个上面插件中定义的两个 Header，证明我们的私有插件配置成功了：</p>
+    - name: my-private-plugin  <span style="color:#6272a4"># 使用上面新建的 middleware</span></code></pre>
+            </div>
+            <p>
+              更新上面的资源对象后，我们再去访问
+              <code>http://who.qikqiak.com/notls</code>
+              就可以看到新增了两个上面插件中定义的两个
+              Header，证明我们的私有插件配置成功了：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20211227110109.png" alt="自定义插件显示"><figcaption>自定义插件显示</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/20211227110109.png"
+                alt="自定义插件显示"
+              />
+              <figcaption>自定义插件显示</figcaption>
+            </figure>
 
-<p><a href="https://youdianzhishi.com/web/course/1030" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+            <p>
+              <a
+                href="https://youdianzhishi.com/web/course/1030"
+                title="从 Docker 到 Kubernetes 进阶课程"
+                ><img
+                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
+                  alt="Kubernetes进阶训练营"
+              /></a>
+            </p>
 
+            <h2>微信公众号</h2>
+            <p>
+              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+              kubernetes 讨论群里面共同学习。
+            </p>
+            <img
+              src="https://picdn.youdianzhishi.com/images/qrcode.png"
+              alt="wechat-account-qrcode"
+            />
 
-          <h2>微信公众号</h2>
-<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
-
-  
-          
             <div class="entry-shang text-center">
-    <p>「真诚赞赏，手留余香」</p>
-    <button class="zs show-zs btn btn-bred">赞赏</button>
-</div>
-<div class="zs-modal-bg"></div>
-<div class="zs-modal-box">
-    <div class="zs-modal-head">
-        <button type="button" class="close">×</button>
-        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
-        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-    </div>
-    <div class="zs-modal-body">
-        <div class="zs-modal-btns">
-            <button class="btn btn-blink" data-num="2">2元</button>
-            <button class="btn btn-blink" data-num="5">5元</button>
-            <button class="btn btn-blink" data-num="10">10元</button>
-            <button class="btn btn-blink" data-num="50">50元</button>
-            <button class="btn btn-blink" data-num="100">100元</button>
-            <button class="btn btn-blink" data-num="1">任意金额</button>
-        </div>
-        <div class="zs-modal-pay">
-            <button class="btn btn-bred" id="pay-text">2元</button>
-            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
-        </div>
-    </div>
-    <div class="zs-modal-footer">
-        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
-    </div>
-</div>
-          
-          
-            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
-    <center>
-    <a href="#" class="social-share-icon icon-weibo"></a>
-    <a href="#" class="social-share-icon icon-wechat"></a>
-    <a href="#" class="social-share-icon icon-twitter"></a>
-    <a href="#" class="social-share-icon icon-linkedin"></a>
-    <a href="#" class="social-share-icon icon-facebook"></a>
-    <a href="#" class="social-share-icon icon-qq"></a>
-    <a href="#" class="social-share-icon icon-qzone"></a>
-    </center>
-</div>
+              <p>「真诚赞赏，手留余香」</p>
+              <button class="zs show-zs btn btn-bred">赞赏</button>
+            </div>
+            <div class="zs-modal-bg"></div>
+            <div class="zs-modal-box">
+              <div class="zs-modal-head">
+                <button type="button" class="close">×</button>
+                <span class="author"
+                  ><img
+                    src="https://www.qikqiak.com/img/avatar.jpeg"
+                  />阳明</span
+                >
+                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+              </div>
+              <div class="zs-modal-body">
+                <div class="zs-modal-btns">
+                  <button class="btn btn-blink" data-num="2">2元</button>
+                  <button class="btn btn-blink" data-num="5">5元</button>
+                  <button class="btn btn-blink" data-num="10">10元</button>
+                  <button class="btn btn-blink" data-num="50">50元</button>
+                  <button class="btn btn-blink" data-num="100">100元</button>
+                  <button class="btn btn-blink" data-num="1">任意金额</button>
+                </div>
+                <div class="zs-modal-pay">
+                  <button class="btn btn-bred" id="pay-text">2元</button>
+                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+                  <img
+                    src="https://www.qikqiak.com/img/wechat-2.png"
+                    id="pay-image"
+                  />
+                </div>
+              </div>
+              <div class="zs-modal-footer">
+                <span class="zs-wechat"
+                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
+                /></span>
+              </div>
+            </div>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+            <div
+              class="social-share"
+              data-initialized="true"
+              style="margin-bottom: 20px; margin-top: 20px"
+            >
+              <center>
+                <a href="#" class="social-share-icon icon-weibo"></a>
+                <a href="#" class="social-share-icon icon-wechat"></a>
+                <a href="#" class="social-share-icon icon-twitter"></a>
+                <a href="#" class="social-share-icon icon-linkedin"></a>
+                <a href="#" class="social-share-icon icon-facebook"></a>
+                <a href="#" class="social-share-icon icon-qq"></a>
+                <a href="#" class="social-share-icon icon-qzone"></a>
+              </center>
+            </div>
 
-          
-        </article>
-  
-        
-          
+            <link
+              rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
+            />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+          </article>
 
-<h3>相关文章</h3>
-<ul style="margin-bottom: 25px;">
-    
-    <li><a href="https://www.qikqiak.com/post/custom-traefik2-middleware/">自定义 Traefik2 中间件</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/url-rewrite-on-traefik2.x/">Traefik2.X 版本 中 URL Rewrite 的使用</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/use-kubernetes-service-apis-with-traefik/">通过 Traefik 使用 Kubernetes Service APIs 进行流量路由</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/traefik-2.1-101/">一文搞懂 Traefik2.1 的使用</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/canary-with-traefik2/">Traefik 2.0 实现灰度发布</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/automatic-https-with-traefik2/">Traefik 2.0 实现自动化 HTTPS</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/expose-redis-by-traefik2/">Traefik 2.0 暴露 Redis(TCP) 服务</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/traefik2-ga/">Traefik 2.0 正式版发布</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/install-nginx-ingress/">nginx-ingress 的安装使用</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/how-to-protect-exposed-k8s-server/">如何保护对外暴露的 Kubernetes 服务</a></li>
-    
-</ul>
+          <h3>相关文章</h3>
+          <ul style="margin-bottom: 25px">
+            <li>
+              <a href="https://www.qikqiak.com/post/custom-traefik2-middleware/"
+                >自定义 Traefik2 中间件</a
+              >
+            </li>
 
-        
-  
-        
-        <ul class="pager blog-pager">
-          
+            <li>
+              <a href="https://www.qikqiak.com/post/url-rewrite-on-traefik2.x/"
+                >Traefik2.X 版本 中 URL Rewrite 的使用</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/use-kubernetes-service-apis-with-traefik/"
+                >通过 Traefik 使用 Kubernetes Service APIs 进行流量路由</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/traefik-2.1-101/"
+                >一文搞懂 Traefik2.1 的使用</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/canary-with-traefik2/"
+                >Traefik 2.0 实现灰度发布</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/automatic-https-with-traefik2/"
+                >Traefik 2.0 实现自动化 HTTPS</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/expose-redis-by-traefik2/"
+                >Traefik 2.0 暴露 Redis(TCP) 服务</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/traefik2-ga/"
+                >Traefik 2.0 正式版发布</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/install-nginx-ingress/"
+                >nginx-ingress 的安装使用</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/how-to-protect-exposed-k8s-server/"
+                >如何保护对外暴露的 Kubernetes 服务</a
+              >
+            </li>
+          </ul>
+
+          <ul class="pager blog-pager">
             <li class="previous">
-              <a href="https://www.qikqiak.com/post/helm-chart-compatible-different-kube-version/" data-toggle="tooltip" data-placement="top" title="Helm Chart 兼容不同 Kubernetes 版本">&larr; 前一篇</a>
+              <a
+                href="https://www.qikqiak.com/post/helm-chart-compatible-different-kube-version/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="Helm Chart 兼容不同 Kubernetes 版本"
+                >&larr; 前一篇</a
+              >
             </li>
-          
-          
-            <li class="next">
-              <a href="https://www.qikqiak.com/post/prometheus-monitor-k8s-job-trap/" data-toggle="tooltip" data-placement="top" title="Prometheus 监控 Kubernetes Job 资源误报的坑">后一篇 &rarr;</a>
-            </li>
-          
-        </ul>
-        
 
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-        
-        <ins class="adsbygoogle"
-            style="display:block"
+            <li class="next">
+              <a
+                href="https://www.qikqiak.com/post/prometheus-monitor-k8s-job-trap/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="Prometheus 监控 Kubernetes Job 资源误报的坑"
+                >后一篇 &rarr;</a
+              >
+            </li>
+          </ul>
+
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+          ></script>
+
+          <ins
+            class="adsbygoogle"
+            style="display: block"
             data-ad-client="ca-pub-5376999672787220"
             data-ad-slot="3700507799"
             data-ad-format="auto"
-            data-full-width-responsive="true"></ins>
-        <script>
+            data-full-width-responsive="true"
+          ></ins>
+          <script>
             (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
-  
-        
-    <div id="gitalk-container"></div>
-    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-    <script>
-    var gitalk = new Gitalk({
-        clientID: 'bdb76dbb2e9d0786e350',
-        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
-        repo: 'blog',
-        owner: 'cnych',
-        admin: ['cnych'],
-        labels: ['gitment'],
-        title: '自定义 Traefik（本地）插件',
-        createIssueManually: true,
-        id: 'custom-traefik-local-middleware',      
-        distractionFreeMode: true  
-    });
-    gitalk.render('gitalk-container');
-</script>
+          </script>
 
-
-        
-          
-
-        
-  
+          <div id="gitalk-container"></div>
+          <link
+            rel="stylesheet"
+            href="https://unpkg.com/gitalk/dist/gitalk.css"
+          />
+          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+          <script>
+            var gitalk = new Gitalk({
+              clientID: "bdb76dbb2e9d0786e350",
+              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
+              repo: "blog",
+              owner: "cnych",
+              admin: ["cnych"],
+              labels: ["gitment"],
+              title: "自定义 Traefik（本地）插件",
+              createIssueManually: true,
+              id: "custom-traefik-local-middleware",
+              distractionFreeMode: true,
+            });
+            gitalk.render("gitalk-container");
+          </script>
+        </div>
       </div>
-    
-    
-  </div>
-</div>
+    </div>
 
     <footer>
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <ul class="list-inline text-center footer-links">
-          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
-          
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <ul class="list-inline text-center footer-links">
+              <img
+                src="https://www.qikqiak.com/img/wechatmp.png"
+                alt="k8s技术圈"
+              />
+
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -650,7 +1003,7 @@ spec:
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -659,7 +1012,7 @@ spec:
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -668,7 +1021,7 @@ spec:
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -677,121 +1030,158 @@ spec:
                   </span>
                 </a>
               </li>
-          
-          
-          <li>
-            <a href="https://www.qikqiak.com/index.xml" title="RSS">
-              <span class="fa-stack fa-lg">
-                <i class="fa fa-circle fa-stack-2x"></i>
-                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+
+              <li>
+                <a href="https://www.qikqiak.com/index.xml" title="RSS">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+            </ul>
+            <p class="credits copyright text-muted">
+              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/">阳明的博客</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/archive/">归档</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/friend/">友链</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://beian.miit.gov.cn/" target="_blank"
+                >蜀ICP备11027319号-5</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
+                >kubernetes.io</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
+                >Kubernetes中文社区</a
+              >
+            </p>
+            <p class="text-center text-muted">
+              <script
+                async
+                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
+              ></script>
+              <span id="busuanzi_container_site_pv" style="display: none">
+                本站总访问量<span id="busuanzi_value_site_pv"></span>次
               </span>
-            </a>
-          </li>
-          
-        </ul>
-        <p class="credits copyright text-muted">
-          
+              &nbsp;&bull;&nbsp;
+              <span id="busuanzi_container_site_uv" style="display: none">
+                访客数<span id="busuanzi_value_site_uv"></span>人次
+              </span>
+            </p>
 
-          &nbsp;&bull;&nbsp;
-          2023
-
-          
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/">阳明的博客</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/archive/">归档</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/friend/">友链</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
-          
-        </p>
-        <p class="text-center text-muted">
-          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-          <span id="busuanzi_container_site_pv" style="display:none">
-            本站总访问量<span id="busuanzi_value_site_pv"></span>次
-          </span>
-          &nbsp;&bull;&nbsp;
-          <span id="busuanzi_container_site_uv" style="display:none">
-            访客数<span id="busuanzi_value_site_uv"></span>人次
-          </span>
-        </p>
-        
-        <p class="credits theme-by text-muted">
-          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
-          
-        </p>
+            <p class="credits theme-by text-muted">
+              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
+              &nbsp;&bull;&nbsp; 主题
+              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+              移植自
+              <a href="https://github.com/rootsongjc/beautifulhugo"
+                >Beautiful Hugo</a
+              >
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</footer>
+    </footer>
 
+    <script
+      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
+      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
+    ></script>
 
-<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "UA-69668147-3");
+    </script>
+    <script>
+      (function () {
+        var bp = document.createElement("script");
+        var curProtocol = window.location.protocol.split(":")[0];
+        if (curProtocol === "https") {
+          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
+        } else {
+          bp.src = "http://push.zhanzhang.baidu.com/push.js";
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+      })();
+    </script>
+    <script>
+      $(document).ready(function () {
+        var int = setInterval(fixCount, 50);
 
-
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-69668147-3');
-</script>
-<script>
-(function(){
-    var bp = document.createElement('script');
-    var curProtocol = window.location.protocol.split(':')[0];
-    if (curProtocol === 'https') {
-        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
-    }
-    else {
-        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
-    }
-    var s = document.getElementsByTagName("script")[0];
-    s.parentNode.insertBefore(bp, s);
-})();
-</script>
-<script >
-$(document).ready(function() {
-  var int = setInterval(fixCount, 50);  
-  
-  var initPVCount = 584976;
-  var initUVCount = 153191;
-  function fixCount() {                   
-    if ($("#busuanzi_container_site_pv").css("display") != "none") {
-        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
-        clearInterval(int); 
-    }
-    if ($("#busuanzi_container_site_uv").css("display") != "none") {
-      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
-      clearInterval(int); 
-    }  
-  }           
-});
-</script>
- <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
-<script type="text/javascript">
-$('.carousel').slick({
-    dots: true,
-    arrows: true,
-    autoplay: true,
-    autoplaySpeed: 4000,
-    infinite: true,
-    speed: 500,
-    fade: true,
-    cssEase: 'linear',
-    centerMode: true,
-    prevArrow: '<button type="button" class="slick-prev"></button>',
-    nextArrow: '<button type="button" class="slick-next"></button>',
-});
-</script>
-
+        var initPVCount = 584976;
+        var initUVCount = 153191;
+        function fixCount() {
+          if ($("#busuanzi_container_site_pv").css("display") != "none") {
+            $("#busuanzi_value_site_pv").html(
+              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
+            );
+            clearInterval(int);
+          }
+          if ($("#busuanzi_container_site_uv").css("display") != "none") {
+            $("#busuanzi_value_site_uv").html(
+              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
+            );
+            clearInterval(int);
+          }
+        }
+      });
+    </script>
+    <script>
+      (function (w, d, s, id) {
+        if (typeof w.webpushr !== "undefined") return;
+        w.webpushr =
+          w.webpushr ||
+          function () {
+            (w.webpushr.q = w.webpushr.q || []).push(arguments);
+          };
+        var js,
+          fjs = d.getElementsByTagName(s)[0];
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "https://cdn.webpushr.com/app.min.js";
+        fjs.parentNode.appendChild(js);
+      })(window, document, "script", "webpushr-jssdk");
+      webpushr(
+        "init",
+        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
+      );
+    </script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
+    ></script>
+    <script type="text/javascript">
+      $(".carousel").slick({
+        dots: true,
+        arrows: true,
+        autoplay: true,
+        autoplaySpeed: 4000,
+        infinite: true,
+        speed: 500,
+        fade: true,
+        cssEase: "linear",
+        centerMode: true,
+        prevArrow: '<button type="button" class="slick-prev"></button>',
+        nextArrow: '<button type="button" class="slick-next"></button>',
+      });
+    </script>
   </body>
 </html>
-

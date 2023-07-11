@@ -1,398 +1,552 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
 
+    <title>
+      在 Kubernetes 中运行
+      Kubernetes-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
+    </title>
+    <meta property="og:title" content="在 Kubernetes 中运行 Kubernetes" />
+    <meta name="twitter:title" content="在 Kubernetes 中运行 Kubernetes" />
 
-  <title>在 Kubernetes 中运行 Kubernetes-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
-  <meta property="og:title" content="在 Kubernetes 中运行 Kubernetes" />
-  <meta name="twitter:title" content="在 Kubernetes 中运行 Kubernetes" />
+    <meta
+      name="description"
+      content="前面其实我们在 Windows 系统的 WSL2 下面使用 KinD 搭建了一套 Kubernetes 集群，KinD 是一个非常轻量级的 Kubernetes 安装工具，他将 Docker 容器当成 Kubernetes 的节点，使用非常方便。既然在 Docker 容器中可以运行 Kubernetes 集群，那么我们自然就会想到是否可以在 Pod 中来运行呢？在 Pod 中运行会遇到哪些问题呢？"
+    />
+    <meta
+      property="og:description"
+      content="前面其实我们在 Windows 系统的 WSL2 下面使用 KinD 搭建了一套 Kubernetes 集群，KinD 是一个非常轻量级的 Kubernetes 安装工具，他将 Docker 容器当成 Kubernetes 的节点，使用非常方便。既然在 Docker 容器中可以运行 Kubernetes 集群，那么我们自然就会想到是否可以在 Pod 中来运行呢？在 Pod 中运行会遇到哪些问题呢？"
+    />
+    <meta
+      name="twitter:description"
+      content="前面其实我们在 Windows 系统的 WSL2 下面使用 KinD 搭建了一套 Kubernetes 集群，KinD 是一个非常轻量级的 Kubernetes 安装工具，他将 Docker 容器当成 Kubernetes 的节点，使用非常方便。既然在 Docker 容器中可以运行 Kubernetes 集群，那么我们自然就会想到是否可以在 Pod 中来运行呢？在 Pod 中运行会遇到哪些问题呢？"
+    />
+    <meta name="author" content="" />
+    <link
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+      rel="icon"
+      type="image/x-icon"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      property="og:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      name="twitter:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta
+      property="og:url"
+      content="https://www.qikqiak.com/post/k8s-in-k8s/"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="阳明的博客" />
 
-  <meta name="description" content="前面其实我们在 Windows 系统的 WSL2 下面使用 KinD 搭建了一套 Kubernetes 集群，KinD 是一个非常轻量级的 Kubernetes 安装工具，他将 Docker 容器当成 Kubernetes 的节点，使用非常方便。既然在 Docker 容器中可以运行 Kubernetes 集群，那么我们自然就会想到是否可以在 Pod 中来运行呢？在 Pod 中运行会遇到哪些问题呢？">
-  <meta property="og:description" content="前面其实我们在 Windows 系统的 WSL2 下面使用 KinD 搭建了一套 Kubernetes 集群，KinD 是一个非常轻量级的 Kubernetes 安装工具，他将 Docker 容器当成 Kubernetes 的节点，使用非常方便。既然在 Docker 容器中可以运行 Kubernetes 集群，那么我们自然就会想到是否可以在 Pod 中来运行呢？在 Pod 中运行会遇到哪些问题呢？">
-  <meta name="twitter:description" content="前面其实我们在 Windows 系统的 WSL2 下面使用 KinD 搭建了一套 Kubernetes 集群，KinD 是一个非常轻量级的 Kubernetes 安装工具，他将 Docker 容器当成 Kubernetes 的节点，使用非常方便。既然在 Docker 容器中可以运行 Kubernetes 集群，那么我们自然就会想到是否可以在 Pod 中来运行呢？在 Pod 中运行会遇到哪些问题呢？">
-  <meta name="author" content=""/>
-  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
-  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
-  <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://www.qikqiak.com/post/k8s-in-k8s/" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="阳明的博客" />
+    <meta name="generator" content="Hugo 0.55.6" />
+    <link rel="canonical" href="https://www.qikqiak.com/post/k8s-in-k8s/" />
+    <link
+      rel="alternate"
+      href="https://www.qikqiak.com/index.xml"
+      type="application/rss+xml"
+      title="阳明的博客"
+    />
 
-  <meta name="generator" content="Hugo 0.55.6" />
-  <link rel="canonical" href="https://www.qikqiak.com/post/k8s-in-k8s/" />
-  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+    <link
+      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
+      rel="stylesheet"
+    />
 
-  
-  
-  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
-  
+    <link
+      rel="stylesheet"
+      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
+      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
+    />
 
-  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
+    />
 
-  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
-  
-  
-    
     <!--[if lt IE 9]>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+        rel="stylesheet"
+      />
     <![endif]-->
-<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
-<meta name="baidu-site-verification" content="F5ojAyqaKU" />
-<meta name="keywords" content="kubernetes, windows, wsl, kind, cgroup">
-<script>
-var _hmt = _hmt || [];
-(function() {
-  var hm = document.createElement("script");
-  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-  var s = document.getElementsByTagName("script")[0];
-  s.parentNode.insertBefore(hm, s);
-})();
-</script>
+    <meta
+      name="google-site-verification"
+      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
+    />
+    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
+    <meta name="keywords" content="kubernetes, windows, wsl, kind, cgroup" />
+    <script>
+      var _hmt = _hmt || [];
+      (function () {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
 
+    <script type="application/javascript">
+      var doNotTrack = false;
+      if (!doNotTrack) {
+        window.ga =
+          window.ga ||
+          function () {
+            (ga.q = ga.q || []).push(arguments);
+          };
+        ga.l = +new Date();
+        ga("create", "UA-69668147-3", "auto");
 
-
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-	ga('create', 'UA-69668147-3', 'auto');
-	
-	ga('send', 'pageview');
-}
-</script>
-<script async src='https://www.google-analytics.com/analytics.js'></script>
-
-</head>
+        ga("send", "pageview");
+      }
+    </script>
+    <script async src="https://www.google-analytics.com/analytics.js"></script>
+  </head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
-        <span class="sr-only">切换导航</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
-        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
-      </a>
-    </div>
+      <div class="container">
+        <div class="navbar-header">
+          <button
+            type="button"
+            class="navbar-toggle"
+            data-toggle="collapse"
+            data-target="#main-navbar"
+          >
+            <span class="sr-only">切换导航</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a
+            class="navbar-brand"
+            href="https://www.qikqiak.com/"
+            title="阳明的博客"
+          >
+            <img
+              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
+              style="margin-top: -5px; height: 32px"
+              alt="阳明的博客"
+            />
+          </a>
+        </div>
 
-    <div class="collapse navbar-collapse" id="main-navbar">
-      <ul class="nav navbar-nav navbar-right">
-        
-          
+        <div class="collapse navbar-collapse" id="main-navbar">
+          <ul class="nav navbar-nav navbar-right">
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-          
-        
-          
+
             <li>
-              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+              <a
+                title="课程"
+                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
+                >课程</a
+              >
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/archives">Archive</a>
-                
-                  <a href="https://www.qikqiak.com/tags">tags</a>
-                
-                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-                
-                  <a href="https://www.qikqiak.com/tags/python">python</a>
-                
-                  <a href="https://www.qikqiak.com/tags/django">django</a>
-                
-                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
-                
+                <a href="https://www.qikqiak.com/archives">Archive</a>
+
+                <a href="https://www.qikqiak.com/tags">tags</a>
+
+                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+
+                <a href="https://www.qikqiak.com/tags/python">python</a>
+
+                <a href="https://www.qikqiak.com/tags/django">django</a>
+
+                <a href="https://www.qikqiak.com/tags/devops">devops</a>
               </div>
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-                
-                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-                
-                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-                
-                  <a href="https://md.qikqiak.com/">Markdown微信</a>
-                
+                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+
+                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+
+                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+
+                <a href="https://md.qikqiak.com/">Markdown微信</a>
               </div>
             </li>
-          
-        
-          
+
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+              <a title="关于" href="https://www.qikqiak.com/page/about/"
+                >关于</a
+              >
             </li>
-          
-        
-          
+
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
-          
-        
 
-        
-
-        
-
-        
-          <li>
-            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
-              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
-            </a>
-          </li>
-          
-
-      </ul>
-    </div>
-
-  </div>
-</nav>
-
-
-  <div id="modalSearch" class="modal fade" role="dialog">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-          <h4 class="modal-title">搜索</h4>
+            <li>
+              <a
+                href="#modalSearch"
+                data-toggle="modal"
+                data-target="#modalSearch"
+                style="outline: none"
+              >
+                <span
+                  id="searchGlyph"
+                  class="glyphicon glyphicon-search"
+                ></span>
+              </a>
+            </li>
+          </ul>
         </div>
-        <div class="modal-body">
-            
-<div class="aa-input-container" id="aa-input-container">
-    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
-    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
-    </svg>
-</div>
-<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+      </div>
+    </nav>
 
-<script>
-var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
-var index = client.initIndex('prod_blog');
+    <div id="modalSearch" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">
+              &times;
+            </button>
+            <h4 class="modal-title">搜索</h4>
+          </div>
+          <div class="modal-body">
+            <div class="aa-input-container" id="aa-input-container">
+              <input
+                type="search"
+                id="aa-search-input"
+                class="aa-input-search"
+                placeholder="Search for titles or URIs..."
+                name="search"
+                autocomplete="off"
+              />
+              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+                <path
+                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
+                />
+              </svg>
+            </div>
+            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-autocomplete('#aa-search-input',
-{ hint: false}, {
-    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
-    
-    displayKey: 'name',
-    
-    templates: {
-        
-        suggestion: function(suggestion) {
-            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
-            suggestion._highlightResult.title.value + '</a></span>';
-        }
-    }
-});
-</script>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+            <script>
+              var client = algoliasearch(
+                "1JDRAS0AZR",
+                "8804ac109158bb3bb60d74ce98fa332f"
+              );
+              var index = client.initIndex("prod_blog");
+
+              autocomplete(
+                "#aa-search-input",
+                { hint: false },
+                {
+                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
+
+                  displayKey: "name",
+
+                  templates: {
+                    suggestion: function (suggestion) {
+                      return (
+                        "<span>" +
+                        '<a href="https://www.qikqiak.com/post/' +
+                        suggestion.slug +
+                        '">' +
+                        suggestion._highlightResult.title.value +
+                        "</a></span>"
+                      );
+                    },
+                  },
+                }
+              );
+            </script>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">
+              close
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-    
-  
-  
-  
+    <div
+      id="header-big-imgs"
+      data-num-img="1"
+      data-img-src-1="https://picdn.youdianzhishi.com/images/20200612120656.png"
+      data-img-desc-1="Kubernetes IN Kubernetes"
+    ></div>
 
-
-
-
-  
-    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200612120656.png" data-img-desc-1="Kubernetes IN Kubernetes"></div>
-  
-
-  <header class="header-section has-img">
-    
+    <header class="header-section has-img">
       <div class="intro-header big-img">
-        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>在 Kubernetes 中运行 Kubernetes</h1>
-                  
-                  
-                    <span class="post-meta">
-  
-    发表于 June 12, 2020
-  
-  
-</span>
 
-
-                  
+                <span class="post-meta"> 发表于 June 12, 2020 </span>
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline;"></span>
+        <span class="img-desc" style="display: inline"></span>
       </div>
-    
-    
-    
-    <div class="intro-header no-img">
-      
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <div class="post-heading">
-              <h1>在 Kubernetes 中运行 Kubernetes</h1>
-                
-                
-                  <span class="post-meta">
-  
-    发表于 June 12, 2020
-  
-  
-</span>
 
+      <div class="intro-header no-img">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>在 Kubernetes 中运行 Kubernetes</h1>
 
-                
+                <span class="post-meta"> 发表于 June 12, 2020 </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    
-    
-  </header>
+    </header>
 
+    <div class="container" role="main">
+      <div class="row">
+        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+          <div>
+            <h5 id="tags" style="margin-top: 30px">
+              标签:
 
-    
+              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
+              &nbsp;
 
+              <a href="https://www.qikqiak.com/tags/wsl/">wsl</a> &nbsp;
 
+              <a href="https://www.qikqiak.com/tags/kind/">kind</a> &nbsp;
 
-<div class="container" role="main">
-  <div class="row">
-
-    
-    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <div>
-            
-            
-            <h5 id="tags" style="margin-top: 30px;">标签:
-              
-                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/wsl/">wsl</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/kind/">kind</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/docker/">docker</a> &nbsp;
-              
+              <a href="https://www.qikqiak.com/tags/docker/">docker</a> &nbsp;
             </h5>
-            
-        </div>
-  
-        <article role="main" class="blog-post" itemprop="articleBody" id="content">
-          
-            
-<aside class="toc">
-  <nav id="TableOfContents">
-<ul>
-<li>
-<ul>
-<li><a href="#在-pod-中安装-docker-daemon">在 Pod 中安装 Docker Daemon</a>
-<ul>
-<li><a href="#pid-1-的问题">PID 1 的问题</a></li>
-<li><a href="#挂载-cgroups">挂载 cgroups</a></li>
-<li><a href="#iptables">IPtables</a></li>
-</ul></li>
-<li><a href="#在-pod-中运行-kind">在 Pod 中运行 KinD</a></li>
-<li><a href="#总结">总结</a></li>
-</ul></li>
-</ul>
-</nav>
-</aside>
+          </div>
 
-          
-  
-          
-          
-          
-  
-          
-          
-          
-  
-          
-          
-          
+          <article
+            role="main"
+            class="blog-post"
+            itemprop="articleBody"
+            id="content"
+          >
+            <aside class="toc">
+              <nav id="TableOfContents">
+                <ul>
+                  <li>
+                    <ul>
+                      <li>
+                        <a href="#在-pod-中安装-docker-daemon"
+                          >在 Pod 中安装 Docker Daemon</a
+                        >
+                        <ul>
+                          <li><a href="#pid-1-的问题">PID 1 的问题</a></li>
+                          <li><a href="#挂载-cgroups">挂载 cgroups</a></li>
+                          <li><a href="#iptables">IPtables</a></li>
+                        </ul>
+                      </li>
+                      <li>
+                        <a href="#在-pod-中运行-kind">在 Pod 中运行 KinD</a>
+                      </li>
+                      <li><a href="#总结">总结</a></li>
+                    </ul>
+                  </li>
+                </ul>
+              </nav>
+            </aside>
 
-          <p><a href="https://www.qikqiak.com/post/deploy-k8s-on-win-use-wsl2/">前面其实我们在 Windows 系统的 WSL2 下面使用 KinD 搭建了一套 Kubernetes 集群</a>，KinD 是一个非常轻量级的 Kubernetes 安装工具，他将 Docker 容器当成 Kubernetes 的节点，使用非常方便。既然在 Docker 容器中可以运行 Kubernetes 集群，那么我们自然就会想到是否可以在 Pod 中来运行呢？在 Pod 中运行会遇到哪些问题呢？</p>
+            <p>
+              <a href="https://www.qikqiak.com/post/deploy-k8s-on-win-use-wsl2/"
+                >前面其实我们在 Windows 系统的 WSL2 下面使用 KinD 搭建了一套
+                Kubernetes 集群</a
+              >，KinD 是一个非常轻量级的 Kubernetes 安装工具，他将 Docker
+              容器当成 Kubernetes 的节点，使用非常方便。既然在 Docker
+              容器中可以运行 Kubernetes 集群，那么我们自然就会想到是否可以在 Pod
+              中来运行呢？在 Pod 中运行会遇到哪些问题呢？
+            </p>
 
-<h2 id="在-pod-中安装-docker-daemon">在 Pod 中安装 Docker Daemon</h2>
+            <h2 id="在-pod-中安装-docker-daemon">
+              在 Pod 中安装 Docker Daemon
+            </h2>
 
-<p>KinD 现在是依赖与 Docker 的，所以首先我们需要创建一个允许我们在 Pod 中运行 Docker Deamon 的镜像，这样我们就可以在 Pod 里面去执行 <code>docker run</code> 这样的命令，当然这个和我们之前说的挂载宿主机的 docker.sock 这种 DIND 模式是不一样的。要想在 Pod 中运行 Docker Deamon 依然会有不少问题的。</p>
+            <p>
+              KinD 现在是依赖与 Docker 的，所以首先我们需要创建一个允许我们在
+              Pod 中运行 Docker Deamon 的镜像，这样我们就可以在 Pod 里面去执行
+              <code>docker run</code>
+              这样的命令，当然这个和我们之前说的挂载宿主机的 docker.sock 这种
+              DIND 模式是不一样的。要想在 Pod 中运行 Docker Deamon
+              依然会有不少问题的。
+            </p>
 
-<h3 id="pid-1-的问题">PID 1 的问题</h3>
+            <h3 id="pid-1-的问题">PID 1 的问题</h3>
 
-<p>比如我们需要在一个容器中去运行 Docker Daemon 以及一些 Kubernetes 的集群测试，而这些测试依赖于 KinD 和 Docker Damon，在一个容器中运行多个服务我们可能会去使用 systemd，但是使用 systemd 也会有一些问题。</p>
+            <p>
+              比如我们需要在一个容器中去运行 Docker Daemon 以及一些 Kubernetes
+              的集群测试，而这些测试依赖于 KinD 和 Docker
+              Damon，在一个容器中运行多个服务我们可能会去使用 systemd，但是使用
+              systemd 也会有一些问题。
+            </p>
 
-<ol>
-<li>比如我们需要保留测试的退出状态，Kubernetes 中使用的容器运行时可以 watch 到容器中的第一个进程（PID 1）的退出状态。如果我们使用 systemd 的话，那么我们测试的进程退出状态不会被转发到 Kubernetes。</li>
-<li>此外获取测试的日志也是非常重要的，在 Kubernetes 中会自动获取写入到 stdout 和 stderr 的容器日志，但是如果使用 systemd 的话，要想获取应用的日志就比较麻烦的。</li>
-</ol>
+            <ol>
+              <li>
+                比如我们需要保留测试的退出状态，Kubernetes
+                中使用的容器运行时可以 watch 到容器中的第一个进程（PID
+                1）的退出状态。如果我们使用 systemd
+                的话，那么我们测试的进程退出状态不会被转发到 Kubernetes。
+              </li>
+              <li>
+                此外获取测试的日志也是非常重要的，在 Kubernetes
+                中会自动获取写入到 stdout 和 stderr 的容器日志，但是如果使用
+                systemd 的话，要想获取应用的日志就比较麻烦的。
+              </li>
+            </ol>
 
-<p>为了解决上面的问题，我们可以在容器镜像中使用如下所示的启动脚本：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">dockerd &amp;
+            <p>
+              为了解决上面的问题，我们可以在容器镜像中使用如下所示的启动脚本：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-bash" data-lang="bash">dockerd &amp;
 <span style="color:#6272a4"># Wait until dockerd is ready.</span>
 <span style="color:#ff79c6">until</span> docker ps &gt;/dev/null <span style="color:#bd93f9">2</span>&gt;&amp;<span style="color:#bd93f9">1</span>
 <span style="color:#ff79c6">do</span>
   <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;Waiting for dockerd...&#34;</span>
   sleep <span style="color:#bd93f9">1</span>
 <span style="color:#ff79c6">done</span>
-<span style="color:#8be9fd;font-style:italic">exec</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$@</span><span style="color:#f1fa8c">&#34;</span></code></pre></div>
-<p>但是需要注意的是我们不能将上面的脚本作为容器的 entrypoint，在镜像中定义的 entrypoint 会在容器中以 PID 1 的形式运行在一个单独的 pid namespace 中。PID 1 是一个内核中的一个特殊进程，它的行为和其他进程不同。</p>
+<span style="color:#8be9fd;font-style:italic">exec</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$@</span><span style="color:#f1fa8c">&#34;</span></code></pre>
+            </div>
+            <p>
+              但是需要注意的是我们不能将上面的脚本作为容器的
+              entrypoint，在镜像中定义的 entrypoint 会在容器中以 PID 1
+              的形式运行在一个单独的 pid namespace 中。PID 1
+              是一个内核中的一个特殊进程，它的行为和其他进程不同。
+            </p>
 
-<p>本质上，接收信号的进程是 PID 1：它会被内核做特殊处理；如果它没有为信号注册一个处理器，内核就不会回到默认行为（即杀死进程）。由于当收到 <code>SIGTERM</code> 信号时，内核会默认杀死这个进程，所以一些进程也许不会为 <code>SIGTERM</code> 信号注册信号处理程序。如果出现了这种情况，当 Kubernetes 尝试终止 Pod 时，SIGTERM 将被吞噬，你会注意到 Pod 会被卡在 <code>Terminating</code> 的状态下。</p>
+            <p>
+              本质上，接收信号的进程是 PID
+              1：它会被内核做特殊处理；如果它没有为信号注册一个处理器，内核就不会回到默认行为（即杀死进程）。由于当收到
+              <code>SIGTERM</code>
+              信号时，内核会默认杀死这个进程，所以一些进程也许不会为
+              <code>SIGTERM</code> 信号注册信号处理程序。如果出现了这种情况，当
+              Kubernetes 尝试终止 Pod 时，SIGTERM 将被吞噬，你会注意到 Pod
+              会被卡在 <code>Terminating</code> 的状态下。
+            </p>
 
-<p>这其实不是一个什么新鲜的问题，但是了解这个问题的人却并不多，而且还一直在构建有这样问题的容器。我们可以使用 <a href="https://github.com/krallin/tini">tini</a> 这个应用来解决这个问题，将其作为镜像的入口点，如下所示：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ENTRYPOINT <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;/usr/bin/tini&#34;</span>, <span style="color:#f1fa8c">&#34;--&#34;</span>, <span style="color:#f1fa8c">&#34;/entrypoint.sh&#34;</span><span style="color:#ff79c6">]</span></code></pre></div>
-<p>这个程序会正确注册信号处理程序和转发信号。它还会执行一些其他 PID 1 的事情，比如回收容器中的僵尸进程。</p>
+            <p>
+              这其实不是一个什么新鲜的问题，但是了解这个问题的人却并不多，而且还一直在构建有这样问题的容器。我们可以使用
+              <a href="https://github.com/krallin/tini">tini</a>
+              这个应用来解决这个问题，将其作为镜像的入口点，如下所示：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-bash" data-lang="bash">ENTRYPOINT <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;/usr/bin/tini&#34;</span>, <span style="color:#f1fa8c">&#34;--&#34;</span>, <span style="color:#f1fa8c">&#34;/entrypoint.sh&#34;</span><span style="color:#ff79c6">]</span></code></pre>
+            </div>
+            <p>
+              这个程序会正确注册信号处理程序和转发信号。它还会执行一些其他 PID 1
+              的事情，比如回收容器中的僵尸进程。
+            </p>
 
-<h3 id="挂载-cgroups">挂载 cgroups</h3>
+            <h3 id="挂载-cgroups">挂载 cgroups</h3>
 
-<p>由于 Docker Daemon 需要控制 cgroups，所以需要将 cgroup 文件系统挂载到容器中去。但是由于 cgroups 和宿主机是共享的，所以我们需要确保 Docker Daemon 控制的 cgroups 不会影响到其他容器或者宿主机进程使用的其他 cgroups，还需要确保 Docker Daemon 在容器中创建的 cgroups 在容器退出后不会被泄露。</p>
+            <p>
+              由于 Docker Daemon 需要控制 cgroups，所以需要将 cgroup
+              文件系统挂载到容器中去。但是由于 cgroups
+              和宿主机是共享的，所以我们需要确保 Docker Daemon 控制的 cgroups
+              不会影响到其他容器或者宿主机进程使用的其他 cgroups，还需要确保
+              Docker Daemon 在容器中创建的 cgroups 在容器退出后不会被泄露。
+            </p>
 
-<p>Docker Daemon 中有一个<code>--cgroup—parent</code> 参数来告诉 Daemon 将所有容器的 cgroups 嵌套在指定的 cgroup 下面。当容器运行在 Kubernetes 集群下面时，我们在容器中设置 Docker Daemon 的<code>--cgroup—parent</code> 参数，这样它的所有 cgroups 就会被嵌套在 Kubernetes 为容器创建的 cgroup 下面了。</p>
+            <p>
+              Docker Daemon 中有一个<code>--cgroup—parent</code> 参数来告诉
+              Daemon 将所有容器的 cgroups 嵌套在指定的 cgroup 下面。当容器运行在
+              Kubernetes 集群下面时，我们在容器中设置 Docker Daemon 的<code
+                >--cgroup—parent</code
+              >
+              参数，这样它的所有 cgroups 就会被嵌套在 Kubernetes 为容器创建的
+              cgroup 下面了。
+            </p>
 
-<p>在以前为了让 cgroup 文件系统在容器中可用，一些用户会将宿主机中的 <code>/sys/fs/cgroup</code> 挂载到容器中的这个位置，如果这样使用的话，我们就需要在容器启动脚本中把<code>--cgroup—parent</code> 设置为下面的内容，这样 Docker Daemon 创建的 cgroups 就可以正确被嵌套了。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">CGROUP_PARENT</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#ff79c6">$(</span>grep systemd /proc/self/cgroup | cut -d: -f3<span style="color:#ff79c6">)</span><span style="color:#f1fa8c">/docker&#34;</span></code></pre></div>
-<blockquote>
-<p>注意：<code>/proc/self/cgroup</code> 显示的是调用进程的 cgorup 路径。</p>
-</blockquote>
+            <p>
+              在以前为了让 cgroup 文件系统在容器中可用，一些用户会将宿主机中的
+              <code>/sys/fs/cgroup</code>
+              挂载到容器中的这个位置，如果这样使用的话，我们就需要在容器启动脚本中把<code
+                >--cgroup—parent</code
+              >
+              设置为下面的内容，这样 Docker Daemon 创建的 cgroups
+              就可以正确被嵌套了。
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">CGROUP_PARENT</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#ff79c6">$(</span>grep systemd /proc/self/cgroup | cut -d: -f3<span style="color:#ff79c6">)</span><span style="color:#f1fa8c">/docker&#34;</span></code></pre>
+            </div>
+            <blockquote>
+              <p>
+                注意：<code>/proc/self/cgroup</code> 显示的是调用进程的 cgorup
+                路径。
+              </p>
+            </blockquote>
 
-<p>但是我们要知道，挂载宿主机的 <code>/sys/fs/cgroup</code> 文件是非常危险的事情，因为他把整个宿主机的 cgroup 层次结构都暴露给了容器。以前为了解决这个问题，Docker 用了一个小技巧把不相关的 cgroups 隐藏起来，不让容器看到。Docker 从容器的 cgroups 对每个 cgroup 系统的 cgroup 层次结构的根部进行绑定挂载。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ docker run --rm debian findmnt -lo source,target -t cgroup       
+            <p>
+              但是我们要知道，挂载宿主机的
+              <code>/sys/fs/cgroup</code>
+              文件是非常危险的事情，因为他把整个宿主机的 cgroup
+              层次结构都暴露给了容器。以前为了解决这个问题，Docker
+              用了一个小技巧把不相关的 cgroups 隐藏起来，不让容器看到。Docker
+              从容器的 cgroups 对每个 cgroup 系统的 cgroup
+              层次结构的根部进行绑定挂载。
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-bash" data-lang="bash">$ docker run --rm debian findmnt -lo source,target -t cgroup       
 SOURCE                                                                               TARGET
 cpuset<span style="color:#ff79c6">[</span>/docker/451b803b3cd7cd2b69dde64cd833fdd799ae16f9d2d942386ec382f6d55bffac<span style="color:#ff79c6">]</span>     /sys/fs/cgroup/cpuset
 cpu<span style="color:#ff79c6">[</span>/docker/451b803b3cd7cd2b69dde64cd833fdd799ae16f9d2d942386ec382f6d55bffac<span style="color:#ff79c6">]</span>        /sys/fs/cgroup/cpu
@@ -400,11 +554,35 @@ cpuacct<span style="color:#ff79c6">[</span>/docker/451b803b3cd7cd2b69dde64cd833f
 blkio<span style="color:#ff79c6">[</span>/docker/451b803b3cd7cd2b69dde64cd833fdd799ae16f9d2d942386ec382f6d55bffac<span style="color:#ff79c6">]</span>     /sys/fs/cgroup/blkio
 memory<span style="color:#ff79c6">[</span>/docker/451b803b3cd7cd2b69dde64cd833fdd799ae16f9d2d942386ec382f6d55bffac<span style="color:#ff79c6">]</span>     /sys/fs/cgroup/memory
  
-cgroup<span style="color:#ff79c6">[</span>/docker/451b803b3cd7cd2b69dde64cd833fdd799ae16f9d2d942386ec382f6d55bffac<span style="color:#ff79c6">]</span>     /sys/fs/cgroup/systemd</code></pre></div>
-<p>从上面我们可以看出 cgroups 通过将宿主机 cgroup 文件系统上的 <code>/sys/fs/cgroup/memory/memory.limit_in_bytes</code> 文件映射到 <code>/sys/fs/cgroup/memory/docker/&lt;CONTAINER_ID&gt;/memory.limit_in_bytes</code> 来控制容器内 cgroup 层次结构根部的文件，这种方式可以防止容器进程意外地修改宿主机的 cgroup。</p>
+cgroup<span style="color:#ff79c6">[</span>/docker/451b803b3cd7cd2b69dde64cd833fdd799ae16f9d2d942386ec382f6d55bffac<span style="color:#ff79c6">]</span>     /sys/fs/cgroup/systemd</code></pre>
+            </div>
+            <p>
+              从上面我们可以看出 cgroups 通过将宿主机 cgroup 文件系统上的
+              <code>/sys/fs/cgroup/memory/memory.limit_in_bytes</code>
+              文件映射到
+              <code
+                >/sys/fs/cgroup/memory/docker/&lt;CONTAINER_ID&gt;/memory.limit_in_bytes</code
+              >
+              来控制容器内 cgroup
+              层次结构根部的文件，这种方式可以防止容器进程意外地修改宿主机的
+              cgroup。
+            </p>
 
-<p>但是这种方式有时候会让 cadvisor 和 kubelet 这样的应用感动困惑，因为绑定挂载并不会改变 <code>/proc/&lt;PID&gt;/cgroup</code> 里面的内容。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ docker run --rm debian cat /proc/1/cgroup                                
+            <p>
+              但是这种方式有时候会让 cadvisor 和 kubelet
+              这样的应用感动困惑，因为绑定挂载并不会改变
+              <code>/proc/&lt;PID&gt;/cgroup</code> 里面的内容。
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-bash" data-lang="bash">$ docker run --rm debian cat /proc/1/cgroup                                
 <span style="color:#bd93f9">14</span>:name<span style="color:#ff79c6">=</span>systemd:/docker/512f6b62e3963f85f5abc09b69c370d27ab1dc56549fa8afcbb86eec8663a141
  
 <span style="color:#bd93f9">5</span>:memory:/docker/512f6b62e3963f85f5abc09b69c370d27ab1dc56549fa8afcbb86eec8663a141
@@ -412,36 +590,114 @@ cgroup<span style="color:#ff79c6">[</span>/docker/451b803b3cd7cd2b69dde64cd833fd
 <span style="color:#bd93f9">3</span>:cpuacct:/docker/512f6b62e3963f85f5abc09b69c370d27ab1dc56549fa8afcbb86eec8663a141
 <span style="color:#bd93f9">2</span>:cpu:/docker/512f6b62e3963f85f5abc09b69c370d27ab1dc56549fa8afcbb86eec8663a141
 <span style="color:#bd93f9">1</span>:cpuset:/docker/512f6b62e3963f85f5abc09b69c370d27ab1dc56549fa8afcbb86eec8663a141
-<span style="color:#bd93f9">0</span>::/</code></pre></div>
-<p>cadvisor 会通过查看 <code>/proc/&lt;PID&gt;/cgroup</code> 来获取给定进程的 cgroup，并尝试从对应的 cgroup 中获取 CPU 或内存统计数据。但是由于 Docker Daemon 进程做了绑定挂载，cadvisor 就无法找打容器进程对应的 cgroup。为了解决这个问题，我们在容器内部又做了一次挂载，从 <code>/sys/fs/cgroup/memory</code> 挂载到 <code>/sys/fs/cgroup/memory/docker/&lt;CONTAINER_ID&gt;/</code>（针对所有的 cgroup 子系统），这个方法可以很好的解决这个问题。</p>
+<span style="color:#bd93f9">0</span>::/</code></pre>
+            </div>
+            <p>
+              cadvisor 会通过查看
+              <code>/proc/&lt;PID&gt;/cgroup</code> 来获取给定进程的
+              cgroup，并尝试从对应的 cgroup 中获取 CPU 或内存统计数据。但是由于
+              Docker Daemon 进程做了绑定挂载，cadvisor 就无法找打容器进程对应的
+              cgroup。为了解决这个问题，我们在容器内部又做了一次挂载，从
+              <code>/sys/fs/cgroup/memory</code> 挂载到
+              <code>/sys/fs/cgroup/memory/docker/&lt;CONTAINER_ID&gt;/</code
+              >（针对所有的 cgroup 子系统），这个方法可以很好的解决这个问题。
+            </p>
 
-<p>现在新的解决方法是使用 <a href="http://man7.org/linux/man-pages/man7/cgroup_namespaces.7.html">cgroup namespace</a>，如果你运行在一个内核版本 4.6+ 的 Linux 系统下面，runc 和 docker 都加入了 cgroup 命名空间的支持。但是目前 Kubernetes 暂时还不支持 cgroup 命名空间，但是很快会作为 <a href="https://github.com/kubernetes/enhancements/blob/master/keps/sig-node/20191118-cgroups-v2.md">cgroups v2 支持</a>的一部分。</p>
+            <p>
+              现在新的解决方法是使用
+              <a
+                href="http://man7.org/linux/man-pages/man7/cgroup_namespaces.7.html"
+                >cgroup namespace</a
+              >，如果你运行在一个内核版本 4.6+ 的 Linux 系统下面，runc 和 docker
+              都加入了 cgroup 命名空间的支持。但是目前 Kubernetes 暂时还不支持
+              cgroup 命名空间，但是很快会作为
+              <a
+                href="https://github.com/kubernetes/enhancements/blob/master/keps/sig-node/20191118-cgroups-v2.md"
+                >cgroups v2 支持</a
+              >的一部分。
+            </p>
 
-<h3 id="iptables">IPtables</h3>
+            <h3 id="iptables">IPtables</h3>
 
-<p>在使用的时候我们发现在线上的 Kubernetes 集群运行时，有时候容器内的 Docker Daemon 启动的嵌套容器无法访问外网，但是在本地开发电脑上却可以很正常的工作，大部分开发者应该都会经常遇到这种情况。</p>
+            <p>
+              在使用的时候我们发现在线上的 Kubernetes 集群运行时，有时候容器内的
+              Docker Daemon
+              启动的嵌套容器无法访问外网，但是在本地开发电脑上却可以很正常的工作，大部分开发者应该都会经常遇到这种情况。
+            </p>
 
-<p>最后发现当出现这个问题的时候，来自嵌套的 Docker 容器的数据包并没有打到 iptables 的 POSTROUTING 链，所以没有做 masqueraded。
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+            <p>
+              最后发现当出现这个问题的时候，来自嵌套的 Docker
+              容器的数据包并没有打到 iptables 的 POSTROUTING 链，所以没有做
+              masqueraded。
+              <script
+                async
+                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+              ></script>
 
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-5376999672787220"
-     data-ad-slot="9165834656"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
+              <ins
+                class="adsbygoogle"
+                style="display: block"
+                data-ad-client="ca-pub-5376999672787220"
+                data-ad-slot="9165834656"
+                data-ad-format="auto"
+                data-full-width-responsive="true"
+              ></ins>
+              <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+              </script>
 
-这个问题是因为包含 Docker Daemon 的镜像是基于 <a href="https://www.debian.org/releases/buster/">Debian buster</a> 的，而默认情况下，Debian buster 使用的是 <a href="https://wiki.debian.org/nftables">nftables</a> 作为 iptables 的默认后端，然而 Docker 本身还不支持 nftables。要解决这个问题只需要在容器镜像中切换到 iptables 命令即可。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">RUN update-alternatives --set iptables  /usr/sbin/iptables-legacy <span style="color:#ff79c6">||</span> <span style="color:#8be9fd;font-style:italic">true</span> <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#f1fa8c">\
+              这个问题是因为包含 Docker Daemon 的镜像是基于
+              <a href="https://www.debian.org/releases/buster/"
+                >Debian buster</a
+              >
+              的，而默认情况下，Debian buster 使用的是
+              <a href="https://wiki.debian.org/nftables">nftables</a> 作为
+              iptables 的默认后端，然而 Docker 本身还不支持
+              nftables。要解决这个问题只需要在容器镜像中切换到 iptables
+              命令即可。
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-bash" data-lang="bash">RUN update-alternatives --set iptables  /usr/sbin/iptables-legacy <span style="color:#ff79c6">||</span> <span style="color:#8be9fd;font-style:italic">true</span> <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>    update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy <span style="color:#ff79c6">||</span> <span style="color:#8be9fd;font-style:italic">true</span> <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>    update-alternatives --set arptables /usr/sbin/arptables-legacy <span style="color:#ff79c6">||</span> true</code></pre></div>
-<p>完整的 Dockerfile 文件和启动脚本可以在 GitHub（<a href="https://github.com/jieyu/docker-images/tree/master/dind">https://github.com/jieyu/docker-images/tree/master/dind</a>）上面获取，也可以直接使用 <code>jieyu/dind-buster:v0.1.8</code> 这个镜像来测试。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ docker run --rm --privileged jieyu/dind-buster:v0.1.8 docker run alpine wget baidu.com</code></pre></div>
-<p>在 Kubernetes 集群下使用如下所示的 Pod 资源清单部署即可：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+</span><span style="color:#f1fa8c"></span>    update-alternatives --set arptables /usr/sbin/arptables-legacy <span style="color:#ff79c6">||</span> true</code></pre>
+            </div>
+            <p>
+              完整的 Dockerfile 文件和启动脚本可以在 GitHub（<a
+                href="https://github.com/jieyu/docker-images/tree/master/dind"
+                >https://github.com/jieyu/docker-images/tree/master/dind</a
+              >）上面获取，也可以直接使用
+              <code>jieyu/dind-buster:v0.1.8</code> 这个镜像来测试。
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-bash" data-lang="bash">$ docker run --rm --privileged jieyu/dind-buster:v0.1.8 docker run alpine wget baidu.com</code></pre>
+            </div>
+            <p>在 Kubernetes 集群下使用如下所示的 Pod 资源清单部署即可：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: v1
 kind: Pod
 metadata:
   name: dind
@@ -460,11 +716,25 @@ spec:
       privileged: <span style="color:#ff79c6">true</span>
   volumes:
   - name: varlibdocker
-    emptyDir: {}</code></pre></div>
-<h2 id="在-pod-中运行-kind">在 Pod 中运行 KinD</h2>
+    emptyDir: {}</code></pre>
+            </div>
+            <h2 id="在-pod-中运行-kind">在 Pod 中运行 KinD</h2>
 
-<p>上面我们成功配置了 Docker-in-Docker(DinD)，接下来我们就来在该容器中使用 KinD 启动 Kubernetes 集群。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ docker run -ti --rm --privileged jieyu/dind-buster:v0.1.8 /bin/bash
+            <p>
+              上面我们成功配置了
+              Docker-in-Docker(DinD)，接下来我们就来在该容器中使用 KinD 启动
+              Kubernetes 集群。
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-bash" data-lang="bash">$ docker run -ti --rm --privileged jieyu/dind-buster:v0.1.8 /bin/bash
 Waiting <span style="color:#ff79c6">for</span> dockerd...
 <span style="color:#ff79c6">[</span>root@257b543a91a5 /<span style="color:#ff79c6">]</span><span style="color:#6272a4"># curl -Lso ./kind https://kind.sigs.k8s.io/dl/v0.8.1/kind-$(uname)-amd64</span>
 <span style="color:#ff79c6">[</span>root@257b543a91a5 /<span style="color:#ff79c6">]</span><span style="color:#6272a4"># chmod +x ./kind</span>
@@ -483,13 +753,46 @@ kubectl cluster-info --context kind-kind
 Have a nice day! 👋
 <span style="color:#ff79c6">[</span>root@257b543a91a5 /<span style="color:#ff79c6">]</span><span style="color:#6272a4"># kubectl get nodes</span>
 NAME                 STATUS   ROLES    AGE   VERSION
-kind-control-plane   Ready    master   11m   v1.18.2</code></pre></div>
-<p>由于某些原因可能你用上面的命令下载不了 kind，我们可以想办法提前下载到宿主机上面，然后直接挂载到容器中去也可以，我这里将 kind 和 kubectl 命令都挂载到容器中去，使用下面的命令启动容器即可：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ docker run -it --rm --privileged -v /usr/local/bin/kind:/usr/bin/kind -v /usr/local/bin/kubectl:/usr/bin/kubectl jieyu/dind-buster:v0.1.8 /bin/bash</code></pre></div>
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200612100342.png" alt="kind in docker"><figcaption>kind in docker</figcaption></figure>
+kind-control-plane   Ready    master   11m   v1.18.2</code></pre>
+            </div>
+            <p>
+              由于某些原因可能你用上面的命令下载不了
+              kind，我们可以想办法提前下载到宿主机上面，然后直接挂载到容器中去也可以，我这里将
+              kind 和 kubectl 命令都挂载到容器中去，使用下面的命令启动容器即可：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-bash" data-lang="bash">$ docker run -it --rm --privileged -v /usr/local/bin/kind:/usr/bin/kind -v /usr/local/bin/kubectl:/usr/bin/kubectl jieyu/dind-buster:v0.1.8 /bin/bash</code></pre>
+            </div>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/20200612100342.png"
+                alt="kind in docker"
+              />
+              <figcaption>kind in docker</figcaption>
+            </figure>
 
-<p>可以看到在容器中可以很好的使用 KinD 来创建 Kubernetes 集群。接下来我们直接在 Kubernetes 中来测试一次：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl apply -f dind.yaml
+            <p>
+              可以看到在容器中可以很好的使用 KinD 来创建 Kubernetes
+              集群。接下来我们直接在 Kubernetes 中来测试一次：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-bash" data-lang="bash">$ kubectl apply -f dind.yaml
 $ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -ti dind /bin/bash
 root@dind:/# curl -Lso ./kind https://kind.sigs.k8s.io/dl/v0.7.0/kind-<span style="color:#ff79c6">$(</span>uname<span style="color:#ff79c6">)</span>-amd64
 root@dind:/# chmod +x ./kind
@@ -500,25 +803,91 @@ Creating cluster <span style="color:#f1fa8c">&#34;kind&#34;</span> ...
  ✓ Preparing nodes 📦  
  ✓ Writing configuration 📜 
  ✗ Starting control-plane 🕹️ 
-ERROR: failed to create cluster: failed to init node with kubeadm: <span style="color:#8be9fd;font-style:italic">command</span> <span style="color:#f1fa8c">&#34;docker exec --privileged kind-control-plane kubeadm init --ignore-preflight-errors=all --config=/kind/kubeadm.conf --skip-token-print --v=6&#34;</span> failed with error: <span style="color:#8be9fd;font-style:italic">exit</span> status <span style="color:#bd93f9">137</span></code></pre></div>
-<p>我们可以看到在 Pod 中使用 KinD 来创建集群失败了，这是因为在 KinD 节点嵌套容器内运行的 kubelet 会随机杀死顶层容器内的进程，这其实还是和上面讨论的 cgroups 的挂载有关。</p>
+ERROR: failed to create cluster: failed to init node with kubeadm: <span style="color:#8be9fd;font-style:italic">command</span> <span style="color:#f1fa8c">&#34;docker exec --privileged kind-control-plane kubeadm init --ignore-preflight-errors=all --config=/kind/kubeadm.conf --skip-token-print --v=6&#34;</span> failed with error: <span style="color:#8be9fd;font-style:italic">exit</span> status <span style="color:#bd93f9">137</span></code></pre>
+            </div>
+            <p>
+              我们可以看到在 Pod 中使用 KinD 来创建集群失败了，这是因为在 KinD
+              节点嵌套容器内运行的 kubelet
+              会随机杀死顶层容器内的进程，这其实还是和上面讨论的 cgroups
+              的挂载有关。
+            </p>
 
-<p>但其实我自己在使用 v0.8.1 版本的 KinD 的时候，在上面的 Pod 中是可以正常创建集群的，不知道是否是 KinD 搭建的集群有什么特殊处理，这里需要再深入研究：</p>
+            <p>
+              但其实我自己在使用 v0.8.1 版本的 KinD 的时候，在上面的 Pod
+              中是可以正常创建集群的，不知道是否是 KinD
+              搭建的集群有什么特殊处理，这里需要再深入研究：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200612114709.png" alt="kind in pod"><figcaption>kind in pod</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/20200612114709.png"
+                alt="kind in pod"
+              />
+              <figcaption>kind in pod</figcaption>
+            </figure>
 
-<p>如果你在使用的过程中也遇到了上述的问题，则可以继续往下看解决方案。</p>
+            <p>
+              如果你在使用的过程中也遇到了上述的问题，则可以继续往下看解决方案。
+            </p>
 
-<p>当顶层容器（DIND）在 Kubernetes  Pod 中运行的时候，对于每个 cgroup 子系统（比如内存），从宿主机的角度来看，它的 cgroup 路径是 <code>/kubepods/burstable/&lt;POD_ID&gt;/&lt;DIND_CID&gt;</code>。</p>
+            <p>
+              当顶层容器（DIND）在 Kubernetes Pod 中运行的时候，对于每个 cgroup
+              子系统（比如内存），从宿主机的角度来看，它的 cgroup 路径是
+              <code>/kubepods/burstable/&lt;POD_ID&gt;/&lt;DIND_CID&gt;</code>。
+            </p>
 
-<p>当 KinD 在 DIND 容器内的嵌套节点容器内启动 kubelet 的时候，kubelet 将在 <code>/kubepods/burstable/</code> 下相对于嵌套 KIND 节点容器的根 cgroup 为其 Pods 来操作 cgroup。从宿主机的角度来看，cgroup 路径就是 <code>/kubepods/burstable/&lt;POD_ID&gt;/&lt;DIND_CID&gt;/docker/&lt;KIND_CID&gt;/kubepods/burstable/</code>。</p>
+            <p>
+              当 KinD 在 DIND 容器内的嵌套节点容器内启动 kubelet 的时候，kubelet
+              将在 <code>/kubepods/burstable/</code> 下相对于嵌套 KIND
+              节点容器的根 cgroup 为其 Pods 来操作
+              cgroup。从宿主机的角度来看，cgroup 路径就是
+              <code
+                >/kubepods/burstable/&lt;POD_ID&gt;/&lt;DIND_CID&gt;/docker/&lt;KIND_CID&gt;/kubepods/burstable/</code
+              >。
+            </p>
 
-<p>这些都是正确的，但是在嵌套的 KinD 节点容器中，有另一个 cgroup 存在于 <code>/kubepods/burstable/&lt;POD_ID&gt;/&lt;DIND_CID&gt;/docker/&lt;DIND_CID&gt;</code>下面，相对于嵌套的 KinD 节点容器的根 cgroup，在 kubelet 启动之前就存在了，这是上面我们讨论过的 cgroups 挂载造成的，通过 KinD entrypoint 脚本设置。而如果你在 KinD 节点容器里面做一个 <code>cat /kubepods/burstable/&lt;POD_ID&gt;/docker/&lt;DIND_CID&gt;/tasks</code>，你会看到 DinD 容器的进程。</p>
+            <p>
+              这些都是正确的，但是在嵌套的 KinD 节点容器中，有另一个 cgroup
+              存在于
+              <code
+                >/kubepods/burstable/&lt;POD_ID&gt;/&lt;DIND_CID&gt;/docker/&lt;DIND_CID&gt;</code
+              >下面，相对于嵌套的 KinD 节点容器的根 cgroup，在 kubelet
+              启动之前就存在了，这是上面我们讨论过的 cgroups 挂载造成的，通过
+              KinD entrypoint 脚本设置。而如果你在 KinD 节点容器里面做一个
+              <code
+                >cat
+                /kubepods/burstable/&lt;POD_ID&gt;/docker/&lt;DIND_CID&gt;/tasks</code
+              >，你会看到 DinD 容器的进程。
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200612111432.png" alt="k8s in k8s"><figcaption>k8s in k8s</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/20200612111432.png"
+                alt="k8s in k8s"
+              />
+              <figcaption>k8s in k8s</figcaption>
+            </figure>
 
-<p>这就是最根本的原因，KinD 节点容器里面的 kubelet 看到了这个 cgroup，以为应该由它来管理，但是却找不到和这个 cgroup 相关联的 Pod，所以就会尝试来杀死属于这个 cgroup 的进程来删除这个 cgroup。这个操作的结果就是随机进程被杀死。解决这个问题的方法可以通过设置 kubelet 的<code>--cgroup-root</code> 参数，通过该标志来指示 KinD 节点容器内的 kubelet 为其 Pods 使用不通的 cgroup 根路径（比如 /kubelet）。这样就可以在 Kubernetes 集群中来启动 KinD 集群了，我们可以通过下面的 YAML 资源清单文件来修复这个问题。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+            <p>
+              这就是最根本的原因，KinD 节点容器里面的 kubelet 看到了这个
+              cgroup，以为应该由它来管理，但是却找不到和这个 cgroup 相关联的
+              Pod，所以就会尝试来杀死属于这个 cgroup 的进程来删除这个
+              cgroup。这个操作的结果就是随机进程被杀死。解决这个问题的方法可以通过设置
+              kubelet 的<code>--cgroup-root</code> 参数，通过该标志来指示 KinD
+              节点容器内的 kubelet 为其 Pods 使用不通的 cgroup 根路径（比如
+              /kubelet）。这样就可以在 Kubernetes 集群中来启动 KinD
+              集群了，我们可以通过下面的 YAML 资源清单文件来修复这个问题。
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: v1
 kind: Pod
 metadata:
   name: kind-cluster
@@ -562,14 +931,37 @@ spec:
     emptyDir: {}
   - name: libmodules
     hostPath:
-      path: /lib/modules</code></pre></div>
-<p>使用上面的资源清单文件创建完成后，稍等一会儿我们就可以进入 Pod 中来验证。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -ti kind-cluster /bin/bash
+      path: /lib/modules</code></pre>
+            </div>
+            <p>
+              使用上面的资源清单文件创建完成后，稍等一会儿我们就可以进入 Pod
+              中来验证。
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-bash" data-lang="bash">$ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -ti kind-cluster /bin/bash
 root@kind-cluster:/# kubectl get nodes
 NAME                 STATUS   ROLES    AGE   VERSION                                                                                                                   
-kind-control-plane   Ready    master   72s   v1.17.0</code></pre></div>
-<p>同样也可以直接使用 Docker CLI 来进行测试：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ docker run -ti --rm --privileged jieyu/kind-cluster-buster:v0.1.0 /bin/bash
+kind-control-plane   Ready    master   72s   v1.17.0</code></pre>
+            </div>
+            <p>同样也可以直接使用 Docker CLI 来进行测试：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-bash" data-lang="bash">$ docker run -ti --rm --privileged jieyu/kind-cluster-buster:v0.1.0 /bin/bash
 Waiting <span style="color:#ff79c6">for</span> dockerd...
 Setting up KIND cluster
 Creating cluster <span style="color:#f1fa8c">&#34;kind&#34;</span> ...
@@ -588,178 +980,272 @@ Have a nice day! 👋
 root@d95fa1302557:/# kubectl get nodes
 NAME                 STATUS   ROLES    AGE   VERSION
 kind-control-plane   Ready    master   71s   v1.17.0
-root@d95fa1302557:/#</code></pre></div>
-<blockquote>
-<p>上面镜像对应的 Dockerfile 和启动脚本地址：<a href="https://github.com/jieyu/docker-images/tree/master/kind-cluster">https://github.com/jieyu/docker-images/tree/master/kind-cluster</a></p>
-</blockquote>
+root@d95fa1302557:/#</code></pre>
+            </div>
+            <blockquote>
+              <p>
+                上面镜像对应的 Dockerfile 和启动脚本地址：<a
+                  href="https://github.com/jieyu/docker-images/tree/master/kind-cluster"
+                  >https://github.com/jieyu/docker-images/tree/master/kind-cluster</a
+                >
+              </p>
+            </blockquote>
 
-<p>下图是我在 KinD 搭建的 Kubernetes 集群中，创建的一个 Pod，然后在 Pod 中创建的一个独立的 Kubernetes 集群最终效果：</p>
+            <p>
+              下图是我在 KinD 搭建的 Kubernetes 集群中，创建的一个 Pod，然后在
+              Pod 中创建的一个独立的 Kubernetes 集群最终效果：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200612115324.png" alt="k8s in k8s"><figcaption>k8s in k8s</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/20200612115324.png"
+                alt="k8s in k8s"
+              />
+              <figcaption>k8s in k8s</figcaption>
+            </figure>
 
-<h2 id="总结">总结</h2>
+            <h2 id="总结">总结</h2>
 
-<p>在实现上面功能的时候，过程中还是遇到了不少的障碍，其中大部分都是因为 Docker 容器没有提供和宿主机完全隔离的功能造成的，某些内核资源比如 cgroups 是在内核中共享的，如果很多容器同时操作它们，也可能会造成潜在的冲突。但是一旦解决了这些问题，我们就可以非常方便的在 Kubernetes 集群 Pod 中轻松地运行一个独立的 Kubernetes 集群了，这应该算真正的 Kubernetes IN Kubernetes 了吧~</p>
+            <p>
+              在实现上面功能的时候，过程中还是遇到了不少的障碍，其中大部分都是因为
+              Docker 容器没有提供和宿主机完全隔离的功能造成的，某些内核资源比如
+              cgroups
+              是在内核中共享的，如果很多容器同时操作它们，也可能会造成潜在的冲突。但是一旦解决了这些问题，我们就可以非常方便的在
+              Kubernetes 集群 Pod 中轻松地运行一个独立的 Kubernetes
+              集群了，这应该算真正的 Kubernetes IN Kubernetes 了吧~
+            </p>
 
-<blockquote>
-<p>原文链接：<a href="https://d2iq.com/blog/running-kind-inside-a-kubernetes-cluster-for-continuous-integration?utm_sq=gf2bqwb34d">https://d2iq.com/blog/running-kind-inside-a-kubernetes-cluster-for-continuous-integration</a></p>
-</blockquote>
+            <blockquote>
+              <p>
+                原文链接：<a
+                  href="https://d2iq.com/blog/running-kind-inside-a-kubernetes-cluster-for-continuous-integration?utm_sq=gf2bqwb34d"
+                  >https://d2iq.com/blog/running-kind-inside-a-kubernetes-cluster-for-continuous-integration</a
+                >
+              </p>
+            </blockquote>
 
-<p><a href="https://youdianzhishi.com/web/course/1030" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+            <p>
+              <a
+                href="https://youdianzhishi.com/web/course/1030"
+                title="从 Docker 到 Kubernetes 进阶课程"
+                ><img
+                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
+                  alt="Kubernetes进阶训练营"
+              /></a>
+            </p>
 
+            <h2>微信公众号</h2>
+            <p>
+              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+              kubernetes 讨论群里面共同学习。
+            </p>
+            <img
+              src="https://picdn.youdianzhishi.com/images/qrcode.png"
+              alt="wechat-account-qrcode"
+            />
 
-          <h2>微信公众号</h2>
-<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
-
-  
-          
             <div class="entry-shang text-center">
-    <p>「真诚赞赏，手留余香」</p>
-    <button class="zs show-zs btn btn-bred">赞赏</button>
-</div>
-<div class="zs-modal-bg"></div>
-<div class="zs-modal-box">
-    <div class="zs-modal-head">
-        <button type="button" class="close">×</button>
-        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
-        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-    </div>
-    <div class="zs-modal-body">
-        <div class="zs-modal-btns">
-            <button class="btn btn-blink" data-num="2">2元</button>
-            <button class="btn btn-blink" data-num="5">5元</button>
-            <button class="btn btn-blink" data-num="10">10元</button>
-            <button class="btn btn-blink" data-num="50">50元</button>
-            <button class="btn btn-blink" data-num="100">100元</button>
-            <button class="btn btn-blink" data-num="1">任意金额</button>
-        </div>
-        <div class="zs-modal-pay">
-            <button class="btn btn-bred" id="pay-text">2元</button>
-            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
-        </div>
-    </div>
-    <div class="zs-modal-footer">
-        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
-    </div>
-</div>
-          
-          
-            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
-    <center>
-    <a href="#" class="social-share-icon icon-weibo"></a>
-    <a href="#" class="social-share-icon icon-wechat"></a>
-    <a href="#" class="social-share-icon icon-twitter"></a>
-    <a href="#" class="social-share-icon icon-linkedin"></a>
-    <a href="#" class="social-share-icon icon-facebook"></a>
-    <a href="#" class="social-share-icon icon-qq"></a>
-    <a href="#" class="social-share-icon icon-qzone"></a>
-    </center>
-</div>
+              <p>「真诚赞赏，手留余香」</p>
+              <button class="zs show-zs btn btn-bred">赞赏</button>
+            </div>
+            <div class="zs-modal-bg"></div>
+            <div class="zs-modal-box">
+              <div class="zs-modal-head">
+                <button type="button" class="close">×</button>
+                <span class="author"
+                  ><img
+                    src="https://www.qikqiak.com/img/avatar.jpeg"
+                  />阳明</span
+                >
+                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+              </div>
+              <div class="zs-modal-body">
+                <div class="zs-modal-btns">
+                  <button class="btn btn-blink" data-num="2">2元</button>
+                  <button class="btn btn-blink" data-num="5">5元</button>
+                  <button class="btn btn-blink" data-num="10">10元</button>
+                  <button class="btn btn-blink" data-num="50">50元</button>
+                  <button class="btn btn-blink" data-num="100">100元</button>
+                  <button class="btn btn-blink" data-num="1">任意金额</button>
+                </div>
+                <div class="zs-modal-pay">
+                  <button class="btn btn-bred" id="pay-text">2元</button>
+                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+                  <img
+                    src="https://www.qikqiak.com/img/wechat-2.png"
+                    id="pay-image"
+                  />
+                </div>
+              </div>
+              <div class="zs-modal-footer">
+                <span class="zs-wechat"
+                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
+                /></span>
+              </div>
+            </div>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+            <div
+              class="social-share"
+              data-initialized="true"
+              style="margin-bottom: 20px; margin-top: 20px"
+            >
+              <center>
+                <a href="#" class="social-share-icon icon-weibo"></a>
+                <a href="#" class="social-share-icon icon-wechat"></a>
+                <a href="#" class="social-share-icon icon-twitter"></a>
+                <a href="#" class="social-share-icon icon-linkedin"></a>
+                <a href="#" class="social-share-icon icon-facebook"></a>
+                <a href="#" class="social-share-icon icon-qq"></a>
+                <a href="#" class="social-share-icon icon-qzone"></a>
+              </center>
+            </div>
 
-          
-        </article>
-  
-        
-          
+            <link
+              rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
+            />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+          </article>
 
-<h3>相关文章</h3>
-<ul style="margin-bottom: 25px;">
-    
-    <li><a href="https://www.qikqiak.com/post/deploy-k8s-on-win-use-wsl2/">在 Windows 下使用 WSL2 搭建 Kubernetes 集群</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/speed-up-develop-flow-dockerfile-best-practices/">加速开发流程的 Dockerfile 最佳实践</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/get-client-realip/">获取客户端访问真实 IP</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/capabilities-on-k8s/">在 Kubernetes 中配置 Container Capabilities</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/">在 Kubernetes 上安装 Gitlab</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/harbor-quick-install/">在 Kubernetes 在快速安装 Harbor</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/harbor-code-analysis/">Harbor 源码浅析</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/dockerfile-best-practice/">Dockerfile 最佳实践</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/pod-init-container/">初始化容器</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/write-kubernets-golang-service-step-by-step/">手摸手教你写 Kubernetes 的 golang 服务</a></li>
-    
-</ul>
+          <h3>相关文章</h3>
+          <ul style="margin-bottom: 25px">
+            <li>
+              <a href="https://www.qikqiak.com/post/deploy-k8s-on-win-use-wsl2/"
+                >在 Windows 下使用 WSL2 搭建 Kubernetes 集群</a
+              >
+            </li>
 
-        
-  
-        
-        <ul class="pager blog-pager">
-          
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/speed-up-develop-flow-dockerfile-best-practices/"
+                >加速开发流程的 Dockerfile 最佳实践</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/get-client-realip/"
+                >获取客户端访问真实 IP</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/capabilities-on-k8s/"
+                >在 Kubernetes 中配置 Container Capabilities</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/"
+                >在 Kubernetes 上安装 Gitlab</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/harbor-quick-install/"
+                >在 Kubernetes 在快速安装 Harbor</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/harbor-code-analysis/"
+                >Harbor 源码浅析</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/dockerfile-best-practice/"
+                >Dockerfile 最佳实践</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/pod-init-container/"
+                >初始化容器</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/write-kubernets-golang-service-step-by-step/"
+                >手摸手教你写 Kubernetes 的 golang 服务</a
+              >
+            </li>
+          </ul>
+
+          <ul class="pager blog-pager">
             <li class="previous">
-              <a href="https://www.qikqiak.com/post/deploy-k8s-on-win-use-wsl2/" data-toggle="tooltip" data-placement="top" title="在 Windows 下使用 WSL2 搭建 Kubernetes 集群">&larr; 前一篇</a>
+              <a
+                href="https://www.qikqiak.com/post/deploy-k8s-on-win-use-wsl2/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="在 Windows 下使用 WSL2 搭建 Kubernetes 集群"
+                >&larr; 前一篇</a
+              >
             </li>
-          
-          
-            <li class="next">
-              <a href="https://www.qikqiak.com/post/status-in-pv-pvc/" data-toggle="tooltip" data-placement="top" title="Kubernetes 中 PV 和 PVC 的状态变化">后一篇 &rarr;</a>
-            </li>
-          
-        </ul>
-        
 
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-        
-        <ins class="adsbygoogle"
-            style="display:block"
+            <li class="next">
+              <a
+                href="https://www.qikqiak.com/post/status-in-pv-pvc/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="Kubernetes 中 PV 和 PVC 的状态变化"
+                >后一篇 &rarr;</a
+              >
+            </li>
+          </ul>
+
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+          ></script>
+
+          <ins
+            class="adsbygoogle"
+            style="display: block"
             data-ad-client="ca-pub-5376999672787220"
             data-ad-slot="3700507799"
             data-ad-format="auto"
-            data-full-width-responsive="true"></ins>
-        <script>
+            data-full-width-responsive="true"
+          ></ins>
+          <script>
             (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
-  
-        
-    <div id="gitalk-container"></div>
-    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-    <script>
-    var gitalk = new Gitalk({
-        clientID: 'bdb76dbb2e9d0786e350',
-        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
-        repo: 'blog',
-        owner: 'cnych',
-        admin: ['cnych'],
-        labels: ['gitment'],
-        title: '在 Kubernetes 中运行 Kubernetes',
-        createIssueManually: true,
-        id: 'k8s-in-k8s',      
-        distractionFreeMode: true  
-    });
-    gitalk.render('gitalk-container');
-</script>
+          </script>
 
-
-        
-          
-
-        
-  
+          <div id="gitalk-container"></div>
+          <link
+            rel="stylesheet"
+            href="https://unpkg.com/gitalk/dist/gitalk.css"
+          />
+          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+          <script>
+            var gitalk = new Gitalk({
+              clientID: "bdb76dbb2e9d0786e350",
+              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
+              repo: "blog",
+              owner: "cnych",
+              admin: ["cnych"],
+              labels: ["gitment"],
+              title: "在 Kubernetes 中运行 Kubernetes",
+              createIssueManually: true,
+              id: "k8s-in-k8s",
+              distractionFreeMode: true,
+            });
+            gitalk.render("gitalk-container");
+          </script>
+        </div>
       </div>
-    
-    
-  </div>
-</div>
+    </div>
 
     <footer>
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <ul class="list-inline text-center footer-links">
-          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
-          
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <ul class="list-inline text-center footer-links">
+              <img
+                src="https://www.qikqiak.com/img/wechatmp.png"
+                alt="k8s技术圈"
+              />
+
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -768,7 +1254,7 @@ root@d95fa1302557:/#</code></pre></div>
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -777,7 +1263,7 @@ root@d95fa1302557:/#</code></pre></div>
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -786,7 +1272,7 @@ root@d95fa1302557:/#</code></pre></div>
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -795,121 +1281,158 @@ root@d95fa1302557:/#</code></pre></div>
                   </span>
                 </a>
               </li>
-          
-          
-          <li>
-            <a href="https://www.qikqiak.com/index.xml" title="RSS">
-              <span class="fa-stack fa-lg">
-                <i class="fa fa-circle fa-stack-2x"></i>
-                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+
+              <li>
+                <a href="https://www.qikqiak.com/index.xml" title="RSS">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+            </ul>
+            <p class="credits copyright text-muted">
+              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/">阳明的博客</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/archive/">归档</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/friend/">友链</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://beian.miit.gov.cn/" target="_blank"
+                >蜀ICP备11027319号-5</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
+                >kubernetes.io</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
+                >Kubernetes中文社区</a
+              >
+            </p>
+            <p class="text-center text-muted">
+              <script
+                async
+                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
+              ></script>
+              <span id="busuanzi_container_site_pv" style="display: none">
+                本站总访问量<span id="busuanzi_value_site_pv"></span>次
               </span>
-            </a>
-          </li>
-          
-        </ul>
-        <p class="credits copyright text-muted">
-          
+              &nbsp;&bull;&nbsp;
+              <span id="busuanzi_container_site_uv" style="display: none">
+                访客数<span id="busuanzi_value_site_uv"></span>人次
+              </span>
+            </p>
 
-          &nbsp;&bull;&nbsp;
-          2023
-
-          
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/">阳明的博客</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/archive/">归档</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/friend/">友链</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
-          
-        </p>
-        <p class="text-center text-muted">
-          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-          <span id="busuanzi_container_site_pv" style="display:none">
-            本站总访问量<span id="busuanzi_value_site_pv"></span>次
-          </span>
-          &nbsp;&bull;&nbsp;
-          <span id="busuanzi_container_site_uv" style="display:none">
-            访客数<span id="busuanzi_value_site_uv"></span>人次
-          </span>
-        </p>
-        
-        <p class="credits theme-by text-muted">
-          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
-          
-        </p>
+            <p class="credits theme-by text-muted">
+              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
+              &nbsp;&bull;&nbsp; 主题
+              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+              移植自
+              <a href="https://github.com/rootsongjc/beautifulhugo"
+                >Beautiful Hugo</a
+              >
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</footer>
+    </footer>
 
+    <script
+      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
+      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
+    ></script>
 
-<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "UA-69668147-3");
+    </script>
+    <script>
+      (function () {
+        var bp = document.createElement("script");
+        var curProtocol = window.location.protocol.split(":")[0];
+        if (curProtocol === "https") {
+          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
+        } else {
+          bp.src = "http://push.zhanzhang.baidu.com/push.js";
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+      })();
+    </script>
+    <script>
+      $(document).ready(function () {
+        var int = setInterval(fixCount, 50);
 
-
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-69668147-3');
-</script>
-<script>
-(function(){
-    var bp = document.createElement('script');
-    var curProtocol = window.location.protocol.split(':')[0];
-    if (curProtocol === 'https') {
-        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
-    }
-    else {
-        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
-    }
-    var s = document.getElementsByTagName("script")[0];
-    s.parentNode.insertBefore(bp, s);
-})();
-</script>
-<script >
-$(document).ready(function() {
-  var int = setInterval(fixCount, 50);  
-  
-  var initPVCount = 584976;
-  var initUVCount = 153191;
-  function fixCount() {                   
-    if ($("#busuanzi_container_site_pv").css("display") != "none") {
-        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
-        clearInterval(int); 
-    }
-    if ($("#busuanzi_container_site_uv").css("display") != "none") {
-      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
-      clearInterval(int); 
-    }  
-  }           
-});
-</script>
- <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
-<script type="text/javascript">
-$('.carousel').slick({
-    dots: true,
-    arrows: true,
-    autoplay: true,
-    autoplaySpeed: 4000,
-    infinite: true,
-    speed: 500,
-    fade: true,
-    cssEase: 'linear',
-    centerMode: true,
-    prevArrow: '<button type="button" class="slick-prev"></button>',
-    nextArrow: '<button type="button" class="slick-next"></button>',
-});
-</script>
-
+        var initPVCount = 584976;
+        var initUVCount = 153191;
+        function fixCount() {
+          if ($("#busuanzi_container_site_pv").css("display") != "none") {
+            $("#busuanzi_value_site_pv").html(
+              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
+            );
+            clearInterval(int);
+          }
+          if ($("#busuanzi_container_site_uv").css("display") != "none") {
+            $("#busuanzi_value_site_uv").html(
+              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
+            );
+            clearInterval(int);
+          }
+        }
+      });
+    </script>
+    <script>
+      (function (w, d, s, id) {
+        if (typeof w.webpushr !== "undefined") return;
+        w.webpushr =
+          w.webpushr ||
+          function () {
+            (w.webpushr.q = w.webpushr.q || []).push(arguments);
+          };
+        var js,
+          fjs = d.getElementsByTagName(s)[0];
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "https://cdn.webpushr.com/app.min.js";
+        fjs.parentNode.appendChild(js);
+      })(window, document, "script", "webpushr-jssdk");
+      webpushr(
+        "init",
+        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
+      );
+    </script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
+    ></script>
+    <script type="text/javascript">
+      $(".carousel").slick({
+        dots: true,
+        arrows: true,
+        autoplay: true,
+        autoplaySpeed: 4000,
+        infinite: true,
+        speed: 500,
+        fade: true,
+        cssEase: "linear",
+        centerMode: true,
+        prevArrow: '<button type="button" class="slick-prev"></button>',
+        nextArrow: '<button type="button" class="slick-next"></button>',
+      });
+    </script>
   </body>
 </html>
-

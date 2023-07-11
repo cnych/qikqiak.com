@@ -1,782 +1,1436 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
 
+    <title>
+      提高 kubectl
+      使用生产力[译]-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
+    </title>
+    <meta property="og:title" content="提高 kubectl 使用生产力[译]" />
+    <meta name="twitter:title" content="提高 kubectl 使用生产力[译]" />
 
-  <title>提高 kubectl 使用生产力[译]-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
-  <meta property="og:title" content="提高 kubectl 使用生产力[译]" />
-  <meta name="twitter:title" content="提高 kubectl 使用生产力[译]" />
+    <meta
+      name="description"
+      content="我们知道在使用 Kubernetes 的过程中，kubectl 工具可能是最常用的工具了（可能还没有之一），所以当我们花费大量的时间在使用 kubectl 上面的时候，那么我们就非常有必要去了解下如何高效的使用它了。
 
-  <meta name="description" content="我们知道在使用 Kubernetes 的过程中，kubectl 工具可能是最常用的工具了（可能还没有之一），所以当我们花费大量的时间在使用 kubectl 上面的时候，那么我们就非常有必要去了解下如何高效的使用它了。
+本文包含一系列提示和技巧，可以让你更加高效的使用 kubectl，同时还可以加深你对 Kubernetes 各方面工作原理的理解。"
+    />
+    <meta
+      property="og:description"
+      content="我们知道在使用 Kubernetes 的过程中，kubectl 工具可能是最常用的工具了（可能还没有之一），所以当我们花费大量的时间在使用 kubectl 上面的时候，那么我们就非常有必要去了解下如何高效的使用它了。
 
-本文包含一系列提示和技巧，可以让你更加高效的使用 kubectl，同时还可以加深你对 Kubernetes 各方面工作原理的理解。">
-  <meta property="og:description" content="我们知道在使用 Kubernetes 的过程中，kubectl 工具可能是最常用的工具了（可能还没有之一），所以当我们花费大量的时间在使用 kubectl 上面的时候，那么我们就非常有必要去了解下如何高效的使用它了。
+本文包含一系列提示和技巧，可以让你更加高效的使用 kubectl，同时还可以加深你对 Kubernetes 各方面工作原理的理解。"
+    />
+    <meta
+      name="twitter:description"
+      content="我们知道在使用 Kubernetes 的过程中，kubectl 工具可能是最常用的工具了（可能还没有之一），所以当我们花费大量的时间在使用 kubectl 上面的时候，那么我们就非常有必要去了解下如何高效的使用它了。
 
-本文包含一系列提示和技巧，可以让你更加高效的使用 kubectl，同时还可以加深你对 Kubernetes 各方面工作原理的理解。">
-  <meta name="twitter:description" content="我们知道在使用 Kubernetes 的过程中，kubectl 工具可能是最常用的工具了（可能还没有之一），所以当我们花费大量的时间在使用 kubectl 上面的时候，那么我们就非常有必要去了解下如何高效的使用它了。
+本文包含一系列提示和技巧，可以让你更加高效的使用 kubectl，同时还可以加深你对 Kubernetes 各方面工作原理的理解。"
+    />
+    <meta name="author" content="" />
+    <link
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+      rel="icon"
+      type="image/x-icon"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      property="og:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      name="twitter:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta
+      property="og:url"
+      content="https://www.qikqiak.com/post/boosting-kubeclt-productivity/"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="阳明的博客" />
 
-本文包含一系列提示和技巧，可以让你更加高效的使用 kubectl，同时还可以加深你对 Kubernetes 各方面工作原理的理解。">
-  <meta name="author" content=""/>
-  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
-  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
-  <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://www.qikqiak.com/post/boosting-kubeclt-productivity/" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="阳明的博客" />
+    <meta name="generator" content="Hugo 0.55.6" />
+    <link
+      rel="canonical"
+      href="https://www.qikqiak.com/post/boosting-kubeclt-productivity/"
+    />
+    <link
+      rel="alternate"
+      href="https://www.qikqiak.com/index.xml"
+      type="application/rss+xml"
+      title="阳明的博客"
+    />
 
-  <meta name="generator" content="Hugo 0.55.6" />
-  <link rel="canonical" href="https://www.qikqiak.com/post/boosting-kubeclt-productivity/" />
-  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+    <link
+      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
+      rel="stylesheet"
+    />
 
-  
-  
-  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
-  
+    <link
+      rel="stylesheet"
+      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
+      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
+    />
 
-  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
+    />
 
-  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
-  
-  
-    
     <!--[if lt IE 9]>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+        rel="stylesheet"
+      />
     <![endif]-->
-<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
-<meta name="baidu-site-verification" content="F5ojAyqaKU" />
-<meta name="keywords" content="kubernetes, docker, kubectl, 效率">
-<script>
-var _hmt = _hmt || [];
-(function() {
-  var hm = document.createElement("script");
-  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-  var s = document.getElementsByTagName("script")[0];
-  s.parentNode.insertBefore(hm, s);
-})();
-</script>
+    <meta
+      name="google-site-verification"
+      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
+    />
+    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
+    <meta name="keywords" content="kubernetes, docker, kubectl, 效率" />
+    <script>
+      var _hmt = _hmt || [];
+      (function () {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
 
+    <script type="application/javascript">
+      var doNotTrack = false;
+      if (!doNotTrack) {
+        window.ga =
+          window.ga ||
+          function () {
+            (ga.q = ga.q || []).push(arguments);
+          };
+        ga.l = +new Date();
+        ga("create", "UA-69668147-3", "auto");
 
-
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-	ga('create', 'UA-69668147-3', 'auto');
-	
-	ga('send', 'pageview');
-}
-</script>
-<script async src='https://www.google-analytics.com/analytics.js'></script>
-
-</head>
+        ga("send", "pageview");
+      }
+    </script>
+    <script async src="https://www.google-analytics.com/analytics.js"></script>
+  </head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
-        <span class="sr-only">切换导航</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
-        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
-      </a>
-    </div>
+      <div class="container">
+        <div class="navbar-header">
+          <button
+            type="button"
+            class="navbar-toggle"
+            data-toggle="collapse"
+            data-target="#main-navbar"
+          >
+            <span class="sr-only">切换导航</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a
+            class="navbar-brand"
+            href="https://www.qikqiak.com/"
+            title="阳明的博客"
+          >
+            <img
+              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
+              style="margin-top: -5px; height: 32px"
+              alt="阳明的博客"
+            />
+          </a>
+        </div>
 
-    <div class="collapse navbar-collapse" id="main-navbar">
-      <ul class="nav navbar-nav navbar-right">
-        
-          
+        <div class="collapse navbar-collapse" id="main-navbar">
+          <ul class="nav navbar-nav navbar-right">
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-          
-        
-          
+
             <li>
-              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+              <a
+                title="课程"
+                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
+                >课程</a
+              >
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/archives">Archive</a>
-                
-                  <a href="https://www.qikqiak.com/tags">tags</a>
-                
-                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-                
-                  <a href="https://www.qikqiak.com/tags/python">python</a>
-                
-                  <a href="https://www.qikqiak.com/tags/django">django</a>
-                
-                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
-                
+                <a href="https://www.qikqiak.com/archives">Archive</a>
+
+                <a href="https://www.qikqiak.com/tags">tags</a>
+
+                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+
+                <a href="https://www.qikqiak.com/tags/python">python</a>
+
+                <a href="https://www.qikqiak.com/tags/django">django</a>
+
+                <a href="https://www.qikqiak.com/tags/devops">devops</a>
               </div>
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-                
-                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-                
-                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-                
-                  <a href="https://md.qikqiak.com/">Markdown微信</a>
-                
+                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+
+                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+
+                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+
+                <a href="https://md.qikqiak.com/">Markdown微信</a>
               </div>
             </li>
-          
-        
-          
+
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+              <a title="关于" href="https://www.qikqiak.com/page/about/"
+                >关于</a
+              >
             </li>
-          
-        
-          
+
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
-          
-        
 
-        
-
-        
-
-        
-          <li>
-            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
-              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
-            </a>
-          </li>
-          
-
-      </ul>
-    </div>
-
-  </div>
-</nav>
-
-
-  <div id="modalSearch" class="modal fade" role="dialog">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-          <h4 class="modal-title">搜索</h4>
+            <li>
+              <a
+                href="#modalSearch"
+                data-toggle="modal"
+                data-target="#modalSearch"
+                style="outline: none"
+              >
+                <span
+                  id="searchGlyph"
+                  class="glyphicon glyphicon-search"
+                ></span>
+              </a>
+            </li>
+          </ul>
         </div>
-        <div class="modal-body">
-            
-<div class="aa-input-container" id="aa-input-container">
-    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
-    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
-    </svg>
-</div>
-<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+      </div>
+    </nav>
 
-<script>
-var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
-var index = client.initIndex('prod_blog');
+    <div id="modalSearch" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">
+              &times;
+            </button>
+            <h4 class="modal-title">搜索</h4>
+          </div>
+          <div class="modal-body">
+            <div class="aa-input-container" id="aa-input-container">
+              <input
+                type="search"
+                id="aa-search-input"
+                class="aa-input-search"
+                placeholder="Search for titles or URIs..."
+                name="search"
+                autocomplete="off"
+              />
+              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+                <path
+                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
+                />
+              </svg>
+            </div>
+            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-autocomplete('#aa-search-input',
-{ hint: false}, {
-    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
-    
-    displayKey: 'name',
-    
-    templates: {
-        
-        suggestion: function(suggestion) {
-            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
-            suggestion._highlightResult.title.value + '</a></span>';
-        }
-    }
-});
-</script>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+            <script>
+              var client = algoliasearch(
+                "1JDRAS0AZR",
+                "8804ac109158bb3bb60d74ce98fa332f"
+              );
+              var index = client.initIndex("prod_blog");
+
+              autocomplete(
+                "#aa-search-input",
+                { hint: false },
+                {
+                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
+
+                  displayKey: "name",
+
+                  templates: {
+                    suggestion: function (suggestion) {
+                      return (
+                        "<span>" +
+                        '<a href="https://www.qikqiak.com/post/' +
+                        suggestion.slug +
+                        '">' +
+                        suggestion._highlightResult.title.value +
+                        "</a></span>"
+                      );
+                    },
+                  },
+                }
+              );
+            </script>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">
+              close
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-    
-  
-  
-  
+    <div
+      id="header-big-imgs"
+      data-num-img="1"
+      data-img-src-1="https://picdn.youdianzhishi.com/images/photo-1563713665854-e72327bf780e.jpeg"
+      data-img-desc-1="https://unsplash.com/photos/pwkHJXr01bQ"
+    ></div>
 
-
-
-
-  
-    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1563713665854-e72327bf780e.jpeg" data-img-desc-1="https://unsplash.com/photos/pwkHJXr01bQ"></div>
-  
-
-  <header class="header-section has-img">
-    
+    <header class="header-section has-img">
       <div class="intro-header big-img">
-        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>提高 kubectl 使用生产力[译]</h1>
-                  
-                  
-                    <span class="post-meta">
-  
-    发表于 July 22, 2019
-  
-  
-</span>
 
-
-                  
+                <span class="post-meta"> 发表于 July 22, 2019 </span>
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline;"></span>
+        <span class="img-desc" style="display: inline"></span>
       </div>
-    
-    
-    
-    <div class="intro-header no-img">
-      
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <div class="post-heading">
-              <h1>提高 kubectl 使用生产力[译]</h1>
-                
-                
-                  <span class="post-meta">
-  
-    发表于 July 22, 2019
-  
-  
-</span>
 
+      <div class="intro-header no-img">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>提高 kubectl 使用生产力[译]</h1>
 
-                
+                <span class="post-meta"> 发表于 July 22, 2019 </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    
-    
-  </header>
+    </header>
 
+    <div class="container" role="main">
+      <div class="row">
+        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+          <div>
+            <h5 id="tags" style="margin-top: 30px">
+              标签:
 
-    
+              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
+              &nbsp;
 
-
-
-<div class="container" role="main">
-  <div class="row">
-
-    
-    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <div>
-            
-            
-            <h5 id="tags" style="margin-top: 30px;">标签:
-              
-                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/kubectl/">kubectl</a> &nbsp;
-              
+              <a href="https://www.qikqiak.com/tags/kubectl/">kubectl</a> &nbsp;
             </h5>
-            
-        </div>
-  
-        <article role="main" class="blog-post" itemprop="articleBody" id="content">
-          
-            
-<aside class="toc">
-  <nav id="TableOfContents">
-<ul>
-<li>
-<ul>
-<li><a href="#什么是-kubectl">什么是 kubectl?</a>
-<ul>
-<li><a href="#kubernetes-架构">Kubernetes 架构</a></li>
-<li><a href="#kubernetes-api-的作用">Kubernetes API 的作用</a></li>
-</ul></li>
-<li><a href="#1-命令提示">1.命令提示</a>
-<ul>
-<li><a href="#命令补全的工作原理">命令补全的工作原理</a></li>
-<li><a href="#bash-on-linux">Bash on Linux</a></li>
-<li><a href="#bash-on-macos">Bash on MacOS</a></li>
-<li><a href="#zsh">Zsh</a></li>
-</ul></li>
-<li><a href="#2-快速查找资源">2.快速查找资源</a></li>
-<li><a href="#3-使用自定义列格式化输出">3.使用自定义列格式化输出</a>
-<ul>
-<li><a href="#jsonpath-表达式">JSONPath 表达式</a></li>
-<li><a href="#示例演示">示例演示</a>
-<ul>
-<li><a href="#显示-pod-的所有容器镜像">显示 Pod 的所有容器镜像</a></li>
-<li><a href="#显示节点的可用区域">显示节点的可用区域</a></li>
-</ul></li>
-</ul></li>
-<li><a href="#4-切换集群和命名空间">4.切换集群和命名空间</a>
-<ul>
-<li><a href="#kubeconfig-文件">Kubeconfig 文件</a></li>
-<li><a href="#kubectx">kubectx</a></li>
-<li><a href="#shell-别名">shell 别名</a></li>
-<li><a href="#使用插件">使用插件</a></li>
-</ul></li>
-<li><a href="#5-保存自动生成的别名">5.保存自动生成的别名</a></li>
-<li><a href="#6-使用插件扩展-kubectl">6.使用插件扩展 kubectl</a>
-<ul>
-<li><a href="#安装插件">安装插件</a></li>
-<li><a href="#使用-krew-查找和安装插件">使用 krew 查找和安装插件</a></li>
-<li><a href="#在其他地方查找插件">在其他地方查找插件</a></li>
-<li><a href="#创建自己的插件">创建自己的插件</a></li>
-<li><a href="#分享你的插件">分享你的插件</a></li>
-<li><a href="#命令提示">命令提示</a></li>
-</ul></li>
-</ul></li>
-</ul>
-</nav>
-</aside>
+          </div>
 
-          
-  
-          
-          
-          
-  
-          
-          
-          
-  
-          
-          
-          
+          <article
+            role="main"
+            class="blog-post"
+            itemprop="articleBody"
+            id="content"
+          >
+            <aside class="toc">
+              <nav id="TableOfContents">
+                <ul>
+                  <li>
+                    <ul>
+                      <li>
+                        <a href="#什么是-kubectl">什么是 kubectl?</a>
+                        <ul>
+                          <li>
+                            <a href="#kubernetes-架构">Kubernetes 架构</a>
+                          </li>
+                          <li>
+                            <a href="#kubernetes-api-的作用"
+                              >Kubernetes API 的作用</a
+                            >
+                          </li>
+                        </ul>
+                      </li>
+                      <li>
+                        <a href="#1-命令提示">1.命令提示</a>
+                        <ul>
+                          <li>
+                            <a href="#命令补全的工作原理">命令补全的工作原理</a>
+                          </li>
+                          <li><a href="#bash-on-linux">Bash on Linux</a></li>
+                          <li><a href="#bash-on-macos">Bash on MacOS</a></li>
+                          <li><a href="#zsh">Zsh</a></li>
+                        </ul>
+                      </li>
+                      <li><a href="#2-快速查找资源">2.快速查找资源</a></li>
+                      <li>
+                        <a href="#3-使用自定义列格式化输出"
+                          >3.使用自定义列格式化输出</a
+                        >
+                        <ul>
+                          <li>
+                            <a href="#jsonpath-表达式">JSONPath 表达式</a>
+                          </li>
+                          <li>
+                            <a href="#示例演示">示例演示</a>
+                            <ul>
+                              <li>
+                                <a href="#显示-pod-的所有容器镜像"
+                                  >显示 Pod 的所有容器镜像</a
+                                >
+                              </li>
+                              <li>
+                                <a href="#显示节点的可用区域"
+                                  >显示节点的可用区域</a
+                                >
+                              </li>
+                            </ul>
+                          </li>
+                        </ul>
+                      </li>
+                      <li>
+                        <a href="#4-切换集群和命名空间">4.切换集群和命名空间</a>
+                        <ul>
+                          <li>
+                            <a href="#kubeconfig-文件">Kubeconfig 文件</a>
+                          </li>
+                          <li><a href="#kubectx">kubectx</a></li>
+                          <li><a href="#shell-别名">shell 别名</a></li>
+                          <li><a href="#使用插件">使用插件</a></li>
+                        </ul>
+                      </li>
+                      <li>
+                        <a href="#5-保存自动生成的别名">5.保存自动生成的别名</a>
+                      </li>
+                      <li>
+                        <a href="#6-使用插件扩展-kubectl"
+                          >6.使用插件扩展 kubectl</a
+                        >
+                        <ul>
+                          <li><a href="#安装插件">安装插件</a></li>
+                          <li>
+                            <a href="#使用-krew-查找和安装插件"
+                              >使用 krew 查找和安装插件</a
+                            >
+                          </li>
+                          <li>
+                            <a href="#在其他地方查找插件">在其他地方查找插件</a>
+                          </li>
+                          <li><a href="#创建自己的插件">创建自己的插件</a></li>
+                          <li><a href="#分享你的插件">分享你的插件</a></li>
+                          <li><a href="#命令提示">命令提示</a></li>
+                        </ul>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </nav>
+            </aside>
 
-          <p>我们知道在使用 Kubernetes 的过程中，kubectl 工具可能是最常用的工具了（可能还没有之一），所以当我们花费大量的时间在使用 kubectl 上面的时候，那么我们就非常有必要去了解下如何高效的使用它了。</p>
+            <p>
+              我们知道在使用 Kubernetes 的过程中，kubectl
+              工具可能是最常用的工具了（可能还没有之一），所以当我们花费大量的时间在使用
+              kubectl
+              上面的时候，那么我们就非常有必要去了解下如何高效的使用它了。
+            </p>
 
-<p>本文包含一系列提示和技巧，可以让你更加高效的使用 kubectl，同时还可以加深你对 Kubernetes 各方面工作原理的理解。</p>
+            <p>
+              本文包含一系列提示和技巧，可以让你更加高效的使用
+              kubectl，同时还可以加深你对 Kubernetes 各方面工作原理的理解。
+            </p>
 
-<h2 id="什么是-kubectl">什么是 kubectl?</h2>
+            <h2 id="什么是-kubectl">什么是 kubectl?</h2>
 
-<p>在学习如何更高效地使用 kubectl 之前，我们应该去了解下 kubectl 是什么已经它是如何工作的。</p>
+            <p>
+              在学习如何更高效地使用 kubectl 之前，我们应该去了解下 kubectl
+              是什么已经它是如何工作的。
+            </p>
 
-<p>从用户角度来说，kubectl 就是控制 Kubernetes 的驾驶舱，它允许你执行所有可能的 Kubernetes 操作；从技术角度来看，kubectl 就是 Kubernetes API 的一个客户端而已。</p>
+            <p>
+              从用户角度来说，kubectl 就是控制 Kubernetes
+              的驾驶舱，它允许你执行所有可能的 Kubernetes
+              操作；从技术角度来看，kubectl 就是 Kubernetes API
+              的一个客户端而已。
+            </p>
 
-<p>Kubernetes API 是一个 HTTP REST API 服务，该 API 服务才是 Kubernetes 的真正的用户接口，Kubernetes 通过该 API 进行实际的控制。这也就意味着每个 Kubernetes 的操作都会通过 API 端点暴露出去，当然也就可以通过对这些 API 端口进行 HTTP 请求来执行相应的操作。</p>
+            <p>
+              Kubernetes API 是一个 HTTP REST API 服务，该 API 服务才是
+              Kubernetes 的真正的用户接口，Kubernetes 通过该 API
+              进行实际的控制。这也就意味着每个 Kubernetes 的操作都会通过 API
+              端点暴露出去，当然也就可以通过对这些 API 端口进行 HTTP
+              请求来执行相应的操作。
+            </p>
 
-<p>所以，kubectl 最主要的工作就是执行 Kubernetes API 的 HTTP 请求：</p>
+            <p>
+              所以，kubectl 最主要的工作就是执行 Kubernetes API 的 HTTP 请求：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubernetes-kubectl.svg" alt="kubernetes kubectl"><figcaption>kubernetes kubectl</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/kubernetes-kubectl.svg"
+                alt="kubernetes kubectl"
+              />
+              <figcaption>kubernetes kubectl</figcaption>
+            </figure>
 
-<blockquote>
-<p>Kubernetes 是一个完全以资源为中的系统，Kubernetes 维护资源的内部状态，所有 Kubernetes 的操作都是对这些资源的 <a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#resource-operations">CRUD 操作</a>，你可以通过操作这些资源来完全控制 Kubernetes（Kubernetes 会根据当前的资源状态来确定需要做什么）。</p>
-</blockquote>
+            <blockquote>
+              <p>
+                Kubernetes 是一个完全以资源为中的系统，Kubernetes
+                维护资源的内部状态，所有 Kubernetes 的操作都是对这些资源的
+                <a
+                  href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#resource-operations"
+                  >CRUD 操作</a
+                >，你可以通过操作这些资源来完全控制 Kubernetes（Kubernetes
+                会根据当前的资源状态来确定需要做什么）。
+              </p>
+            </blockquote>
 
-<p>比如下面的例子。</p>
+            <p>比如下面的例子。</p>
 
-<p>假如现在我们想要创建一个 ReplicaSet 的资源，然后创建一个名为 replicaset.yaml 的资源文件来定义 ReplicaSet，然后运行下面的命令：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create -f replicaset.yaml</code></pre></div>
-<p>这个命令执行后会在 Kubernetes 中创建一个 ReplicaSet 的资源，但是这幕后发生了什么呢？</p>
-
-<p>Kubernetes 具有创建 ReplicaSet 的操作，并且和其他 Kubernetes 操作一样的，也是通过 API 端点暴露出来的，上面的操作会通过指定的 API 端口进行如下的操作：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">POST /apis/apps/v1/namespaces/<span style="color:#ff79c6">{</span>namespace<span style="color:#ff79c6">}</span>/replicasets</code></pre></div>
-<blockquote>
-<p>我们可以在 <a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15">API 文档</a>中找到所有 Kubernetes 操作的 API Endpoint（包括<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#create-replicaset-v1-apps">上面的端点</a>），要向 Endpoint 发起实际的请求，我们需要将 APIServer 的 URL 添加到 API 文档中列出的 Endpoint 路径中。</p>
-</blockquote>
-
-<p>所以，当我们执行上面的命令时，kubectl 会向上面的 API Endpoint 发起一个 HTTP POST 请求，ReplicaSet 的定义（replicaset.yaml 文件中的内容）通过请求的 body 进行传递。这就是 kubectl 与 Kubernetes 集群交互的命令如何工作的。</p>
-
-<blockquote>
-<p>我们也完全可以使用 curl 等工具手动的向 Kubernetes API 发起 HTTP 请求，kubectl 只是让我们更加容易地使用 Kubernetes API 了。</p>
-</blockquote>
-
-<p>这些是 kubectl 的最基础的知识点，但是每个 kubectl 操作者还有很多 Kubernetes API 的知识点需要了解，所以我们这里再简要介绍一下 Kubernetes 的内部结构。
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-5376999672787220"
-     data-ad-slot="9165834656"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
-</p>
-
-<h3 id="kubernetes-架构">Kubernetes 架构</h3>
-
-<p>Kubernetes 由一组独立的组件组成，这些组件在集群的节点上作为单独的进行运行，有些组件在 Master 节点上运行，有一些组件在 Node 节点上运行，每个组件都有一些特定的功能。</p>
-
-<p>Master 节点上最主要的组件有下面几个：</p>
-
-<ul>
-<li><strong>etcd</strong>: 存储后端，整个集群的资源信息都存在 etcd 里面</li>
-<li><strong>kube-apiserver</strong>: 提供给整个集群的 API 服务，是唯一一个直接和 etcd 进行交互的组件</li>
-<li><strong>kube-controller-manager</strong>: 控制器，主要是确保资源状态符合期望值</li>
-<li><strong>kube-scheduler</strong>: 调度器，将 Pod 调度到工作节点</li>
-</ul>
-
-<p>Node 节点上最重要的组件：</p>
-
-<ul>
-<li><strong>kubelet</strong>: 管理工作节点上的容器</li>
-</ul>
-
-<p>为了了解这些组件之间是如何协同工作的，我们再来看下上面的例子，假如我们执行了上面的<code>kubectl create -f replicaset.yaml</code>命令，kubectl 对创建 ReplicaSet 的 API Endpoint 发起了一个 HTTP POST 请求，这个时候我们的集群有什么变化呢？看下面的演示：</p>
-
-
-
-
-
-<div class="slideshow-js overflow-hidden">
-    <ul class="pl0 list slider-js">
-        
-        <li class="mv3">
-            <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-post-rs1.svg" alt="在执行 kubectl create -f replicaset.yaml 命令之后，APIServer 将 ReplicaSet 的资源清单保存在了 etcd 中。">
-            <div class="demo-page-border">
-                <div class="demo-page">
-                    <span class="current">1</span>
-                    <span class="total">/7</span>
-                </div>
+            <p>
+              假如现在我们想要创建一个 ReplicaSet 的资源，然后创建一个名为
+              replicaset.yaml 的资源文件来定义 ReplicaSet，然后运行下面的命令：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl create -f replicaset.yaml</code></pre>
             </div>
-            <div class="demo-desc-wrapper navigation-js">
-                <div class="demo-desc">在执行 kubectl create -f replicaset.yaml 命令之后，APIServer 将 ReplicaSet 的资源清单保存在了 etcd 中。</div>
+            <p>
+              这个命令执行后会在 Kubernetes 中创建一个 ReplicaSet
+              的资源，但是这幕后发生了什么呢？
+            </p>
+
+            <p>
+              Kubernetes 具有创建 ReplicaSet 的操作，并且和其他 Kubernetes
+              操作一样的，也是通过 API 端点暴露出来的，上面的操作会通过指定的
+              API 端口进行如下的操作：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">POST /apis/apps/v1/namespaces/<span style="color:#ff79c6">{</span>namespace<span style="color:#ff79c6">}</span>/replicasets</code></pre>
             </div>
-        </li>
-        
-        <li class="mv3">
-            <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-post-rs2.svg" alt="然后触发 controller manager 中的 ReplicaSet 控制器，该控制器会监听资源的创建、更新和删除。">
-            <div class="demo-page-border">
-                <div class="demo-page">
-                    <span class="current">2</span>
-                    <span class="total">/7</span>
-                </div>
+            <blockquote>
+              <p>
+                我们可以在
+                <a
+                  href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15"
+                  >API 文档</a
+                >中找到所有 Kubernetes 操作的 API Endpoint（包括<a
+                  href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#create-replicaset-v1-apps"
+                  >上面的端点</a
+                >），要向 Endpoint 发起实际的请求，我们需要将 APIServer 的 URL
+                添加到 API 文档中列出的 Endpoint 路径中。
+              </p>
+            </blockquote>
+
+            <p>
+              所以，当我们执行上面的命令时，kubectl 会向上面的 API Endpoint
+              发起一个 HTTP POST 请求，ReplicaSet 的定义（replicaset.yaml
+              文件中的内容）通过请求的 body 进行传递。这就是 kubectl 与
+              Kubernetes 集群交互的命令如何工作的。
+            </p>
+
+            <blockquote>
+              <p>
+                我们也完全可以使用 curl 等工具手动的向 Kubernetes API 发起 HTTP
+                请求，kubectl 只是让我们更加容易地使用 Kubernetes API 了。
+              </p>
+            </blockquote>
+
+            <p>
+              这些是 kubectl 的最基础的知识点，但是每个 kubectl 操作者还有很多
+              Kubernetes API 的知识点需要了解，所以我们这里再简要介绍一下
+              Kubernetes 的内部结构。
+              <script
+                async
+                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+              ></script>
+
+              <ins
+                class="adsbygoogle"
+                style="display: block"
+                data-ad-client="ca-pub-5376999672787220"
+                data-ad-slot="9165834656"
+                data-ad-format="auto"
+                data-full-width-responsive="true"
+              ></ins>
+              <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+              </script>
+            </p>
+
+            <h3 id="kubernetes-架构">Kubernetes 架构</h3>
+
+            <p>
+              Kubernetes
+              由一组独立的组件组成，这些组件在集群的节点上作为单独的进行运行，有些组件在
+              Master 节点上运行，有一些组件在 Node
+              节点上运行，每个组件都有一些特定的功能。
+            </p>
+
+            <p>Master 节点上最主要的组件有下面几个：</p>
+
+            <ul>
+              <li>
+                <strong>etcd</strong>: 存储后端，整个集群的资源信息都存在 etcd
+                里面
+              </li>
+              <li>
+                <strong>kube-apiserver</strong>: 提供给整个集群的 API
+                服务，是唯一一个直接和 etcd 进行交互的组件
+              </li>
+              <li>
+                <strong>kube-controller-manager</strong>:
+                控制器，主要是确保资源状态符合期望值
+              </li>
+              <li>
+                <strong>kube-scheduler</strong>: 调度器，将 Pod 调度到工作节点
+              </li>
+            </ul>
+
+            <p>Node 节点上最重要的组件：</p>
+
+            <ul>
+              <li><strong>kubelet</strong>: 管理工作节点上的容器</li>
+            </ul>
+
+            <p>
+              为了了解这些组件之间是如何协同工作的，我们再来看下上面的例子，假如我们执行了上面的<code
+                >kubectl create -f replicaset.yaml</code
+              >命令，kubectl 对创建 ReplicaSet 的 API Endpoint 发起了一个 HTTP
+              POST 请求，这个时候我们的集群有什么变化呢？看下面的演示：
+            </p>
+
+            <div class="slideshow-js overflow-hidden">
+              <ul class="pl0 list slider-js">
+                <li class="mv3">
+                  <img
+                    src="https://picdn.youdianzhishi.com/images/kubectl-post-rs1.svg"
+                    alt="在执行 kubectl create -f replicaset.yaml 命令之后，APIServer 将 ReplicaSet 的资源清单保存在了 etcd 中。"
+                  />
+                  <div class="demo-page-border">
+                    <div class="demo-page">
+                      <span class="current">1</span>
+                      <span class="total">/7</span>
+                    </div>
+                  </div>
+                  <div class="demo-desc-wrapper navigation-js">
+                    <div class="demo-desc">
+                      在执行 kubectl create -f replicaset.yaml
+                      命令之后，APIServer 将 ReplicaSet 的资源清单保存在了 etcd
+                      中。
+                    </div>
+                  </div>
+                </li>
+
+                <li class="mv3">
+                  <img
+                    src="https://picdn.youdianzhishi.com/images/kubectl-post-rs2.svg"
+                    alt="然后触发 controller manager 中的 ReplicaSet 控制器，该控制器会监听资源的创建、更新和删除。"
+                  />
+                  <div class="demo-page-border">
+                    <div class="demo-page">
+                      <span class="current">2</span>
+                      <span class="total">/7</span>
+                    </div>
+                  </div>
+                  <div class="demo-desc-wrapper navigation-js">
+                    <div class="demo-desc">
+                      然后触发 controller manager 中的 ReplicaSet
+                      控制器，该控制器会监听资源的创建、更新和删除。
+                    </div>
+                  </div>
+                </li>
+
+                <li class="mv3">
+                  <img
+                    src="https://picdn.youdianzhishi.com/images/kubectl-post-rs3.svg"
+                    alt="ReplicaSet 控制器为 ReplicaSet 的每个副本创建一个 Pod （根据资源清单中的 Pod 模板），并将它们保存在 etcd 中。"
+                  />
+                  <div class="demo-page-border">
+                    <div class="demo-page">
+                      <span class="current">3</span>
+                      <span class="total">/7</span>
+                    </div>
+                  </div>
+                  <div class="demo-desc-wrapper navigation-js">
+                    <div class="demo-desc">
+                      ReplicaSet 控制器为 ReplicaSet 的每个副本创建一个 Pod
+                      （根据资源清单中的 Pod 模板），并将它们保存在 etcd 中。
+                    </div>
+                  </div>
+                </li>
+
+                <li class="mv3">
+                  <img
+                    src="https://picdn.youdianzhishi.com/images/kubectl-post-rs4.svg"
+                    alt="然后此时调度器会会监听尚未绑定节点的 Pod，准备为这些 Pod 选择合适的工作节点。"
+                  />
+                  <div class="demo-page-border">
+                    <div class="demo-page">
+                      <span class="current">4</span>
+                      <span class="total">/7</span>
+                    </div>
+                  </div>
+                  <div class="demo-desc-wrapper navigation-js">
+                    <div class="demo-desc">
+                      然后此时调度器会会监听尚未绑定节点的 Pod，准备为这些 Pod
+                      选择合适的工作节点。
+                    </div>
+                  </div>
+                </li>
+
+                <li class="mv3">
+                  <img
+                    src="https://picdn.youdianzhishi.com/images/kubectl-post-rs5.svg"
+                    alt="调度器会为每个 Pod 选择一个合适的工作节点，并将该信息更新到 etcd 中的 Pod 对象中。"
+                  />
+                  <div class="demo-page-border">
+                    <div class="demo-page">
+                      <span class="current">5</span>
+                      <span class="total">/7</span>
+                    </div>
+                  </div>
+                  <div class="demo-desc-wrapper navigation-js">
+                    <div class="demo-desc">
+                      调度器会为每个 Pod
+                      选择一个合适的工作节点，并将该信息更新到 etcd 中的 Pod
+                      对象中。
+                    </div>
+                  </div>
+                </li>
+
+                <li class="mv3">
+                  <img
+                    src="https://picdn.youdianzhishi.com/images/kubectl-post-rs6.svg"
+                    alt="然后工作节点监听到有新的 Pod 被绑定到当前节点，触发节点的控制器进行 Pod 创建。"
+                  />
+                  <div class="demo-page-border">
+                    <div class="demo-page">
+                      <span class="current">6</span>
+                      <span class="total">/7</span>
+                    </div>
+                  </div>
+                  <div class="demo-desc-wrapper navigation-js">
+                    <div class="demo-desc">
+                      然后工作节点监听到有新的 Pod
+                      被绑定到当前节点，触发节点的控制器进行 Pod 创建。
+                    </div>
+                  </div>
+                </li>
+
+                <li class="mv3">
+                  <img
+                    src="https://picdn.youdianzhishi.com/images/kubectl-post-rs7.svg"
+                    alt="kubelet这时通过 APIServer 读取 Pod 的资源定义，然后调用容器运行时（比如 docker）在节点上运行容器。"
+                  />
+                  <div class="demo-page-border">
+                    <div class="demo-page">
+                      <span class="current">7</span>
+                      <span class="total">/7</span>
+                    </div>
+                  </div>
+                  <div class="demo-desc-wrapper navigation-js">
+                    <div class="demo-desc">
+                      kubelet这时通过 APIServer 读取 Pod
+                      的资源定义，然后调用容器运行时（比如
+                      docker）在节点上运行容器。
+                    </div>
+                  </div>
+                </li>
+              </ul>
             </div>
-            <div class="demo-desc-wrapper navigation-js">
-                <div class="demo-desc">然后触发 controller manager 中的 ReplicaSet 控制器，该控制器会监听资源的创建、更新和删除。</div>
-            </div>
-        </li>
-        
-        <li class="mv3">
-            <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-post-rs3.svg" alt="ReplicaSet 控制器为 ReplicaSet 的每个副本创建一个 Pod （根据资源清单中的 Pod 模板），并将它们保存在 etcd 中。">
-            <div class="demo-page-border">
-                <div class="demo-page">
-                    <span class="current">3</span>
-                    <span class="total">/7</span>
-                </div>
-            </div>
-            <div class="demo-desc-wrapper navigation-js">
-                <div class="demo-desc">ReplicaSet 控制器为 ReplicaSet 的每个副本创建一个 Pod （根据资源清单中的 Pod 模板），并将它们保存在 etcd 中。</div>
-            </div>
-        </li>
-        
-        <li class="mv3">
-            <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-post-rs4.svg" alt="然后此时调度器会会监听尚未绑定节点的 Pod，准备为这些 Pod 选择合适的工作节点。">
-            <div class="demo-page-border">
-                <div class="demo-page">
-                    <span class="current">4</span>
-                    <span class="total">/7</span>
-                </div>
-            </div>
-            <div class="demo-desc-wrapper navigation-js">
-                <div class="demo-desc">然后此时调度器会会监听尚未绑定节点的 Pod，准备为这些 Pod 选择合适的工作节点。</div>
-            </div>
-        </li>
-        
-        <li class="mv3">
-            <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-post-rs5.svg" alt="调度器会为每个 Pod 选择一个合适的工作节点，并将该信息更新到 etcd 中的 Pod 对象中。">
-            <div class="demo-page-border">
-                <div class="demo-page">
-                    <span class="current">5</span>
-                    <span class="total">/7</span>
-                </div>
-            </div>
-            <div class="demo-desc-wrapper navigation-js">
-                <div class="demo-desc">调度器会为每个 Pod 选择一个合适的工作节点，并将该信息更新到 etcd 中的 Pod 对象中。</div>
-            </div>
-        </li>
-        
-        <li class="mv3">
-            <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-post-rs6.svg" alt="然后工作节点监听到有新的 Pod 被绑定到当前节点，触发节点的控制器进行 Pod 创建。">
-            <div class="demo-page-border">
-                <div class="demo-page">
-                    <span class="current">6</span>
-                    <span class="total">/7</span>
-                </div>
-            </div>
-            <div class="demo-desc-wrapper navigation-js">
-                <div class="demo-desc">然后工作节点监听到有新的 Pod 被绑定到当前节点，触发节点的控制器进行 Pod 创建。</div>
-            </div>
-        </li>
-        
-        <li class="mv3">
-            <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-post-rs7.svg" alt="kubelet这时通过 APIServer 读取 Pod 的资源定义，然后调用容器运行时（比如 docker）在节点上运行容器。">
-            <div class="demo-page-border">
-                <div class="demo-page">
-                    <span class="current">7</span>
-                    <span class="total">/7</span>
-                </div>
-            </div>
-            <div class="demo-desc-wrapper navigation-js">
-                <div class="demo-desc">kubelet这时通过 APIServer 读取 Pod 的资源定义，然后调用容器运行时（比如 docker）在节点上运行容器。</div>
-            </div>
-        </li>
-        
-    </ul>
-</div>
-<link rel="stylesheet" href="https://www.qikqiak.com/css/demo.css?id=123" />
+            <link
+              rel="stylesheet"
+              href="https://www.qikqiak.com/css/demo.css?id=123"
+            />
 
+            <script src="https://www.qikqiak.com/js/demo.js?id=123"></script>
 
-<script src="https://www.qikqiak.com/js/demo.js?id=123"></script>
+            <p>经过上面的几个步骤 ReplicaSet 就可以运行起来了。</p>
 
-<p>经过上面的几个步骤 ReplicaSet 就可以运行起来了。</p>
+            <h3 id="kubernetes-api-的作用">Kubernetes API 的作用</h3>
 
-<h3 id="kubernetes-api-的作用">Kubernetes API 的作用</h3>
+            <p>
+              从上面的示例中我们可以看出，Kubernetes 组件（APIServer 和 etcd
+              除外）都是通过监听后端的资源变化来工作的。但是这些组件是不会直接访问
+              etcd 的，只能通过 APIServer 去访问
+              etcd。我们再回顾下上面的资源创建过程：
+            </p>
 
-<p>从上面的示例中我们可以看出，Kubernetes 组件（APIServer 和 etcd 除外）都是通过监听后端的资源变化来工作的。但是这些组件是不会直接访问 etcd 的，只能通过 APIServer 去访问 etcd。我们再回顾下上面的资源创建过程：</p>
+            <ul>
+              <li>
+                ReplicaSet 控制器使用 ReplicaSets API 的 List 操作和 watch
+                参数来监听 ReplicaSet 资源的变化。
+              </li>
+              <li>ReplicaSet 控制器使用 create Pod API 来创建 Pod。</li>
+              <li>
+                调度器通过 patch Pod API 来更新 Pod 和工作节点相关的信息。
+              </li>
+            </ul>
 
-<ul>
-<li>ReplicaSet 控制器使用 ReplicaSets API 的 List 操作和 watch 参数来监听 ReplicaSet 资源的变化。</li>
-<li>ReplicaSet 控制器使用 create Pod API 来创建 Pod。</li>
-<li>调度器通过 patch Pod API 来更新 Pod 和工作节点相关的信息。</li>
-</ul>
+            <p>
+              我们使用 kubectl 来操作也是使用这些相同的 API
+              的。有了这些知识点后，我们就可以总结出 Kubernetes 的工作原理了：
+            </p>
 
-<p>我们使用 kubectl 来操作也是使用这些相同的 API 的。有了这些知识点后，我们就可以总结出 Kubernetes 的工作原理了：</p>
+            <ul>
+              <li>存储后端（etcd）存储 Kubernetes 的资源。</li>
+              <li>
+                APIServer 通过 Kubernetes API 的形式提供存储后端的相关接口。
+              </li>
+              <li>
+                所有其他组件和外部用户都是通过 Kubernetes API 来读取、监听和操作
+                Kubernetes 的资源。
+              </li>
+            </ul>
 
-<ul>
-<li>存储后端（etcd）存储 Kubernetes 的资源。</li>
-<li>APIServer 通过 Kubernetes API 的形式提供存储后端的相关接口。</li>
-<li>所有其他组件和外部用户都是通过 Kubernetes API 来读取、监听和操作 Kubernetes 的资源。</li>
-</ul>
+            <blockquote>
+              <p>熟悉这些基本概念将会有助于我们更好地理解 kubectl。</p>
+            </blockquote>
 
-<blockquote>
-<p>熟悉这些基本概念将会有助于我们更好地理解 kubectl。</p>
-</blockquote>
+            <p>
+              接下来就让我们来看一看 kubectl
+              的一系列具体的使用技巧，以帮助我们提供 kubectl 的使用生产力。
+            </p>
 
-<p>接下来就让我们来看一看 kubectl 的一系列具体的使用技巧，以帮助我们提供 kubectl 的使用生产力。</p>
+            <h2 id="1-命令提示">1.命令提示</h2>
 
-<h2 id="1-命令提示">1.命令提示</h2>
+            <p>
+              命令提示（补全）是提高生产力最有用但也是经常被忽略的技巧之一。命令补全允许你使用
+              tab 键自动补全 kubectl
+              的相关命令，包括子命令、选项和参数，以及资源名称等一些复杂的内容。
+            </p>
 
-<p>命令提示（补全）是提高生产力最有用但也是经常被忽略的技巧之一。命令补全允许你使用 tab 键自动补全 kubectl 的相关命令，包括子命令、选项和参数，以及资源名称等一些复杂的内容。</p>
+            <p>在下图中我们可以看到使用 kubectl 命令自动补全的相关演示：</p>
 
-<p>在下图中我们可以看到使用 kubectl 命令自动补全的相关演示：</p>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/kubectl-cmd-complete.gif"
+                alt="kubectl 自动补全"
+              />
+              <figcaption>kubectl 自动补全</figcaption>
+            </figure>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-cmd-complete.gif" alt="kubectl 自动补全"><figcaption>kubectl 自动补全</figcaption></figure>
+            <p>
+              命令补全可用于
+              <a href="https://www.gnu.org/software/bash/">Bash</a> 和
+              <a href="https://www.zsh.org/">Zsh</a> shell 终端。
+            </p>
 
-<p>命令补全可用于 <a href="https://www.gnu.org/software/bash/">Bash</a> 和 <a href="https://www.zsh.org/">Zsh</a> shell 终端。</p>
+            <p>
+              官方文档中就包含了一些关于命令补全的相关说明，当然也可以参考下面我们为你提供的一些内容。
+            </p>
 
-<p>官方文档中就包含了一些关于命令补全的相关说明，当然也可以参考下面我们为你提供的一些内容。</p>
+            <h3 id="命令补全的工作原理">命令补全的工作原理</h3>
 
-<h3 id="命令补全的工作原理">命令补全的工作原理</h3>
+            <p>
+              一般来说，命令补全是通过执行一个补全脚本的 shell
+              功能，补全脚本也是一个 shell 脚本，用于定义特定命令的补全功能。
+            </p>
 
-<p>一般来说，命令补全是通过执行一个补全脚本的 shell 功能，补全脚本也是一个 shell 脚本，用于定义特定命令的补全功能。</p>
-
-<p>kubectl 在 Bash 和 Zsh 下可以使用下面的命令自动生成并打印出补全脚本：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl completion bash
+            <p>
+              kubectl 在 Bash 和 Zsh
+              下可以使用下面的命令自动生成并打印出补全脚本：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl completion bash
 <span style="color:#6272a4"># 或者</span>
-$ kubectl completion zsh</code></pre></div>
-<p>理论上在合适的 shell 中 source 上面命令的输出就可以开启 kubectl 的命令补全功能了。但是，在实际使用的时候，Bash（包括 Linux 和 Mac 之间的差异）和 Zsh 有一些细节上的差异，下面是关于这些差异的相关说明。
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+$ kubectl completion zsh</code></pre>
+            </div>
+            <p>
+              理论上在合适的 shell 中 source 上面命令的输出就可以开启 kubectl
+              的命令补全功能了。但是，在实际使用的时候，Bash（包括 Linux 和 Mac
+              之间的差异）和 Zsh
+              有一些细节上的差异，下面是关于这些差异的相关说明。
+              <script
+                async
+                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+              ></script>
 
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-5376999672787220"
-     data-ad-slot="9165834656"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
-</p>
+              <ins
+                class="adsbygoogle"
+                style="display: block"
+                data-ad-client="ca-pub-5376999672787220"
+                data-ad-slot="9165834656"
+                data-ad-format="auto"
+                data-full-width-responsive="true"
+              ></ins>
+              <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+              </script>
+            </p>
 
-<h3 id="bash-on-linux">Bash on Linux</h3>
+            <h3 id="bash-on-linux">Bash on Linux</h3>
 
-<p>Bash 的命令补全脚本依赖<a href="https://github.com/scop/bash-completion">bash-completion</a>项目，所以需要先安装该项目。</p>
+            <p>
+              Bash 的命令补全脚本依赖<a
+                href="https://github.com/scop/bash-completion"
+                >bash-completion</a
+              >项目，所以需要先安装该项目。
+            </p>
 
-<p>我们可以使用各种包管理器来安装bash-completion，例如：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ sudo apt-get install bash-completion
+            <p>我们可以使用各种包管理器来安装bash-completion，例如：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ sudo apt-get install bash-completion
 <span style="color:#6272a4"># 或者</span>
-$ yum install bash-completion</code></pre></div>
-<p>安装完成后可以使用一下命令测试是否安装成功了：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ <span style="color:#8be9fd;font-style:italic">type</span> _init_completion</code></pre></div>
-<p>如果输出一段 shell 函数，则证明已经安装成功了，如果输出未找到的相关错误，则可以将下面的语句添加到你的<code>~/.bashrc</code>文件中去：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#8be9fd;font-style:italic">source</span> /usr/share/bash-completion/bash_completion</code></pre></div>
-<blockquote>
-<p>是否必须将上面内容添加到<code>~/.bashrc</code>文件中，这取决于你使用的包管理工具，对于 apt-get 来说是必须的，yum 就不需要了。</p>
-</blockquote>
+$ yum install bash-completion</code></pre>
+            </div>
+            <p>安装完成后可以使用一下命令测试是否安装成功了：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ <span style="color:#8be9fd;font-style:italic">type</span> _init_completion</code></pre>
+            </div>
+            <p>
+              如果输出一段 shell
+              函数，则证明已经安装成功了，如果输出未找到的相关错误，则可以将下面的语句添加到你的<code>~/.bashrc</code>文件中去：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell"><span style="color:#8be9fd;font-style:italic">source</span> /usr/share/bash-completion/bash_completion</code></pre>
+            </div>
+            <blockquote>
+              <p>
+                是否必须将上面内容添加到<code>~/.bashrc</code>文件中，这取决于你使用的包管理工具，对于
+                apt-get 来说是必须的，yum 就不需要了。
+              </p>
+            </blockquote>
 
-<p>一旦 bash-completion 安装完成后，我们就需要进行一些配置来让我们在所有的 shell 会话中都可以获取 kubectl 补全脚本。</p>
+            <p>
+              一旦 bash-completion
+              安装完成后，我们就需要进行一些配置来让我们在所有的 shell
+              会话中都可以获取 kubectl 补全脚本。
+            </p>
 
-<p>一种方法是将下面的内容添加到<code>~/.bashrc</code>文件中：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#8be9fd;font-style:italic">source</span> &lt;<span style="color:#ff79c6">(</span>kubectl completion bash<span style="color:#ff79c6">)</span></code></pre></div>
-<p>另一种方法是将 kubectl 补全脚本添加到<code>/etc/bash_completion.d</code>目录（如果不存在则新建）：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl completion bash &gt;/etc/bash_completion.d/kubectl</code></pre></div>
-<blockquote>
-<p><code>/etc/bash_completion.d</code>目录下面的所有补全脚本都会由 bash-completion 自动获取。</p>
-</blockquote>
+            <p>一种方法是将下面的内容添加到<code>~/.bashrc</code>文件中：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell"><span style="color:#8be9fd;font-style:italic">source</span> &lt;<span style="color:#ff79c6">(</span>kubectl completion bash<span style="color:#ff79c6">)</span></code></pre>
+            </div>
+            <p>
+              另一种方法是将 kubectl
+              补全脚本添加到<code>/etc/bash_completion.d</code>目录（如果不存在则新建）：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl completion bash &gt;/etc/bash_completion.d/kubectl</code></pre>
+            </div>
+            <blockquote>
+              <p>
+                <code>/etc/bash_completion.d</code>目录下面的所有补全脚本都会由
+                bash-completion 自动获取。
+              </p>
+            </blockquote>
 
-<p>上面两种方法都是可行的，重新加载 shell 后，kubectl 的自动补全功能应该就可以正常使用了！</p>
+            <p>
+              上面两种方法都是可行的，重新加载 shell 后，kubectl
+              的自动补全功能应该就可以正常使用了！
+            </p>
 
-<h3 id="bash-on-macos">Bash on MacOS</h3>
+            <h3 id="bash-on-macos">Bash on MacOS</h3>
 
-<p>在 Mac 下面，就稍微复杂一点点了，因为 Mac 上的 Bash 默认版本是3.2，已经过时了，kubectl 的自动补全脚本至少需要 Bash 4.1 版本。</p>
+            <p>
+              在 Mac 下面，就稍微复杂一点点了，因为 Mac 上的 Bash
+              默认版本是3.2，已经过时了，kubectl 的自动补全脚本至少需要 Bash 4.1
+              版本。
+            </p>
 
-<p>所以要在 Mac 上使用 kubectl 自动补全功能，你就需要安装新版本的 Bash，更新 Bash 是很容易的，可以查看这篇文章：<a href="https://itnext.io/upgrading-bash-on-macos-7138bd1066ba">Upgrading Bash on macOS</a>，这里我们就不详细说明了。</p>
+            <p>
+              所以要在 Mac 上使用 kubectl 自动补全功能，你就需要安装新版本的
+              Bash，更新 Bash 是很容易的，可以查看这篇文章：<a
+                href="https://itnext.io/upgrading-bash-on-macos-7138bd1066ba"
+                >Upgrading Bash on macOS</a
+              >，这里我们就不详细说明了。
+            </p>
 
-<p>在继续向下之前，请确保你的 Bash 版本在 4.1 以上。和 Linux 中一样，Bash 的补全脚本依赖 bash-completion 项目，所以我们也必须要安装它。</p>
+            <p>
+              在继续向下之前，请确保你的 Bash 版本在 4.1 以上。和 Linux
+              中一样，Bash 的补全脚本依赖 bash-completion
+              项目，所以我们也必须要安装它。
+            </p>
 
-<p>我们可以使用 Homebrew 工具来安装：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ brew install bash-completion@2</code></pre></div>
-<blockquote>
-<p><code>@2</code>代表 bash-completion v2 版本，kubectl 命令补全脚本需要 v2 版本，而 v2 版本至少需要 Bash 4.1 版本，所以这就是不能在低于4.1的 Bash 下面使用 kubectl 的补全脚本的原因。</p>
-</blockquote>
+            <p>我们可以使用 Homebrew 工具来安装：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ brew install bash-completion@2</code></pre>
+            </div>
+            <blockquote>
+              <p>
+                <code>@2</code>代表 bash-completion v2 版本，kubectl
+                命令补全脚本需要 v2 版本，而 v2 版本至少需要 Bash 4.1
+                版本，所以这就是不能在低于4.1的 Bash 下面使用 kubectl
+                的补全脚本的原因。
+              </p>
+            </blockquote>
 
-<p>brew 安装命令完成会输出一段提示信息，其中包含将下面内容添加到<code>~/.bash_profile</code>文件中的说明：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">BASH_COMPLETION_COMPAT_DIR</span><span style="color:#ff79c6">=</span>/usr/local/etc/bash_completion.d
-<span style="color:#ff79c6">[[</span> -r <span style="color:#f1fa8c">&#34;/usr/local/etc/profile.d/bash_completion.sh&#34;</span> <span style="color:#ff79c6">]]</span> <span style="color:#ff79c6">&amp;&amp;</span> . <span style="color:#f1fa8c">&#34;/usr/local/etc/profile.d/bash_completion.sh&#34;</span></code></pre></div>
-<p>这样就完成了 bash-completion 的安装，但是建议将上面这一行信息添加到<code>~/.bashrc</code>当中，这样可以在子 shell 中也可以使用 bash-completion。</p>
+            <p>
+              brew
+              安装命令完成会输出一段提示信息，其中包含将下面内容添加到<code>~/.bash_profile</code>文件中的说明：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell"><span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">BASH_COMPLETION_COMPAT_DIR</span><span style="color:#ff79c6">=</span>/usr/local/etc/bash_completion.d
+<span style="color:#ff79c6">[[</span> -r <span style="color:#f1fa8c">&#34;/usr/local/etc/profile.d/bash_completion.sh&#34;</span> <span style="color:#ff79c6">]]</span> <span style="color:#ff79c6">&amp;&amp;</span> . <span style="color:#f1fa8c">&#34;/usr/local/etc/profile.d/bash_completion.sh&#34;</span></code></pre>
+            </div>
+            <p>
+              这样就完成了 bash-completion
+              的安装，但是建议将上面这一行信息添加到<code>~/.bashrc</code>当中，这样可以在子
+              shell 中也可以使用 bash-completion。
+            </p>
 
-<p>重新加载 shell 后，可以使用以下命令测试是否正确安装了 bash-completion:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ <span style="color:#8be9fd;font-style:italic">type</span> _init_completion</code></pre></div>
-<p>如果输出一个 shell 函数，证明安装成功了。然后就需要进行一些配置来让我们在所有的 shell 会话中都可以获取 kubectl 补全脚本。</p>
+            <p>
+              重新加载 shell 后，可以使用以下命令测试是否正确安装了
+              bash-completion:
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ <span style="color:#8be9fd;font-style:italic">type</span> _init_completion</code></pre>
+            </div>
+            <p>
+              如果输出一个 shell
+              函数，证明安装成功了。然后就需要进行一些配置来让我们在所有的 shell
+              会话中都可以获取 kubectl 补全脚本。
+            </p>
 
-<p>一种方法是将下面的内容添加到<code>~/.bashrc</code>文件中：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#8be9fd;font-style:italic">source</span> &lt;<span style="color:#ff79c6">(</span>kubectl completion bash<span style="color:#ff79c6">)</span></code></pre></div>
-<p>另外一种方法是添加 kubectl 补全脚本到<code>/usr/local/etc/bash_completion.d</code>目录下面：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl completion bash &gt;/usr/local/etc/bash_completion.d/kubectl</code></pre></div>
-<blockquote>
-<p>使用 Homebrew 安装 bash-completion 时上面的方法才会生效。</p>
-</blockquote>
+            <p>一种方法是将下面的内容添加到<code>~/.bashrc</code>文件中：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell"><span style="color:#8be9fd;font-style:italic">source</span> &lt;<span style="color:#ff79c6">(</span>kubectl completion bash<span style="color:#ff79c6">)</span></code></pre>
+            </div>
+            <p>
+              另外一种方法是添加 kubectl
+              补全脚本到<code>/usr/local/etc/bash_completion.d</code>目录下面：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl completion bash &gt;/usr/local/etc/bash_completion.d/kubectl</code></pre>
+            </div>
+            <blockquote>
+              <p>使用 Homebrew 安装 bash-completion 时上面的方法才会生效。</p>
+            </blockquote>
 
-<p>如果你还是使用 Homebrew 安装的 kubectl 的话，上面的步骤都可以省略，因为补全脚本已经被自动放置到<code>/usr/local/etc/bash_completion.d</code>目录中去了，这种情况，kubectl 命令补全应该在安装完 bash-completion 后就可以正常使用了。</p>
+            <p>
+              如果你还是使用 Homebrew 安装的 kubectl
+              的话，上面的步骤都可以省略，因为补全脚本已经被自动放置到<code>/usr/local/etc/bash_completion.d</code>目录中去了，这种情况，kubectl
+              命令补全应该在安装完 bash-completion 后就可以正常使用了。
+            </p>
 
-<p>最后，重新加载 shell 后，kubectl 自动提示应该就可以正常工作了。</p>
+            <p>
+              最后，重新加载 shell 后，kubectl 自动提示应该就可以正常工作了。
+            </p>
 
-<h3 id="zsh">Zsh</h3>
+            <h3 id="zsh">Zsh</h3>
 
-<p>Zsh 的补全脚本没有任何依赖，所以我们要做的就是设置让所有的 shell 会话中都可以自动补全即可。</p>
+            <p>
+              Zsh 的补全脚本没有任何依赖，所以我们要做的就是设置让所有的 shell
+              会话中都可以自动补全即可。
+            </p>
 
-<p>可以在<code>~/.zshrc</code>文件中添加下面的内容来完成配置：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#8be9fd;font-style:italic">source</span> &lt;<span style="color:#ff79c6">(</span>kubectl completion zsh<span style="color:#ff79c6">)</span></code></pre></div>
-<p>然后重新加载 shell 即可生效，如果重新加载 shell 后出现了<code>compdef error</code>错误，则需要开启<code>compdef builtin</code>， 可以在<code>~/.zshrc</code>文件的开头添加下面的内容来实现：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">autoload -Uz compinit
-compinit</code></pre></div>
-<h2 id="2-快速查找资源">2.快速查找资源</h2>
+            <p>可以在<code>~/.zshrc</code>文件中添加下面的内容来完成配置：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell"><span style="color:#8be9fd;font-style:italic">source</span> &lt;<span style="color:#ff79c6">(</span>kubectl completion zsh<span style="color:#ff79c6">)</span></code></pre>
+            </div>
+            <p>
+              然后重新加载 shell 即可生效，如果重新加载 shell 后出现了<code
+                >compdef error</code
+              >错误，则需要开启<code>compdef builtin</code>，
+              可以在<code>~/.zshrc</code>文件的开头添加下面的内容来实现：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">autoload -Uz compinit
+compinit</code></pre>
+            </div>
+            <h2 id="2-快速查找资源">2.快速查找资源</h2>
 
-<p>我们在使用 YAML 文件创建资源时，需要知道这些资源的一些字段和含义，一个比较有效的方法就是去 API 文档中查看这些资源对象的完整规范定义。</p>
+            <p>
+              我们在使用 YAML
+              文件创建资源时，需要知道这些资源的一些字段和含义，一个比较有效的方法就是去
+              API 文档中查看这些资源对象的完整规范定义。
+            </p>
 
-<p>但是如果每次要查找某些内容的时候都切换到浏览器去查询也是很麻烦的一件事情，所以，kubectl 为我们提供了一个 <code>kubectl explain</code> 命令，可以在终端中直接打印出来所有资源的规范定义。<code>kubectl explain</code>命令的用法如下所示：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl explain resource<span style="color:#ff79c6">[</span>.field<span style="color:#ff79c6">]</span>...</code></pre></div>
-<p>该命令可以输出请求的资源或者属性的一些规范信息，通过该命令显示的信息和 API 文档中的信息是相同的，参考下面使用示例：</p>
+            <p>
+              但是如果每次要查找某些内容的时候都切换到浏览器去查询也是很麻烦的一件事情，所以，kubectl
+              为我们提供了一个
+              <code>kubectl explain</code>
+              命令，可以在终端中直接打印出来所有资源的规范定义。<code
+                >kubectl explain</code
+              >命令的用法如下所示：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl explain resource<span style="color:#ff79c6">[</span>.field<span style="color:#ff79c6">]</span>...</code></pre>
+            </div>
+            <p>
+              该命令可以输出请求的资源或者属性的一些规范信息，通过该命令显示的信息和
+              API 文档中的信息是相同的，参考下面使用示例：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-explain-action.svg" alt="kubectl explain command action"><figcaption>kubectl explain command action</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/kubectl-explain-action.svg"
+                alt="kubectl explain command action"
+              />
+              <figcaption>kubectl explain command action</figcaption>
+            </figure>
 
-<p>默认情况下，<code>kubectl explain</code>命令只会显示属性的一级数据，我们可以使用<code>--recursive</code>参数来显示整个属性的数据：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl explain deployment.spec --recursive</code></pre></div>
-<p>该命令会将 deployment.spec 属性下面所有的规范都打印出来。
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+            <p>
+              默认情况下，<code>kubectl explain</code
+              >命令只会显示属性的一级数据，我们可以使用<code>--recursive</code>参数来显示整个属性的数据：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl explain deployment.spec --recursive</code></pre>
+            </div>
+            <p>
+              该命令会将 deployment.spec 属性下面所有的规范都打印出来。
+              <script
+                async
+                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+              ></script>
 
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-5376999672787220"
-     data-ad-slot="9165834656"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
+              <ins
+                class="adsbygoogle"
+                style="display: block"
+                data-ad-client="ca-pub-5376999672787220"
+                data-ad-slot="9165834656"
+                data-ad-format="auto"
+                data-full-width-responsive="true"
+              ></ins>
+              <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+              </script>
 
-如果你不太确定可以使用<code>kubectl explain</code>的资源名，可以使用下面的命令来获取所有资源名称：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl api-resources</code></pre></div>
-<p>该命令会线上资源名称的复数形式（比如显示 deployments 而不是 deployment），还会显示一个资源的简写（比如 deploy），不过不用担心，我们可以用任意一个名称来结合<code>kubectl explain</code>命令使用的：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl explain deployments.spec
+              如果你不太确定可以使用<code>kubectl explain</code
+              >的资源名，可以使用下面的命令来获取所有资源名称：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl api-resources</code></pre>
+            </div>
+            <p>
+              该命令会线上资源名称的复数形式（比如显示 deployments 而不是
+              deployment），还会显示一个资源的简写（比如
+              deploy），不过不用担心，我们可以用任意一个名称来结合<code
+                >kubectl explain</code
+              >命令使用的：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl explain deployments.spec
 <span style="color:#6272a4"># 或者</span>
 $ kubectl explain deployment.spec
 <span style="color:#6272a4"># 或者</span>
-$ kubectl explain deploy.spec</code></pre></div>
-<h2 id="3-使用自定义列格式化输出">3.使用自定义列格式化输出</h2>
+$ kubectl explain deploy.spec</code></pre>
+            </div>
+            <h2 id="3-使用自定义列格式化输出">3.使用自定义列格式化输出</h2>
 
-<p><code>kubectl get</code>命令（读取集群资源）的默认输出格式如下：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods
+            <p>
+              <code>kubectl get</code>命令（读取集群资源）的默认输出格式如下：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get pods
 NAME                                      READY   STATUS    RESTARTS   AGE
 nginx-app-76b6449498-86b55                <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          23d
 nginx-app-76b6449498-nlnkj                <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          23d
-opdemo-64db96d575-5mhgg                   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">2</span>          23d</code></pre></div>
-<p>上面的输出结果是一种比较友好的格式，但是它包含的信息比较有限，比如上面只显示了 Pod 资源中的一些信息（与完整资源定义相比）。</p>
+opdemo-64db96d575-5mhgg                   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">2</span>          23d</code></pre>
+            </div>
+            <p>
+              上面的输出结果是一种比较友好的格式，但是它包含的信息比较有限，比如上面只显示了
+              Pod 资源中的一些信息（与完整资源定义相比）。
+            </p>
 
-<p>所以这个时候就有<a href="https://kubernetes.io/docs/reference/kubectl/overview/#custom-columns">自定义输出格式</a>的用武之地了，它允许我们自由定义要显示的列和数据，可以选择要在输出中显示为单独列的资源的任何字段。</p>
+            <p>
+              所以这个时候就有<a
+                href="https://kubernetes.io/docs/reference/kubectl/overview/#custom-columns"
+                >自定义输出格式</a
+              >的用武之地了，它允许我们自由定义要显示的列和数据，可以选择要在输出中显示为单独列的资源的任何字段。
+            </p>
 
-<p><strong>自定义列输出</strong>的用法如下：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">-o custom-columns<span style="color:#ff79c6">=</span>&lt;header&gt;:&lt;jsonpath&gt;<span style="color:#ff79c6">[</span>,&lt;header&gt;:&lt;jsonpath&gt;<span style="color:#ff79c6">]</span>...</code></pre></div>
-<p>需要将每个输出列定义为<code>&lt;header&gt;:&lt;jsonpath&gt;</code>这样的键值对：</p>
+            <p><strong>自定义列输出</strong>的用法如下：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">-o custom-columns<span style="color:#ff79c6">=</span>&lt;header&gt;:&lt;jsonpath&gt;<span style="color:#ff79c6">[</span>,&lt;header&gt;:&lt;jsonpath&gt;<span style="color:#ff79c6">]</span>...</code></pre>
+            </div>
+            <p>
+              需要将每个输出列定义为<code>&lt;header&gt;:&lt;jsonpath&gt;</code>这样的键值对：
+            </p>
 
-<ul>
-<li><code>&lt;header&gt;</code>是列的名称，可以选择任何想要显示的内容。</li>
-<li><code>&lt;jsonpath&gt;</code>是一个选择资源属性的表达式。</li>
-</ul>
+            <ul>
+              <li>
+                <code>&lt;header&gt;</code
+                >是列的名称，可以选择任何想要显示的内容。
+              </li>
+              <li><code>&lt;jsonpath&gt;</code>是一个选择资源属性的表达式。</li>
+            </ul>
 
-<p>我们来看一个简单的例子：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -o custom-columns<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;NAME:metadata.name&#39;</span>
+            <p>我们来看一个简单的例子：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get pods -o custom-columns<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;NAME:metadata.name&#39;</span>
 NAME
 nginx-app-76b6449498-86b55
 nginx-app-76b6449498-nlnkj
-opdemo-64db96d575-5mhgg</code></pre></div>
-<p>我们可以看到上面的命令输出了一个包含所有 Pod 名称的列。选择 Pod 名称的表达式是<code>metadata.name</code>，这是因为 Pod 的名称被定义在 Pod 资源的 metadata 字段下面的 name 字段中（我们可以在 API 文档或者使用<code>kubectl explain pod.metadata.name</code>命令来查看）。</p>
+opdemo-64db96d575-5mhgg</code></pre>
+            </div>
+            <p>
+              我们可以看到上面的命令输出了一个包含所有 Pod 名称的列。选择 Pod
+              名称的表达式是<code>metadata.name</code>，这是因为 Pod
+              的名称被定义在 Pod 资源的 metadata 字段下面的 name
+              字段中（我们可以在 API 文档或者使用<code
+                >kubectl explain pod.metadata.name</code
+              >命令来查看）。
+            </p>
 
-<p>现在假如我们要在输出结果中添加另外一列数据，比如显示每个 Pod 正在运行的节点，这时我们只需要向自定义列的选项中添加合适的列规范数据即可：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods <span style="color:#f1fa8c">\
+            <p>
+              现在假如我们要在输出结果中添加另外一列数据，比如显示每个 Pod
+              正在运行的节点，这时我们只需要向自定义列的选项中添加合适的列规范数据即可：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get pods <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -o custom-columns<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;NAME:metadata.name,NODE:spec.nodeName&#39;</span>
 NAME                                      NODE
 nginx-app-76b6449498-86b55                ydzs-node2
 nginx-app-76b6449498-nlnkj                ydzs-node1
-opdemo-64db96d575-5mhgg                   ydzs-node2</code></pre></div>
-<p>节点名称的表达式是<code>spec.nodeName</code>，这是因为已调度 Pod 的节点信息被保存在了 Pod 的<code>spec.nodeName</code>字段中（可以通过<code>kubectl explain pod.spec.nodeName</code>查看）。</p>
+opdemo-64db96d575-5mhgg                   ydzs-node2</code></pre>
+            </div>
+            <p>
+              节点名称的表达式是<code>spec.nodeName</code>，这是因为已调度 Pod
+              的节点信息被保存在了 Pod
+              的<code>spec.nodeName</code>字段中（可以通过<code
+                >kubectl explain pod.spec.nodeName</code
+              >查看）。
+            </p>
 
-<blockquote>
-<p>注意，Kubernetes 资源字段是<strong>区分大小写</strong>的。</p>
-</blockquote>
+            <blockquote>
+              <p>注意，Kubernetes 资源字段是<strong>区分大小写</strong>的。</p>
+            </blockquote>
 
-<p>我们可以通过这种方式将资源的任何字段设置为输出列的数据，只需要去查看资源规范并使用我们需要的任何字段即可！</p>
+            <p>
+              我们可以通过这种方式将资源的任何字段设置为输出列的数据，只需要去查看资源规范并使用我们需要的任何字段即可！
+            </p>
 
-<p>但首先，我们还是来仔细来看看这些字段的选择表达式吧！</p>
+            <p>但首先，我们还是来仔细来看看这些字段的选择表达式吧！</p>
 
-<h3 id="jsonpath-表达式">JSONPath 表达式</h3>
+            <h3 id="jsonpath-表达式">JSONPath 表达式</h3>
 
-<p>选择资源字段的表达式是基于 <a href="https://goessner.net/articles/JsonPath/index.html">JSONPath</a> 的。</p>
+            <p>
+              选择资源字段的表达式是基于
+              <a href="https://goessner.net/articles/JsonPath/index.html"
+                >JSONPath</a
+              >
+              的。
+            </p>
 
-<p>JSONPATH 是一种从 JSON 文件中提取数据的一种语言（类似于 XPath for XML）。选择单个字段只是 SJONPath 的最基本的用法，它还有很多其他的功能，比如列表选择器、过滤器等。</p>
+            <p>
+              JSONPATH 是一种从 JSON 文件中提取数据的一种语言（类似于 XPath for
+              XML）。选择单个字段只是 SJONPath
+              的最基本的用法，它还有很多其他的功能，比如列表选择器、过滤器等。
+            </p>
 
-<p>但是我们在使用<code>kubectl explain</code>命令的时候只支持部分 JSONPath 功能，下面我们用一些简单的示例来介绍下这些支持的功能：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># 选择一个列表的说有元素</span>
+            <p>
+              但是我们在使用<code>kubectl explain</code>命令的时候只支持部分
+              JSONPath 功能，下面我们用一些简单的示例来介绍下这些支持的功能：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># 选择一个列表的说有元素</span>
 $ kubectl get pods -o custom-columns<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;DATA:spec.containers[*].image&#39;</span>
 
 <span style="color:#6272a4"># 选择一个列表的指定元素</span>
@@ -789,158 +1443,360 @@ $ kubectl get pods -o custom-columns<span style="color:#ff79c6">=</span><span st
 $ kubectl get pods -o custom-columns<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;DATA:metadata.*&#39;</span>
 
 <span style="color:#6272a4"># 选择具有特定名称的所有字段（无论其位置如何）</span>
-$ kubectl get pods -o custom-columns<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;DATA:..image&#39;</span></code></pre></div>
-<p>另外一个非常重要的操作符是<code>[]</code>，Kubernetes 的资源很多字段都是列表，改操作符可以让我们选择这些列表中的一些元素，它通常与通配符<code>[*]</code>一起使用来选择列表中的所有元素。</p>
+$ kubectl get pods -o custom-columns<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;DATA:..image&#39;</span></code></pre>
+            </div>
+            <p>
+              另外一个非常重要的操作符是<code>[]</code>，Kubernetes
+              的资源很多字段都是列表，改操作符可以让我们选择这些列表中的一些元素，它通常与通配符<code>[*]</code>一起使用来选择列表中的所有元素。
+            </p>
 
-<h3 id="示例演示">示例演示</h3>
+            <h3 id="示例演示">示例演示</h3>
 
-<p>使用自定义列输出格式的结果是多种多样的，因为我们可以在输出中显示资源的任何字段或者字段的组合，下面是一些示例演示，当然也可以根据自己的实际需求就自行实践。</p>
+            <p>
+              使用自定义列输出格式的结果是多种多样的，因为我们可以在输出中显示资源的任何字段或者字段的组合，下面是一些示例演示，当然也可以根据自己的实际需求就自行实践。
+            </p>
 
-<blockquote>
-<p>提示：如果你经常使用某一个命令，那么我们可以为这个命令创建一个 shell alias 别名，可以提高效率。</p>
-</blockquote>
+            <blockquote>
+              <p>
+                提示：如果你经常使用某一个命令，那么我们可以为这个命令创建一个
+                shell alias 别名，可以提高效率。
+              </p>
+            </blockquote>
 
-<h4 id="显示-pod-的所有容器镜像">显示 Pod 的所有容器镜像</h4>
+            <h4 id="显示-pod-的所有容器镜像">显示 Pod 的所有容器镜像</h4>
 
-<p>下面的命令显示 default 命名空间下面的每个 Pod 的所有容器镜像的名称：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods <span style="color:#f1fa8c">\
+            <p>
+              下面的命令显示 default 命名空间下面的每个 Pod
+              的所有容器镜像的名称：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get pods <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -o custom-columns<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;NAME:metadata.name,IMAGES:spec.containers[*].image&#39;</span>
 NAME                       IMAGES
 engine-544b6b6467-22qr6    rabbitmq:3.7.8-management,nginx
 engine-544b6b6467-lw5t8    rabbitmq:3.7.8-management,nginx
 engine-544b6b6467-tvgmg    rabbitmq:3.7.8-management,nginx
-web-ui-6db964458-8pdw4     wordpress</code></pre></div>
-<blockquote>
-<p>由于一个 Pod 可能包含多个容器，这种情况下，每个 Pod 的容器镜像会在同一列中用逗号隔开显示。</p>
-</blockquote>
+web-ui-6db964458-8pdw4     wordpress</code></pre>
+            </div>
+            <blockquote>
+              <p>
+                由于一个 Pod 可能包含多个容器，这种情况下，每个 Pod
+                的容器镜像会在同一列中用逗号隔开显示。
+              </p>
+            </blockquote>
 
-<h4 id="显示节点的可用区域">显示节点的可用区域</h4>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get nodes <span style="color:#f1fa8c">\
+            <h4 id="显示节点的可用区域">显示节点的可用区域</h4>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get nodes <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -o custom-columns<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;NAME:metadata.name,ZONE:metadata.labels.failure-domain\.beta\.kubernetes\.io/zone&#39;</span>
 NAME                          ZONE
 ip-10-0-118-34.ec2.internal   us-east-1b
 ip-10-0-36-80.ec2.internal    us-east-1a
-ip-10-0-80-67.ec2.internal    us-east-1b</code></pre></div>
-<p>如果你的 Kubernetes 集群部署在公有云上面（比如 AWS、Azure 或 GCP），那么上面的命令就非常有用了，它可以用来显示每个节点所在的可用区。</p>
+ip-10-0-80-67.ec2.internal    us-east-1b</code></pre>
+            </div>
+            <p>
+              如果你的 Kubernetes 集群部署在公有云上面（比如 AWS、Azure 或
+              GCP），那么上面的命令就非常有用了，它可以用来显示每个节点所在的可用区。
+            </p>
 
-<p>每个节点的可用区都可以通过标签<code>failure-domain.beta.kubernetes.io/zone</code>来获得，集群在公有云上面运行的话，会自动创建该标签的，并将其值设置为节点的可用区名称。</p>
+            <p>
+              每个节点的可用区都可以通过标签<code>failure-domain.beta.kubernetes.io/zone</code>来获得，集群在公有云上面运行的话，会自动创建该标签的，并将其值设置为节点的可用区名称。
+            </p>
 
-<p>Label 标签不是 Kubernetes 资源规范的一部分，所以无法在 API 文档中找到上面的标签，不过我们可以将节点信息输出为 YAML 或者 JSON 格式，这样就可以看到标签信息了：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get nodes -o yaml
+            <p>
+              Label 标签不是 Kubernetes 资源规范的一部分，所以无法在 API
+              文档中找到上面的标签，不过我们可以将节点信息输出为 YAML 或者 JSON
+              格式，这样就可以看到标签信息了：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get nodes -o yaml
 <span style="color:#6272a4"># 或者</span>
-$ kubectl get nodes -o json</code></pre></div>
-<p>这种方法除了用来查看资源规范之外，这也是用来发现资源更多信息的一种很好的方式。</p>
+$ kubectl get nodes -o json</code></pre>
+            </div>
+            <p>
+              这种方法除了用来查看资源规范之外，这也是用来发现资源更多信息的一种很好的方式。
+            </p>
 
-<h2 id="4-切换集群和命名空间">4.切换集群和命名空间</h2>
+            <h2 id="4-切换集群和命名空间">4.切换集群和命名空间</h2>
 
-<p>当 kubectl 向 APIServer 发起请求的时候，会读取系统上的 kubeconfig 文件，首先会加载<code>KUBECONFIG</code>这个环境变量指向的文件，如果没有的话则会去加载<code>~/.kube/config</code>文件，去获取需要访问的连接相关参数发起请求。</p>
+            <p>
+              当 kubectl 向 APIServer 发起请求的时候，会读取系统上的 kubeconfig
+              文件，首先会加载<code>KUBECONFIG</code>这个环境变量指向的文件，如果没有的话则会去加载<code>~/.kube/config</code>文件，去获取需要访问的连接相关参数发起请求。
+            </p>
 
-<p>但是当有<strong>多个集群</strong>需要管理的时候，kubeconfig 文件中就需要配置多个集群的相关参数，所以需要有一种方法来告诉 kubectl 我们希望它去连接到哪个集群。</p>
+            <p>
+              但是当有<strong>多个集群</strong>需要管理的时候，kubeconfig
+              文件中就需要配置多个集群的相关参数，所以需要有一种方法来告诉
+              kubectl 我们希望它去连接到哪个集群。
+            </p>
 
-<p>在集群中可以设置多个 <strong><a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/">namespace</a> (命名空间)</strong>，kubectl 也会通过 kubeconfig 文件来确定请求哪个 namespace，所以，同样也需要一种方法来告诉 kubectl 去连接哪些命名空间。</p>
+            <p>
+              在集群中可以设置多个
+              <strong
+                ><a
+                  href="https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/"
+                  >namespace</a
+                >
+                (命名空间)</strong
+              >，kubectl 也会通过 kubeconfig 文件来确定请求哪个
+              namespace，所以，同样也需要一种方法来告诉 kubectl
+              去连接哪些命名空间。
+            </p>
 
-<p>接下来我们来给大家演示如何实现上面的功能。</p>
+            <p>接下来我们来给大家演示如何实现上面的功能。</p>
 
-<blockquote>
-<p>我们可以在<code>KUBECONFIG</code>环境变量中列出多个 kubeconfig 文件，在这种情况下，所有这些文件会在执行时合并成一个有效的配置文件，当然你还可以使用 kubectl 命令的<code>--kubeconfig</code>参数来覆盖默认的 kubeconfig 文件，可以参考<a href="https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/">官方文档</a>相关说明。</p>
-</blockquote>
+            <blockquote>
+              <p>
+                我们可以在<code>KUBECONFIG</code>环境变量中列出多个 kubeconfig
+                文件，在这种情况下，所有这些文件会在执行时合并成一个有效的配置文件，当然你还可以使用
+                kubectl 命令的<code>--kubeconfig</code>参数来覆盖默认的
+                kubeconfig 文件，可以参考<a
+                  href="https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/"
+                  >官方文档</a
+                >相关说明。
+              </p>
+            </blockquote>
 
-<h3 id="kubeconfig-文件">Kubeconfig 文件</h3>
+            <h3 id="kubeconfig-文件">Kubeconfig 文件</h3>
 
-<p>我们先来看看 kubeconfig 文件包含了哪些内容：</p>
+            <p>我们先来看看 kubeconfig 文件包含了哪些内容：</p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-kubeconfig-content.svg" alt="kubeconfig file content"><figcaption>kubeconfig file content</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/kubectl-kubeconfig-content.svg"
+                alt="kubeconfig file content"
+              />
+              <figcaption>kubeconfig file content</figcaption>
+            </figure>
 
-<p>从上图我们可以看出 kubeconfig 文件由一组 Context（上下文）组成，一个 Context 包含以下3个元素：</p>
+            <p>
+              从上图我们可以看出 kubeconfig 文件由一组
+              Context（上下文）组成，一个 Context 包含以下3个元素：
+            </p>
 
-<ul>
-<li>集群：Kubernetes 集群的 APIServer 的 URL 地址</li>
-<li>用户：集群某个特定用户的身份验证凭据</li>
-<li>命名空间：连接到集群时使用的命名空间</li>
-</ul>
+            <ul>
+              <li>集群：Kubernetes 集群的 APIServer 的 URL 地址</li>
+              <li>用户：集群某个特定用户的身份验证凭据</li>
+              <li>命名空间：连接到集群时使用的命名空间</li>
+            </ul>
 
-<blockquote>
-<p>大多数用户在 kubeconfig 文件中经常使用集群的单个 Context，但是每个集群也有可能有多个 Context，对应的用户或者 namespace 有所不同，但是这好像不是很常见，所以通常在集群和上下文之间是一对一的映射。</p>
-</blockquote>
+            <blockquote>
+              <p>
+                大多数用户在 kubeconfig 文件中经常使用集群的单个
+                Context，但是每个集群也有可能有多个 Context，对应的用户或者
+                namespace
+                有所不同，但是这好像不是很常见，所以通常在集群和上下文之间是一对一的映射。
+              </p>
+            </blockquote>
 
-<p>在任何时间，kubeconfig 文件中的一个 Context 被设置为当前使用的 Context 上下文（通过 kubeconfig 文件中的专有字段指定）：</p>
+            <p>
+              在任何时间，kubeconfig 文件中的一个 Context 被设置为当前使用的
+              Context 上下文（通过 kubeconfig 文件中的专有字段指定）：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-kubeconfig-current-context.svg" alt="kubectl kubeconfig current context"><figcaption>kubectl kubeconfig current context</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/kubectl-kubeconfig-current-context.svg"
+                alt="kubectl kubeconfig current context"
+              />
+              <figcaption>kubectl kubeconfig current context</figcaption>
+            </figure>
 
-<p>当 kubectl 读取 kubeconfig 文件时，它总是会使用当前 Context 中的信息，所以，上面图片中的例子，kubectl 会连接到 HARE 集群。所以，要切换到另外一个集群，我们只需要更改 kubeconfig 文件中的当前上下文 Context 即可：</p>
+            <p>
+              当 kubectl 读取 kubeconfig 文件时，它总是会使用当前 Context
+              中的信息，所以，上面图片中的例子，kubectl 会连接到 HARE
+              集群。所以，要切换到另外一个集群，我们只需要更改 kubeconfig
+              文件中的当前上下文 Context 即可：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-kubeconfig-change-current-context.svg" alt="kubectl kubeconfig change current context"><figcaption>kubectl kubeconfig change current context</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/kubectl-kubeconfig-change-current-context.svg"
+                alt="kubectl kubeconfig change current context"
+              />
+              <figcaption>kubectl kubeconfig change current context</figcaption>
+            </figure>
 
-<p>比如上图中，kubectl 现在会连接到 Fox 集群了。</p>
+            <p>比如上图中，kubectl 现在会连接到 Fox 集群了。</p>
 
-<p>如果要切换到同一个集群中的另外一个命名空间，那么我们可以更改当前上下文中的命名空间属性的值：</p>
+            <p>
+              如果要切换到同一个集群中的另外一个命名空间，那么我们可以更改当前上下文中的命名空间属性的值：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-kubeconfig-change-namespace.svg" alt="kubectl kubeconfig change namespace"><figcaption>kubectl kubeconfig change namespace</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/kubectl-kubeconfig-change-namespace.svg"
+                alt="kubectl kubeconfig change namespace"
+              />
+              <figcaption>kubectl kubeconfig change namespace</figcaption>
+            </figure>
 
-<p>在上图中，kubectl 现在将会使用 Fox 集群中的 Prod 命名空间（而不是之前设置的 Test 这个命名空间）。</p>
+            <p>
+              在上图中，kubectl 现在将会使用 Fox 集群中的 Prod
+              命名空间（而不是之前设置的 Test 这个命名空间）。
+            </p>
 
-<blockquote>
-<p>注意，kubectl 还提供了<code>--cluster</code>、<code>--user</code>、<code>--namespace</code>和<code>--context</code>选项，允许你覆盖单个的元素和当前的上下文本身，详细说明可以查看 <code>kubectl options</code>命令。</p>
-</blockquote>
+            <blockquote>
+              <p>
+                注意，kubectl
+                还提供了<code>--cluster</code>、<code>--user</code>、<code>--namespace</code>和<code>--context</code>选项，允许你覆盖单个的元素和当前的上下文本身，详细说明可以查看
+                <code>kubectl options</code>命令。
+              </p>
+            </blockquote>
 
-<p>理论上，我们当然可以通过手动去编辑 kubeconfig 文件来达到切换的目的，但是这样也的确有些麻烦，下面我们将介绍一些允许我们自动来执行更改的一些工具。</p>
+            <p>
+              理论上，我们当然可以通过手动去编辑 kubeconfig
+              文件来达到切换的目的，但是这样也的确有些麻烦，下面我们将介绍一些允许我们自动来执行更改的一些工具。
+            </p>
 
-<h3 id="kubectx">kubectx</h3>
+            <h3 id="kubectx">kubectx</h3>
 
-<p><a href="https://github.com/ahmetb/kubectx/">kubectx</a> 是一个用于在集群和命名空间切换的非常流行的工作。</p>
+            <p>
+              <a href="https://github.com/ahmetb/kubectx/">kubectx</a>
+              是一个用于在集群和命名空间切换的非常流行的工作。
+            </p>
 
-<p>该工具提供了<code>kubectx</code>和<code>kubens</code>命令，运行更改当前上下文和命名空间。</p>
+            <p>
+              该工具提供了<code>kubectx</code>和<code>kubens</code>命令，运行更改当前上下文和命名空间。
+            </p>
 
-<blockquote>
-<p>如果每个集群只有一个上下文，更改当前上下文也就意味着更改集群了。</p>
-</blockquote>
+            <blockquote>
+              <p>
+                如果每个集群只有一个上下文，更改当前上下文也就意味着更改集群了。
+              </p>
+            </blockquote>
 
-<p>下面是上述命令的演示示例：</p>
+            <p>下面是上述命令的演示示例：</p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-kubectx-action.gif" alt="kubectl kubectx action"><figcaption>kubectl kubectx action</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/kubectl-kubectx-action.gif"
+                alt="kubectl kubectx action"
+              />
+              <figcaption>kubectl kubectx action</figcaption>
+            </figure>
 
-<blockquote>
-<p>当然底层原理还是一样的，这些命令都是去编辑 kubeconfig 文件而已。</p>
-</blockquote>
+            <blockquote>
+              <p>
+                当然底层原理还是一样的，这些命令都是去编辑 kubeconfig 文件而已。
+              </p>
+            </blockquote>
 
-<p>安装 kubectx 非常简单，只需要安装其 <a href="https://github.com/ahmetb/kubectx/#installation">GitHub 页面上的安装说明</a>操作即可。</p>
+            <p>
+              安装 kubectx 非常简单，只需要安装其
+              <a href="https://github.com/ahmetb/kubectx/#installation"
+                >GitHub 页面上的安装说明</a
+              >操作即可。
+            </p>
 
-<p>kubectx 和 kubens 命令都提供了命令补全脚本，这样我们就不需要完全输入目标信息就可以自动补全上下文和命名空间信息了，当然也可以在 <a href="https://github.com/ahmetb/kubectx/#installation">GitHub 页面上找到相关配置</a>的说明。
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+            <p>
+              kubectx 和 kubens
+              命令都提供了命令补全脚本，这样我们就不需要完全输入目标信息就可以自动补全上下文和命名空间信息了，当然也可以在
+              <a href="https://github.com/ahmetb/kubectx/#installation"
+                >GitHub 页面上找到相关配置</a
+              >的说明。
+              <script
+                async
+                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+              ></script>
 
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-5376999672787220"
-     data-ad-slot="9165834656"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
+              <ins
+                class="adsbygoogle"
+                style="display: block"
+                data-ad-client="ca-pub-5376999672787220"
+                data-ad-slot="9165834656"
+                data-ad-format="auto"
+                data-full-width-responsive="true"
+              ></ins>
+              <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+              </script>
 
-kubectx 的另外一个非常有用的功能是<strong><a href="https://github.com/ahmetb/kubectx/#interactive-mode">交互模式</a></strong>，该模式需要和<strong><a href="https://github.com/junegunn/fzf">fzf</a></strong>工具结合使用，需要单独安装该工具（安装 fzf 会自动启用 kubectx 交互模式），交互模式允许我们通过交互式模糊搜索界面（fzf 提供）来选择目标上下文或者命名空间。</p>
+              kubectx 的另外一个非常有用的功能是<strong
+                ><a href="https://github.com/ahmetb/kubectx/#interactive-mode"
+                  >交互模式</a
+                ></strong
+              >，该模式需要和<strong
+                ><a href="https://github.com/junegunn/fzf">fzf</a></strong
+              >工具结合使用，需要单独安装该工具（安装 fzf 会自动启用 kubectx
+              交互模式），交互模式允许我们通过交互式模糊搜索界面（fzf
+              提供）来选择目标上下文或者命名空间。
+            </p>
 
-<h3 id="shell-别名">shell 别名</h3>
+            <h3 id="shell-别名">shell 别名</h3>
 
-<p>实际上，我们也可以不使用额外的工具来切换上下文和命名空间，因为 kubectl 也提供了切换操作的命令，<code>kubectl config</code>命令就提供了用于编辑 kubeconfig 文件的功能，下面是一些基本用法：</p>
+            <p>
+              实际上，我们也可以不使用额外的工具来切换上下文和命名空间，因为
+              kubectl 也提供了切换操作的命令，<code>kubectl config</code
+              >命令就提供了用于编辑 kubeconfig 文件的功能，下面是一些基本用法：
+            </p>
 
-<ul>
-<li>kubectl config get-contexts: 列出所有的 context</li>
-<li>kubectl config current-context: 获取当前的 context</li>
-<li>kubectl config use-context: 更改当前 context</li>
-<li>kubectl config set-context: 修改 context 的元素</li>
-</ul>
+            <ul>
+              <li>kubectl config get-contexts: 列出所有的 context</li>
+              <li>kubectl config current-context: 获取当前的 context</li>
+              <li>kubectl config use-context: 更改当前 context</li>
+              <li>kubectl config set-context: 修改 context 的元素</li>
+            </ul>
 
-<p>很显然直接使用这些命令来说并不是特别方便，但是我们可以将这些命令包装成可以更容易执行的 shell 别名，如下图所示：</p>
+            <p>
+              很显然直接使用这些命令来说并不是特别方便，但是我们可以将这些命令包装成可以更容易执行的
+              shell 别名，如下图所示：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-shell-alias.gif" alt="kubectl shell alias"><figcaption>kubectl shell alias</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/kubectl-shell-alias.gif"
+                alt="kubectl shell alias"
+              />
+              <figcaption>kubectl shell alias</figcaption>
+            </figure>
 
-<blockquote>
-<p>这里我们通过<a href="https://github.com/junegunn/fzf">fzf</a>来提供交互式的模糊搜索界面（类似于 kubectx 的交互模式），所以我们需要提前<a href="https://github.com/junegunn/fzf#installation">安装 fzf</a></p>
-</blockquote>
+            <blockquote>
+              <p>
+                这里我们通过<a href="https://github.com/junegunn/fzf">fzf</a
+                >来提供交互式的模糊搜索界面（类似于 kubectx
+                的交互模式），所以我们需要提前<a
+                  href="https://github.com/junegunn/fzf#installation"
+                  >安装 fzf</a
+                >
+              </p>
+            </blockquote>
 
-<p>下面是我们定义的别名：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># 获取当前上下文</span>
+            <p>下面是我们定义的别名：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># 获取当前上下文</span>
 <span style="color:#8be9fd;font-style:italic">alias</span> <span style="color:#8be9fd;font-style:italic">krc</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;kubectl config current-context&#39;</span>
 <span style="color:#6272a4"># 列出所有上下文</span>
 <span style="color:#8be9fd;font-style:italic">alias</span> <span style="color:#8be9fd;font-style:italic">klc</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;kubectl config get-contexts -o name | sed &#34;s/^/  /;\|^  $(krc)$|s/ /*/&#34;&#39;</span>
@@ -952,81 +1808,198 @@ kubectx 的另外一个非常有用的功能是<strong><a href="https://github.c
 <span style="color:#6272a4"># 列出所有 namespace</span>
 <span style="color:#8be9fd;font-style:italic">alias</span> <span style="color:#8be9fd;font-style:italic">kln</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;kubectl get -o name ns | sed &#34;s|^.*/|  |;\|^  $(krn)$|s/ /*/&#34;&#39;</span>
 <span style="color:#6272a4"># 更改当前 namespace</span>
-<span style="color:#8be9fd;font-style:italic">alias</span> <span style="color:#8be9fd;font-style:italic">kcn</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;kubectl config set-context --current --namespace &#34;$(kln | fzf -e | sed &#34;s/^..//&#34;)&#34;&#39;</span></code></pre></div>
-<p>要让这些别名生效，只需要将上述定义添加到<code>~/.bashrc</code>或<code>~/.zshrc</code>文件中，然后重新加载 shell 即可。</p>
+<span style="color:#8be9fd;font-style:italic">alias</span> <span style="color:#8be9fd;font-style:italic">kcn</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;kubectl config set-context --current --namespace &#34;$(kln | fzf -e | sed &#34;s/^..//&#34;)&#34;&#39;</span></code></pre>
+            </div>
+            <p>
+              要让这些别名生效，只需要将上述定义添加到<code>~/.bashrc</code>或<code>~/.zshrc</code>文件中，然后重新加载
+              shell 即可。
+            </p>
 
-<h3 id="使用插件">使用插件</h3>
+            <h3 id="使用插件">使用插件</h3>
 
-<p>kubectl 允许安装类似于原生命令的一样被调用的插件，比如，我们可以安装一个名为 kubectl-foo 的插件，然后就可以将其作为 kubectl foo 命令进行调用。</p>
+            <p>
+              kubectl
+              允许安装类似于原生命令的一样被调用的插件，比如，我们可以安装一个名为
+              kubectl-foo 的插件，然后就可以将其作为 kubectl foo 命令进行调用。
+            </p>
 
-<blockquote>
-<p>kubectl 插件我们就会在本文后续的部分详细介绍的。</p>
-</blockquote>
+            <blockquote>
+              <p>kubectl 插件我们就会在本文后续的部分详细介绍的。</p>
+            </blockquote>
 
-<p>能够像这样来切换当前上下文和命名空间也是一种很好的方式吧？比如，运行 kubectl ctx 命令来更改上下文，运行 kubectl ns 命令来更改命名空间。我这里就创建了两个这样的插件：</p>
+            <p>
+              能够像这样来切换当前上下文和命名空间也是一种很好的方式吧？比如，运行
+              kubectl ctx 命令来更改上下文，运行 kubectl ns
+              命令来更改命名空间。我这里就创建了两个这样的插件：
+            </p>
 
-<ul>
-<li><a href="https://github.com/weibeld/kubectl-ctx">kubectl-ctx</a></li>
-<li><a href="https://github.com/weibeld/kubectl-ns">kubectl-ns</a></li>
-</ul>
+            <ul>
+              <li>
+                <a href="https://github.com/weibeld/kubectl-ctx">kubectl-ctx</a>
+              </li>
+              <li>
+                <a href="https://github.com/weibeld/kubectl-ns">kubectl-ns</a>
+              </li>
+            </ul>
 
-<p>这两个插件的原理其实也比较简单，也是基于前面提到的 shell 别名来构建的，下图是我们使用这两个插件的实际效果：</p>
+            <p>
+              这两个插件的原理其实也比较简单，也是基于前面提到的 shell
+              别名来构建的，下图是我们使用这两个插件的实际效果：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-plugin-action.gif" alt="kubectl plugin action"><figcaption>kubectl plugin action</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/kubectl-plugin-action.gif"
+                alt="kubectl plugin action"
+              />
+              <figcaption>kubectl plugin action</figcaption>
+            </figure>
 
-<blockquote>
-<p>同样要注意<a href="https://github.com/junegunn/fzf#installation">安装 fzf</a>。</p>
-</blockquote>
+            <blockquote>
+              <p>
+                同样要注意<a href="https://github.com/junegunn/fzf#installation"
+                  >安装 fzf</a
+                >。
+              </p>
+            </blockquote>
 
-<p>安装这两个插件非常简单，只需要将上面名为 kubectl-ctx 和 kubectl-ns 的 shell 脚本下载到任意一个 PATH 目录下面，将其设置为可执行（使用 chmod + x 命令）即可，这样我们就可以使用<code>kubectl ctx</code>和<code>kubectl ns</code>命令了，是不是很简单？</p>
+            <p>
+              安装这两个插件非常简单，只需要将上面名为 kubectl-ctx 和 kubectl-ns
+              的 shell 脚本下载到任意一个 PATH 目录下面，将其设置为可执行（使用
+              chmod + x 命令）即可，这样我们就可以使用<code>kubectl ctx</code
+              >和<code>kubectl ns</code>命令了，是不是很简单？
+            </p>
 
-<h2 id="5-保存自动生成的别名">5.保存自动生成的别名</h2>
+            <h2 id="5-保存自动生成的别名">5.保存自动生成的别名</h2>
 
-<p>该部分可以参考原文：<a href="https://learnk8s.io/blog/kubectl-productivity/#5-save-typing-with-auto-generated-aliases">Save typing with auto-generated aliases
-</a></p>
+            <p>
+              该部分可以参考原文：<a
+                href="https://learnk8s.io/blog/kubectl-productivity/#5-save-typing-with-auto-generated-aliases"
+                >Save typing with auto-generated aliases
+              </a>
+            </p>
 
-<blockquote>
-<p>todo</p>
-</blockquote>
+            <blockquote>
+              <p>todo</p>
+            </blockquote>
 
-<h2 id="6-使用插件扩展-kubectl">6.使用插件扩展 kubectl</h2>
+            <h2 id="6-使用插件扩展-kubectl">6.使用插件扩展 kubectl</h2>
 
-<p>从<a href="https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG-1.12.md#sig-cli-1">1.12版本</a>开始，kubectl 就提供了一个<a href="https://kubernetes.io/docs/tasks/extend-kubectl/kubectl-plugins/">插件机制</a>，允许我们通过自定义命令来扩展 kubectl。</p>
+            <p>
+              从<a
+                href="https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG-1.12.md#sig-cli-1"
+                >1.12版本</a
+              >开始，kubectl 就提供了一个<a
+                href="https://kubernetes.io/docs/tasks/extend-kubectl/kubectl-plugins/"
+                >插件机制</a
+              >，允许我们通过自定义命令来扩展 kubectl。
+            </p>
 
-<p>下面是一个插件示例，可以通过调用<code>kubectl hello</code>来打印一句话：
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-plugin-hello.svg" alt="kubectl plugin hello" /></p>
+            <p>
+              下面是一个插件示例，可以通过调用<code>kubectl hello</code
+              >来打印一句话：
+              <img
+                src="https://picdn.youdianzhishi.com/images/kubectl-plugin-hello.svg"
+                alt="kubectl plugin hello"
+              />
+            </p>
 
-<blockquote>
-<p>kubectl 的插件机是严格遵循 <a href="https://adamcod.es/2013/07/12/how-to-create-git-plugin.html">Git 的插件机制</a>的。</p>
-</blockquote>
+            <blockquote>
+              <p>
+                kubectl 的插件机是严格遵循
+                <a
+                  href="https://adamcod.es/2013/07/12/how-to-create-git-plugin.html"
+                  >Git 的插件机制</a
+                >的。
+              </p>
+            </blockquote>
 
-<p>接下来我们将介绍如何安装插件和在什么地方可以找到已有的插件以及如何创建自己的插件。</p>
+            <p>
+              接下来我们将介绍如何安装插件和在什么地方可以找到已有的插件以及如何创建自己的插件。
+            </p>
 
-<h3 id="安装插件">安装插件</h3>
+            <h3 id="安装插件">安装插件</h3>
 
-<p>kubectl 插件是作为一个简单的可执行文件进行发布的，名称格式为<code>kubectl-x</code>，前缀<code>kubectl-</code>是必须的，然后就是通过一些配置来允许调用插件的新的 kubectl 子命令。</p>
+            <p>
+              kubectl
+              插件是作为一个简单的可执行文件进行发布的，名称格式为<code>kubectl-x</code>，前缀<code>kubectl-</code>是必须的，然后就是通过一些配置来允许调用插件的新的
+              kubectl 子命令。
+            </p>
 
-<p>比如，上面显示的 hello 插件就是通过名为<code>kubectl-hello</code>的可执行文件发布的。</p>
+            <p>
+              比如，上面显示的 hello
+              插件就是通过名为<code>kubectl-hello</code>的可执行文件发布的。
+            </p>
 
-<p>要安装插件，只需要将 kubectl-x 文件复制到 PATH 目录下任意一个目录中，然后将其设置为可执行状态（比如使用 chmod + x 命令），然后就可以使用 <code>kubectl x</code> 命令调用插件了。</p>
+            <p>
+              要安装插件，只需要将 kubectl-x 文件复制到 PATH
+              目录下任意一个目录中，然后将其设置为可执行状态（比如使用 chmod + x
+              命令），然后就可以使用 <code>kubectl x</code> 命令调用插件了。
+            </p>
 
-<p>我们可以使用以下命令列出系统上当前安装的所有插件：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl plugin list</code></pre></div>
-<p>如果你有多个具有相同名称的插件或者有不可执行的插件，该命令都会出现一些警告信息。</p>
+            <p>我们可以使用以下命令列出系统上当前安装的所有插件：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl plugin list</code></pre>
+            </div>
+            <p>
+              如果你有多个具有相同名称的插件或者有不可执行的插件，该命令都会出现一些警告信息。
+            </p>
 
-<h3 id="使用-krew-查找和安装插件">使用 krew 查找和安装插件</h3>
+            <h3 id="使用-krew-查找和安装插件">使用 krew 查找和安装插件</h3>
 
-<p>kubectl 插件可以像软件包一样共享和重用，但是在哪里可以找到其他人共享的插件呢？</p>
+            <p>
+              kubectl
+              插件可以像软件包一样共享和重用，但是在哪里可以找到其他人共享的插件呢？
+            </p>
 
-<p><a href="https://github.com/GoogleContainerTools/krew">krew</a>项目就旨在为共享、搜索、安装和管理 kubectl 插件提供统一的解决方案，该项目将自己称为<strong>kubectl 插件的包管理器</strong>（krew 的名字灵感也是来源于 <a href="https://brew.sh/">brew</a>）。</p>
+            <p>
+              <a href="https://github.com/GoogleContainerTools/krew">krew</a
+              >项目就旨在为共享、搜索、安装和管理 kubectl
+              插件提供统一的解决方案，该项目将自己称为<strong
+                >kubectl 插件的包管理器</strong
+              >（krew 的名字灵感也是来源于
+              <a href="https://brew.sh/">brew</a>）。
+            </p>
 
-<p>krew 围绕 kubectl 插件<a href="https://github.com/GoogleContainerTools/krew-index">索引</a>为中心，可以从中选择和安装，下图是 krew 使用的一个示例：
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/kubectl-krew-demo.svg" alt="krew in action" /></p>
+            <p>
+              krew 围绕 kubectl 插件<a
+                href="https://github.com/GoogleContainerTools/krew-index"
+                >索引</a
+              >为中心，可以从中选择和安装，下图是 krew 使用的一个示例：
+              <img
+                src="https://picdn.youdianzhishi.com/images/kubectl-krew-demo.svg"
+                alt="krew in action"
+              />
+            </p>
 
-<p>事实上，krew 本身也是一个 kubectl 插件，所以安装 krew 本质上就像安装其他 kubectl 插件一样，我们可以在 <a href="https://github.com/GoogleContainerTools/krew/#installation">GitHub 页面</a>上找到 krew 的详细安装说明。</p>
+            <p>
+              事实上，krew 本身也是一个 kubectl 插件，所以安装 krew
+              本质上就像安装其他 kubectl 插件一样，我们可以在
+              <a
+                href="https://github.com/GoogleContainerTools/krew/#installation"
+                >GitHub 页面</a
+              >上找到 krew 的详细安装说明。
+            </p>
 
-<p>下面是几个最重要的 krew 命令：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># 搜索 krew 索引 (带一个可选的搜索 query 参数)</span>
+            <p>下面是几个最重要的 krew 命令：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># 搜索 krew 索引 (带一个可选的搜索 query 参数)</span>
 $ kubectl krew search <span style="color:#ff79c6">[</span>&lt;query&gt;<span style="color:#ff79c6">]</span>
 <span style="color:#6272a4"># 显示一个插件的相关信息</span>
 $ kubectl krew info &lt;plugin&gt;
@@ -1037,34 +2010,98 @@ $ kubectl krew upgrade
 <span style="color:#6272a4"># 列出 krew 安装的所有插件krew</span>
 $ kubectl krew list
 <span style="color:#6272a4"># 卸载一个插件</span>
-$ kubectl krew remove &lt;plugin&gt;</code></pre></div>
-<p>需要注意的使用使用 krew 安装插件也并不会妨碍我们用传统的方式去安装插件，我们仍然还是可以通过其他方式去安装或者自己创建插件。</p>
+$ kubectl krew remove &lt;plugin&gt;</code></pre>
+            </div>
+            <p>
+              需要注意的使用使用 krew
+              安装插件也并不会妨碍我们用传统的方式去安装插件，我们仍然还是可以通过其他方式去安装或者自己创建插件。
+            </p>
 
-<blockquote>
-<p>不过需要注意的是<code>kubectl krew list</code>命令只会列出使用 krew 安装的插件，而<code>kubectl plugin list</code>命令会列出所有的插件，包括 krew 安装的和其他方式安装的插件。</p>
-</blockquote>
+            <blockquote>
+              <p>
+                不过需要注意的是<code>kubectl krew list</code>命令只会列出使用
+                krew 安装的插件，而<code>kubectl plugin list</code
+                >命令会列出所有的插件，包括 krew 安装的和其他方式安装的插件。
+              </p>
+            </blockquote>
 
-<h3 id="在其他地方查找插件">在其他地方查找插件</h3>
+            <h3 id="在其他地方查找插件">在其他地方查找插件</h3>
 
-<p>krew 还是一个非常年轻的项目，目前 krew index 中只有大约 30 多个插件，如果你找不到合适的插件，可以在其他地方去查找，比如在 GitHub 上面搜索。</p>
+            <p>
+              krew 还是一个非常年轻的项目，目前 krew index 中只有大约 30
+              多个插件，如果你找不到合适的插件，可以在其他地方去查找，比如在
+              GitHub 上面搜索。
+            </p>
 
-<p>建议可以在 GitHub 上面查看 <a href="https://github.com/topics/kubectl-plugins">kubectl-plugins 主题</a>，会发现有几十个可用的插件值得一试的。</p>
+            <p>
+              建议可以在 GitHub 上面查看
+              <a href="https://github.com/topics/kubectl-plugins"
+                >kubectl-plugins 主题</a
+              >，会发现有几十个可用的插件值得一试的。
+            </p>
 
-<h3 id="创建自己的插件">创建自己的插件</h3>
+            <h3 id="创建自己的插件">创建自己的插件</h3>
 
-<p>当然，我们可以<a href="https://kubernetes.io/docs/tasks/extend-kubectl/kubectl-plugins/#writing-kubectl-plugins">创建自己的 kubectl 插件</a>，只需要创建一个可执行文件，执行想要的操作，为其命名为 kubectl-x 的形式，然后安装上面的方法来安装即可。</p>
+            <p>
+              当然，我们可以<a
+                href="https://kubernetes.io/docs/tasks/extend-kubectl/kubectl-plugins/#writing-kubectl-plugins"
+                >创建自己的 kubectl 插件</a
+              >，只需要创建一个可执行文件，执行想要的操作，为其命名为 kubectl-x
+              的形式，然后安装上面的方法来安装即可。
+            </p>
 
-<p>可执行的文件可以是任何类型的，比如 Bash 脚本、编译好的 Go 程序、Python 脚本等都是可以的，唯一的要求就是在你操作的系统里面可以直接执行。</p>
+            <p>
+              可执行的文件可以是任何类型的，比如 Bash 脚本、编译好的 Go
+              程序、Python
+              脚本等都是可以的，唯一的要求就是在你操作的系统里面可以直接执行。
+            </p>
 
-<p>下面我们来创建一个简单的插件示例，在前面的一节中，我们通过 kubectl 命令列出了每个 Pod 的容器镜像，我们可以轻松地将该命令转换为可以调用的插件，例如 kubectl img。</p>
+            <p>
+              下面我们来创建一个简单的插件示例，在前面的一节中，我们通过 kubectl
+              命令列出了每个 Pod
+              的容器镜像，我们可以轻松地将该命令转换为可以调用的插件，例如
+              kubectl img。
+            </p>
 
-<p>创建一个名为 kubectl-img 的文件，内容如下：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#ff79c6">#!/bin/bash
-</span><span style="color:#ff79c6"></span>kubectl get pods -o custom-columns<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;NAME:metadata.name,IMAGES:spec.containers[*].image&#39;</span></code></pre></div>
-<p>然后执行以下命令使文件变成可执行：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ chmod +x kubectl-img</code></pre></div>
-<p>然后将 kubectl-img 文件移动到 PATH 中任意一个目录，然后我们就可以使用 kubectl img 命令了：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl plugin list
+            <p>创建一个名为 kubectl-img 的文件，内容如下：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell"><span style="color:#ff79c6">#!/bin/bash
+</span><span style="color:#ff79c6"></span>kubectl get pods -o custom-columns<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;NAME:metadata.name,IMAGES:spec.containers[*].image&#39;</span></code></pre>
+            </div>
+            <p>然后执行以下命令使文件变成可执行：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ chmod +x kubectl-img</code></pre>
+            </div>
+            <p>
+              然后将 kubectl-img 文件移动到 PATH
+              中任意一个目录，然后我们就可以使用 kubectl img 命令了：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl plugin list
 The following compatible plugins are available:
 
 /Users/ych/devs/workspace/yidianzhishi/kubernetes/bin/kubectl-img
@@ -1075,180 +2112,281 @@ nfs-client-provisioner-6985f88c47-pd6mr   quay.io/external_storage/nfs-client-pr
 nginx                                     nginx:1.7.9
 nginx-app-76b6449498-86b55                nginx:1.7.9
 nginx-app-76b6449498-nlnkj                nginx:1.7.9
-opdemo-64db96d575-5mhgg                   cnych/opdemo</code></pre></div>
-<blockquote>
-<p>如上所示，kubectl 插件可以使用任何编程语言或者脚本来实现的，如果使用 shell 脚本，则可以在插件中轻松调用 kubectl，当然我们也可以使用实际编程语言来编写更复杂的插件，例如，使用 <a href="https://kubernetes.io/docs/reference/using-api/client-libraries/">Kubernetes 客户端库</a>，如果使用 Go 语言，还可以使用 <a href="https://github.com/kubernetes/cli-runtime">cli-runtime</a> 库，它是专门用于编写 kubectl 插件的。</p>
-</blockquote>
+opdemo-64db96d575-5mhgg                   cnych/opdemo</code></pre>
+            </div>
+            <blockquote>
+              <p>
+                如上所示，kubectl
+                插件可以使用任何编程语言或者脚本来实现的，如果使用 shell
+                脚本，则可以在插件中轻松调用
+                kubectl，当然我们也可以使用实际编程语言来编写更复杂的插件，例如，使用
+                <a
+                  href="https://kubernetes.io/docs/reference/using-api/client-libraries/"
+                  >Kubernetes 客户端库</a
+                >，如果使用 Go 语言，还可以使用
+                <a href="https://github.com/kubernetes/cli-runtime"
+                  >cli-runtime</a
+                >
+                库，它是专门用于编写 kubectl 插件的。
+              </p>
+            </blockquote>
 
-<h3 id="分享你的插件">分享你的插件</h3>
+            <h3 id="分享你的插件">分享你的插件</h3>
 
-<p>如果你认为你的插件可能对其他人也有用，那么可以随时在 GitHub 上面分享，最好添加到 kubectl-plugins 主题中，这样可以方便别的用户找到。</p>
+            <p>
+              如果你认为你的插件可能对其他人也有用，那么可以随时在 GitHub
+              上面分享，最好添加到 kubectl-plugins
+              主题中，这样可以方便别的用户找到。
+            </p>
 
-<p>你还可以请求将你的插件添加到 krew index 中去，可以在 <a href="https://github.com/GoogleContainerTools/krew/blob/master/docs/DEVELOPER_GUIDE.md">krew 的 GitHub 仓库</a>上面找到有关如何执行该操作的说明。</p>
+            <p>
+              你还可以请求将你的插件添加到 krew index 中去，可以在
+              <a
+                href="https://github.com/GoogleContainerTools/krew/blob/master/docs/DEVELOPER_GUIDE.md"
+                >krew 的 GitHub 仓库</a
+              >上面找到有关如何执行该操作的说明。
+            </p>
 
-<h3 id="命令提示">命令提示</h3>
+            <h3 id="命令提示">命令提示</h3>
 
-<p>目录，插件机制还不支持命令提示功能，所以我们需要完全输入插件的名称和插件的参数下可以使用。</p>
+            <p>
+              目录，插件机制还不支持命令提示功能，所以我们需要完全输入插件的名称和插件的参数下可以使用。
+            </p>
 
-<p>不过不用担心，在 kubectl GitHub 仓库中有一个是 open feature request，所以，该功能应该很快就会被支持了。</p>
+            <p>
+              不过不用担心，在 kubectl GitHub 仓库中有一个是 open feature
+              request，所以，该功能应该很快就会被支持了。
+            </p>
 
-<p>原文链接：<a href="https://learnk8s.io/blog/kubectl-productivity/">https://learnk8s.io/blog/kubectl-productivity/</a></p>
+            <p>
+              原文链接：<a href="https://learnk8s.io/blog/kubectl-productivity/"
+                >https://learnk8s.io/blog/kubectl-productivity/</a
+              >
+            </p>
 
-<p><a href="https://youdianzhishi.com/web/course/1030" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+            <p>
+              <a
+                href="https://youdianzhishi.com/web/course/1030"
+                title="从 Docker 到 Kubernetes 进阶课程"
+                ><img
+                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
+                  alt="Kubernetes进阶训练营"
+              /></a>
+            </p>
 
+            <h2>微信公众号</h2>
+            <p>
+              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+              kubernetes 讨论群里面共同学习。
+            </p>
+            <img
+              src="https://picdn.youdianzhishi.com/images/qrcode.png"
+              alt="wechat-account-qrcode"
+            />
 
-          <h2>微信公众号</h2>
-<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
-
-  
-          
             <div class="entry-shang text-center">
-    <p>「真诚赞赏，手留余香」</p>
-    <button class="zs show-zs btn btn-bred">赞赏</button>
-</div>
-<div class="zs-modal-bg"></div>
-<div class="zs-modal-box">
-    <div class="zs-modal-head">
-        <button type="button" class="close">×</button>
-        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
-        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-    </div>
-    <div class="zs-modal-body">
-        <div class="zs-modal-btns">
-            <button class="btn btn-blink" data-num="2">2元</button>
-            <button class="btn btn-blink" data-num="5">5元</button>
-            <button class="btn btn-blink" data-num="10">10元</button>
-            <button class="btn btn-blink" data-num="50">50元</button>
-            <button class="btn btn-blink" data-num="100">100元</button>
-            <button class="btn btn-blink" data-num="1">任意金额</button>
-        </div>
-        <div class="zs-modal-pay">
-            <button class="btn btn-bred" id="pay-text">2元</button>
-            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
-        </div>
-    </div>
-    <div class="zs-modal-footer">
-        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
-    </div>
-</div>
-          
-          
-            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
-    <center>
-    <a href="#" class="social-share-icon icon-weibo"></a>
-    <a href="#" class="social-share-icon icon-wechat"></a>
-    <a href="#" class="social-share-icon icon-twitter"></a>
-    <a href="#" class="social-share-icon icon-linkedin"></a>
-    <a href="#" class="social-share-icon icon-facebook"></a>
-    <a href="#" class="social-share-icon icon-qq"></a>
-    <a href="#" class="social-share-icon icon-qzone"></a>
-    </center>
-</div>
+              <p>「真诚赞赏，手留余香」</p>
+              <button class="zs show-zs btn btn-bred">赞赏</button>
+            </div>
+            <div class="zs-modal-bg"></div>
+            <div class="zs-modal-box">
+              <div class="zs-modal-head">
+                <button type="button" class="close">×</button>
+                <span class="author"
+                  ><img
+                    src="https://www.qikqiak.com/img/avatar.jpeg"
+                  />阳明</span
+                >
+                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+              </div>
+              <div class="zs-modal-body">
+                <div class="zs-modal-btns">
+                  <button class="btn btn-blink" data-num="2">2元</button>
+                  <button class="btn btn-blink" data-num="5">5元</button>
+                  <button class="btn btn-blink" data-num="10">10元</button>
+                  <button class="btn btn-blink" data-num="50">50元</button>
+                  <button class="btn btn-blink" data-num="100">100元</button>
+                  <button class="btn btn-blink" data-num="1">任意金额</button>
+                </div>
+                <div class="zs-modal-pay">
+                  <button class="btn btn-bred" id="pay-text">2元</button>
+                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+                  <img
+                    src="https://www.qikqiak.com/img/wechat-2.png"
+                    id="pay-image"
+                  />
+                </div>
+              </div>
+              <div class="zs-modal-footer">
+                <span class="zs-wechat"
+                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
+                /></span>
+              </div>
+            </div>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+            <div
+              class="social-share"
+              data-initialized="true"
+              style="margin-bottom: 20px; margin-top: 20px"
+            >
+              <center>
+                <a href="#" class="social-share-icon icon-weibo"></a>
+                <a href="#" class="social-share-icon icon-wechat"></a>
+                <a href="#" class="social-share-icon icon-twitter"></a>
+                <a href="#" class="social-share-icon icon-linkedin"></a>
+                <a href="#" class="social-share-icon icon-facebook"></a>
+                <a href="#" class="social-share-icon icon-qq"></a>
+                <a href="#" class="social-share-icon icon-qzone"></a>
+              </center>
+            </div>
 
-          
-        </article>
-  
-        
-          
+            <link
+              rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
+            />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+          </article>
 
-<h3>相关文章</h3>
-<ul style="margin-bottom: 25px;">
-    
-    <li><a href="https://www.qikqiak.com/post/use-kubeadm-upgrade-k8s/">使用 kubeadm 更新 kubernetes 集群</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/manual-install-high-available-kubernetes-cluster/">手动搭建高可用的kubernetes 集群</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/k8s-auth-via-oidc/">通过 GitHub OAuth 和 Dex 访问 Kubernetes 集群</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/">在 Kubernetes 上安装 Gitlab</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/harbor-quick-install/">在 Kubernetes 在快速安装 Harbor</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/harbor-code-analysis/">Harbor 源码浅析</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/dockerfile-best-practice/">Dockerfile 最佳实践</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/pod-init-container/">初始化容器</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/write-kubernets-golang-service-step-by-step/">手摸手教你写 Kubernetes 的 golang 服务</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/install-docker-registry-harbor-in-kubernetes/">在kubernetes 集群上搭建docker 私有仓库Harbor</a></li>
-    
-</ul>
+          <h3>相关文章</h3>
+          <ul style="margin-bottom: 25px">
+            <li>
+              <a href="https://www.qikqiak.com/post/use-kubeadm-upgrade-k8s/"
+                >使用 kubeadm 更新 kubernetes 集群</a
+              >
+            </li>
 
-        
-  
-        
-        <ul class="pager blog-pager">
-          
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/manual-install-high-available-kubernetes-cluster/"
+                >手动搭建高可用的kubernetes 集群</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/k8s-auth-via-oidc/"
+                >通过 GitHub OAuth 和 Dex 访问 Kubernetes 集群</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/"
+                >在 Kubernetes 上安装 Gitlab</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/harbor-quick-install/"
+                >在 Kubernetes 在快速安装 Harbor</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/harbor-code-analysis/"
+                >Harbor 源码浅析</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/dockerfile-best-practice/"
+                >Dockerfile 最佳实践</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/pod-init-container/"
+                >初始化容器</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/write-kubernets-golang-service-step-by-step/"
+                >手摸手教你写 Kubernetes 的 golang 服务</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/install-docker-registry-harbor-in-kubernetes/"
+                >在kubernetes 集群上搭建docker 私有仓库Harbor</a
+              >
+            </li>
+          </ul>
+
+          <ul class="pager blog-pager">
             <li class="previous">
-              <a href="https://www.qikqiak.com/post/go-modules-usage/" data-toggle="tooltip" data-placement="top" title="Go Modules 基本使用（视频）">&larr; 前一篇</a>
+              <a
+                href="https://www.qikqiak.com/post/go-modules-usage/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="Go Modules 基本使用（视频）"
+                >&larr; 前一篇</a
+              >
             </li>
-          
-          
-            <li class="next">
-              <a href="https://www.qikqiak.com/post/drone-with-k8s-1/" data-toggle="tooltip" data-placement="top" title="使用 Kubernetes Helm 安装 Drone">后一篇 &rarr;</a>
-            </li>
-          
-        </ul>
-        
 
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-        
-        <ins class="adsbygoogle"
-            style="display:block"
+            <li class="next">
+              <a
+                href="https://www.qikqiak.com/post/drone-with-k8s-1/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="使用 Kubernetes Helm 安装 Drone"
+                >后一篇 &rarr;</a
+              >
+            </li>
+          </ul>
+
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+          ></script>
+
+          <ins
+            class="adsbygoogle"
+            style="display: block"
             data-ad-client="ca-pub-5376999672787220"
             data-ad-slot="3700507799"
             data-ad-format="auto"
-            data-full-width-responsive="true"></ins>
-        <script>
+            data-full-width-responsive="true"
+          ></ins>
+          <script>
             (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
-  
-        
-    <div id="gitalk-container"></div>
-    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-    <script>
-    var gitalk = new Gitalk({
-        clientID: 'bdb76dbb2e9d0786e350',
-        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
-        repo: 'blog',
-        owner: 'cnych',
-        admin: ['cnych'],
-        labels: ['gitment'],
-        title: '提高 kubectl 使用生产力[译]',
-        createIssueManually: true,
-        id: 'boosting-kubeclt-productivity',      
-        distractionFreeMode: true  
-    });
-    gitalk.render('gitalk-container');
-</script>
+          </script>
 
-
-        
-          
-
-        
-  
+          <div id="gitalk-container"></div>
+          <link
+            rel="stylesheet"
+            href="https://unpkg.com/gitalk/dist/gitalk.css"
+          />
+          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+          <script>
+            var gitalk = new Gitalk({
+              clientID: "bdb76dbb2e9d0786e350",
+              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
+              repo: "blog",
+              owner: "cnych",
+              admin: ["cnych"],
+              labels: ["gitment"],
+              title: "提高 kubectl 使用生产力[译]",
+              createIssueManually: true,
+              id: "boosting-kubeclt-productivity",
+              distractionFreeMode: true,
+            });
+            gitalk.render("gitalk-container");
+          </script>
+        </div>
       </div>
-    
-    
-  </div>
-</div>
+    </div>
 
     <footer>
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <ul class="list-inline text-center footer-links">
-          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
-          
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <ul class="list-inline text-center footer-links">
+              <img
+                src="https://www.qikqiak.com/img/wechatmp.png"
+                alt="k8s技术圈"
+              />
+
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -1257,7 +2395,7 @@ opdemo-64db96d575-5mhgg                   cnych/opdemo</code></pre></div>
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -1266,7 +2404,7 @@ opdemo-64db96d575-5mhgg                   cnych/opdemo</code></pre></div>
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -1275,7 +2413,7 @@ opdemo-64db96d575-5mhgg                   cnych/opdemo</code></pre></div>
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -1284,121 +2422,158 @@ opdemo-64db96d575-5mhgg                   cnych/opdemo</code></pre></div>
                   </span>
                 </a>
               </li>
-          
-          
-          <li>
-            <a href="https://www.qikqiak.com/index.xml" title="RSS">
-              <span class="fa-stack fa-lg">
-                <i class="fa fa-circle fa-stack-2x"></i>
-                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+
+              <li>
+                <a href="https://www.qikqiak.com/index.xml" title="RSS">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+            </ul>
+            <p class="credits copyright text-muted">
+              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/">阳明的博客</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/archive/">归档</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/friend/">友链</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://beian.miit.gov.cn/" target="_blank"
+                >蜀ICP备11027319号-5</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
+                >kubernetes.io</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
+                >Kubernetes中文社区</a
+              >
+            </p>
+            <p class="text-center text-muted">
+              <script
+                async
+                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
+              ></script>
+              <span id="busuanzi_container_site_pv" style="display: none">
+                本站总访问量<span id="busuanzi_value_site_pv"></span>次
               </span>
-            </a>
-          </li>
-          
-        </ul>
-        <p class="credits copyright text-muted">
-          
+              &nbsp;&bull;&nbsp;
+              <span id="busuanzi_container_site_uv" style="display: none">
+                访客数<span id="busuanzi_value_site_uv"></span>人次
+              </span>
+            </p>
 
-          &nbsp;&bull;&nbsp;
-          2023
-
-          
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/">阳明的博客</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/archive/">归档</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/friend/">友链</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
-          
-        </p>
-        <p class="text-center text-muted">
-          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-          <span id="busuanzi_container_site_pv" style="display:none">
-            本站总访问量<span id="busuanzi_value_site_pv"></span>次
-          </span>
-          &nbsp;&bull;&nbsp;
-          <span id="busuanzi_container_site_uv" style="display:none">
-            访客数<span id="busuanzi_value_site_uv"></span>人次
-          </span>
-        </p>
-        
-        <p class="credits theme-by text-muted">
-          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
-          
-        </p>
+            <p class="credits theme-by text-muted">
+              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
+              &nbsp;&bull;&nbsp; 主题
+              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+              移植自
+              <a href="https://github.com/rootsongjc/beautifulhugo"
+                >Beautiful Hugo</a
+              >
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</footer>
+    </footer>
 
+    <script
+      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
+      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
+    ></script>
 
-<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "UA-69668147-3");
+    </script>
+    <script>
+      (function () {
+        var bp = document.createElement("script");
+        var curProtocol = window.location.protocol.split(":")[0];
+        if (curProtocol === "https") {
+          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
+        } else {
+          bp.src = "http://push.zhanzhang.baidu.com/push.js";
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+      })();
+    </script>
+    <script>
+      $(document).ready(function () {
+        var int = setInterval(fixCount, 50);
 
-
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-69668147-3');
-</script>
-<script>
-(function(){
-    var bp = document.createElement('script');
-    var curProtocol = window.location.protocol.split(':')[0];
-    if (curProtocol === 'https') {
-        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
-    }
-    else {
-        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
-    }
-    var s = document.getElementsByTagName("script")[0];
-    s.parentNode.insertBefore(bp, s);
-})();
-</script>
-<script >
-$(document).ready(function() {
-  var int = setInterval(fixCount, 50);  
-  
-  var initPVCount = 584976;
-  var initUVCount = 153191;
-  function fixCount() {                   
-    if ($("#busuanzi_container_site_pv").css("display") != "none") {
-        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
-        clearInterval(int); 
-    }
-    if ($("#busuanzi_container_site_uv").css("display") != "none") {
-      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
-      clearInterval(int); 
-    }  
-  }           
-});
-</script>
- <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
-<script type="text/javascript">
-$('.carousel').slick({
-    dots: true,
-    arrows: true,
-    autoplay: true,
-    autoplaySpeed: 4000,
-    infinite: true,
-    speed: 500,
-    fade: true,
-    cssEase: 'linear',
-    centerMode: true,
-    prevArrow: '<button type="button" class="slick-prev"></button>',
-    nextArrow: '<button type="button" class="slick-next"></button>',
-});
-</script>
-
+        var initPVCount = 584976;
+        var initUVCount = 153191;
+        function fixCount() {
+          if ($("#busuanzi_container_site_pv").css("display") != "none") {
+            $("#busuanzi_value_site_pv").html(
+              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
+            );
+            clearInterval(int);
+          }
+          if ($("#busuanzi_container_site_uv").css("display") != "none") {
+            $("#busuanzi_value_site_uv").html(
+              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
+            );
+            clearInterval(int);
+          }
+        }
+      });
+    </script>
+    <script>
+      (function (w, d, s, id) {
+        if (typeof w.webpushr !== "undefined") return;
+        w.webpushr =
+          w.webpushr ||
+          function () {
+            (w.webpushr.q = w.webpushr.q || []).push(arguments);
+          };
+        var js,
+          fjs = d.getElementsByTagName(s)[0];
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "https://cdn.webpushr.com/app.min.js";
+        fjs.parentNode.appendChild(js);
+      })(window, document, "script", "webpushr-jssdk");
+      webpushr(
+        "init",
+        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
+      );
+    </script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
+    ></script>
+    <script type="text/javascript">
+      $(".carousel").slick({
+        dots: true,
+        arrows: true,
+        autoplay: true,
+        autoplaySpeed: 4000,
+        infinite: true,
+        speed: 500,
+        fade: true,
+        cssEase: "linear",
+        centerMode: true,
+        prevArrow: '<button type="button" class="slick-prev"></button>',
+        nextArrow: '<button type="button" class="slick-next"></button>',
+      });
+    </script>
   </body>
 </html>
-

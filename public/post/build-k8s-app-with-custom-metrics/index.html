@@ -1,372 +1,461 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
 
+    <title>
+      对 Kubernetes
+      应用进行自定义指标扩缩容-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
+    </title>
+    <meta
+      property="og:title"
+      content="对 Kubernetes 应用进行自定义指标扩缩容"
+    />
+    <meta
+      name="twitter:title"
+      content="对 Kubernetes 应用进行自定义指标扩缩容"
+    />
 
-  <title>对 Kubernetes 应用进行自定义指标扩缩容-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
-  <meta property="og:title" content="对 Kubernetes 应用进行自定义指标扩缩容" />
-  <meta name="twitter:title" content="对 Kubernetes 应用进行自定义指标扩缩容" />
+    <meta
+      name="description"
+      content="前面我们学习了很多关于 Prometheus 的内容，也学习了 HPA 对象的使用，但是一直没有对自定义指标来对应用进行扩缩容做过讲解，本篇文章我们就来了解下如何通过自定义指标来做应用的动态伸缩功能。当前前提是你需要熟悉 Kubernetes 和 Prometheus，如果不熟悉的话可以查看我们前面的一系列文章，或者直接查看我们的 Kubernetes 进阶视频课程。"
+    />
+    <meta
+      property="og:description"
+      content="前面我们学习了很多关于 Prometheus 的内容，也学习了 HPA 对象的使用，但是一直没有对自定义指标来对应用进行扩缩容做过讲解，本篇文章我们就来了解下如何通过自定义指标来做应用的动态伸缩功能。当前前提是你需要熟悉 Kubernetes 和 Prometheus，如果不熟悉的话可以查看我们前面的一系列文章，或者直接查看我们的 Kubernetes 进阶视频课程。"
+    />
+    <meta
+      name="twitter:description"
+      content="前面我们学习了很多关于 Prometheus 的内容，也学习了 HPA 对象的使用，但是一直没有对自定义指标来对应用进行扩缩容做过讲解，本篇文章我们就来了解下如何通过自定义指标来做应用的动态伸缩功能。当前前提是你需要熟悉 Kubernetes 和 Prometheus，如果不熟悉的话可以查看我们前面的一系列文章，或者直接查看我们的 Kubernetes 进阶视频课程。"
+    />
+    <meta name="author" content="" />
+    <link
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+      rel="icon"
+      type="image/x-icon"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      property="og:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      name="twitter:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta
+      property="og:url"
+      content="https://www.qikqiak.com/post/build-k8s-app-with-custom-metrics/"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="阳明的博客" />
 
-  <meta name="description" content="前面我们学习了很多关于 Prometheus 的内容，也学习了 HPA 对象的使用，但是一直没有对自定义指标来对应用进行扩缩容做过讲解，本篇文章我们就来了解下如何通过自定义指标来做应用的动态伸缩功能。当前前提是你需要熟悉 Kubernetes 和 Prometheus，如果不熟悉的话可以查看我们前面的一系列文章，或者直接查看我们的 Kubernetes 进阶视频课程。">
-  <meta property="og:description" content="前面我们学习了很多关于 Prometheus 的内容，也学习了 HPA 对象的使用，但是一直没有对自定义指标来对应用进行扩缩容做过讲解，本篇文章我们就来了解下如何通过自定义指标来做应用的动态伸缩功能。当前前提是你需要熟悉 Kubernetes 和 Prometheus，如果不熟悉的话可以查看我们前面的一系列文章，或者直接查看我们的 Kubernetes 进阶视频课程。">
-  <meta name="twitter:description" content="前面我们学习了很多关于 Prometheus 的内容，也学习了 HPA 对象的使用，但是一直没有对自定义指标来对应用进行扩缩容做过讲解，本篇文章我们就来了解下如何通过自定义指标来做应用的动态伸缩功能。当前前提是你需要熟悉 Kubernetes 和 Prometheus，如果不熟悉的话可以查看我们前面的一系列文章，或者直接查看我们的 Kubernetes 进阶视频课程。">
-  <meta name="author" content=""/>
-  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
-  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
-  <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://www.qikqiak.com/post/build-k8s-app-with-custom-metrics/" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="阳明的博客" />
+    <meta name="generator" content="Hugo 0.55.6" />
+    <link
+      rel="canonical"
+      href="https://www.qikqiak.com/post/build-k8s-app-with-custom-metrics/"
+    />
+    <link
+      rel="alternate"
+      href="https://www.qikqiak.com/index.xml"
+      type="application/rss+xml"
+      title="阳明的博客"
+    />
 
-  <meta name="generator" content="Hugo 0.55.6" />
-  <link rel="canonical" href="https://www.qikqiak.com/post/build-k8s-app-with-custom-metrics/" />
-  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+    <link
+      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
+      rel="stylesheet"
+    />
 
-  
-  
-  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
-  
+    <link
+      rel="stylesheet"
+      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
+      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
+    />
 
-  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
+    />
 
-  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
-  
-  
-    
     <!--[if lt IE 9]>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+        rel="stylesheet"
+      />
     <![endif]-->
-<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
-<meta name="baidu-site-verification" content="F5ojAyqaKU" />
-<meta name="keywords" content="prometheus, kubernetes, prometheus operator, adapter, 扩缩容">
-<script>
-var _hmt = _hmt || [];
-(function() {
-  var hm = document.createElement("script");
-  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-  var s = document.getElementsByTagName("script")[0];
-  s.parentNode.insertBefore(hm, s);
-})();
-</script>
+    <meta
+      name="google-site-verification"
+      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
+    />
+    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
+    <meta
+      name="keywords"
+      content="prometheus, kubernetes, prometheus operator, adapter, 扩缩容"
+    />
+    <script>
+      var _hmt = _hmt || [];
+      (function () {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
 
+    <script type="application/javascript">
+      var doNotTrack = false;
+      if (!doNotTrack) {
+        window.ga =
+          window.ga ||
+          function () {
+            (ga.q = ga.q || []).push(arguments);
+          };
+        ga.l = +new Date();
+        ga("create", "UA-69668147-3", "auto");
 
-
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-	ga('create', 'UA-69668147-3', 'auto');
-	
-	ga('send', 'pageview');
-}
-</script>
-<script async src='https://www.google-analytics.com/analytics.js'></script>
-
-</head>
+        ga("send", "pageview");
+      }
+    </script>
+    <script async src="https://www.google-analytics.com/analytics.js"></script>
+  </head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
-        <span class="sr-only">切换导航</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
-        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
-      </a>
-    </div>
+      <div class="container">
+        <div class="navbar-header">
+          <button
+            type="button"
+            class="navbar-toggle"
+            data-toggle="collapse"
+            data-target="#main-navbar"
+          >
+            <span class="sr-only">切换导航</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a
+            class="navbar-brand"
+            href="https://www.qikqiak.com/"
+            title="阳明的博客"
+          >
+            <img
+              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
+              style="margin-top: -5px; height: 32px"
+              alt="阳明的博客"
+            />
+          </a>
+        </div>
 
-    <div class="collapse navbar-collapse" id="main-navbar">
-      <ul class="nav navbar-nav navbar-right">
-        
-          
+        <div class="collapse navbar-collapse" id="main-navbar">
+          <ul class="nav navbar-nav navbar-right">
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-          
-        
-          
+
             <li>
-              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+              <a
+                title="课程"
+                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
+                >课程</a
+              >
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/archives">Archive</a>
-                
-                  <a href="https://www.qikqiak.com/tags">tags</a>
-                
-                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-                
-                  <a href="https://www.qikqiak.com/tags/python">python</a>
-                
-                  <a href="https://www.qikqiak.com/tags/django">django</a>
-                
-                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
-                
+                <a href="https://www.qikqiak.com/archives">Archive</a>
+
+                <a href="https://www.qikqiak.com/tags">tags</a>
+
+                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+
+                <a href="https://www.qikqiak.com/tags/python">python</a>
+
+                <a href="https://www.qikqiak.com/tags/django">django</a>
+
+                <a href="https://www.qikqiak.com/tags/devops">devops</a>
               </div>
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-                
-                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-                
-                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-                
-                  <a href="https://md.qikqiak.com/">Markdown微信</a>
-                
+                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+
+                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+
+                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+
+                <a href="https://md.qikqiak.com/">Markdown微信</a>
               </div>
             </li>
-          
-        
-          
+
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+              <a title="关于" href="https://www.qikqiak.com/page/about/"
+                >关于</a
+              >
             </li>
-          
-        
-          
+
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
-          
-        
 
-        
-
-        
-
-        
-          <li>
-            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
-              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
-            </a>
-          </li>
-          
-
-      </ul>
-    </div>
-
-  </div>
-</nav>
-
-
-  <div id="modalSearch" class="modal fade" role="dialog">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-          <h4 class="modal-title">搜索</h4>
+            <li>
+              <a
+                href="#modalSearch"
+                data-toggle="modal"
+                data-target="#modalSearch"
+                style="outline: none"
+              >
+                <span
+                  id="searchGlyph"
+                  class="glyphicon glyphicon-search"
+                ></span>
+              </a>
+            </li>
+          </ul>
         </div>
-        <div class="modal-body">
-            
-<div class="aa-input-container" id="aa-input-container">
-    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
-    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
-    </svg>
-</div>
-<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+      </div>
+    </nav>
 
-<script>
-var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
-var index = client.initIndex('prod_blog');
+    <div id="modalSearch" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">
+              &times;
+            </button>
+            <h4 class="modal-title">搜索</h4>
+          </div>
+          <div class="modal-body">
+            <div class="aa-input-container" id="aa-input-container">
+              <input
+                type="search"
+                id="aa-search-input"
+                class="aa-input-search"
+                placeholder="Search for titles or URIs..."
+                name="search"
+                autocomplete="off"
+              />
+              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+                <path
+                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
+                />
+              </svg>
+            </div>
+            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-autocomplete('#aa-search-input',
-{ hint: false}, {
-    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
-    
-    displayKey: 'name',
-    
-    templates: {
-        
-        suggestion: function(suggestion) {
-            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
-            suggestion._highlightResult.title.value + '</a></span>';
-        }
-    }
-});
-</script>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+            <script>
+              var client = algoliasearch(
+                "1JDRAS0AZR",
+                "8804ac109158bb3bb60d74ce98fa332f"
+              );
+              var index = client.initIndex("prod_blog");
+
+              autocomplete(
+                "#aa-search-input",
+                { hint: false },
+                {
+                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
+
+                  displayKey: "name",
+
+                  templates: {
+                    suggestion: function (suggestion) {
+                      return (
+                        "<span>" +
+                        '<a href="https://www.qikqiak.com/post/' +
+                        suggestion.slug +
+                        '">' +
+                        suggestion._highlightResult.title.value +
+                        "</a></span>"
+                      );
+                    },
+                  },
+                }
+              );
+            </script>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">
+              close
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-    
-  
-  
-  
+    <div
+      id="header-big-imgs"
+      data-num-img="1"
+      data-img-src-1="https://picdn.youdianzhishi.com/images/photo-1569493422961-ee22a2e51a07.jpeg"
+      data-img-desc-1="https://unsplash.com/photos/H3z8BDFIByU"
+    ></div>
 
-
-
-
-  
-    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/photo-1569493422961-ee22a2e51a07.jpeg" data-img-desc-1="https://unsplash.com/photos/H3z8BDFIByU"></div>
-  
-
-  <header class="header-section has-img">
-    
+    <header class="header-section has-img">
       <div class="intro-header big-img">
-        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>对 Kubernetes 应用进行自定义指标扩缩容</h1>
-                  
-                  
-                    <span class="post-meta">
-  
-    发表于 September 27, 2019
-  
-  
-</span>
 
-
-                  
+                <span class="post-meta"> 发表于 September 27, 2019 </span>
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline;"></span>
+        <span class="img-desc" style="display: inline"></span>
       </div>
-    
-    
-    
-    <div class="intro-header no-img">
-      
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <div class="post-heading">
-              <h1>对 Kubernetes 应用进行自定义指标扩缩容</h1>
-                
-                
-                  <span class="post-meta">
-  
-    发表于 September 27, 2019
-  
-  
-</span>
 
+      <div class="intro-header no-img">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>对 Kubernetes 应用进行自定义指标扩缩容</h1>
 
-                
+                <span class="post-meta"> 发表于 September 27, 2019 </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    
-    
-  </header>
+    </header>
 
+    <div class="container" role="main">
+      <div class="row">
+        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+          <div>
+            <h5 id="tags" style="margin-top: 30px">
+              标签:
 
-    
+              <a href="https://www.qikqiak.com/tags/prometheus/">prometheus</a>
+              &nbsp;
 
+              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
+              &nbsp;
 
-
-<div class="container" role="main">
-  <div class="row">
-
-    
-    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <div>
-            
-            
-            <h5 id="tags" style="margin-top: 30px;">标签:
-              
-                  <a href="https://www.qikqiak.com/tags/prometheus/">prometheus</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/websocket/">websocket</a> &nbsp;
-              
+              <a href="https://www.qikqiak.com/tags/websocket/">websocket</a>
+              &nbsp;
             </h5>
-            
-        </div>
-  
-        <article role="main" class="blog-post" itemprop="articleBody" id="content">
-          
-            
-<aside class="toc">
-  <nav id="TableOfContents">
-<ul>
-<li>
-<ul>
-<li><a href="#环境准备">环境准备</a>
-<ul>
-<li><a href="#clone-项目">Clone 项目</a></li>
-<li><a href="#安装-prometheus-operator">安装 Prometheus Operator</a></li>
-</ul></li>
-<li><a href="#扩容">扩容</a>
-<ul>
-<li><a href="#部署应用到集群中">部署应用到集群中</a></li>
-<li><a href="#扩容-1">扩容</a></li>
-<li><a href="#部署-hpa-对象">部署 HPA 对象</a></li>
-<li><a href="#在-grafana-中显示缩放数据">在 Grafana 中显示缩放数据</a></li>
-</ul></li>
-<li><a href="#参考链接">参考链接</a></li>
-</ul></li>
-</ul>
-</nav>
-</aside>
+          </div>
 
-          
-  
-          
-          
-          
-  
-          
-          
-          
-  
-          
-          
-          
+          <article
+            role="main"
+            class="blog-post"
+            itemprop="articleBody"
+            id="content"
+          >
+            <aside class="toc">
+              <nav id="TableOfContents">
+                <ul>
+                  <li>
+                    <ul>
+                      <li>
+                        <a href="#环境准备">环境准备</a>
+                        <ul>
+                          <li><a href="#clone-项目">Clone 项目</a></li>
+                          <li>
+                            <a href="#安装-prometheus-operator"
+                              >安装 Prometheus Operator</a
+                            >
+                          </li>
+                        </ul>
+                      </li>
+                      <li>
+                        <a href="#扩容">扩容</a>
+                        <ul>
+                          <li>
+                            <a href="#部署应用到集群中">部署应用到集群中</a>
+                          </li>
+                          <li><a href="#扩容-1">扩容</a></li>
+                          <li><a href="#部署-hpa-对象">部署 HPA 对象</a></li>
+                          <li>
+                            <a href="#在-grafana-中显示缩放数据"
+                              >在 Grafana 中显示缩放数据</a
+                            >
+                          </li>
+                        </ul>
+                      </li>
+                      <li><a href="#参考链接">参考链接</a></li>
+                    </ul>
+                  </li>
+                </ul>
+              </nav>
+            </aside>
 
-          <p>前面我们学习了很多关于 Prometheus 的内容，也学习了 HPA 对象的使用，但是一直没有对自定义指标来对应用进行扩缩容做过讲解，本篇文章我们就来了解下如何通过自定义指标来做应用的动态伸缩功能。当前前提是你需要熟悉 <a href="https://www.qikqiak.com/tags/kubernetes/">Kubernetes</a> 和 <a href="https://www.qikqiak.com/tags/prometheus/">Prometheus</a>，如果不熟悉的话可以查看我们前面的一系列文章，或者直接查看我们的 <a href="https://www.qikqiak.com/post/promotion-51">Kubernetes 进阶视频课程</a>。</p>
+            <p>
+              前面我们学习了很多关于 Prometheus 的内容，也学习了 HPA
+              对象的使用，但是一直没有对自定义指标来对应用进行扩缩容做过讲解，本篇文章我们就来了解下如何通过自定义指标来做应用的动态伸缩功能。当前前提是你需要熟悉
+              <a href="https://www.qikqiak.com/tags/kubernetes/">Kubernetes</a>
+              和
+              <a href="https://www.qikqiak.com/tags/prometheus/">Prometheus</a
+              >，如果不熟悉的话可以查看我们前面的一系列文章，或者直接查看我们的
+              <a href="https://www.qikqiak.com/post/promotion-51"
+                >Kubernetes 进阶视频课程</a
+              >。
+            </p>
 
-<h2 id="环境准备">环境准备</h2>
+            <h2 id="环境准备">环境准备</h2>
 
-<ul>
-<li>1.10.0+ 版本的 Kubernetes 集群</li>
-<li>可以访问集群的节点上安装 Helm 和 Kubectl 工具</li>
-<li>在集群中初始化了 Helm</li>
-</ul>
+            <ul>
+              <li>1.10.0+ 版本的 Kubernetes 集群</li>
+              <li>可以访问集群的节点上安装 Helm 和 Kubectl 工具</li>
+              <li>在集群中初始化了 Helm</li>
+            </ul>
 
-<h3 id="clone-项目">Clone 项目</h3>
+            <h3 id="clone-项目">Clone 项目</h3>
 
-<p>本文使用到的相关代码都统一放置到了 GitHub 上，Clone 代码到本地：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ git clone https://github.com/cnych/k8s-prometheus-custom-scaling.git
-$ <span style="color:#8be9fd;font-style:italic">cd</span> k8s-prometheus-custom-scaling</code></pre></div>
-<p>我们可以先来看一下将要扩容的应用。是使用 Flask 作为后端 React 作为前端的一个项目，另外还使用了 <a href="https://github.com/rycus86/prometheus_flask_exporter">Flask Promethues Exporter</a> 这个第三方库，核心的后端代码如下所示：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#ff79c6">from</span> flask <span style="color:#ff79c6">import</span> Flask, render_template
+            <p>
+              本文使用到的相关代码都统一放置到了 GitHub 上，Clone 代码到本地：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ git clone https://github.com/cnych/k8s-prometheus-custom-scaling.git
+$ <span style="color:#8be9fd;font-style:italic">cd</span> k8s-prometheus-custom-scaling</code></pre>
+            </div>
+            <p>
+              我们可以先来看一下将要扩容的应用。是使用 Flask 作为后端 React
+              作为前端的一个项目，另外还使用了
+              <a href="https://github.com/rycus86/prometheus_flask_exporter"
+                >Flask Promethues Exporter</a
+              >
+              这个第三方库，核心的后端代码如下所示：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-python" data-lang="python"><span style="color:#ff79c6">from</span> flask <span style="color:#ff79c6">import</span> Flask, render_template
 <span style="color:#ff79c6">from</span> prometheus_flask_exporter.multiprocess <span style="color:#ff79c6">import</span> GunicornInternalPrometheusMetrics
 
 application <span style="color:#ff79c6">=</span> Flask(__name__, static_folder<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;./public&#34;</span>, template_folder<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;./templates&#34;</span>)
@@ -381,31 +470,97 @@ metrics <span style="color:#ff79c6">=</span> GunicornInternalPrometheusMetrics(a
 @application.route(<span style="color:#f1fa8c">&#34;/click-button&#34;</span>, methods<span style="color:#ff79c6">=</span>[<span style="color:#f1fa8c">&#34;POST&#34;</span>])
 @metrics.counter(<span style="color:#f1fa8c">&#34;demo_app_button_clicks&#34;</span>, <span style="color:#f1fa8c">&#34;Number of button presses by user&#34;</span>)
 <span style="color:#ff79c6">def</span> <span style="color:#50fa7b">web_button</span>():
-    <span style="color:#ff79c6">return</span> {}</code></pre></div>
-<p>我们可以在本地先使用 docker-compose 来运行该应用：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ docker-compose up -d</code></pre></div>
-<p>启动后可以在浏览器中打开 <code>localhost:8000</code> 来访问我们的应用：</p>
+    <span style="color:#ff79c6">return</span> {}</code></pre>
+            </div>
+            <p>我们可以在本地先使用 docker-compose 来运行该应用：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ docker-compose up -d</code></pre>
+            </div>
+            <p>
+              启动后可以在浏览器中打开
+              <code>localhost:8000</code> 来访问我们的应用：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/prometheus-demo-app.png" alt="prometheus demo app"><figcaption>prometheus demo app</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/prometheus-demo-app.png"
+                alt="prometheus demo app"
+              />
+              <figcaption>prometheus demo app</figcaption>
+            </figure>
 
-<p>这是一个非常简单的 Web 应用，点击 <code>Hit me!</code> 按钮会向网站的一个服务端点发起一个 POST 请求，该端点上的 Promethues 装饰器会将该请求记录下来。</p>
+            <p>
+              这是一个非常简单的 Web 应用，点击
+              <code>Hit me!</code> 按钮会向网站的一个服务端点发起一个 POST
+              请求，该端点上的 Promethues 装饰器会将该请求记录下来。
+            </p>
 
-<p>每次接收到 POST 请求时，应用程序都会增加一个 Prometheus Counter，我们可以通过应用的 <code>/metrics</code> 接口来获取指标数据，最终我们会将该接口配置到 Prometheus 中定期抓取指标数据。</p>
+            <p>
+              每次接收到 POST 请求时，应用程序都会增加一个 Prometheus
+              Counter，我们可以通过应用的
+              <code>/metrics</code> 接口来获取指标数据，最终我们会将该接口配置到
+              Prometheus 中定期抓取指标数据。
+            </p>
 
-<p>我们可以运行如下命令来获取指标数据：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ curl -s localhost:8000/metrics | grep demo_app_button_clicks
+            <p>我们可以运行如下命令来获取指标数据：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ curl -s localhost:8000/metrics | grep demo_app_button_clicks
 <span style="color:#6272a4"># HELP demo_app_button_clicks_total Multiprocess metric</span>
 <span style="color:#6272a4"># TYPE demo_app_button_clicks_total counter</span>
-demo_app_button_clicks_total <span style="color:#bd93f9">0</span>.0</code></pre></div>
-<p>Prometheus Counter（计数器）只会增加：永远不会减少，我们可以在页面上点击下按钮，然后再来看下指标数据的变化，正常来说会得到如下所示的信息：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ curl -s localhost:8000/metrics | grep demo_app_button_clicks
+demo_app_button_clicks_total <span style="color:#bd93f9">0</span>.0</code></pre>
+            </div>
+            <p>
+              Prometheus
+              Counter（计数器）只会增加：永远不会减少，我们可以在页面上点击下按钮，然后再来看下指标数据的变化，正常来说会得到如下所示的信息：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ curl -s localhost:8000/metrics | grep demo_app_button_clicks
 <span style="color:#6272a4"># HELP demo_app_button_clicks_total Multiprocess metric</span>
 <span style="color:#6272a4"># TYPE demo_app_button_clicks_total counter</span>
-demo_app_button_clicks_total <span style="color:#bd93f9">1</span>.0</code></pre></div>
-<h3 id="安装-prometheus-operator">安装 Prometheus Operator</h3>
+demo_app_button_clicks_total <span style="color:#bd93f9">1</span>.0</code></pre>
+            </div>
+            <h3 id="安装-prometheus-operator">安装 Prometheus Operator</h3>
 
-<p>我们这里来使用 Prometheus Operator，这个 Operator 通过抽象化 Prometheus 的部署来我们提供了更加简单方便的方法来使用 Prometheus，执行如下命令在 kube-ops 命名空间下面安装 Prometheus Operator：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ helm install stable/prometheus-operator -f helm-values/prometheus-operator-values.yml -n prome-demo --namespace kube-ops
+            <p>
+              我们这里来使用 Prometheus Operator，这个 Operator 通过抽象化
+              Prometheus 的部署来我们提供了更加简单方便的方法来使用
+              Prometheus，执行如下命令在 kube-ops 命名空间下面安装 Prometheus
+              Operator：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ helm install stable/prometheus-operator -f helm-values/prometheus-operator-values.yml -n prome-demo --namespace kube-ops
 LAST DEPLOYED: Fri Sep <span style="color:#bd93f9">27</span> <span style="color:#bd93f9">08</span>:51:40 <span style="color:#bd93f9">2019</span>
 NAMESPACE: kube-ops
 STATUS: DEPLOYED
@@ -418,17 +573,41 @@ The Prometheus Operator has been installed. Check its status by running:
   kubectl --namespace kube-ops get pods -l <span style="color:#f1fa8c">&#34;release=prome-demo&#34;</span>
 
 Visit https://github.com/coreos/prometheus-operator <span style="color:#ff79c6">for</span> instructions on how
-to create &amp; configure Alertmanager and Prometheus instances using the Operator.</code></pre></div>
-<p>在安装完成后可以使用上面的提示命令来查看 Pod 的状态：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl --namespace kube-ops get pods -l <span style="color:#f1fa8c">&#34;release=prome-demo&#34;</span>
+to create &amp; configure Alertmanager and Prometheus instances using the Operator.</code></pre>
+            </div>
+            <p>在安装完成后可以使用上面的提示命令来查看 Pod 的状态：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl --namespace kube-ops get pods -l <span style="color:#f1fa8c">&#34;release=prome-demo&#34;</span>
 NAME                                                   READY   STATUS         RESTARTS   AGE
 prome-demo-grafana-944f89874-kf8nt                     <span style="color:#bd93f9">0</span>/2     Init:Blocked   <span style="color:#bd93f9">0</span>          10m
 prome-demo-prometheus-node-exporter-7xswz              <span style="color:#bd93f9">1</span>/1     Running        <span style="color:#bd93f9">0</span>          21m
 prome-demo-prometheus-node-exporter-jwmwj              <span style="color:#bd93f9">1</span>/1     Running        <span style="color:#bd93f9">0</span>          21m
 prome-demo-prometheus-node-exporter-zl79d              <span style="color:#bd93f9">1</span>/1     Running        <span style="color:#bd93f9">0</span>          21m
-prome-demo-prometheus-oper-operator-6fd58cc4fd-74jv8   <span style="color:#bd93f9">2</span>/2     Running        <span style="color:#bd93f9">0</span>          21m</code></pre></div>
-<p>我们可以看到大部分 Pod 都正常了，但是 grafana 这个 Pod 现在是处于 <code>Init:Blocked</code> 状态，我们可以使用 <code>kubectl describe</code> 命令查看下 Pod 的运行事件：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl describe pod prome-demo-grafana-944f89874-kf8nt -n kube-ops
+prome-demo-prometheus-oper-operator-6fd58cc4fd-74jv8   <span style="color:#bd93f9">2</span>/2     Running        <span style="color:#bd93f9">0</span>          21m</code></pre>
+            </div>
+            <p>
+              我们可以看到大部分 Pod 都正常了，但是 grafana 这个 Pod 现在是处于
+              <code>Init:Blocked</code> 状态，我们可以使用
+              <code>kubectl describe</code> 命令查看下 Pod 的运行事件：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl describe pod prome-demo-grafana-944f89874-kf8nt -n kube-ops
 Name:               prome-demo-grafana-944f89874-kf8nt
 Namespace:          kube-ops
 Priority:           <span style="color:#bd93f9">0</span>
@@ -452,63 +631,182 @@ Reason:             AppArmor
 Message:            Cannot enforce AppArmor: AppArmor is not enabled on the host
 IP:
 Controlled By:      ReplicaSet/prome-demo-grafana-944f89874
-......</code></pre></div>
-<p>我们仔细观察其中有一句 <code>Cannot enforce AppArmor: AppArmor is not enabled on the host</code> 这样的 Message 信息，这是因为我们集群中开启了 PSP 安全策略，而我们使用 Helm 安装 Prometheus Operator 的时候，会给我们添加上一些 PSP 对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get psp -l <span style="color:#8be9fd;font-style:italic">release</span><span style="color:#ff79c6">=</span>prome-demo
+......</code></pre>
+            </div>
+            <p>
+              我们仔细观察其中有一句
+              <code
+                >Cannot enforce AppArmor: AppArmor is not enabled on the
+                host</code
+              >
+              这样的 Message 信息，这是因为我们集群中开启了 PSP
+              安全策略，而我们使用 Helm 安装 Prometheus Operator
+              的时候，会给我们添加上一些 PSP 对象：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get psp -l <span style="color:#8be9fd;font-style:italic">release</span><span style="color:#ff79c6">=</span>prome-demo
 NAME                                    PRIV    CAPS   SELINUX    RUNASUSER   FSGROUP     SUPGROUP    READONLYROOTFS   VOLUMES
 prome-demo-grafana                      <span style="color:#8be9fd;font-style:italic">false</span>          RunAsAny   RunAsAny    RunAsAny    RunAsAny    <span style="color:#8be9fd;font-style:italic">false</span>            configMap,emptyDir,projected,secret,downwardAPI,persistentVolumeClaim
 prome-demo-grafana-test                 <span style="color:#8be9fd;font-style:italic">false</span>          RunAsAny   RunAsAny    RunAsAny    RunAsAny    <span style="color:#8be9fd;font-style:italic">false</span>            configMap,downwardAPI,emptyDir,projected,secret
 prome-demo-prometheus-node-exporter     <span style="color:#8be9fd;font-style:italic">false</span>          RunAsAny   RunAsAny    MustRunAs   MustRunAs   <span style="color:#8be9fd;font-style:italic">false</span>            configMap,emptyDir,projected,secret,downwardAPI,persistentVolumeClaim,hostPath
 prome-demo-prometheus-oper-operator     <span style="color:#8be9fd;font-style:italic">false</span>          RunAsAny   RunAsAny    MustRunAs   MustRunAs   <span style="color:#8be9fd;font-style:italic">false</span>            configMap,emptyDir,projected,secret,downwardAPI,persistentVolumeClaim
-prome-demo-prometheus-oper-prometheus   <span style="color:#8be9fd;font-style:italic">false</span>          RunAsAny   RunAsAny    MustRunAs   MustRunAs   <span style="color:#8be9fd;font-style:italic">false</span>            configMap,emptyDir,projected,secret,downwardAPI,persistentVolumeClaim</code></pre></div>
-<p>我们可以编辑 <code>prome-demo-grafana</code> 这个 PSP 对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl edit psp prome-demo-grafana</code></pre></div>
-<p>由于我们集群中没有安装 apparmor，所以我们直接将 annotations 当中的两行数据删除即可：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apparmor.security.beta.kubernetes.io/allowedProfileNames: runtime/default
-apparmor.security.beta.kubernetes.io/defaultProfileName: runtime/default</code></pre></div>
-<p>然后将上面 Blocked 的 Pod 删除重建即可。
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+prome-demo-prometheus-oper-prometheus   <span style="color:#8be9fd;font-style:italic">false</span>          RunAsAny   RunAsAny    MustRunAs   MustRunAs   <span style="color:#8be9fd;font-style:italic">false</span>            configMap,emptyDir,projected,secret,downwardAPI,persistentVolumeClaim</code></pre>
+            </div>
+            <p>我们可以编辑 <code>prome-demo-grafana</code> 这个 PSP 对象：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl edit psp prome-demo-grafana</code></pre>
+            </div>
+            <p>
+              由于我们集群中没有安装 apparmor，所以我们直接将 annotations
+              当中的两行数据删除即可：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apparmor.security.beta.kubernetes.io/allowedProfileNames: runtime/default
+apparmor.security.beta.kubernetes.io/defaultProfileName: runtime/default</code></pre>
+            </div>
+            <p>
+              然后将上面 Blocked 的 Pod 删除重建即可。
+              <script
+                async
+                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+              ></script>
 
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-5376999672787220"
-     data-ad-slot="9165834656"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
-</p>
+              <ins
+                class="adsbygoogle"
+                style="display: block"
+                data-ad-client="ca-pub-5376999672787220"
+                data-ad-slot="9165834656"
+                data-ad-format="auto"
+                data-full-width-responsive="true"
+              ></ins>
+              <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+              </script>
+            </p>
 
-<h2 id="扩容">扩容</h2>
+            <h2 id="扩容">扩容</h2>
 
-<h3 id="部署应用到集群中">部署应用到集群中</h3>
+            <h3 id="部署应用到集群中">部署应用到集群中</h3>
 
-<p>在我们的代码目录下面执行下面的部署命令：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f manifests/deployment.yml -f manifests/service.yml -f manifests/ingress.yml
+            <p>在我们的代码目录下面执行下面的部署命令：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl apply -f manifests/deployment.yml -f manifests/service.yml -f manifests/ingress.yml
 deployment.apps/prometheus-demo-app created
 service/prometheus-demo-app created
-ingress.networking.k8s.io/prometheus-demo-app created</code></pre></div>
-<p>这会创建一个我们应用的 Deployment 和 Service 资源对象到我们集群中，此外，还包括一个 Ingress 资源对象，用来暴露给外部用户使用的。</p>
+ingress.networking.k8s.io/prometheus-demo-app created</code></pre>
+            </div>
+            <p>
+              这会创建一个我们应用的 Deployment 和 Service
+              资源对象到我们集群中，此外，还包括一个 Ingress
+              资源对象，用来暴露给外部用户使用的。
+            </p>
 
-<p>然后为了方便我们在浏览器中访问 Prometheus 的 Dashboard，我们将部署的 Prometheus 的 Service 改成 NodePort 类型：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl edit svc prome-demo-prometheus-oper-prometheus -n kube-ops
+            <p>
+              然后为了方便我们在浏览器中访问 Prometheus 的
+              Dashboard，我们将部署的 Prometheus 的 Service 改成 NodePort 类型：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl edit svc prome-demo-prometheus-oper-prometheus -n kube-ops
 <span style="color:#6272a4"># 将 spec.type 改成 NodePort</span>
 $ kubectl get svc -n kube-ops -l <span style="color:#8be9fd;font-style:italic">release</span><span style="color:#ff79c6">=</span>prome-demo
 NAME                                    TYPE        CLUSTER-IP      EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>            AGE
 prome-demo-grafana                      ClusterIP   <span style="color:#bd93f9">10</span>.98.181.77    &lt;none&gt;        <span style="color:#bd93f9">80</span>/TCP             47m
 prome-demo-prometheus-node-exporter     ClusterIP   <span style="color:#bd93f9">10</span>.96.158.6     &lt;none&gt;        <span style="color:#bd93f9">9100</span>/TCP           47m
 prome-demo-prometheus-oper-operator     ClusterIP   <span style="color:#bd93f9">10</span>.103.168.11   &lt;none&gt;        <span style="color:#bd93f9">8080</span>/TCP,443/TCP   47m
-prome-demo-prometheus-oper-prometheus   NodePort    <span style="color:#bd93f9">10</span>.100.139.11   &lt;none&gt;        <span style="color:#bd93f9">9090</span>:32368/TCP     47m</code></pre></div>
-<p>然后我们就可以通过 <code>http://NodeIP:32368</code> 来访问我们的 Prometheus 页面了，切换到 <code>/targets</code> 页面下面，就会看到正在监控的端点列表了，其中就包括安装 Prometheus Operator 的 CRD 控制器，当然可能默认情况下有一些监控数据有问题，这个时候就需要我们根据自己集群的实际情况去做对应的调整了：</p>
+prome-demo-prometheus-oper-prometheus   NodePort    <span style="color:#bd93f9">10</span>.100.139.11   &lt;none&gt;        <span style="color:#bd93f9">9090</span>:32368/TCP     47m</code></pre>
+            </div>
+            <p>
+              然后我们就可以通过 <code>http://NodeIP:32368</code> 来访问我们的
+              Prometheus 页面了，切换到
+              <code>/targets</code>
+              页面下面，就会看到正在监控的端点列表了，其中就包括安装 Prometheus
+              Operator 的 CRD
+              控制器，当然可能默认情况下有一些监控数据有问题，这个时候就需要我们根据自己集群的实际情况去做对应的调整了：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/prometheus-demo-app-operator-targets.png" alt="prometheus targets list"><figcaption>prometheus targets list</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/prometheus-demo-app-operator-targets.png"
+                alt="prometheus targets list"
+              />
+              <figcaption>prometheus targets list</figcaption>
+            </figure>
 
-<p>接下来我们就来部署我们自己的应用监控，让 Proemthues 也可以抓取到我们自己的应用监控指标数据，执行下面的命令即可：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f manifests/service-monitor.yml
-servicemonitor.monitoring.coreos.com/prometheus-demo-app created</code></pre></div>
-<p>该资源对象内容非常简单，就是一个简单的 ServiceMonitor 对象，ServiceMonitor 是 Prometheus 获取应用监控数据的一个 CRD 对象，对 ServiceMonitor 不够熟悉的可以查看我们前面的 <a href="https://www.qikqiak.com/k8s-book/docs/58.Prometheus%20Operator.html">Prometheus Operator 的相关文档</a>：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: monitoring.coreos.com/v1
+            <p>
+              接下来我们就来部署我们自己的应用监控，让 Proemthues
+              也可以抓取到我们自己的应用监控指标数据，执行下面的命令即可：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl apply -f manifests/service-monitor.yml
+servicemonitor.monitoring.coreos.com/prometheus-demo-app created</code></pre>
+            </div>
+            <p>
+              该资源对象内容非常简单，就是一个简单的 ServiceMonitor
+              对象，ServiceMonitor 是 Prometheus 获取应用监控数据的一个 CRD
+              对象，对 ServiceMonitor 不够熟悉的可以查看我们前面的
+              <a
+                href="https://www.qikqiak.com/k8s-book/docs/58.Prometheus%20Operator.html"
+                >Prometheus Operator 的相关文档</a
+              >：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: prometheus-demo-app
@@ -523,57 +821,188 @@ spec:
       app: prometheus-demo-app
   namespaceSelector:
     matchNames:
-    - default</code></pre></div>
-<p>该对象通知 Prometheus Operator 配置运行中的 Prometheus 实例，监听带有标签 app=prometheus-demo-app 的服务。现在我们再去 Prometheus 的页面上面查看 <code>/targets</code> 页面就会发现我们的应用已经配置在里面了，然后在 Dashboard 页面上输入下面的 promql 语句：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">demo_app_button_clicks_total</code></pre></div>
-<p>这个指标就反应出了我们应用程序的所有实例中按钮的总共点击次数。</p>
+    - default</code></pre>
+            </div>
+            <p>
+              该对象通知 Prometheus Operator 配置运行中的 Prometheus
+              实例，监听带有标签 app=prometheus-demo-app 的服务。现在我们再去
+              Prometheus 的页面上面查看
+              <code>/targets</code>
+              页面就会发现我们的应用已经配置在里面了，然后在 Dashboard
+              页面上输入下面的 promql 语句：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">demo_app_button_clicks_total</code></pre>
+            </div>
+            <p>
+              这个指标就反应出了我们应用程序的所有实例中按钮的总共点击次数。
+            </p>
 
-<h3 id="扩容-1">扩容</h3>
+            <h3 id="扩容-1">扩容</h3>
 
-<p>我们这里使用一个名为 <a href="https://github.com/DirectXMan12/k8s-prometheus-adapter/">Prometheus-Adapter</a> 的 k8s 的 API 扩展应用，它可以使用用户自定义的 Prometheus 查询来使用 k8s 资源和自定义指标 API。</p>
+            <p>
+              我们这里使用一个名为
+              <a href="https://github.com/DirectXMan12/k8s-prometheus-adapter/"
+                >Prometheus-Adapter</a
+              >
+              的 k8s 的 API 扩展应用，它可以使用用户自定义的 Prometheus
+              查询来使用 k8s 资源和自定义指标 API。
+            </p>
 
-<p>接下来我们将 Prometheus-Adapter 安装到集群中，并添加一个规则来跟踪每个 Pod 的请求。规则的定义我们可以参考官方文档，每个规则大致可以分为4个部分：</p>
+            <p>
+              接下来我们将 Prometheus-Adapter
+              安装到集群中，并添加一个规则来跟踪每个 Pod
+              的请求。规则的定义我们可以参考官方文档，每个规则大致可以分为4个部分：
+            </p>
 
-<ul>
-<li>Discovery：它指定 Adapter 应该如何找到该规则的所有 Prometheus 指标</li>
-<li>Association：指定 Adapter 应该如何确定和特定的指标关联的 Kubernetes 资源</li>
-<li>Naming：指定 Adapter 应该如何在自定义指标 API 中暴露指标</li>
-<li>Querying：指定如何将对一个获多个 Kubernetes 对象上的特定指标的请求转换为对 Prometheus 的查询</li>
-</ul>
+            <ul>
+              <li>
+                Discovery：它指定 Adapter 应该如何找到该规则的所有 Prometheus
+                指标
+              </li>
+              <li>
+                Association：指定 Adapter 应该如何确定和特定的指标关联的
+                Kubernetes 资源
+              </li>
+              <li>Naming：指定 Adapter 应该如何在自定义指标 API 中暴露指标</li>
+              <li>
+                Querying：指定如何将对一个获多个 Kubernetes
+                对象上的特定指标的请求转换为对 Prometheus 的查询
+              </li>
+            </ul>
 
-<p>下面我们就来编写我们自己的规则，首先添加 rules 熟悉到配置文件中：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">rules: []</code></pre></div>
-<p>我们这里只需要发现（<strong>discover</strong>）一个指标 <code>demo_app_button_clicks_total</code>，添加一个非空的 Pod 标签匹配来过滤：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">rules:
-- seriesQuery: <span style="color:#f1fa8c">&#39;demo_app_button_clicks_total{pod!=&#34;&#34;}&#39;</span></code></pre></div>
-<p>关联（<strong>Association</strong>）就非常简单了，Prometheus 标签都直接映射到 Kubernetes 资源（job、namespace、pod 等等），所以我们可以使用一个模板来隐射资源：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">rules:
+            <p>
+              下面我们就来编写我们自己的规则，首先添加 rules 熟悉到配置文件中：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">rules: []</code></pre>
+            </div>
+            <p>
+              我们这里只需要发现（<strong>discover</strong>）一个指标
+              <code>demo_app_button_clicks_total</code>，添加一个非空的 Pod
+              标签匹配来过滤：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">rules:
+- seriesQuery: <span style="color:#f1fa8c">&#39;demo_app_button_clicks_total{pod!=&#34;&#34;}&#39;</span></code></pre>
+            </div>
+            <p>
+              关联（<strong>Association</strong>）就非常简单了，Prometheus
+              标签都直接映射到 Kubernetes 资源（job、namespace、pod
+              等等），所以我们可以使用一个模板来隐射资源：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">rules:
 - seriesQuery: <span style="color:#f1fa8c">&#39;demo_app_button_clicks_total{pod!=&#34;&#34;}&#39;</span>
-  resources: {template: <span style="color:#f1fa8c">&#34;&lt;&lt;.Resource&gt;&gt;&#34;</span>}</code></pre></div>
-<p>我们演示应用的按钮点击总和实际上用处不大，我们需要按照每个 Pod 来进行扩容，然后在规则中添加一个简单的命名（<strong>naming</strong>）定义：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">rules:
+  resources: {template: <span style="color:#f1fa8c">&#34;&lt;&lt;.Resource&gt;&gt;&#34;</span>}</code></pre>
+            </div>
+            <p>
+              我们演示应用的按钮点击总和实际上用处不大，我们需要按照每个 Pod
+              来进行扩容，然后在规则中添加一个简单的命名（<strong>naming</strong>）定义：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">rules:
 - seriesQuery: <span style="color:#f1fa8c">&#39;demo_app_button_clicks_total{pod!=&#34;&#34;}&#39;</span>
   resources: {template: <span style="color:#f1fa8c">&#34;&lt;&lt;.Resource&gt;&gt;&#34;</span>}
   name:
     matches: <span style="color:#f1fa8c">&#34;^(.*)_total&#34;</span>
-    as: <span style="color:#f1fa8c">&#34;${1}_per_second&#34;</span></code></pre></div>
-<p>然后就可以定义查询（<strong>Querying</strong>）了：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">seriesQuery: <span style="color:#f1fa8c">&#39;demo_app_button_clicks_total{pod!=&#34;&#34;}&#39;</span>
+    as: <span style="color:#f1fa8c">&#34;${1}_per_second&#34;</span></code></pre>
+            </div>
+            <p>然后就可以定义查询（<strong>Querying</strong>）了：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">seriesQuery: <span style="color:#f1fa8c">&#39;demo_app_button_clicks_total{pod!=&#34;&#34;}&#39;</span>
 resources: { template: <span style="color:#f1fa8c">&#34;&lt;&lt;.Resource&gt;&gt;&#34;</span> }
 name:
   matches: <span style="color:#f1fa8c">&#34;^(.*)_total&#34;</span>
   as: <span style="color:#f1fa8c">&#34;${1}_per_second&#34;</span>
-metricsQuery: <span style="color:#f1fa8c">&#34;sum(rate(&lt;&lt;.Series&gt;&gt;{&lt;&lt;.LabelMatchers&gt;&gt;}[2m])) by (&lt;&lt;.GroupBy&gt;&gt;)&#34;</span></code></pre></div>
-<p>这是一个带参数的 Prometheus 查询，其中：</p>
+metricsQuery: <span style="color:#f1fa8c">&#34;sum(rate(&lt;&lt;.Series&gt;&gt;{&lt;&lt;.LabelMatchers&gt;&gt;}[2m])) by (&lt;&lt;.GroupBy&gt;&gt;)&#34;</span></code></pre>
+            </div>
+            <p>这是一个带参数的 Prometheus 查询，其中：</p>
 
-<ul>
-<li><code>Series</code> 是有 seriesQuery 匹配的任何 series，该规则只有一个 series，所以我们可以将 <code>demo_app_button_clicks+total</code> 替换成 <code>&lt;&lt;.Series&gt;&gt;</code>。</li>
-<li><code>&lt;&lt;.LabelMatchers&gt;&gt;</code> 是 adapter 来替换成标签查询的（比如，<code>pod='deployment-name-abcd-1234</code>）。</li>
-<li><code>&lt;&lt;.GroupBy&gt;&gt;</code> 表示我们想要扩展的资源，我们这里就是 Pod 了。</li>
-</ul>
+            <ul>
+              <li>
+                <code>Series</code> 是有 seriesQuery 匹配的任何
+                series，该规则只有一个 series，所以我们可以将
+                <code>demo_app_button_clicks+total</code> 替换成
+                <code>&lt;&lt;.Series&gt;&gt;</code>。
+              </li>
+              <li>
+                <code>&lt;&lt;.LabelMatchers&gt;&gt;</code> 是 adapter
+                来替换成标签查询的（比如，<code>pod='deployment-name-abcd-1234</code>）。
+              </li>
+              <li>
+                <code>&lt;&lt;.GroupBy&gt;&gt;</code>
+                表示我们想要扩展的资源，我们这里就是 Pod 了。
+              </li>
+            </ul>
 
-<p>Promethues-Adapter 的一个缺点是配置是通过静态文件和应用程序一起部署的，而不是通过 ConfigMap 或者其他基于 API 的对象来配置的，我们这里将使用另外一个 Helm Chart 来部署，通过覆盖 values 文件来配置规则。values 文件放置在项目目录 <code>helm-values/prometheus-adapter-values.yml</code>，内容如下所示：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">rules:
+            <p>
+              Promethues-Adapter
+              的一个缺点是配置是通过静态文件和应用程序一起部署的，而不是通过
+              ConfigMap 或者其他基于 API 的对象来配置的，我们这里将使用另外一个
+              Helm Chart 来部署，通过覆盖 values 文件来配置规则。values
+              文件放置在项目目录
+              <code>helm-values/prometheus-adapter-values.yml</code
+              >，内容如下所示：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">rules:
   default: <span style="color:#ff79c6">false</span>
   custom:
   - seriesQuery: <span style="color:#f1fa8c">&#39;demo_app_button_clicks_total&#39;</span>
@@ -583,9 +1012,19 @@ metricsQuery: <span style="color:#f1fa8c">&#34;sum(rate(&lt;&lt;.Series&gt;&gt;{
       as: <span style="color:#f1fa8c">&#34;${1}_per_second&#34;</span>
     metricsQuery: <span style="color:#f1fa8c">&#34;sum(rate(&lt;&lt;.Series&gt;&gt;{&lt;&lt;.LabelMatchers&gt;&gt;}[2m])) by (&lt;&lt;.GroupBy&gt;&gt;)&#34;</span>
 prometheus:
-  url: http://prom-demo-prometheus-opera-prometheus.default</code></pre></div>
-<p>使用下面的命令一键安装：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ helm install stable/prometheus-adapter -n prome-adapter -f helm-values/prometheus-adapter-values.yml --namespace kube-ops
+  url: http://prom-demo-prometheus-opera-prometheus.default</code></pre>
+            </div>
+            <p>使用下面的命令一键安装：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ helm install stable/prometheus-adapter -n prome-adapter -f helm-values/prometheus-adapter-values.yml --namespace kube-ops
 LAST DEPLOYED: Fri Sep <span style="color:#bd93f9">27</span> <span style="color:#bd93f9">10</span>:54:56 <span style="color:#bd93f9">2019</span>
 NAMESPACE: kube-ops
 STATUS: DEPLOYED
@@ -598,15 +1037,38 @@ NOTES:
 prome-adapter-prometheus-adapter has been deployed.
 In a few minutes you should be able to list metrics using the following command<span style="color:#ff79c6">(</span>s<span style="color:#ff79c6">)</span>:
 
-  kubectl get --raw /apis/custom.metrics.k8s.io/v1beta1</code></pre></div>
-<p>等一小会儿，安装完成后，可以使用下面的命令来检测是否生效了：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get --raw<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;/apis/custom.metrics.k8s.io/v1beta1&#34;</span> | jq</code></pre></div>
-<blockquote>
-<p>基本上流行的软件包管理器中都提供了 <a href="https://stedolan.github.io/jq/">jq</a> 软件包。</p>
-</blockquote>
+  kubectl get --raw /apis/custom.metrics.k8s.io/v1beta1</code></pre>
+            </div>
+            <p>等一小会儿，安装完成后，可以使用下面的命令来检测是否生效了：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get --raw<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;/apis/custom.metrics.k8s.io/v1beta1&#34;</span> | jq</code></pre>
+            </div>
+            <blockquote>
+              <p>
+                基本上流行的软件包管理器中都提供了
+                <a href="https://stedolan.github.io/jq/">jq</a> 软件包。
+              </p>
+            </blockquote>
 
-<p>正常来说会看到类似于下面的信息：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+            <p>正常来说会看到类似于下面的信息：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-json" data-lang="json">{
   <span style="color:#ff79c6">&#34;kind&#34;</span>: <span style="color:#f1fa8c">&#34;APIResourceList&#34;</span>,
   <span style="color:#ff79c6">&#34;apiVersion&#34;</span>: <span style="color:#f1fa8c">&#34;v1&#34;</span>,
   <span style="color:#ff79c6">&#34;groupVersion&#34;</span>: <span style="color:#f1fa8c">&#34;custom.metrics.k8s.io/v1beta1&#34;</span>,
@@ -648,11 +1110,31 @@ In a few minutes you should be able to list metrics using the following command<
       ]
     }
   ]
-}</code></pre></div>
-<p>接下来，可以获取我们自己 Pod 的指标数据：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get --raw<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;/apis/custom.metrics.k8s.io/v1beta1/namespaces/default/pods/*/demo_app_button_clicks_per_second?pod=</span><span style="color:#ff79c6">$(</span>kubectl get po -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>prometheus-demo-app -o name<span style="color:#ff79c6">)</span><span style="color:#f1fa8c">&#34;</span> | jq</code></pre></div>
-<p>正常会输出如下所示的一些信息：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+}</code></pre>
+            </div>
+            <p>接下来，可以获取我们自己 Pod 的指标数据：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get --raw<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;/apis/custom.metrics.k8s.io/v1beta1/namespaces/default/pods/*/demo_app_button_clicks_per_second?pod=</span><span style="color:#ff79c6">$(</span>kubectl get po -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>prometheus-demo-app -o name<span style="color:#ff79c6">)</span><span style="color:#f1fa8c">&#34;</span> | jq</code></pre>
+            </div>
+            <p>正常会输出如下所示的一些信息：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-json" data-lang="json">{
   <span style="color:#ff79c6">&#34;kind&#34;</span>: <span style="color:#f1fa8c">&#34;MetricValueList&#34;</span>,
   <span style="color:#ff79c6">&#34;apiVersion&#34;</span>: <span style="color:#f1fa8c">&#34;custom.metrics.k8s.io/v1beta1&#34;</span>,
   <span style="color:#ff79c6">&#34;metadata&#34;</span>: {
@@ -671,20 +1153,55 @@ In a few minutes you should be able to list metrics using the following command<
       <span style="color:#ff79c6">&#34;value&#34;</span>: <span style="color:#f1fa8c">&#34;0&#34;</span>
     }
   ]
-}</code></pre></div>
-<p>我们可以看到现在的 value 值为0，这是因为我们还没有开始点击页面上面的按钮，所以速率是每秒为0。我们上面部署应用的时候创建了一个 Ingress 对象，所以我们可以通过域名（做好 DNS 解析后）直接访问我们的应用，然后点击页面上面的按钮后，重新来运行上面的命令，我们可以看到速率会增加。</p>
+}</code></pre>
+            </div>
+            <p>
+              我们可以看到现在的 value
+              值为0，这是因为我们还没有开始点击页面上面的按钮，所以速率是每秒为0。我们上面部署应用的时候创建了一个
+              Ingress 对象，所以我们可以通过域名（做好 DNS
+              解析后）直接访问我们的应用，然后点击页面上面的按钮后，重新来运行上面的命令，我们可以看到速率会增加。
+            </p>
 
-<h3 id="部署-hpa-对象">部署 HPA 对象</h3>
+            <h3 id="部署-hpa-对象">部署 HPA 对象</h3>
 
-<p>Pod 水平自动伸缩（HPA）可以根据一些特定条件来自动添加新的 Pod 到 Deployment 中去，这里我们添加一个 HPA 对象，设定目标为每个 Pod 每秒 0.01 次点击。</p>
+            <p>
+              Pod 水平自动伸缩（HPA）可以根据一些特定条件来自动添加新的 Pod 到
+              Deployment 中去，这里我们添加一个 HPA 对象，设定目标为每个 Pod
+              每秒 0.01 次点击。
+            </p>
 
-<p>接下来我们就来测试下让我们的应用进行自动扩缩容，首先运行下面的命令确保现在只有一个 Pod 正在运行：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get po -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>prometheus-demo-app
+            <p>
+              接下来我们就来测试下让我们的应用进行自动扩缩容，首先运行下面的命令确保现在只有一个
+              Pod 正在运行：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get po -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>prometheus-demo-app
 
 NAME                                   READY   STATUS              RESTARTS   AGE
-prometheus-demo-app-8585d447c6-cbwmv   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>         26m</code></pre></div>
-<p>然后创建 HPA 对象，对象对应的资源文件位于代码根目录下面 <code>manifests/hpa.yaml</code>，完整的内容如下所示：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">kind: HorizontalPodAutoscaler
+prometheus-demo-app-8585d447c6-cbwmv   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>         26m</code></pre>
+            </div>
+            <p>
+              然后创建 HPA 对象，对象对应的资源文件位于代码根目录下面
+              <code>manifests/hpa.yaml</code>，完整的内容如下所示：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">kind: HorizontalPodAutoscaler
 apiVersion: autoscaling/v2beta1
 metadata:
   name: prometheus-demo-app
@@ -702,199 +1219,354 @@ spec:
   - type: Pods
     pods:
       metricName: demo_app_button_clicks_per_second
-      targetAverageValue: 10m</code></pre></div>
-<p>直接创建这个资源对象即可：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f manifests/hpa.yml
-horizontalpodautoscaler.autoscaling/prometheus-demo-app created</code></pre></div>
-<p>然后重新在浏览器中打开我们的应用，点击一会儿页面上面的按钮，然后重新运行上面的命令，正常我们就可以看到我们的应用的 Deployment 就已经开始扩容了：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get po -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>prometheus-demo-app
+      targetAverageValue: 10m</code></pre>
+            </div>
+            <p>直接创建这个资源对象即可：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl apply -f manifests/hpa.yml
+horizontalpodautoscaler.autoscaling/prometheus-demo-app created</code></pre>
+            </div>
+            <p>
+              然后重新在浏览器中打开我们的应用，点击一会儿页面上面的按钮，然后重新运行上面的命令，正常我们就可以看到我们的应用的
+              Deployment 就已经开始扩容了：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get po -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>prometheus-demo-app
 NAME                                   READY   STATUS              RESTARTS   AGE
 prometheus-demo-app-8585d447c6-2t882   <span style="color:#bd93f9">0</span>/1     ContainerCreating   <span style="color:#bd93f9">0</span>          2s
 prometheus-demo-app-8585d447c6-cbwmv   <span style="color:#bd93f9">1</span>/1     Running             <span style="color:#bd93f9">0</span>          84m
 prometheus-demo-app-8585d447c6-drckv   <span style="color:#bd93f9">0</span>/1     ContainerCreating   <span style="color:#bd93f9">0</span>          2s
-prometheus-demo-app-8585d447c6-jvnp4   <span style="color:#bd93f9">0</span>/1     ContainerCreating   <span style="color:#bd93f9">0</span>          2s</code></pre></div>
-<p>到这里我们就完成了使用自定义的指标数据对应用进行自动扩缩容的操作。</p>
+prometheus-demo-app-8585d447c6-jvnp4   <span style="color:#bd93f9">0</span>/1     ContainerCreating   <span style="color:#bd93f9">0</span>          2s</code></pre>
+            </div>
+            <p>
+              到这里我们就完成了使用自定义的指标数据对应用进行自动扩缩容的操作。
+            </p>
 
-<h3 id="在-grafana-中显示缩放数据">在 Grafana 中显示缩放数据</h3>
+            <h3 id="在-grafana-中显示缩放数据">在 Grafana 中显示缩放数据</h3>
 
-<p>这部分内容其实不是必须的，只是单纯的在图表上对我们的缩放数据进行展示，这可以增加我们对整个过程的理解。</p>
+            <p>
+              这部分内容其实不是必须的，只是单纯的在图表上对我们的缩放数据进行展示，这可以增加我们对整个过程的理解。
+            </p>
 
-<p>我们将我们需要使用到的 grafana 的 Dashboard 数据放置在了代码根目录下面 <code>manifests/grafana-dashboard-configmap.yml</code>，先通过 ConfigMap 来创建这个 Dashboard 数据：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f manifests/grafana-dashboard-configmap.yml</code></pre></div>
-<p>同样为了方便我们访问，将 Prometheus Operator 不是的 grafana 的 Service 更改成 NodePort 类型：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl edit svc prome-demo-grafana -n kube-ops
+            <p>
+              我们将我们需要使用到的 grafana 的 Dashboard
+              数据放置在了代码根目录下面
+              <code>manifests/grafana-dashboard-configmap.yml</code>，先通过
+              ConfigMap 来创建这个 Dashboard 数据：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl apply -f manifests/grafana-dashboard-configmap.yml</code></pre>
+            </div>
+            <p>
+              同样为了方便我们访问，将 Prometheus Operator 不是的 grafana 的
+              Service 更改成 NodePort 类型：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl edit svc prome-demo-grafana -n kube-ops
 <span style="color:#6272a4"># 将 spec.type 改成 NodePort</span>
 $ kubectl get svc -n kube-ops
 NAME                                    TYPE        CLUSTER-IP      EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>            AGE
 prome-demo-grafana                      NodePort    <span style="color:#bd93f9">10</span>.98.181.77    &lt;none&gt;        <span style="color:#bd93f9">80</span>:32590/TCP       3h9m
-......</code></pre></div>
-<p>这个时候同样我就可以用 <code>http://NodeIP:32590</code> 来访问 grafana 应用了。默认的用户名为 admin，默认的密码为：prom-operator，进入页面后，可以选择我们上面创建的 <code>Prometheus Demo App Dashboard</code> 这个 Dashboard，我们可以看到应用在扩缩容的完整过程：</p>
+......</code></pre>
+            </div>
+            <p>
+              这个时候同样我就可以用 <code>http://NodeIP:32590</code> 来访问
+              grafana 应用了。默认的用户名为
+              admin，默认的密码为：prom-operator，进入页面后，可以选择我们上面创建的
+              <code>Prometheus Demo App Dashboard</code> 这个
+              Dashboard，我们可以看到应用在扩缩容的完整过程：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/prometheus-demo-app-grafana.jpg" alt="prometheus demo app grafana scale"><figcaption>prometheus demo app grafana scale</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/prometheus-demo-app-grafana.jpg"
+                alt="prometheus demo app grafana scale"
+              />
+              <figcaption>prometheus demo app grafana scale</figcaption>
+            </figure>
 
-<h2 id="参考链接">参考链接</h2>
+            <h2 id="参考链接">参考链接</h2>
 
-<ul>
-<li><a href="https://github.com/flipstone42/k8s-prometheus-custom-scaling.git">prometheus demo app github</a></li>
-<li><a href="https://github.com/DirectXMan12/k8s-prometheus-adapter/">Prometheus Adapter</a></li>
-<li><a href="https://levelup.gitconnected.com/building-kubernetes-apps-with-custom-scaling-a-gentle-introduction-a332d7ebc795">Building Kubernetes Apps with Scaling on Custom Metrics: A Gentle Introduction</a></li>
-</ul>
+            <ul>
+              <li>
+                <a
+                  href="https://github.com/flipstone42/k8s-prometheus-custom-scaling.git"
+                  >prometheus demo app github</a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://github.com/DirectXMan12/k8s-prometheus-adapter/"
+                  >Prometheus Adapter</a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://levelup.gitconnected.com/building-kubernetes-apps-with-custom-scaling-a-gentle-introduction-a332d7ebc795"
+                  >Building Kubernetes Apps with Scaling on Custom Metrics: A
+                  Gentle Introduction</a
+                >
+              </li>
+            </ul>
 
-<p><a href="https://youdianzhishi.com/web/course/1030" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+            <p>
+              <a
+                href="https://youdianzhishi.com/web/course/1030"
+                title="从 Docker 到 Kubernetes 进阶课程"
+                ><img
+                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
+                  alt="Kubernetes进阶训练营"
+              /></a>
+            </p>
 
+            <h2>微信公众号</h2>
+            <p>
+              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+              kubernetes 讨论群里面共同学习。
+            </p>
+            <img
+              src="https://picdn.youdianzhishi.com/images/qrcode.png"
+              alt="wechat-account-qrcode"
+            />
 
-          <h2>微信公众号</h2>
-<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
-
-  
-          
             <div class="entry-shang text-center">
-    <p>「真诚赞赏，手留余香」</p>
-    <button class="zs show-zs btn btn-bred">赞赏</button>
-</div>
-<div class="zs-modal-bg"></div>
-<div class="zs-modal-box">
-    <div class="zs-modal-head">
-        <button type="button" class="close">×</button>
-        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
-        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-    </div>
-    <div class="zs-modal-body">
-        <div class="zs-modal-btns">
-            <button class="btn btn-blink" data-num="2">2元</button>
-            <button class="btn btn-blink" data-num="5">5元</button>
-            <button class="btn btn-blink" data-num="10">10元</button>
-            <button class="btn btn-blink" data-num="50">50元</button>
-            <button class="btn btn-blink" data-num="100">100元</button>
-            <button class="btn btn-blink" data-num="1">任意金额</button>
-        </div>
-        <div class="zs-modal-pay">
-            <button class="btn btn-bred" id="pay-text">2元</button>
-            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
-        </div>
-    </div>
-    <div class="zs-modal-footer">
-        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
-    </div>
-</div>
-          
-          
-            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
-    <center>
-    <a href="#" class="social-share-icon icon-weibo"></a>
-    <a href="#" class="social-share-icon icon-wechat"></a>
-    <a href="#" class="social-share-icon icon-twitter"></a>
-    <a href="#" class="social-share-icon icon-linkedin"></a>
-    <a href="#" class="social-share-icon icon-facebook"></a>
-    <a href="#" class="social-share-icon icon-qq"></a>
-    <a href="#" class="social-share-icon icon-qzone"></a>
-    </center>
-</div>
+              <p>「真诚赞赏，手留余香」</p>
+              <button class="zs show-zs btn btn-bred">赞赏</button>
+            </div>
+            <div class="zs-modal-bg"></div>
+            <div class="zs-modal-box">
+              <div class="zs-modal-head">
+                <button type="button" class="close">×</button>
+                <span class="author"
+                  ><img
+                    src="https://www.qikqiak.com/img/avatar.jpeg"
+                  />阳明</span
+                >
+                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+              </div>
+              <div class="zs-modal-body">
+                <div class="zs-modal-btns">
+                  <button class="btn btn-blink" data-num="2">2元</button>
+                  <button class="btn btn-blink" data-num="5">5元</button>
+                  <button class="btn btn-blink" data-num="10">10元</button>
+                  <button class="btn btn-blink" data-num="50">50元</button>
+                  <button class="btn btn-blink" data-num="100">100元</button>
+                  <button class="btn btn-blink" data-num="1">任意金额</button>
+                </div>
+                <div class="zs-modal-pay">
+                  <button class="btn btn-bred" id="pay-text">2元</button>
+                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+                  <img
+                    src="https://www.qikqiak.com/img/wechat-2.png"
+                    id="pay-image"
+                  />
+                </div>
+              </div>
+              <div class="zs-modal-footer">
+                <span class="zs-wechat"
+                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
+                /></span>
+              </div>
+            </div>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+            <div
+              class="social-share"
+              data-initialized="true"
+              style="margin-bottom: 20px; margin-top: 20px"
+            >
+              <center>
+                <a href="#" class="social-share-icon icon-weibo"></a>
+                <a href="#" class="social-share-icon icon-wechat"></a>
+                <a href="#" class="social-share-icon icon-twitter"></a>
+                <a href="#" class="social-share-icon icon-linkedin"></a>
+                <a href="#" class="social-share-icon icon-facebook"></a>
+                <a href="#" class="social-share-icon icon-qq"></a>
+                <a href="#" class="social-share-icon icon-qzone"></a>
+              </center>
+            </div>
 
-          
-        </article>
-  
-        
-          
+            <link
+              rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
+            />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+          </article>
 
-<h3>相关文章</h3>
-<ul style="margin-bottom: 25px;">
-    
-    <li><a href="https://www.qikqiak.com/post/prometheus-book/">《深入浅出Prometheus》</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/prometheus-operator-advance/">Prometheus Operator 高级配置</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/prometheus-operator-custom-alert/">Prometheus Operator 自定义报警</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/prometheus-operator-monitor-etcd/">Prometheus Operator 监控 etcd 集群</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/grafana-log-tool-loki/">Grafana 日志聚合工具 Loki</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/first-use-prometheus-operator/">Prometheus Operator 初体验</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/grafana-usage-in-k8s/">Grafana 在 Kubernetes 中的使用</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/promethues-monitor-k8s-nodes/">监控 Kubernetes 集群节点</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/promethues-monitor-k8s-app/">Kubernetes 应用监控</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/alertmanager-of-prometheus-in-practice/">Prometheus报警AlertManager实战</a></li>
-    
-</ul>
+          <h3>相关文章</h3>
+          <ul style="margin-bottom: 25px">
+            <li>
+              <a href="https://www.qikqiak.com/post/prometheus-book/"
+                >《深入浅出Prometheus》</a
+              >
+            </li>
 
-        
-  
-        
-        <ul class="pager blog-pager">
-          
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/prometheus-operator-advance/"
+                >Prometheus Operator 高级配置</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/prometheus-operator-custom-alert/"
+                >Prometheus Operator 自定义报警</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/prometheus-operator-monitor-etcd/"
+                >Prometheus Operator 监控 etcd 集群</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/grafana-log-tool-loki/"
+                >Grafana 日志聚合工具 Loki</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/first-use-prometheus-operator/"
+                >Prometheus Operator 初体验</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/grafana-usage-in-k8s/"
+                >Grafana 在 Kubernetes 中的使用</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/promethues-monitor-k8s-nodes/"
+                >监控 Kubernetes 集群节点</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/promethues-monitor-k8s-app/"
+                >Kubernetes 应用监控</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/alertmanager-of-prometheus-in-practice/"
+                >Prometheus报警AlertManager实战</a
+              >
+            </li>
+          </ul>
+
+          <ul class="pager blog-pager">
             <li class="previous">
-              <a href="https://www.qikqiak.com/post/k8s-inlets-local-endpoinsts/" data-toggle="tooltip" data-placement="top" title="使用 inlets 和 kubernetes 访问本地服务">&larr; 前一篇</a>
+              <a
+                href="https://www.qikqiak.com/post/k8s-inlets-local-endpoinsts/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="使用 inlets 和 kubernetes 访问本地服务"
+                >&larr; 前一篇</a
+              >
             </li>
-          
-          
-            <li class="next">
-              <a href="https://www.qikqiak.com/post/free-use-jetbrains-ide/" data-toggle="tooltip" data-placement="top" title="免费获取 JetBrains 全系产品正版 License">后一篇 &rarr;</a>
-            </li>
-          
-        </ul>
-        
 
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-        
-        <ins class="adsbygoogle"
-            style="display:block"
+            <li class="next">
+              <a
+                href="https://www.qikqiak.com/post/free-use-jetbrains-ide/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="免费获取 JetBrains 全系产品正版 License"
+                >后一篇 &rarr;</a
+              >
+            </li>
+          </ul>
+
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+          ></script>
+
+          <ins
+            class="adsbygoogle"
+            style="display: block"
             data-ad-client="ca-pub-5376999672787220"
             data-ad-slot="3700507799"
             data-ad-format="auto"
-            data-full-width-responsive="true"></ins>
-        <script>
+            data-full-width-responsive="true"
+          ></ins>
+          <script>
             (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
-  
-        
-    <div id="gitalk-container"></div>
-    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-    <script>
-    var gitalk = new Gitalk({
-        clientID: 'bdb76dbb2e9d0786e350',
-        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
-        repo: 'blog',
-        owner: 'cnych',
-        admin: ['cnych'],
-        labels: ['gitment'],
-        title: '对 Kubernetes 应用进行自定义指标扩缩容',
-        createIssueManually: true,
-        id: 'build-k8s-app-with-custom-metrics',      
-        distractionFreeMode: true  
-    });
-    gitalk.render('gitalk-container');
-</script>
+          </script>
 
-
-        
-          
-
-        
-  
+          <div id="gitalk-container"></div>
+          <link
+            rel="stylesheet"
+            href="https://unpkg.com/gitalk/dist/gitalk.css"
+          />
+          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+          <script>
+            var gitalk = new Gitalk({
+              clientID: "bdb76dbb2e9d0786e350",
+              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
+              repo: "blog",
+              owner: "cnych",
+              admin: ["cnych"],
+              labels: ["gitment"],
+              title: "对 Kubernetes 应用进行自定义指标扩缩容",
+              createIssueManually: true,
+              id: "build-k8s-app-with-custom-metrics",
+              distractionFreeMode: true,
+            });
+            gitalk.render("gitalk-container");
+          </script>
+        </div>
       </div>
-    
-    
-  </div>
-</div>
+    </div>
 
     <footer>
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <ul class="list-inline text-center footer-links">
-          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
-          
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <ul class="list-inline text-center footer-links">
+              <img
+                src="https://www.qikqiak.com/img/wechatmp.png"
+                alt="k8s技术圈"
+              />
+
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -903,7 +1575,7 @@ prome-demo-grafana                      NodePort    <span style="color:#bd93f9">
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -912,7 +1584,7 @@ prome-demo-grafana                      NodePort    <span style="color:#bd93f9">
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -921,7 +1593,7 @@ prome-demo-grafana                      NodePort    <span style="color:#bd93f9">
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -930,121 +1602,158 @@ prome-demo-grafana                      NodePort    <span style="color:#bd93f9">
                   </span>
                 </a>
               </li>
-          
-          
-          <li>
-            <a href="https://www.qikqiak.com/index.xml" title="RSS">
-              <span class="fa-stack fa-lg">
-                <i class="fa fa-circle fa-stack-2x"></i>
-                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+
+              <li>
+                <a href="https://www.qikqiak.com/index.xml" title="RSS">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+            </ul>
+            <p class="credits copyright text-muted">
+              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/">阳明的博客</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/archive/">归档</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/friend/">友链</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://beian.miit.gov.cn/" target="_blank"
+                >蜀ICP备11027319号-5</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
+                >kubernetes.io</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
+                >Kubernetes中文社区</a
+              >
+            </p>
+            <p class="text-center text-muted">
+              <script
+                async
+                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
+              ></script>
+              <span id="busuanzi_container_site_pv" style="display: none">
+                本站总访问量<span id="busuanzi_value_site_pv"></span>次
               </span>
-            </a>
-          </li>
-          
-        </ul>
-        <p class="credits copyright text-muted">
-          
+              &nbsp;&bull;&nbsp;
+              <span id="busuanzi_container_site_uv" style="display: none">
+                访客数<span id="busuanzi_value_site_uv"></span>人次
+              </span>
+            </p>
 
-          &nbsp;&bull;&nbsp;
-          2023
-
-          
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/">阳明的博客</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/archive/">归档</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/friend/">友链</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
-          
-        </p>
-        <p class="text-center text-muted">
-          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-          <span id="busuanzi_container_site_pv" style="display:none">
-            本站总访问量<span id="busuanzi_value_site_pv"></span>次
-          </span>
-          &nbsp;&bull;&nbsp;
-          <span id="busuanzi_container_site_uv" style="display:none">
-            访客数<span id="busuanzi_value_site_uv"></span>人次
-          </span>
-        </p>
-        
-        <p class="credits theme-by text-muted">
-          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
-          
-        </p>
+            <p class="credits theme-by text-muted">
+              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
+              &nbsp;&bull;&nbsp; 主题
+              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+              移植自
+              <a href="https://github.com/rootsongjc/beautifulhugo"
+                >Beautiful Hugo</a
+              >
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</footer>
+    </footer>
 
+    <script
+      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
+      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
+    ></script>
 
-<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "UA-69668147-3");
+    </script>
+    <script>
+      (function () {
+        var bp = document.createElement("script");
+        var curProtocol = window.location.protocol.split(":")[0];
+        if (curProtocol === "https") {
+          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
+        } else {
+          bp.src = "http://push.zhanzhang.baidu.com/push.js";
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+      })();
+    </script>
+    <script>
+      $(document).ready(function () {
+        var int = setInterval(fixCount, 50);
 
-
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-69668147-3');
-</script>
-<script>
-(function(){
-    var bp = document.createElement('script');
-    var curProtocol = window.location.protocol.split(':')[0];
-    if (curProtocol === 'https') {
-        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
-    }
-    else {
-        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
-    }
-    var s = document.getElementsByTagName("script")[0];
-    s.parentNode.insertBefore(bp, s);
-})();
-</script>
-<script >
-$(document).ready(function() {
-  var int = setInterval(fixCount, 50);  
-  
-  var initPVCount = 584976;
-  var initUVCount = 153191;
-  function fixCount() {                   
-    if ($("#busuanzi_container_site_pv").css("display") != "none") {
-        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
-        clearInterval(int); 
-    }
-    if ($("#busuanzi_container_site_uv").css("display") != "none") {
-      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
-      clearInterval(int); 
-    }  
-  }           
-});
-</script>
- <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
-<script type="text/javascript">
-$('.carousel').slick({
-    dots: true,
-    arrows: true,
-    autoplay: true,
-    autoplaySpeed: 4000,
-    infinite: true,
-    speed: 500,
-    fade: true,
-    cssEase: 'linear',
-    centerMode: true,
-    prevArrow: '<button type="button" class="slick-prev"></button>',
-    nextArrow: '<button type="button" class="slick-next"></button>',
-});
-</script>
-
+        var initPVCount = 584976;
+        var initUVCount = 153191;
+        function fixCount() {
+          if ($("#busuanzi_container_site_pv").css("display") != "none") {
+            $("#busuanzi_value_site_pv").html(
+              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
+            );
+            clearInterval(int);
+          }
+          if ($("#busuanzi_container_site_uv").css("display") != "none") {
+            $("#busuanzi_value_site_uv").html(
+              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
+            );
+            clearInterval(int);
+          }
+        }
+      });
+    </script>
+    <script>
+      (function (w, d, s, id) {
+        if (typeof w.webpushr !== "undefined") return;
+        w.webpushr =
+          w.webpushr ||
+          function () {
+            (w.webpushr.q = w.webpushr.q || []).push(arguments);
+          };
+        var js,
+          fjs = d.getElementsByTagName(s)[0];
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "https://cdn.webpushr.com/app.min.js";
+        fjs.parentNode.appendChild(js);
+      })(window, document, "script", "webpushr-jssdk");
+      webpushr(
+        "init",
+        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
+      );
+    </script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
+    ></script>
+    <script type="text/javascript">
+      $(".carousel").slick({
+        dots: true,
+        arrows: true,
+        autoplay: true,
+        autoplaySpeed: 4000,
+        infinite: true,
+        speed: 500,
+        fade: true,
+        cssEase: "linear",
+        centerMode: true,
+        prevArrow: '<button type="button" class="slick-prev"></button>',
+        nextArrow: '<button type="button" class="slick-next"></button>',
+      });
+    </script>
   </body>
 </html>
-

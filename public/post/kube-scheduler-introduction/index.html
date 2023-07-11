@@ -1,410 +1,616 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
 
+    <title>
+      Kubernetes
+      调度器介绍-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
+    </title>
+    <meta property="og:title" content="Kubernetes 调度器介绍" />
+    <meta name="twitter:title" content="Kubernetes 调度器介绍" />
 
-  <title>Kubernetes 调度器介绍-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
-  <meta property="og:title" content="Kubernetes 调度器介绍" />
-  <meta name="twitter:title" content="Kubernetes 调度器介绍" />
+    <meta
+      name="description"
+      content="kubernetes 核心组件 kube-scheduler 调度流程和策略分析"
+    />
+    <meta
+      property="og:description"
+      content="kubernetes 核心组件 kube-scheduler 调度流程和策略分析"
+    />
+    <meta
+      name="twitter:description"
+      content="kubernetes 核心组件 kube-scheduler 调度流程和策略分析"
+    />
+    <meta name="author" content="" />
+    <link
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+      rel="icon"
+      type="image/x-icon"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      property="og:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      name="twitter:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta
+      property="og:url"
+      content="https://www.qikqiak.com/post/kube-scheduler-introduction/"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="阳明的博客" />
 
-  <meta name="description" content="kubernetes 核心组件 kube-scheduler 调度流程和策略分析">
-  <meta property="og:description" content="kubernetes 核心组件 kube-scheduler 调度流程和策略分析">
-  <meta name="twitter:description" content="kubernetes 核心组件 kube-scheduler 调度流程和策略分析">
-  <meta name="author" content=""/>
-  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
-  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
-  <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://www.qikqiak.com/post/kube-scheduler-introduction/" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="阳明的博客" />
+    <meta name="generator" content="Hugo 0.55.6" />
+    <link
+      rel="canonical"
+      href="https://www.qikqiak.com/post/kube-scheduler-introduction/"
+    />
+    <link
+      rel="alternate"
+      href="https://www.qikqiak.com/index.xml"
+      type="application/rss+xml"
+      title="阳明的博客"
+    />
 
-  <meta name="generator" content="Hugo 0.55.6" />
-  <link rel="canonical" href="https://www.qikqiak.com/post/kube-scheduler-introduction/" />
-  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+    <link
+      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
+      rel="stylesheet"
+    />
 
-  
-  
-  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
-  
+    <link
+      rel="stylesheet"
+      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
+      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
+    />
 
-  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
+    />
 
-  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
-  
-  
-    
     <!--[if lt IE 9]>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+        rel="stylesheet"
+      />
     <![endif]-->
-<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
-<meta name="baidu-site-verification" content="F5ojAyqaKU" />
-<meta name="keywords" content="kubernetes, scheduler, 亲和性, 调度, affinity">
-<script>
-var _hmt = _hmt || [];
-(function() {
-  var hm = document.createElement("script");
-  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-  var s = document.getElementsByTagName("script")[0];
-  s.parentNode.insertBefore(hm, s);
-})();
-</script>
+    <meta
+      name="google-site-verification"
+      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
+    />
+    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
+    <meta
+      name="keywords"
+      content="kubernetes, scheduler, 亲和性, 调度, affinity"
+    />
+    <script>
+      var _hmt = _hmt || [];
+      (function () {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
 
+    <script type="application/javascript">
+      var doNotTrack = false;
+      if (!doNotTrack) {
+        window.ga =
+          window.ga ||
+          function () {
+            (ga.q = ga.q || []).push(arguments);
+          };
+        ga.l = +new Date();
+        ga("create", "UA-69668147-3", "auto");
 
-
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-	ga('create', 'UA-69668147-3', 'auto');
-	
-	ga('send', 'pageview');
-}
-</script>
-<script async src='https://www.google-analytics.com/analytics.js'></script>
-
-</head>
+        ga("send", "pageview");
+      }
+    </script>
+    <script async src="https://www.google-analytics.com/analytics.js"></script>
+  </head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
-        <span class="sr-only">切换导航</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
-        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
-      </a>
-    </div>
+      <div class="container">
+        <div class="navbar-header">
+          <button
+            type="button"
+            class="navbar-toggle"
+            data-toggle="collapse"
+            data-target="#main-navbar"
+          >
+            <span class="sr-only">切换导航</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a
+            class="navbar-brand"
+            href="https://www.qikqiak.com/"
+            title="阳明的博客"
+          >
+            <img
+              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
+              style="margin-top: -5px; height: 32px"
+              alt="阳明的博客"
+            />
+          </a>
+        </div>
 
-    <div class="collapse navbar-collapse" id="main-navbar">
-      <ul class="nav navbar-nav navbar-right">
-        
-          
+        <div class="collapse navbar-collapse" id="main-navbar">
+          <ul class="nav navbar-nav navbar-right">
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-          
-        
-          
+
             <li>
-              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+              <a
+                title="课程"
+                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
+                >课程</a
+              >
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/archives">Archive</a>
-                
-                  <a href="https://www.qikqiak.com/tags">tags</a>
-                
-                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-                
-                  <a href="https://www.qikqiak.com/tags/python">python</a>
-                
-                  <a href="https://www.qikqiak.com/tags/django">django</a>
-                
-                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
-                
+                <a href="https://www.qikqiak.com/archives">Archive</a>
+
+                <a href="https://www.qikqiak.com/tags">tags</a>
+
+                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+
+                <a href="https://www.qikqiak.com/tags/python">python</a>
+
+                <a href="https://www.qikqiak.com/tags/django">django</a>
+
+                <a href="https://www.qikqiak.com/tags/devops">devops</a>
               </div>
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-                
-                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-                
-                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-                
-                  <a href="https://md.qikqiak.com/">Markdown微信</a>
-                
+                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+
+                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+
+                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+
+                <a href="https://md.qikqiak.com/">Markdown微信</a>
               </div>
             </li>
-          
-        
-          
+
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+              <a title="关于" href="https://www.qikqiak.com/page/about/"
+                >关于</a
+              >
             </li>
-          
-        
-          
+
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
-          
-        
 
-        
-
-        
-
-        
-          <li>
-            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
-              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
-            </a>
-          </li>
-          
-
-      </ul>
-    </div>
-
-  </div>
-</nav>
-
-
-  <div id="modalSearch" class="modal fade" role="dialog">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-          <h4 class="modal-title">搜索</h4>
-        </div>
-        <div class="modal-body">
-            
-<div class="aa-input-container" id="aa-input-container">
-    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
-    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
-    </svg>
-</div>
-<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
-
-<script>
-var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
-var index = client.initIndex('prod_blog');
-
-autocomplete('#aa-search-input',
-{ hint: false}, {
-    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
-    
-    displayKey: 'name',
-    
-    templates: {
-        
-        suggestion: function(suggestion) {
-            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
-            suggestion._highlightResult.title.value + '</a></span>';
-        }
-    }
-});
-</script>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+            <li>
+              <a
+                href="#modalSearch"
+                data-toggle="modal"
+                data-target="#modalSearch"
+                style="outline: none"
+              >
+                <span
+                  id="searchGlyph"
+                  class="glyphicon glyphicon-search"
+                ></span>
+              </a>
+            </li>
+          </ul>
         </div>
       </div>
-    </div>
-  </div>
+    </nav>
 
-    
-  
-  
-  
-
-
-
-
-  
-
-  <header class="header-section ">
-    
-    
-    
-    <div class="intro-header no-img">
-      
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <div class="post-heading">
-              <h1>Kubernetes 调度器介绍</h1>
-                
-                  
-                    <h2 class="post-subheading">kubernetes 核心组件 kube-scheduler 调度流程和策略分析</h2>
-                  
-                
-                
-                  <span class="post-meta">
-  
-    发表于 October 11, 2018
-  
-  
-</span>
-
-
-                
+    <div id="modalSearch" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">
+              &times;
+            </button>
+            <h4 class="modal-title">搜索</h4>
+          </div>
+          <div class="modal-body">
+            <div class="aa-input-container" id="aa-input-container">
+              <input
+                type="search"
+                id="aa-search-input"
+                class="aa-input-search"
+                placeholder="Search for titles or URIs..."
+                name="search"
+                autocomplete="off"
+              />
+              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+                <path
+                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
+                />
+              </svg>
             </div>
+            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+            <script>
+              var client = algoliasearch(
+                "1JDRAS0AZR",
+                "8804ac109158bb3bb60d74ce98fa332f"
+              );
+              var index = client.initIndex("prod_blog");
+
+              autocomplete(
+                "#aa-search-input",
+                { hint: false },
+                {
+                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
+
+                  displayKey: "name",
+
+                  templates: {
+                    suggestion: function (suggestion) {
+                      return (
+                        "<span>" +
+                        '<a href="https://www.qikqiak.com/post/' +
+                        suggestion.slug +
+                        '">' +
+                        suggestion._highlightResult.title.value +
+                        "</a></span>"
+                      );
+                    },
+                  },
+                }
+              );
+            </script>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">
+              close
+            </button>
           </div>
         </div>
       </div>
     </div>
-    
-    
-  </header>
 
+    <header class="header-section">
+      <div class="intro-header no-img">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>Kubernetes 调度器介绍</h1>
 
-    
+                <h2 class="post-subheading">
+                  kubernetes 核心组件 kube-scheduler 调度流程和策略分析
+                </h2>
 
-
-
-<div class="container" role="main">
-  <div class="row">
-
-    
-    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <div>
-            
-            
-            <h5 id="tags" style="margin-top: 30px;">标签:
-              
-                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/scheduler/">scheduler</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/%E8%B0%83%E5%BA%A6/">调度</a> &nbsp;
-              
-            </h5>
-            
+                <span class="post-meta"> 发表于 October 11, 2018 </span>
+              </div>
+            </div>
+          </div>
         </div>
-  
-        <article role="main" class="blog-post" itemprop="articleBody" id="content">
-          
-  
-          
-          
-          
-  
-          
-          
-          
-  
-          
-          
-          
+      </div>
+    </header>
 
-          <p><a href="https://mp.weixin.qq.com/s/zXy5iYDTFxffzI7_IeLU7Q"><img src="https://www.qikqiak.com/img/posts/kube-scheduler-cover.png" alt="kube-scheduler" /></a>
-<code>kube-scheduler</code>是 kubernetes 系统的核心组件之一，主要负责整个集群资源的调度功能，根据特定的调度算法和策略，将 Pod 调度到最优的工作节点上面去，从而更加合理、更加充分的利用集群的资源，这也是我们选择使用 kubernetes 一个非常重要的理由。如果一门新的技术不能帮助企业节约成本、提供效率，我相信是很难推进的。</p>
+    <div class="container" role="main">
+      <div class="row">
+        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+          <div>
+            <h5 id="tags" style="margin-top: 30px">
+              标签:
 
-<h2 id="调度流程">调度流程</h2>
+              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
+              &nbsp;
 
-<p>默认情况下，kube-scheduler 提供的默认调度器能够满足我们绝大多数的要求，我们前面和大家接触的示例也基本上用的默认的策略，都可以保证我们的 Pod 可以被分配到资源充足的节点上运行。但是在实际的线上项目中，可能我们自己会比 kubernetes 更加了解我们自己的应用，比如我们希望一个 Pod 只能运行在特定的几个节点上，或者这几个节点只能用来运行特定类型的应用，这就需要我们的调度器能够可控。</p>
+              <a href="https://www.qikqiak.com/tags/scheduler/">scheduler</a>
+              &nbsp;
 
-<p><code>kube-scheduler</code> 是 kubernetes 的调度器，它的主要作用就是根据特定的调度算法和调度策略将 Pod 调度到合适的 Node 节点上去，是一个独立的二进制程序，启动之后会一直监听 API Server，获取到 PodSpec.NodeName 为空的 Pod，对每个 Pod 都会创建一个 binding。</p>
+              <a href="https://www.qikqiak.com/tags/%E8%B0%83%E5%BA%A6/"
+                >调度</a
+              >
+              &nbsp;
+            </h5>
+          </div>
 
-<figure><img src="https://www.qikqiak.com/img/posts/kube-scheduler-structrue.jpg" alt="kube-scheduler structrue"><figcaption>kube-scheduler structrue</figcaption></figure>
+          <article
+            role="main"
+            class="blog-post"
+            itemprop="articleBody"
+            id="content"
+          >
+            <p>
+              <a href="https://mp.weixin.qq.com/s/zXy5iYDTFxffzI7_IeLU7Q"
+                ><img
+                  src="https://www.qikqiak.com/img/posts/kube-scheduler-cover.png"
+                  alt="kube-scheduler"
+              /></a>
+              <code>kube-scheduler</code>是 kubernetes
+              系统的核心组件之一，主要负责整个集群资源的调度功能，根据特定的调度算法和策略，将
+              Pod
+              调度到最优的工作节点上面去，从而更加合理、更加充分的利用集群的资源，这也是我们选择使用
+              kubernetes
+              一个非常重要的理由。如果一门新的技术不能帮助企业节约成本、提供效率，我相信是很难推进的。
+            </p>
 
-<p>这个过程在我们看来好像比较简单，但在实际的生产环境中，需要考虑的问题就有很多了：</p>
+            <h2 id="调度流程">调度流程</h2>
 
-<ul>
-<li>如何保证全部的节点调度的公平性？要知道并不是说有节点资源配置都是一样的</li>
-<li>如何保证每个节点都能被分配资源？</li>
-<li>集群资源如何能够被高效利用？</li>
-<li>集群资源如何才能被最大化使用？</li>
-<li>如何保证 Pod 调度的性能和效率？</li>
-<li>用户是否可以根据自己的实际需求定制自己的调度策略？</li>
-</ul>
+            <p>
+              默认情况下，kube-scheduler
+              提供的默认调度器能够满足我们绝大多数的要求，我们前面和大家接触的示例也基本上用的默认的策略，都可以保证我们的
+              Pod
+              可以被分配到资源充足的节点上运行。但是在实际的线上项目中，可能我们自己会比
+              kubernetes 更加了解我们自己的应用，比如我们希望一个 Pod
+              只能运行在特定的几个节点上，或者这几个节点只能用来运行特定类型的应用，这就需要我们的调度器能够可控。
+            </p>
 
-<p>考虑到实际环境中的各种复杂情况，kubernetes 的调度器采用插件化的形式实现，可以方便用户进行定制或者二次开发，我们可以自定义一个调度器并以插件形式和 kubernetes 进行集成。</p>
+            <p>
+              <code>kube-scheduler</code> 是 kubernetes
+              的调度器，它的主要作用就是根据特定的调度算法和调度策略将 Pod
+              调度到合适的 Node
+              节点上去，是一个独立的二进制程序，启动之后会一直监听 API
+              Server，获取到 PodSpec.NodeName 为空的 Pod，对每个 Pod
+              都会创建一个 binding。
+            </p>
 
-<p>kubernetes 调度器的源码位于 kubernetes/pkg/scheduler 中，大体的代码目录结构如下所示：(不同的版本目录结构可能不太一样)</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubernetes/pkg/scheduler
+            <figure>
+              <img
+                src="https://www.qikqiak.com/img/posts/kube-scheduler-structrue.jpg"
+                alt="kube-scheduler structrue"
+              />
+              <figcaption>kube-scheduler structrue</figcaption>
+            </figure>
+
+            <p>
+              这个过程在我们看来好像比较简单，但在实际的生产环境中，需要考虑的问题就有很多了：
+            </p>
+
+            <ul>
+              <li>
+                如何保证全部的节点调度的公平性？要知道并不是说有节点资源配置都是一样的
+              </li>
+              <li>如何保证每个节点都能被分配资源？</li>
+              <li>集群资源如何能够被高效利用？</li>
+              <li>集群资源如何才能被最大化使用？</li>
+              <li>如何保证 Pod 调度的性能和效率？</li>
+              <li>用户是否可以根据自己的实际需求定制自己的调度策略？</li>
+            </ul>
+
+            <p>
+              考虑到实际环境中的各种复杂情况，kubernetes
+              的调度器采用插件化的形式实现，可以方便用户进行定制或者二次开发，我们可以自定义一个调度器并以插件形式和
+              kubernetes 进行集成。
+            </p>
+
+            <p>
+              kubernetes 调度器的源码位于 kubernetes/pkg/scheduler
+              中，大体的代码目录结构如下所示：(不同的版本目录结构可能不太一样)
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">kubernetes/pkg/scheduler
 -- scheduler.go         //调度相关的具体实现
 |-- algorithm
 |   |-- predicates      //节点筛选策略
 |   |-- priorities      //节点打分策略
 |-- algorithmprovider
-|   |-- defaults         //定义默认的调度器</code></pre></div>
-<p>其中 Scheduler 创建和运行的核心程序，对应的代码在 pkg/scheduler/scheduler.go，如果要查看<code>kube-scheduler</code>的入口程序，对应的代码在 cmd/kube-scheduler/scheduler.go。</p>
+|   |-- defaults         //定义默认的调度器</code></pre>
+            </div>
+            <p>
+              其中 Scheduler 创建和运行的核心程序，对应的代码在
+              pkg/scheduler/scheduler.go，如果要查看<code>kube-scheduler</code>的入口程序，对应的代码在
+              cmd/kube-scheduler/scheduler.go。
+            </p>
 
-<p>调度主要分为以下几个部分：</p>
+            <p>调度主要分为以下几个部分：</p>
 
-<ul>
-<li>首先是<strong>预选过程</strong>，过滤掉不满足条件的节点，这个过程称为<code>Predicates</code></li>
-<li>然后是<strong>优选过程</strong>，对通过的节点按照优先级排序，称之为<code>Priorities</code></li>
-<li>最后从中选择优先级最高的节点，如果中间任何一步骤有错误，就直接返回错误</li>
-</ul>
+            <ul>
+              <li>
+                首先是<strong>预选过程</strong>，过滤掉不满足条件的节点，这个过程称为<code
+                  >Predicates</code
+                >
+              </li>
+              <li>
+                然后是<strong>优选过程</strong>，对通过的节点按照优先级排序，称之为<code
+                  >Priorities</code
+                >
+              </li>
+              <li>
+                最后从中选择优先级最高的节点，如果中间任何一步骤有错误，就直接返回错误
+              </li>
+            </ul>
 
-<p><code>Predicates</code>阶段首先遍历全部节点，过滤掉不满足条件的节点，属于强制性规则，这一阶段输出的所有满足要求的 Node 将被记录并作为第二阶段的输入，如果所有的节点都不满足条件，那么 Pod 将会一直处于 Pending 状态，直到有节点满足条件，在这期间调度器会不断的重试。</p>
+            <p>
+              <code>Predicates</code
+              >阶段首先遍历全部节点，过滤掉不满足条件的节点，属于强制性规则，这一阶段输出的所有满足要求的
+              Node
+              将被记录并作为第二阶段的输入，如果所有的节点都不满足条件，那么 Pod
+              将会一直处于 Pending
+              状态，直到有节点满足条件，在这期间调度器会不断的重试。
+            </p>
 
-<blockquote>
-<p>所以我们在部署应用的时候，如果发现有 Pod 一直处于 Pending 状态，那么就是没有满足调度条件的节点，这个时候可以去检查下节点资源是否可用。</p>
-</blockquote>
+            <blockquote>
+              <p>
+                所以我们在部署应用的时候，如果发现有 Pod 一直处于 Pending
+                状态，那么就是没有满足调度条件的节点，这个时候可以去检查下节点资源是否可用。
+              </p>
+            </blockquote>
 
-<p><code>Priorities</code>阶段即再次对节点进行筛选，如果有多个节点都满足条件的话，那么系统会按照节点的优先级(priorites)大小对节点进行排序，最后选择优先级最高的节点来部署 Pod 应用。</p>
+            <p>
+              <code>Priorities</code
+              >阶段即再次对节点进行筛选，如果有多个节点都满足条件的话，那么系统会按照节点的优先级(priorites)大小对节点进行排序，最后选择优先级最高的节点来部署
+              Pod 应用。
+            </p>
 
-<p>下面是调度过程的简单示意图：
-<img src="https://www.qikqiak.com/img/posts/kube-scheduler-filter.jpg" alt="kube-scheduler filter" /></p>
+            <p>
+              下面是调度过程的简单示意图：
+              <img
+                src="https://www.qikqiak.com/img/posts/kube-scheduler-filter.jpg"
+                alt="kube-scheduler filter"
+              />
+            </p>
 
-<p>更详细的流程是这样的：</p>
+            <p>更详细的流程是这样的：</p>
 
-<ul>
-<li>首先，客户端通过 API Server 的 REST API 或者 kubectl 工具创建 Pod 资源</li>
-<li>API Server 收到用户请求后，存储相关数据到 etcd 数据库中</li>
-<li>调度器监听 API Server 查看为调度(bind)的 Pod 列表，循环遍历地为每个 Pod 尝试分配节点，这个分配过程就是我们上面提到的两个阶段：
+            <ul>
+              <li>
+                首先，客户端通过 API Server 的 REST API 或者 kubectl 工具创建
+                Pod 资源
+              </li>
+              <li>API Server 收到用户请求后，存储相关数据到 etcd 数据库中</li>
+              <li>
+                调度器监听 API Server 查看为调度(bind)的 Pod
+                列表，循环遍历地为每个 Pod
+                尝试分配节点，这个分配过程就是我们上面提到的两个阶段：
 
-<ul>
-<li>预选阶段(Predicates)，过滤节点，调度器用一组规则过滤掉不符合要求的 Node 节点，比如 Pod 设置了资源的 request，那么可用资源比 Pod 需要的资源少的主机显然就会被过滤掉</li>
-<li>优选阶段(Priorities)，为节点的优先级打分，将上一阶段过滤出来的 Node 列表进行打分，调度器会考虑一些整体的优化策略，比如把 Deployment 控制的多个 Pod 副本分布到不同的主机上，使用最低负载的主机等等策略</li>
-</ul></li>
-<li>经过上面的阶段过滤后选择打分最高的 Node 节点和 Pod 进行 binding 操作，然后将结果存储到 etcd 中</li>
-<li>最后被选择出来的 Node 节点对应的 kubelet 去执行创建 Pod 的相关操作</li>
-</ul>
+                <ul>
+                  <li>
+                    预选阶段(Predicates)，过滤节点，调度器用一组规则过滤掉不符合要求的
+                    Node 节点，比如 Pod 设置了资源的 request，那么可用资源比 Pod
+                    需要的资源少的主机显然就会被过滤掉
+                  </li>
+                  <li>
+                    优选阶段(Priorities)，为节点的优先级打分，将上一阶段过滤出来的
+                    Node 列表进行打分，调度器会考虑一些整体的优化策略，比如把
+                    Deployment 控制的多个 Pod
+                    副本分布到不同的主机上，使用最低负载的主机等等策略
+                  </li>
+                </ul>
+              </li>
+              <li>
+                经过上面的阶段过滤后选择打分最高的 Node 节点和 Pod 进行 binding
+                操作，然后将结果存储到 etcd 中
+              </li>
+              <li>
+                最后被选择出来的 Node 节点对应的 kubelet 去执行创建 Pod
+                的相关操作
+              </li>
+            </ul>
 
-<p>其中<code>Predicates</code>过滤有一系列的算法可以使用，我们这里简单列举几个：</p>
+            <p>
+              其中<code>Predicates</code>过滤有一系列的算法可以使用，我们这里简单列举几个：
+            </p>
 
-<ul>
-<li>PodFitsResources：节点上剩余的资源是否大于 Pod 请求的资源</li>
-<li>PodFitsHost：如果 Pod 指定了 NodeName，检查节点名称是否和 NodeName 匹配</li>
-<li>PodFitsHostPorts：节点上已经使用的 port 是否和 Pod 申请的 port 冲突</li>
-<li>PodSelectorMatches：过滤掉和 Pod 指定的 label 不匹配的节点</li>
-<li>NoDiskConflict：已经 mount 的 volume 和 Pod 指定的 volume 不冲突，除非它们都是只读的</li>
-<li>CheckNodeDiskPressure：检查节点磁盘空间是否符合要求</li>
-<li>CheckNodeMemoryPressure：检查节点内存是否够用</li>
-</ul>
+            <ul>
+              <li>PodFitsResources：节点上剩余的资源是否大于 Pod 请求的资源</li>
+              <li>
+                PodFitsHost：如果 Pod 指定了 NodeName，检查节点名称是否和
+                NodeName 匹配
+              </li>
+              <li>
+                PodFitsHostPorts：节点上已经使用的 port 是否和 Pod 申请的 port
+                冲突
+              </li>
+              <li>
+                PodSelectorMatches：过滤掉和 Pod 指定的 label 不匹配的节点
+              </li>
+              <li>
+                NoDiskConflict：已经 mount 的 volume 和 Pod 指定的 volume
+                不冲突，除非它们都是只读的
+              </li>
+              <li>CheckNodeDiskPressure：检查节点磁盘空间是否符合要求</li>
+              <li>CheckNodeMemoryPressure：检查节点内存是否够用</li>
+            </ul>
 
-<p>除了这些过滤算法之外，还有一些其他的算法，更多更详细的我们可以查看源码文件：k8s.io/kubernetes/pkg/scheduler/algorithm/predicates/predicates.go。</p>
+            <p>
+              除了这些过滤算法之外，还有一些其他的算法，更多更详细的我们可以查看源码文件：k8s.io/kubernetes/pkg/scheduler/algorithm/predicates/predicates.go。
+            </p>
 
-<p>而<code>Priorities</code>优先级是由一系列键值对组成的，键是该优先级的名称，值是它的权重值，同样，我们这里给大家列举几个具有代表性的选项：</p>
+            <p>
+              而<code>Priorities</code>优先级是由一系列键值对组成的，键是该优先级的名称，值是它的权重值，同样，我们这里给大家列举几个具有代表性的选项：
+            </p>
 
-<ul>
-<li>LeastRequestedPriority：通过计算 CPU 和内存的使用率来决定权重，使用率越低权重越高，当然正常肯定也是资源是使用率越低权重越高，能给别的 Pod 运行的可能性就越大</li>
-<li>SelectorSpreadPriority：为了更好的高可用，对同属于一个 Deployment 或者 RC 下面的多个 Pod 副本，尽量调度到多个不同的节点上，当一个 Pod 被调度的时候，会先去查找该 Pod 对应的 controller，然后查看该 controller 下面的已存在的 Pod，运行 Pod 越少的节点权重越高</li>
-<li>ImageLocalityPriority：就是如果在某个节点上已经有要使用的镜像节点了，镜像总大小值越大，权重就越高</li>
-<li>NodeAffinityPriority：这个就是根据节点的亲和性来计算一个权重值，后面我们会详细讲解亲和性的使用方法</li>
-</ul>
+            <ul>
+              <li>
+                LeastRequestedPriority：通过计算 CPU
+                和内存的使用率来决定权重，使用率越低权重越高，当然正常肯定也是资源是使用率越低权重越高，能给别的
+                Pod 运行的可能性就越大
+              </li>
+              <li>
+                SelectorSpreadPriority：为了更好的高可用，对同属于一个
+                Deployment 或者 RC 下面的多个 Pod
+                副本，尽量调度到多个不同的节点上，当一个 Pod
+                被调度的时候，会先去查找该 Pod 对应的 controller，然后查看该
+                controller 下面的已存在的 Pod，运行 Pod 越少的节点权重越高
+              </li>
+              <li>
+                ImageLocalityPriority：就是如果在某个节点上已经有要使用的镜像节点了，镜像总大小值越大，权重就越高
+              </li>
+              <li>
+                NodeAffinityPriority：这个就是根据节点的亲和性来计算一个权重值，后面我们会详细讲解亲和性的使用方法
+              </li>
+            </ul>
 
-<p>除了这些策略之外，还有很多其他的策略，同样我们可以查看源码文件：k8s.io/kubernetes/pkg/scheduler/algorithm/priorities/ 了解更多信息。每一个优先级函数会返回一个0-10的分数，分数越高表示节点越优，同时每一个函数也会对应一个表示权重的值。最终主机的得分用以下公式计算得出：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#8be9fd;font-style:italic">finalScoreNode</span> <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">(</span>weight1 * priorityFunc1<span style="color:#ff79c6">)</span> + <span style="color:#ff79c6">(</span>weight2 * priorityFunc2<span style="color:#ff79c6">)</span> + … + <span style="color:#ff79c6">(</span>weightn * priorityFuncn<span style="color:#ff79c6">)</span></code></pre></div>
-<h2 id="自定义调度">自定义调度</h2>
+            <p>
+              除了这些策略之外，还有很多其他的策略，同样我们可以查看源码文件：k8s.io/kubernetes/pkg/scheduler/algorithm/priorities/
+              了解更多信息。每一个优先级函数会返回一个0-10的分数，分数越高表示节点越优，同时每一个函数也会对应一个表示权重的值。最终主机的得分用以下公式计算得出：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell"><span style="color:#8be9fd;font-style:italic">finalScoreNode</span> <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">(</span>weight1 * priorityFunc1<span style="color:#ff79c6">)</span> + <span style="color:#ff79c6">(</span>weight2 * priorityFunc2<span style="color:#ff79c6">)</span> + … + <span style="color:#ff79c6">(</span>weightn * priorityFuncn<span style="color:#ff79c6">)</span></code></pre>
+            </div>
+            <h2 id="自定义调度">自定义调度</h2>
 
-<p>上面就是 kube-scheduler 默认调度的基本流程，除了使用默认的调度器之外，我们也可以自定义调度策略。</p>
+            <p>
+              上面就是 kube-scheduler
+              默认调度的基本流程，除了使用默认的调度器之外，我们也可以自定义调度策略。
+            </p>
 
-<h3 id="调度器扩展">调度器扩展</h3>
+            <h3 id="调度器扩展">调度器扩展</h3>
 
-<p><code>kube-scheduler</code>在启动的时候可以通过 <code>--policy-config-file</code>参数来指定调度策略文件，我们可以根据我们自己的需要来组装<code>Predicates</code>和<code>Priority</code>函数。选择不同的过滤函数和优先级函数、控制优先级函数的权重、调整过滤函数的顺序都会影响调度过程。</p>
+            <p>
+              <code>kube-scheduler</code>在启动的时候可以通过
+              <code>--policy-config-file</code
+              >参数来指定调度策略文件，我们可以根据我们自己的需要来组装<code>Predicates</code>和<code>Priority</code>函数。选择不同的过滤函数和优先级函数、控制优先级函数的权重、调整过滤函数的顺序都会影响调度过程。
+            </p>
 
-<p>下面是官方的 Policy 文件示例：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+            <p>下面是官方的 Policy 文件示例：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-json" data-lang="json">{
     <span style="color:#ff79c6">&#34;kind&#34;</span> : <span style="color:#f1fa8c">&#34;Policy&#34;</span>,
     <span style="color:#ff79c6">&#34;apiVersion&#34;</span> : <span style="color:#f1fa8c">&#34;v1&#34;</span>,
     <span style="color:#ff79c6">&#34;predicates&#34;</span> : [
@@ -421,11 +627,26 @@ autocomplete('#aa-search-input',
         {<span style="color:#ff79c6">&#34;name&#34;</span> : <span style="color:#f1fa8c">&#34;ServiceSpreadingPriority&#34;</span>, <span style="color:#ff79c6">&#34;weight&#34;</span> : <span style="color:#bd93f9">1</span>},
         {<span style="color:#ff79c6">&#34;name&#34;</span> : <span style="color:#f1fa8c">&#34;EqualPriority&#34;</span>, <span style="color:#ff79c6">&#34;weight&#34;</span> : <span style="color:#bd93f9">1</span>}
     ]
-}</code></pre></div>
-<h3 id="多调度器">多调度器</h3>
+}</code></pre>
+            </div>
+            <h3 id="多调度器">多调度器</h3>
 
-<p>如果默认的调度器不满足要求，还可以部署自定义的调度器。并且，在整个集群中还可以同时运行多个调度器实例，通过<code>podSpec.schedulerName</code> 来选择使用哪一个调度器（默认使用内置的调度器）。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+            <p>
+              如果默认的调度器不满足要求，还可以部署自定义的调度器。并且，在整个集群中还可以同时运行多个调度器实例，通过<code
+                >podSpec.schedulerName</code
+              >
+              来选择使用哪一个调度器（默认使用内置的调度器）。
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: v1
 kind: Pod
 metadata:
   name: nginx
@@ -435,37 +656,82 @@ spec:
   schedulerName: my-scheduler  <span style="color:#6272a4"># 选择使用自定义调度器 my-scheduler</span>
   containers:
   - name: nginx
-    image: nginx:<span style="color:#bd93f9">1.10</span></code></pre></div>
-<p>要开发我们自己的调度器也是比较容易的，比如我们这里的 my-scheduler:</p>
+    image: nginx:<span style="color:#bd93f9">1.10</span></code></pre>
+            </div>
+            <p>
+              要开发我们自己的调度器也是比较容易的，比如我们这里的 my-scheduler:
+            </p>
 
-<ul>
-<li>首先需要通过指定的 API 获取节点和 Pod</li>
-<li>然后选择<code>phase=Pending</code>和<code>schedulerName=my-scheduler</code>的pod</li>
-<li>计算每个 Pod 需要放置的位置之后，调度程序将创建一个<code>Binding</code>对象</li>
-<li>然后根据我们自定义的调度器的算法计算出最适合的目标节点</li>
-</ul>
+            <ul>
+              <li>首先需要通过指定的 API 获取节点和 Pod</li>
+              <li>
+                然后选择<code>phase=Pending</code>和<code>schedulerName=my-scheduler</code>的pod
+              </li>
+              <li>
+                计算每个 Pod
+                需要放置的位置之后，调度程序将创建一个<code>Binding</code>对象
+              </li>
+              <li>然后根据我们自定义的调度器的算法计算出最适合的目标节点</li>
+            </ul>
 
-<h3 id="优先级调度">优先级调度</h3>
+            <h3 id="优先级调度">优先级调度</h3>
 
-<p>与前面所讲的调度优选策略中的优先级（Priorities）不同，前面所讲的优先级指的是节点优先级，而我们这里所说的优先级 pod priority 指的是 Pod 的优先级，高优先级的 Pod 会优先被调度，或者在资源不足低情况牺牲低优先级的 Pod，以便于重要的 Pod 能够得到资源部署。</p>
+            <p>
+              与前面所讲的调度优选策略中的优先级（Priorities）不同，前面所讲的优先级指的是节点优先级，而我们这里所说的优先级
+              pod priority 指的是 Pod 的优先级，高优先级的 Pod
+              会优先被调度，或者在资源不足低情况牺牲低优先级的 Pod，以便于重要的
+              Pod 能够得到资源部署。
+            </p>
 
-<p>要定义 Pod 优先级，就需要先定义<code>PriorityClass</code>对象，该对象没有 Namespace 的限制：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+            <p>
+              要定义 Pod
+              优先级，就需要先定义<code>PriorityClass</code>对象，该对象没有
+              Namespace 的限制：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: v1
 kind: PriorityClass
 metadata:
   name: high-priority
 value: <span style="color:#bd93f9">1000000</span>
 globalDefault: <span style="color:#ff79c6">false</span>
-description: <span style="color:#f1fa8c">&#34;This priority class should be used for XYZ service pods only.&#34;</span></code></pre></div>
-<p>其中：</p>
+description: <span style="color:#f1fa8c">&#34;This priority class should be used for XYZ service pods only.&#34;</span></code></pre>
+            </div>
+            <p>其中：</p>
 
-<ul>
-<li><code>value</code>为 32 位整数的优先级，该值越大，优先级越高</li>
-<li><code>globalDefault</code>用于未配置 PriorityClassName 的 Pod，整个集群中应该只有一个<code>PriorityClass</code>将其设置为 true</li>
-</ul>
+            <ul>
+              <li>
+                <code>value</code>为 32 位整数的优先级，该值越大，优先级越高
+              </li>
+              <li>
+                <code>globalDefault</code>用于未配置 PriorityClassName 的
+                Pod，整个集群中应该只有一个<code>PriorityClass</code>将其设置为
+                true
+              </li>
+            </ul>
 
-<p>然后通过在 Pod 的<code>spec.priorityClassName</code>中指定已定义的<code>PriorityClass</code>名称即可：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+            <p>
+              然后通过在 Pod
+              的<code>spec.priorityClassName</code>中指定已定义的<code>PriorityClass</code>名称即可：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: v1
 kind: Pod
 metadata:
   name: nginx
@@ -476,169 +742,248 @@ spec:
   - name: nginx
     image: nginx
     imagePullPolicy: IfNotPresent
-  priorityClassName: high-priority</code></pre></div>
-<p>另外一个值得注意的是当节点没有足够的资源供调度器调度 Pod，导致 Pod 处于 pending 时，抢占（preemption）逻辑就会被触发。<code>Preemption</code>会尝试从一个节点删除低优先级的 Pod，从而释放资源使高优先级的 Pod 得到节点资源进行部署。</p>
+  priorityClassName: high-priority</code></pre>
+            </div>
+            <p>
+              另外一个值得注意的是当节点没有足够的资源供调度器调度 Pod，导致 Pod
+              处于 pending
+              时，抢占（preemption）逻辑就会被触发。<code>Preemption</code>会尝试从一个节点删除低优先级的
+              Pod，从而释放资源使高优先级的 Pod 得到节点资源进行部署。
+            </p>
 
-<p>现在我们通过下面的图再去回顾下 kubernetes 的调度过程是不是就清晰很多了：
-<img src="https://www.qikqiak.com/img/posts/kube-scheduler-detail.png" alt="kube-scheduler" /></p>
+            <p>
+              现在我们通过下面的图再去回顾下 kubernetes
+              的调度过程是不是就清晰很多了：
+              <img
+                src="https://www.qikqiak.com/img/posts/kube-scheduler-detail.png"
+                alt="kube-scheduler"
+              />
+            </p>
 
-<p>下节课我们再和大家讲解关于 Pod 调度的一些具体使用方法。</p>
+            <p>下节课我们再和大家讲解关于 Pod 调度的一些具体使用方法。</p>
 
-<p><a href="https://youdianzhishi.com/web/course/1030" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+            <p>
+              <a
+                href="https://youdianzhishi.com/web/course/1030"
+                title="从 Docker 到 Kubernetes 进阶课程"
+                ><img
+                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
+                  alt="Kubernetes进阶训练营"
+              /></a>
+            </p>
 
+            <h2>微信公众号</h2>
+            <p>
+              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+              kubernetes 讨论群里面共同学习。
+            </p>
+            <img
+              src="https://picdn.youdianzhishi.com/images/qrcode.png"
+              alt="wechat-account-qrcode"
+            />
 
-          <h2>微信公众号</h2>
-<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
-
-  
-          
             <div class="entry-shang text-center">
-    <p>「真诚赞赏，手留余香」</p>
-    <button class="zs show-zs btn btn-bred">赞赏</button>
-</div>
-<div class="zs-modal-bg"></div>
-<div class="zs-modal-box">
-    <div class="zs-modal-head">
-        <button type="button" class="close">×</button>
-        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
-        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-    </div>
-    <div class="zs-modal-body">
-        <div class="zs-modal-btns">
-            <button class="btn btn-blink" data-num="2">2元</button>
-            <button class="btn btn-blink" data-num="5">5元</button>
-            <button class="btn btn-blink" data-num="10">10元</button>
-            <button class="btn btn-blink" data-num="50">50元</button>
-            <button class="btn btn-blink" data-num="100">100元</button>
-            <button class="btn btn-blink" data-num="1">任意金额</button>
-        </div>
-        <div class="zs-modal-pay">
-            <button class="btn btn-bred" id="pay-text">2元</button>
-            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
-        </div>
-    </div>
-    <div class="zs-modal-footer">
-        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
-    </div>
-</div>
-          
-          
-            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
-    <center>
-    <a href="#" class="social-share-icon icon-weibo"></a>
-    <a href="#" class="social-share-icon icon-wechat"></a>
-    <a href="#" class="social-share-icon icon-twitter"></a>
-    <a href="#" class="social-share-icon icon-linkedin"></a>
-    <a href="#" class="social-share-icon icon-facebook"></a>
-    <a href="#" class="social-share-icon icon-qq"></a>
-    <a href="#" class="social-share-icon icon-qzone"></a>
-    </center>
-</div>
+              <p>「真诚赞赏，手留余香」</p>
+              <button class="zs show-zs btn btn-bred">赞赏</button>
+            </div>
+            <div class="zs-modal-bg"></div>
+            <div class="zs-modal-box">
+              <div class="zs-modal-head">
+                <button type="button" class="close">×</button>
+                <span class="author"
+                  ><img
+                    src="https://www.qikqiak.com/img/avatar.jpeg"
+                  />阳明</span
+                >
+                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+              </div>
+              <div class="zs-modal-body">
+                <div class="zs-modal-btns">
+                  <button class="btn btn-blink" data-num="2">2元</button>
+                  <button class="btn btn-blink" data-num="5">5元</button>
+                  <button class="btn btn-blink" data-num="10">10元</button>
+                  <button class="btn btn-blink" data-num="50">50元</button>
+                  <button class="btn btn-blink" data-num="100">100元</button>
+                  <button class="btn btn-blink" data-num="1">任意金额</button>
+                </div>
+                <div class="zs-modal-pay">
+                  <button class="btn btn-bred" id="pay-text">2元</button>
+                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+                  <img
+                    src="https://www.qikqiak.com/img/wechat-2.png"
+                    id="pay-image"
+                  />
+                </div>
+              </div>
+              <div class="zs-modal-footer">
+                <span class="zs-wechat"
+                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
+                /></span>
+              </div>
+            </div>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+            <div
+              class="social-share"
+              data-initialized="true"
+              style="margin-bottom: 20px; margin-top: 20px"
+            >
+              <center>
+                <a href="#" class="social-share-icon icon-weibo"></a>
+                <a href="#" class="social-share-icon icon-wechat"></a>
+                <a href="#" class="social-share-icon icon-twitter"></a>
+                <a href="#" class="social-share-icon icon-linkedin"></a>
+                <a href="#" class="social-share-icon icon-facebook"></a>
+                <a href="#" class="social-share-icon icon-qq"></a>
+                <a href="#" class="social-share-icon icon-qzone"></a>
+              </center>
+            </div>
 
-          
-        </article>
-  
-        
-          
+            <link
+              rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
+            />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+          </article>
 
-<h3>相关文章</h3>
-<ul style="margin-bottom: 25px;">
-    
-    <li><a href="https://www.qikqiak.com/post/understand-kubernetes-affinity/">理解 Kubernetes 的亲和性调度</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/helm-hooks-usage/">Helm Hooks 的使用</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/k8s-course-promotion/">国庆 K8S 课程特别活动</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/helm-name-template-usage/">Helm 命名模板的使用</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/dockerfile-best-practice/">Dockerfile 最佳实践</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/kubernetes-qos-usage/">Kubernetes 服务质量 Qos 解析</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/kubernetes-helm-usage/">Helm 的基本使用</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/huawei-cloudnativelives-k8s-course/">华为 CloudNativeLives K8S 系列课程</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/ingress-traefik2/">外部服务发现之 ingress(二)</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/how-to-learn-kubernetes/">如何学习Kubernetes？</a></li>
-    
-</ul>
+          <h3>相关文章</h3>
+          <ul style="margin-bottom: 25px">
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/understand-kubernetes-affinity/"
+                >理解 Kubernetes 的亲和性调度</a
+              >
+            </li>
 
-        
-  
-        
-        <ul class="pager blog-pager">
-          
+            <li>
+              <a href="https://www.qikqiak.com/post/helm-hooks-usage/"
+                >Helm Hooks 的使用</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/k8s-course-promotion/"
+                >国庆 K8S 课程特别活动</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/helm-name-template-usage/"
+                >Helm 命名模板的使用</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/dockerfile-best-practice/"
+                >Dockerfile 最佳实践</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/kubernetes-qos-usage/"
+                >Kubernetes 服务质量 Qos 解析</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/kubernetes-helm-usage/"
+                >Helm 的基本使用</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/huawei-cloudnativelives-k8s-course/"
+                >华为 CloudNativeLives K8S 系列课程</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/ingress-traefik2/"
+                >外部服务发现之 ingress(二)</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/how-to-learn-kubernetes/"
+                >如何学习Kubernetes？</a
+              >
+            </li>
+          </ul>
+
+          <ul class="pager blog-pager">
             <li class="previous">
-              <a href="https://www.qikqiak.com/post/helm-hooks-usage/" data-toggle="tooltip" data-placement="top" title="Helm Hooks 的使用">&larr; 前一篇</a>
+              <a
+                href="https://www.qikqiak.com/post/helm-hooks-usage/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="Helm Hooks 的使用"
+                >&larr; 前一篇</a
+              >
             </li>
-          
-          
-            <li class="next">
-              <a href="https://www.qikqiak.com/post/kubernetes-affinity-scheduler/" data-toggle="tooltip" data-placement="top" title="重新理解 kubernetes 亲和性调度">后一篇 &rarr;</a>
-            </li>
-          
-        </ul>
-        
 
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-        
-        <ins class="adsbygoogle"
-            style="display:block"
+            <li class="next">
+              <a
+                href="https://www.qikqiak.com/post/kubernetes-affinity-scheduler/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="重新理解 kubernetes 亲和性调度"
+                >后一篇 &rarr;</a
+              >
+            </li>
+          </ul>
+
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+          ></script>
+
+          <ins
+            class="adsbygoogle"
+            style="display: block"
             data-ad-client="ca-pub-5376999672787220"
             data-ad-slot="3700507799"
             data-ad-format="auto"
-            data-full-width-responsive="true"></ins>
-        <script>
+            data-full-width-responsive="true"
+          ></ins>
+          <script>
             (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
-  
-        
-    <div id="gitalk-container"></div>
-    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-    <script>
-    var gitalk = new Gitalk({
-        clientID: 'bdb76dbb2e9d0786e350',
-        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
-        repo: 'blog',
-        owner: 'cnych',
-        admin: ['cnych'],
-        labels: ['gitment'],
-        title: 'Kubernetes 调度器介绍',
-        createIssueManually: true,
-        id: 'kube-scheduler-introduction',      
-        distractionFreeMode: true  
-    });
-    gitalk.render('gitalk-container');
-</script>
+          </script>
 
-
-        
-          
-
-        
-  
+          <div id="gitalk-container"></div>
+          <link
+            rel="stylesheet"
+            href="https://unpkg.com/gitalk/dist/gitalk.css"
+          />
+          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+          <script>
+            var gitalk = new Gitalk({
+              clientID: "bdb76dbb2e9d0786e350",
+              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
+              repo: "blog",
+              owner: "cnych",
+              admin: ["cnych"],
+              labels: ["gitment"],
+              title: "Kubernetes 调度器介绍",
+              createIssueManually: true,
+              id: "kube-scheduler-introduction",
+              distractionFreeMode: true,
+            });
+            gitalk.render("gitalk-container");
+          </script>
+        </div>
       </div>
-    
-    
-  </div>
-</div>
+    </div>
 
     <footer>
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <ul class="list-inline text-center footer-links">
-          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
-          
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <ul class="list-inline text-center footer-links">
+              <img
+                src="https://www.qikqiak.com/img/wechatmp.png"
+                alt="k8s技术圈"
+              />
+
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -647,7 +992,7 @@ spec:
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -656,7 +1001,7 @@ spec:
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -665,7 +1010,7 @@ spec:
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -674,121 +1019,158 @@ spec:
                   </span>
                 </a>
               </li>
-          
-          
-          <li>
-            <a href="https://www.qikqiak.com/index.xml" title="RSS">
-              <span class="fa-stack fa-lg">
-                <i class="fa fa-circle fa-stack-2x"></i>
-                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+
+              <li>
+                <a href="https://www.qikqiak.com/index.xml" title="RSS">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+            </ul>
+            <p class="credits copyright text-muted">
+              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/">阳明的博客</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/archive/">归档</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/friend/">友链</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://beian.miit.gov.cn/" target="_blank"
+                >蜀ICP备11027319号-5</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
+                >kubernetes.io</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
+                >Kubernetes中文社区</a
+              >
+            </p>
+            <p class="text-center text-muted">
+              <script
+                async
+                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
+              ></script>
+              <span id="busuanzi_container_site_pv" style="display: none">
+                本站总访问量<span id="busuanzi_value_site_pv"></span>次
               </span>
-            </a>
-          </li>
-          
-        </ul>
-        <p class="credits copyright text-muted">
-          
+              &nbsp;&bull;&nbsp;
+              <span id="busuanzi_container_site_uv" style="display: none">
+                访客数<span id="busuanzi_value_site_uv"></span>人次
+              </span>
+            </p>
 
-          &nbsp;&bull;&nbsp;
-          2023
-
-          
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/">阳明的博客</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/archive/">归档</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/friend/">友链</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
-          
-        </p>
-        <p class="text-center text-muted">
-          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-          <span id="busuanzi_container_site_pv" style="display:none">
-            本站总访问量<span id="busuanzi_value_site_pv"></span>次
-          </span>
-          &nbsp;&bull;&nbsp;
-          <span id="busuanzi_container_site_uv" style="display:none">
-            访客数<span id="busuanzi_value_site_uv"></span>人次
-          </span>
-        </p>
-        
-        <p class="credits theme-by text-muted">
-          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
-          
-        </p>
+            <p class="credits theme-by text-muted">
+              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
+              &nbsp;&bull;&nbsp; 主题
+              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+              移植自
+              <a href="https://github.com/rootsongjc/beautifulhugo"
+                >Beautiful Hugo</a
+              >
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</footer>
+    </footer>
 
+    <script
+      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
+      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
+    ></script>
 
-<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "UA-69668147-3");
+    </script>
+    <script>
+      (function () {
+        var bp = document.createElement("script");
+        var curProtocol = window.location.protocol.split(":")[0];
+        if (curProtocol === "https") {
+          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
+        } else {
+          bp.src = "http://push.zhanzhang.baidu.com/push.js";
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+      })();
+    </script>
+    <script>
+      $(document).ready(function () {
+        var int = setInterval(fixCount, 50);
 
-
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-69668147-3');
-</script>
-<script>
-(function(){
-    var bp = document.createElement('script');
-    var curProtocol = window.location.protocol.split(':')[0];
-    if (curProtocol === 'https') {
-        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
-    }
-    else {
-        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
-    }
-    var s = document.getElementsByTagName("script")[0];
-    s.parentNode.insertBefore(bp, s);
-})();
-</script>
-<script >
-$(document).ready(function() {
-  var int = setInterval(fixCount, 50);  
-  
-  var initPVCount = 584976;
-  var initUVCount = 153191;
-  function fixCount() {                   
-    if ($("#busuanzi_container_site_pv").css("display") != "none") {
-        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
-        clearInterval(int); 
-    }
-    if ($("#busuanzi_container_site_uv").css("display") != "none") {
-      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
-      clearInterval(int); 
-    }  
-  }           
-});
-</script>
- <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
-<script type="text/javascript">
-$('.carousel').slick({
-    dots: true,
-    arrows: true,
-    autoplay: true,
-    autoplaySpeed: 4000,
-    infinite: true,
-    speed: 500,
-    fade: true,
-    cssEase: 'linear',
-    centerMode: true,
-    prevArrow: '<button type="button" class="slick-prev"></button>',
-    nextArrow: '<button type="button" class="slick-next"></button>',
-});
-</script>
-
+        var initPVCount = 584976;
+        var initUVCount = 153191;
+        function fixCount() {
+          if ($("#busuanzi_container_site_pv").css("display") != "none") {
+            $("#busuanzi_value_site_pv").html(
+              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
+            );
+            clearInterval(int);
+          }
+          if ($("#busuanzi_container_site_uv").css("display") != "none") {
+            $("#busuanzi_value_site_uv").html(
+              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
+            );
+            clearInterval(int);
+          }
+        }
+      });
+    </script>
+    <script>
+      (function (w, d, s, id) {
+        if (typeof w.webpushr !== "undefined") return;
+        w.webpushr =
+          w.webpushr ||
+          function () {
+            (w.webpushr.q = w.webpushr.q || []).push(arguments);
+          };
+        var js,
+          fjs = d.getElementsByTagName(s)[0];
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "https://cdn.webpushr.com/app.min.js";
+        fjs.parentNode.appendChild(js);
+      })(window, document, "script", "webpushr-jssdk");
+      webpushr(
+        "init",
+        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
+      );
+    </script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
+    ></script>
+    <script type="text/javascript">
+      $(".carousel").slick({
+        dots: true,
+        arrows: true,
+        autoplay: true,
+        autoplaySpeed: 4000,
+        infinite: true,
+        speed: 500,
+        fade: true,
+        cssEase: "linear",
+        centerMode: true,
+        prevArrow: '<button type="button" class="slick-prev"></button>',
+        nextArrow: '<button type="button" class="slick-next"></button>',
+      });
+    </script>
   </body>
 </html>
-

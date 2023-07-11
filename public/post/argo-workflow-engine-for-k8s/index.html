@@ -1,359 +1,483 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
 
+    <title>
+      Kubernetes
+      工作流引擎：Argo（1）-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
+    </title>
+    <meta property="og:title" content="Kubernetes 工作流引擎：Argo（1）" />
+    <meta name="twitter:title" content="Kubernetes 工作流引擎：Argo（1）" />
 
-  <title>Kubernetes 工作流引擎：Argo（1）-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
-  <meta property="og:title" content="Kubernetes 工作流引擎：Argo（1）" />
-  <meta name="twitter:title" content="Kubernetes 工作流引擎：Argo（1）" />
+    <meta
+      name="description"
+      content="Argo 是 Applatix 推出的一个开源项目，为 Kubernetes 提供 container-native（工作流中的每个步骤是通过容器实现）工作流程。Argo 可以让用户用一个类似于传统的 YAML 文件定义的 DSL 来运行多个步骤的 Pipeline。该框架提供了复杂的循环、条件判断、依赖管理等功能，这有助于提高部署应用程序的灵活性以及配置和依赖的灵活性。使用 Argo，用户可以定义复杂的依赖关系，以编程方式构建复杂的工作流、制品管理，可以将任何步骤的输出结果作为输入链接到后续的步骤中去，并且可以在可视化 UI 界面中监控调度的作业任务。
 
-  <meta name="description" content="Argo 是 Applatix 推出的一个开源项目，为 Kubernetes 提供 container-native（工作流中的每个步骤是通过容器实现）工作流程。Argo 可以让用户用一个类似于传统的 YAML 文件定义的 DSL 来运行多个步骤的 Pipeline。该框架提供了复杂的循环、条件判断、依赖管理等功能，这有助于提高部署应用程序的灵活性以及配置和依赖的灵活性。使用 Argo，用户可以定义复杂的依赖关系，以编程方式构建复杂的工作流、制品管理，可以将任何步骤的输出结果作为输入链接到后续的步骤中去，并且可以在可视化 UI 界面中监控调度的作业任务。
+"
+    />
+    <meta
+      property="og:description"
+      content="Argo 是 Applatix 推出的一个开源项目，为 Kubernetes 提供 container-native（工作流中的每个步骤是通过容器实现）工作流程。Argo 可以让用户用一个类似于传统的 YAML 文件定义的 DSL 来运行多个步骤的 Pipeline。该框架提供了复杂的循环、条件判断、依赖管理等功能，这有助于提高部署应用程序的灵活性以及配置和依赖的灵活性。使用 Argo，用户可以定义复杂的依赖关系，以编程方式构建复杂的工作流、制品管理，可以将任何步骤的输出结果作为输入链接到后续的步骤中去，并且可以在可视化 UI 界面中监控调度的作业任务。
 
-">
-  <meta property="og:description" content="Argo 是 Applatix 推出的一个开源项目，为 Kubernetes 提供 container-native（工作流中的每个步骤是通过容器实现）工作流程。Argo 可以让用户用一个类似于传统的 YAML 文件定义的 DSL 来运行多个步骤的 Pipeline。该框架提供了复杂的循环、条件判断、依赖管理等功能，这有助于提高部署应用程序的灵活性以及配置和依赖的灵活性。使用 Argo，用户可以定义复杂的依赖关系，以编程方式构建复杂的工作流、制品管理，可以将任何步骤的输出结果作为输入链接到后续的步骤中去，并且可以在可视化 UI 界面中监控调度的作业任务。
+"
+    />
+    <meta
+      name="twitter:description"
+      content="Argo 是 Applatix 推出的一个开源项目，为 Kubernetes 提供 container-native（工作流中的每个步骤是通过容器实现）工作流程。Argo 可以让用户用一个类似于传统的 YAML 文件定义的 DSL 来运行多个步骤的 Pipeline。该框架提供了复杂的循环、条件判断、依赖管理等功能，这有助于提高部署应用程序的灵活性以及配置和依赖的灵活性。使用 Argo，用户可以定 …"
+    />
+    <meta name="author" content="" />
+    <link
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+      rel="icon"
+      type="image/x-icon"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      property="og:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      name="twitter:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta
+      property="og:url"
+      content="https://www.qikqiak.com/post/argo-workflow-engine-for-k8s/"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="阳明的博客" />
 
-">
-  <meta name="twitter:description" content="Argo 是 Applatix 推出的一个开源项目，为 Kubernetes 提供 container-native（工作流中的每个步骤是通过容器实现）工作流程。Argo 可以让用户用一个类似于传统的 YAML 文件定义的 DSL 来运行多个步骤的 Pipeline。该框架提供了复杂的循环、条件判断、依赖管理等功能，这有助于提高部署应用程序的灵活性以及配置和依赖的灵活性。使用 Argo，用户可以定 …">
-  <meta name="author" content=""/>
-  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
-  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
-  <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://www.qikqiak.com/post/argo-workflow-engine-for-k8s/" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="阳明的博客" />
+    <meta name="generator" content="Hugo 0.55.6" />
+    <link
+      rel="canonical"
+      href="https://www.qikqiak.com/post/argo-workflow-engine-for-k8s/"
+    />
+    <link
+      rel="alternate"
+      href="https://www.qikqiak.com/index.xml"
+      type="application/rss+xml"
+      title="阳明的博客"
+    />
 
-  <meta name="generator" content="Hugo 0.55.6" />
-  <link rel="canonical" href="https://www.qikqiak.com/post/argo-workflow-engine-for-k8s/" />
-  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+    <link
+      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
+      rel="stylesheet"
+    />
 
-  
-  
-  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
-  
+    <link
+      rel="stylesheet"
+      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
+      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
+    />
 
-  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
+    />
 
-  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
-  
-  
-    
     <!--[if lt IE 9]>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+        rel="stylesheet"
+      />
     <![endif]-->
-<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
-<meta name="baidu-site-verification" content="F5ojAyqaKU" />
-<meta name="keywords" content="kubernetes, workflow, Argo, 工作流, 依赖, 模板">
-<script>
-var _hmt = _hmt || [];
-(function() {
-  var hm = document.createElement("script");
-  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-  var s = document.getElementsByTagName("script")[0];
-  s.parentNode.insertBefore(hm, s);
-})();
-</script>
+    <meta
+      name="google-site-verification"
+      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
+    />
+    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
+    <meta
+      name="keywords"
+      content="kubernetes, workflow, Argo, 工作流, 依赖, 模板"
+    />
+    <script>
+      var _hmt = _hmt || [];
+      (function () {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
 
+    <script type="application/javascript">
+      var doNotTrack = false;
+      if (!doNotTrack) {
+        window.ga =
+          window.ga ||
+          function () {
+            (ga.q = ga.q || []).push(arguments);
+          };
+        ga.l = +new Date();
+        ga("create", "UA-69668147-3", "auto");
 
-
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-	ga('create', 'UA-69668147-3', 'auto');
-	
-	ga('send', 'pageview');
-}
-</script>
-<script async src='https://www.google-analytics.com/analytics.js'></script>
-
-</head>
+        ga("send", "pageview");
+      }
+    </script>
+    <script async src="https://www.google-analytics.com/analytics.js"></script>
+  </head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
-        <span class="sr-only">切换导航</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
-        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
-      </a>
-    </div>
+      <div class="container">
+        <div class="navbar-header">
+          <button
+            type="button"
+            class="navbar-toggle"
+            data-toggle="collapse"
+            data-target="#main-navbar"
+          >
+            <span class="sr-only">切换导航</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a
+            class="navbar-brand"
+            href="https://www.qikqiak.com/"
+            title="阳明的博客"
+          >
+            <img
+              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
+              style="margin-top: -5px; height: 32px"
+              alt="阳明的博客"
+            />
+          </a>
+        </div>
 
-    <div class="collapse navbar-collapse" id="main-navbar">
-      <ul class="nav navbar-nav navbar-right">
-        
-          
+        <div class="collapse navbar-collapse" id="main-navbar">
+          <ul class="nav navbar-nav navbar-right">
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-          
-        
-          
+
             <li>
-              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+              <a
+                title="课程"
+                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
+                >课程</a
+              >
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/archives">Archive</a>
-                
-                  <a href="https://www.qikqiak.com/tags">tags</a>
-                
-                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-                
-                  <a href="https://www.qikqiak.com/tags/python">python</a>
-                
-                  <a href="https://www.qikqiak.com/tags/django">django</a>
-                
-                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
-                
+                <a href="https://www.qikqiak.com/archives">Archive</a>
+
+                <a href="https://www.qikqiak.com/tags">tags</a>
+
+                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+
+                <a href="https://www.qikqiak.com/tags/python">python</a>
+
+                <a href="https://www.qikqiak.com/tags/django">django</a>
+
+                <a href="https://www.qikqiak.com/tags/devops">devops</a>
               </div>
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-                
-                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-                
-                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-                
-                  <a href="https://md.qikqiak.com/">Markdown微信</a>
-                
+                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+
+                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+
+                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+
+                <a href="https://md.qikqiak.com/">Markdown微信</a>
               </div>
             </li>
-          
-        
-          
+
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+              <a title="关于" href="https://www.qikqiak.com/page/about/"
+                >关于</a
+              >
             </li>
-          
-        
-          
+
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
-          
-        
 
-        
-
-        
-
-        
-          <li>
-            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
-              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
-            </a>
-          </li>
-          
-
-      </ul>
-    </div>
-
-  </div>
-</nav>
-
-
-  <div id="modalSearch" class="modal fade" role="dialog">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-          <h4 class="modal-title">搜索</h4>
-        </div>
-        <div class="modal-body">
-            
-<div class="aa-input-container" id="aa-input-container">
-    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
-    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
-    </svg>
-</div>
-<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
-
-<script>
-var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
-var index = client.initIndex('prod_blog');
-
-autocomplete('#aa-search-input',
-{ hint: false}, {
-    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
-    
-    displayKey: 'name',
-    
-    templates: {
-        
-        suggestion: function(suggestion) {
-            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
-            suggestion._highlightResult.title.value + '</a></span>';
-        }
-    }
-});
-</script>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+            <li>
+              <a
+                href="#modalSearch"
+                data-toggle="modal"
+                data-target="#modalSearch"
+                style="outline: none"
+              >
+                <span
+                  id="searchGlyph"
+                  class="glyphicon glyphicon-search"
+                ></span>
+              </a>
+            </li>
+          </ul>
         </div>
       </div>
-    </div>
-  </div>
+    </nav>
 
-    
-  
-  
-  
-
-
-
-
-  
-
-  <header class="header-section ">
-    
-    
-    
-    <div class="intro-header no-img">
-      
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <div class="post-heading">
-              <h1>Kubernetes 工作流引擎：Argo（1）</h1>
-                
-                
-                  <span class="post-meta">
-  
-    发表于 September 10, 2019
-  
-  
-</span>
-
-
-                
+    <div id="modalSearch" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">
+              &times;
+            </button>
+            <h4 class="modal-title">搜索</h4>
+          </div>
+          <div class="modal-body">
+            <div class="aa-input-container" id="aa-input-container">
+              <input
+                type="search"
+                id="aa-search-input"
+                class="aa-input-search"
+                placeholder="Search for titles or URIs..."
+                name="search"
+                autocomplete="off"
+              />
+              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+                <path
+                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
+                />
+              </svg>
             </div>
+            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+
+            <script>
+              var client = algoliasearch(
+                "1JDRAS0AZR",
+                "8804ac109158bb3bb60d74ce98fa332f"
+              );
+              var index = client.initIndex("prod_blog");
+
+              autocomplete(
+                "#aa-search-input",
+                { hint: false },
+                {
+                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
+
+                  displayKey: "name",
+
+                  templates: {
+                    suggestion: function (suggestion) {
+                      return (
+                        "<span>" +
+                        '<a href="https://www.qikqiak.com/post/' +
+                        suggestion.slug +
+                        '">' +
+                        suggestion._highlightResult.title.value +
+                        "</a></span>"
+                      );
+                    },
+                  },
+                }
+              );
+            </script>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">
+              close
+            </button>
           </div>
         </div>
       </div>
     </div>
-    
-    
-  </header>
 
+    <header class="header-section">
+      <div class="intro-header no-img">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>Kubernetes 工作流引擎：Argo（1）</h1>
 
-    
-
-
-
-<div class="container" role="main">
-  <div class="row">
-
-    
-    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <div>
-            
-            
-            <h5 id="tags" style="margin-top: 30px;">标签:
-              
-                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/workflow/">workflow</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/argo/">Argo</a> &nbsp;
-              
-            </h5>
-            
+                <span class="post-meta"> 发表于 September 10, 2019 </span>
+              </div>
+            </div>
+          </div>
         </div>
-  
-        <article role="main" class="blog-post" itemprop="articleBody" id="content">
-          
-            
-<aside class="toc">
-  <nav id="TableOfContents">
-<ul>
-<li>
-<ul>
-<li><a href="#argo-简介">Argo 简介</a></li>
-<li><a href="#安装">安装</a></li>
-<li><a href="#基本的-argo-工作流模板">基本的 Argo 工作流模板</a></li>
-<li><a href="#带条件的工作流模板">带条件的工作流模板</a></li>
-<li><a href="#带循环和参数的-workflow-模板">带循环和参数的 Workflow 模板</a></li>
-<li><a href="#由-dag-有向无环图-和步骤的依赖定义的多步骤工作流模板">由 DAG（有向无环图）和步骤的依赖定义的多步骤工作流模板</a></li>
-<li><a href="#使用-minio-进行制品管理和-argo-集成">使用 Minio 进行制品管理和 Argo 集成</a></li>
-<li><a href="#参考链接">参考链接</a></li>
-</ul></li>
-</ul>
-</nav>
-</aside>
+      </div>
+    </header>
 
-          
-  
-          
-          
-          
-  
-          
-          
-          
-  
-          
-          
-          
+    <div class="container" role="main">
+      <div class="row">
+        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+          <div>
+            <h5 id="tags" style="margin-top: 30px">
+              标签:
 
-          <p><a href="https://applatix.com/open-source/argo/">Argo</a> 是 <a href="https://applatix.com/">Applatix</a> 推出的一个开源项目，为 Kubernetes 提供 container-native（工作流中的每个步骤是通过容器实现）工作流程。Argo 可以让用户用一个类似于传统的 YAML 文件定义的 DSL 来运行多个步骤的 Pipeline。该框架提供了复杂的循环、条件判断、依赖管理等功能，这有助于提高部署应用程序的灵活性以及配置和依赖的灵活性。使用 Argo，用户可以定义复杂的依赖关系，以编程方式构建复杂的工作流、制品管理，可以将任何步骤的输出结果作为输入链接到后续的步骤中去，并且可以在可视化 UI 界面中监控调度的作业任务。</p>
+              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
+              &nbsp;
 
-<p><a href="https://www.qikqiak.com/post/argo-workflow-engine-for-k8s/"><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-k8s.png" alt="Argo" /></a></p>
+              <a href="https://www.qikqiak.com/tags/workflow/">workflow</a>
+              &nbsp;
 
-<h2 id="argo-简介">Argo 简介</h2>
+              <a href="https://www.qikqiak.com/tags/argo/">Argo</a> &nbsp;
+            </h5>
+          </div>
 
-<p>Argo V2 版本通过 Kubernetes CRD（Custom Resource Definition）来进行实现的，所以我们可以通过 kubectl 工具来管理 Argo 工作流，当然就可以和其他 Kubernetes 资源对象直接集成了，比如 Volumes、Secrets、RBAC 等等。新版本的 Argo 更加轻量级，安装也十分简单，但是依然提供了完整的工作流功能，包括参数替换、制品、Fixture、循环和递归工作流等功能。</p>
+          <article
+            role="main"
+            class="blog-post"
+            itemprop="articleBody"
+            id="content"
+          >
+            <aside class="toc">
+              <nav id="TableOfContents">
+                <ul>
+                  <li>
+                    <ul>
+                      <li><a href="#argo-简介">Argo 简介</a></li>
+                      <li><a href="#安装">安装</a></li>
+                      <li>
+                        <a href="#基本的-argo-工作流模板"
+                          >基本的 Argo 工作流模板</a
+                        >
+                      </li>
+                      <li>
+                        <a href="#带条件的工作流模板">带条件的工作流模板</a>
+                      </li>
+                      <li>
+                        <a href="#带循环和参数的-workflow-模板"
+                          >带循环和参数的 Workflow 模板</a
+                        >
+                      </li>
+                      <li>
+                        <a
+                          href="#由-dag-有向无环图-和步骤的依赖定义的多步骤工作流模板"
+                          >由
+                          DAG（有向无环图）和步骤的依赖定义的多步骤工作流模板</a
+                        >
+                      </li>
+                      <li>
+                        <a href="#使用-minio-进行制品管理和-argo-集成"
+                          >使用 Minio 进行制品管理和 Argo 集成</a
+                        >
+                      </li>
+                      <li><a href="#参考链接">参考链接</a></li>
+                    </ul>
+                  </li>
+                </ul>
+              </nav>
+            </aside>
 
-<p>Argo 中的工作流自动化是通过使用 ADSL（Argo 领域特定语言）设计的 YAML 模板（因为 Kubernetes 主要也使用相同的 DSL 方式，所以非常容易使用）进行驱动的。ADSL 中提供的每条指令都被看作一段代码，并与代码仓库中的源码一起托管。Argo 支持6中不同的 YAML 结构：</p>
+            <p>
+              <a href="https://applatix.com/open-source/argo/">Argo</a> 是
+              <a href="https://applatix.com/">Applatix</a>
+              推出的一个开源项目，为 Kubernetes 提供
+              container-native（工作流中的每个步骤是通过容器实现）工作流程。Argo
+              可以让用户用一个类似于传统的 YAML 文件定义的 DSL 来运行多个步骤的
+              Pipeline。该框架提供了复杂的循环、条件判断、依赖管理等功能，这有助于提高部署应用程序的灵活性以及配置和依赖的灵活性。使用
+              Argo，用户可以定义复杂的依赖关系，以编程方式构建复杂的工作流、制品管理，可以将任何步骤的输出结果作为输入链接到后续的步骤中去，并且可以在可视化
+              UI 界面中监控调度的作业任务。
+            </p>
 
-<ul>
-<li>容器模板：根据需要创建单个容器和参数</li>
-<li>工作流模板：定义一个作业任务（工作流中的一个步骤可以是一个容器）</li>
-<li>策略模板：触发或者调用作业/通知的规则</li>
-<li>部署模板：创建一个长期运行的应用程序模板</li>
-<li>Fixture 模板：整合 Argo 外部的第三方资源</li>
-<li>项目模板：可以在 Argo 目录中访问的工作流定义</li>
-</ul>
+            <p>
+              <a
+                href="https://www.qikqiak.com/post/argo-workflow-engine-for-k8s/"
+                ><img
+                  src="https://picdn.youdianzhishi.com/images/argo-k8s.png"
+                  alt="Argo"
+              /></a>
+            </p>
 
-<p>Argo 支持几种不同的方式来定义 Kubernetes 资源清单：<a href="https://ksonnet.io/">Ksonnect</a>、<a href="http://helm.io/">Helm Chart</a> 以及简单的 YAML/JSON 资源清单目录。</p>
+            <h2 id="argo-简介">Argo 简介</h2>
 
-<h2 id="安装">安装</h2>
+            <p>
+              Argo V2 版本通过 Kubernetes CRD（Custom Resource
+              Definition）来进行实现的，所以我们可以通过 kubectl 工具来管理 Argo
+              工作流，当然就可以和其他 Kubernetes 资源对象直接集成了，比如
+              Volumes、Secrets、RBAC 等等。新版本的 Argo
+              更加轻量级，安装也十分简单，但是依然提供了完整的工作流功能，包括参数替换、制品、Fixture、循环和递归工作流等功能。
+            </p>
 
-<p>安装 Argo 非常简单，首先当然需要一个 Kubernetes 集群（1.9+版本），kubectl 工具以及访问集群的 kubeconfig 文件（默认位于<code>~/.kube/config</code>）。</p>
+            <p>
+              Argo 中的工作流自动化是通过使用 ADSL（Argo 领域特定语言）设计的
+              YAML 模板（因为 Kubernetes 主要也使用相同的 DSL
+              方式，所以非常容易使用）进行驱动的。ADSL
+              中提供的每条指令都被看作一段代码，并与代码仓库中的源码一起托管。Argo
+              支持6中不同的 YAML 结构：
+            </p>
 
-<p>Mac 系统：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ brew install argoproj/tap/argo</code></pre></div>
-<p>Linux 系统：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ curl -sSL -o /usr/local/bin/argo https://github.com/argoproj/argo/releases/download/v2.2.1/argo-linux-amd64
-chmod +x /usr/local/bin/argo</code></pre></div>
-<p>安装完成后，可以使用下面命令校验是否安装成功：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ argo version
+            <ul>
+              <li>容器模板：根据需要创建单个容器和参数</li>
+              <li>
+                工作流模板：定义一个作业任务（工作流中的一个步骤可以是一个容器）
+              </li>
+              <li>策略模板：触发或者调用作业/通知的规则</li>
+              <li>部署模板：创建一个长期运行的应用程序模板</li>
+              <li>Fixture 模板：整合 Argo 外部的第三方资源</li>
+              <li>项目模板：可以在 Argo 目录中访问的工作流定义</li>
+            </ul>
+
+            <p>
+              Argo 支持几种不同的方式来定义 Kubernetes 资源清单：<a
+                href="https://ksonnet.io/"
+                >Ksonnect</a
+              >、<a href="http://helm.io/">Helm Chart</a> 以及简单的 YAML/JSON
+              资源清单目录。
+            </p>
+
+            <h2 id="安装">安装</h2>
+
+            <p>
+              安装 Argo 非常简单，首先当然需要一个 Kubernetes
+              集群（1.9+版本），kubectl 工具以及访问集群的 kubeconfig
+              文件（默认位于<code>~/.kube/config</code>）。
+            </p>
+
+            <p>Mac 系统：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ brew install argoproj/tap/argo</code></pre>
+            </div>
+            <p>Linux 系统：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ curl -sSL -o /usr/local/bin/argo https://github.com/argoproj/argo/releases/download/v2.2.1/argo-linux-amd64
+chmod +x /usr/local/bin/argo</code></pre>
+            </div>
+            <p>安装完成后，可以使用下面命令校验是否安装成功：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ argo version
 argo: v2.3.0
   BuildDate: <span style="color:#bd93f9">2019</span>-05-20T22:11:23Z
   GitCommit: 88fcc70dcf6e60697e6716edc7464a403c49b27e
@@ -361,12 +485,35 @@ argo: v2.3.0
   GitTag: v2.3.0
   GoVersion: go1.11.5
   Compiler: gc
-  Platform: darwin/amd64</code></pre></div>
-<p>然后安装控制器和 UI 界面：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create ns argo
-$ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/v2.3.0/manifests/install.yaml</code></pre></div>
-<p>安装完成后，为了访问方便，我们将 argo-ui 改成 NodePort 类型的 Service（当然也可以创建 Ingress 对象通过域名进行访问）：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n argo
+  Platform: darwin/amd64</code></pre>
+            </div>
+            <p>然后安装控制器和 UI 界面：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl create ns argo
+$ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/v2.3.0/manifests/install.yaml</code></pre>
+            </div>
+            <p>
+              安装完成后，为了访问方便，我们将 argo-ui 改成 NodePort 类型的
+              Service（当然也可以创建 Ingress 对象通过域名进行访问）：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get pods -n argo
 NAME                                   READY   STATUS              RESTARTS   AGE
 argo-ui-76c6cf75b4-vh6w6               <span style="color:#bd93f9">0</span>/1     ContainerCreating   <span style="color:#bd93f9">0</span>          14s
 workflow-controller-69f6ff7cbc-5pqbj   <span style="color:#bd93f9">0</span>/1     ContainerCreating   <span style="color:#bd93f9">0</span>          14s
@@ -393,21 +540,51 @@ argo-ui   NodePort   <span style="color:#bd93f9">10</span>.97.124.167   &lt;none
 $ kubectl get crd |grep argo
 workflows.argoproj.io                         <span style="color:#bd93f9">2019</span>-09-10T03:27:41Z
 $ kubectl api-versions |grep argo
-argoproj.io/v1alpha1</code></pre></div>
-<p>然后我们就通过上面的 32686 端口来访问 argo-ui 了：</p>
+argoproj.io/v1alpha1</code></pre>
+            </div>
+            <p>然后我们就通过上面的 32686 端口来访问 argo-ui 了：</p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-ui-empty.png" alt="argo ui empty"><figcaption>argo ui empty</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/argo-ui-empty.png"
+                alt="argo ui empty"
+              />
+              <figcaption>argo ui empty</figcaption>
+            </figure>
 
-<p>到这里就证明 Argo 的基础环境就已经安装完成了。</p>
+            <p>到这里就证明 Argo 的基础环境就已经安装完成了。</p>
 
-<h2 id="基本的-argo-工作流模板">基本的 Argo 工作流模板</h2>
+            <h2 id="基本的-argo-工作流模板">基本的 Argo 工作流模板</h2>
 
-<p>下面是一个非常简单的模板，首先定义了一个工作流，创建一个带有两个容器的 Pod，其中一个容器带有 curl 命令，而另外一个容器是一个 nginx sidecar 容器，这里 curl 这个容器是“主”容器，用于轮询 nginx sidecar 容器，直到它准备好为请求提供服务为止。</p>
+            <p>
+              下面是一个非常简单的模板，首先定义了一个工作流，创建一个带有两个容器的
+              Pod，其中一个容器带有 curl 命令，而另外一个容器是一个 nginx
+              sidecar 容器，这里 curl 这个容器是“主”容器，用于轮询 nginx sidecar
+              容器，直到它准备好为请求提供服务为止。
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-base-template.png" alt="Argo 配置工作流模板"><figcaption>Argo 配置工作流模板</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/argo-base-template.png"
+                alt="Argo 配置工作流模板"
+              />
+              <figcaption>Argo 配置工作流模板</figcaption>
+            </figure>
 
-<p>将上面模板保存为名为 argo-base-template.yaml 的文件，然后可以使用 argo 命令来提交这个工作流：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ argo submit argo-base-template.yaml
+            <p>
+              将上面模板保存为名为 argo-base-template.yaml 的文件，然后可以使用
+              argo 命令来提交这个工作流：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ argo submit argo-base-template.yaml
 Name:                sidecar-nginx-ftcpf
 Namespace:           default
 ServiceAccount:      default
@@ -415,46 +592,123 @@ Status:              Pending
 Created:             Tue Sep <span style="color:#bd93f9">10</span> <span style="color:#bd93f9">12</span>:05:53 +0800 <span style="color:#ff79c6">(</span>now<span style="color:#ff79c6">)</span>
 $ argo list
 NAME                  STATUS    AGE   DURATION   PRIORITY
-sidecar-nginx-ftcpf   Running   15m   15m        <span style="color:#bd93f9">0</span></code></pre></div>
-<blockquote>
-<p>当然同样的我们可以直接使用 kubectl 来进行安装，但是 Argo CLI 提供了更强大的功能，比如 YAML 校验、参数传递、重试等等功能。</p>
-</blockquote>
+sidecar-nginx-ftcpf   Running   15m   15m        <span style="color:#bd93f9">0</span></code></pre>
+            </div>
+            <blockquote>
+              <p>
+                当然同样的我们可以直接使用 kubectl 来进行安装，但是 Argo CLI
+                提供了更强大的功能，比如 YAML 校验、参数传递、重试等等功能。
+              </p>
+            </blockquote>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-base-template-events.png" alt="argo base template events"><figcaption>argo base template events</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/argo-base-template-events.png"
+                alt="argo base template events"
+              />
+              <figcaption>argo base template events</figcaption>
+            </figure>
 
-<p>上面就是我们定义的一个工作流，创建一个 Pod 并执行 Workflow 中定义的配置：</p>
+            <p>
+              上面就是我们定义的一个工作流，创建一个 Pod 并执行 Workflow
+              中定义的配置：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-workflow-lifecycle.png" alt="argo workflow lifecycle"><figcaption>argo workflow lifecycle</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/argo-workflow-lifecycle.png"
+                alt="argo workflow lifecycle"
+              />
+              <figcaption>argo workflow lifecycle</figcaption>
+            </figure>
 
-<p>同样可以通过<code>argo logs</code>查看容器日志，也可以通过 argo-ui 在页面上查看相关信息：</p>
+            <p>
+              同样可以通过<code>argo logs</code>查看容器日志，也可以通过 argo-ui
+              在页面上查看相关信息：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-ui-view.png" alt="argo dashboard views"><figcaption>argo dashboard views</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/argo-ui-view.png"
+                alt="argo dashboard views"
+              />
+              <figcaption>argo dashboard views</figcaption>
+            </figure>
 
-<h2 id="带条件的工作流模板">带条件的工作流模板</h2>
+            <h2 id="带条件的工作流模板">带条件的工作流模板</h2>
 
-<p>前面我们提到过 Argo 支持工作流执行过程中的条件语句。Argo 提供的 <a href="https://raw.githubusercontent.com/argoproj/argo/master/examples/coinflip.yaml">Coinflip</a> 示例就描述了如何在模板中使用<code>“when”</code>，其执行依赖于从父级接收的输出。</p>
+            <p>
+              前面我们提到过 Argo 支持工作流执行过程中的条件语句。Argo 提供的
+              <a
+                href="https://raw.githubusercontent.com/argoproj/argo/master/examples/coinflip.yaml"
+                >Coinflip</a
+              >
+              示例就描述了如何在模板中使用<code>“when”</code>，其执行依赖于从父级接收的输出。
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-workflow-condition-demo.png" alt="argo workflow condition demo"><figcaption>argo workflow condition demo</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/argo-workflow-condition-demo.png"
+                alt="argo workflow condition demo"
+              />
+              <figcaption>argo workflow condition demo</figcaption>
+            </figure>
 
-<p>将 Coinflip 保存到本地：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ wget https://raw.githubusercontent.com/argoproj/argo/master/examples/coinflip.yaml</code></pre></div>
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-coinflip-demo.png" alt="argo coinflip demo"><figcaption>argo coinflip demo</figcaption></figure>
+            <p>将 Coinflip 保存到本地：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ wget https://raw.githubusercontent.com/argoproj/argo/master/examples/coinflip.yaml</code></pre>
+            </div>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/argo-coinflip-demo.png"
+                alt="argo coinflip demo"
+              />
+              <figcaption>argo coinflip demo</figcaption>
+            </figure>
 
-<p>上面的 Worflow 运行一个随机的整数脚本，常量为 0=heads、1=tails，调用特定模板（heads 或者 tails）取决于“flip-coin”任务的输出，如上面 Workflow 图中所示，flip-coin 任务执行 heads 任务只有当 heads 模板被执行的时候。
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+            <p>
+              上面的 Worflow 运行一个随机的整数脚本，常量为
+              0=heads、1=tails，调用特定模板（heads 或者
+              tails）取决于“flip-coin”任务的输出，如上面 Workflow
+              图中所示，flip-coin 任务执行 heads 任务只有当 heads
+              模板被执行的时候。
+              <script
+                async
+                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+              ></script>
 
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-5376999672787220"
-     data-ad-slot="9165834656"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
+              <ins
+                class="adsbygoogle"
+                style="display: block"
+                data-ad-client="ca-pub-5376999672787220"
+                data-ad-slot="9165834656"
+                data-ad-format="auto"
+                data-full-width-responsive="true"
+              ></ins>
+              <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+              </script>
 
-同样，使用<code>argo submit</code>来提交 Coinflip 这个 Workflow：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ argo submit coinflip.yaml
+              同样，使用<code>argo submit</code>来提交 Coinflip 这个 Workflow：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ argo submit coinflip.yaml
 Name:                coinflip-pr9x9
 Namespace:           default
 ServiceAccount:      default
@@ -473,149 +727,461 @@ Duration:            <span style="color:#bd93f9">3</span> minutes <span style="c
 
 STEP               PODNAME                    DURATION  MESSAGE
  ✖ coinflip-pr9x9                                       child <span style="color:#f1fa8c">&#39;coinflip-pr9x9-3371049263&#39;</span> failed
- └---⚠ flip-coin   coinflip-pr9x9-3371049263  3m        failed to save outputs: verify serviceaccount default:default has necessary privileges</code></pre></div>
-<p>可以看到这里出现了一个权限错误，Argo 官网上给出的解决方案是给 default:default 绑定上 admin 的 clusterrole 权限：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create rolebinding default-admin --clusterrole<span style="color:#ff79c6">=</span>admin --serviceaccount<span style="color:#ff79c6">=</span>default:default</code></pre></div>
-<p>然后删除上面的 Workflow，重新创建：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ argo delete coinflip-pr9x9
+ └---⚠ flip-coin   coinflip-pr9x9-3371049263  3m        failed to save outputs: verify serviceaccount default:default has necessary privileges</code></pre>
+            </div>
+            <p>
+              可以看到这里出现了一个权限错误，Argo 官网上给出的解决方案是给
+              default:default 绑定上 admin 的 clusterrole 权限：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl create rolebinding default-admin --clusterrole<span style="color:#ff79c6">=</span>admin --serviceaccount<span style="color:#ff79c6">=</span>default:default</code></pre>
+            </div>
+            <p>然后删除上面的 Workflow，重新创建：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ argo delete coinflip-pr9x9
 $ argo submit coinflip.yaml
 Name:                coinflip-jxmzx
 Namespace:           default
 ServiceAccount:      default
 Status:              Pending
-Created:             Tue Sep <span style="color:#bd93f9">10</span> <span style="color:#bd93f9">16</span>:30:59 +0800 <span style="color:#ff79c6">(</span>now<span style="color:#ff79c6">)</span></code></pre></div>
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-coinflip-get.png" alt="argo coinflip get"><figcaption>argo coinflip get</figcaption></figure>
+Created:             Tue Sep <span style="color:#bd93f9">10</span> <span style="color:#bd93f9">16</span>:30:59 +0800 <span style="color:#ff79c6">(</span>now<span style="color:#ff79c6">)</span></code></pre>
+            </div>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/argo-coinflip-get.png"
+                alt="argo coinflip get"
+              />
+              <figcaption>argo coinflip get</figcaption>
+            </figure>
 
-<p>上面的 Workflow 将会创建两个容器，一个是用于执行 randomint python 脚本，另外一个是用于根据脚本的执行结果执行的 tails 模板，如下所示，tails 模板根据 randomint 脚本的结果（result==tails）被调用执行了：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods
+            <p>
+              上面的 Workflow 将会创建两个容器，一个是用于执行 randomint python
+              脚本，另外一个是用于根据脚本的执行结果执行的 tails
+              模板，如下所示，tails 模板根据 randomint
+              脚本的结果（result==tails）被调用执行了：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get pods
 NAME                                   READY   STATUS      RESTARTS   AGE
 coinflip-jxmzx-1126897109              <span style="color:#bd93f9">0</span>/2     Completed   <span style="color:#bd93f9">0</span>          3m28s
 coinflip-jxmzx-3981997132              <span style="color:#bd93f9">0</span>/2     Completed   <span style="color:#bd93f9">0</span>          3m36s
 $ kubectl logs coinflip-jxmzx-3981997132 main
 tails
 $ kubectl logs coinflip-jxmzx-1126897109 main
-it was tails</code></pre></div>
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-coinflip-ui-view.png" alt="argo coinflip ui view"><figcaption>argo coinflip ui view</figcaption></figure>
+it was tails</code></pre>
+            </div>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/argo-coinflip-ui-view.png"
+                alt="argo coinflip ui view"
+              />
+              <figcaption>argo coinflip ui view</figcaption>
+            </figure>
 
-<p>类似地，递归（递归调用模板）也可以添加到条件规范中，例如，下面的模板输出显示 flip-coin 模板执行 n 次，直到结果为 heads 为止，下载 flip-coin 递归模板示例：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ wget https://raw.githubusercontent.com/argoproj/argo/master/examples/coinflip-recursive.yaml</code></pre></div>
-<p>我们可以简单对比下前面的 coinflip，基本上是一致的，唯一的区别就是 tails 模板重新指向了 coinflip，这样就形成了递归：</p>
+            <p>
+              类似地，递归（递归调用模板）也可以添加到条件规范中，例如，下面的模板输出显示
+              flip-coin 模板执行 n 次，直到结果为 heads 为止，下载 flip-coin
+              递归模板示例：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ wget https://raw.githubusercontent.com/argoproj/argo/master/examples/coinflip-recursive.yaml</code></pre>
+            </div>
+            <p>
+              我们可以简单对比下前面的 coinflip，基本上是一致的，唯一的区别就是
+              tails 模板重新指向了 coinflip，这样就形成了递归：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20190910164935.png" alt="argo coinflip recursive"><figcaption>argo coinflip recursive</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/20190910164935.png"
+                alt="argo coinflip recursive"
+              />
+              <figcaption>argo coinflip recursive</figcaption>
+            </figure>
 
-<p>然后用同样的方法来提交这个 Workflow，可以通过<code>argo get</code>命令来查看具体的执行步骤：</p>
+            <p>
+              然后用同样的方法来提交这个 Workflow，可以通过<code>argo get</code
+              >命令来查看具体的执行步骤：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-coinflip-recursive.png" alt="argo coinflip recursive"><figcaption>argo coinflip recursive</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/argo-coinflip-recursive.png"
+                alt="argo coinflip recursive"
+              />
+              <figcaption>argo coinflip recursive</figcaption>
+            </figure>
 
-<p>我们可以看到这里递归执行了4次，最后才出现 flip-coin 的模板输出 heads，这个时候递归才退出，每一次递归调用都会产生一个 Pod，加上最后的 heads 模板，所以一共会产生 5 个 Pod：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods
+            <p>
+              我们可以看到这里递归执行了4次，最后才出现 flip-coin 的模板输出
+              heads，这个时候递归才退出，每一次递归调用都会产生一个
+              Pod，加上最后的 heads 模板，所以一共会产生 5 个 Pod：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get pods
 NAME                                   READY   STATUS      RESTARTS   AGE
 coinflip-recursive-9dpxn-1771762865    <span style="color:#bd93f9">0</span>/2     Completed   <span style="color:#bd93f9">0</span>          8m33s
 coinflip-recursive-9dpxn-177901715     <span style="color:#bd93f9">0</span>/2     Completed   <span style="color:#bd93f9">0</span>          8m26s
 coinflip-recursive-9dpxn-3162439927    <span style="color:#bd93f9">0</span>/2     Completed   <span style="color:#bd93f9">0</span>          8m41s
 coinflip-recursive-9dpxn-3886219258    <span style="color:#bd93f9">0</span>/2     Completed   <span style="color:#bd93f9">0</span>          8m19s
-coinflip-recursive-9dpxn-545668525     <span style="color:#bd93f9">0</span>/2     Completed   <span style="color:#bd93f9">0</span>          8m49s</code></pre></div>
-<p>同样可以在 argo-ui 中查看这个 Workflow 的调用示意图：</p>
+coinflip-recursive-9dpxn-545668525     <span style="color:#bd93f9">0</span>/2     Completed   <span style="color:#bd93f9">0</span>          8m49s</code></pre>
+            </div>
+            <p>同样可以在 argo-ui 中查看这个 Workflow 的调用示意图：</p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-coinflip-recursive-ui-view.png" alt="argo coinflip recursive ui view"><figcaption>argo coinflip recursive ui view</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/argo-coinflip-recursive-ui-view.png"
+                alt="argo coinflip recursive ui view"
+              />
+              <figcaption>argo coinflip recursive ui view</figcaption>
+            </figure>
 
-<h2 id="带循环和参数的-workflow-模板">带循环和参数的 Workflow 模板</h2>
+            <h2 id="带循环和参数的-workflow-模板">
+              带循环和参数的 Workflow 模板
+            </h2>
 
-<p>Argo 可以很方便的迭代 Workflow 中的一组输入，也可以处理用户提供参数（比如：输入参数）。在下面的 Workflow 中，使用两个输入参数<code>“hello kubernetes”</code>和<code>“hello argo”</code>来执行 Whalesay 模板。</p>
+            <p>
+              Argo 可以很方便的迭代 Workflow
+              中的一组输入，也可以处理用户提供参数（比如：输入参数）。在下面的
+              Workflow 中，使用两个输入参数<code>“hello kubernetes”</code
+              >和<code>“hello argo”</code>来执行 Whalesay 模板。
+            </p>
 
-<p>下载这里我们需要使用的 Workflow 示例：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ wget https://raw.githubusercontent.com/argoproj/argo/master/examples/loops.yaml</code></pre></div>
-<p>不过需要注意，我们需要把 loops.yaml 文件里面的 withItems 修改成下面的参数值：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">withItems:
+            <p>下载这里我们需要使用的 Workflow 示例：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ wget https://raw.githubusercontent.com/argoproj/argo/master/examples/loops.yaml</code></pre>
+            </div>
+            <p>
+              不过需要注意，我们需要把 loops.yaml 文件里面的 withItems
+              修改成下面的参数值：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">withItems:
 - hello kubernetes
-- hello argo</code></pre></div>
-<p>完整的 YAML 文件内容如下所示：</p>
+- hello argo</code></pre>
+            </div>
+            <p>完整的 YAML 文件内容如下所示：</p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-loops.png" alt="argo loops configuration"><figcaption>argo loops configuration</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/argo-loops.png"
+                alt="argo loops configuration"
+              />
+              <figcaption>argo loops configuration</figcaption>
+            </figure>
 
-<p>上面的模板包含一个单独的模板，通过使用一个 items 列表并根据提供的参数值数量来运行任务，所以，会创建两个 Pod，一个使用<code>“hello kubernetes”</code>参数，另外一个使用<code>“hello argo”</code>参数，同样使用<code>argo submit</code>命令来创建这个 Workflow：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ argo submit loops.yaml
+            <p>
+              上面的模板包含一个单独的模板，通过使用一个 items
+              列表并根据提供的参数值数量来运行任务，所以，会创建两个
+              Pod，一个使用<code>“hello kubernetes”</code
+              >参数，另外一个使用<code>“hello argo”</code>参数，同样使用<code
+                >argo submit</code
+              >命令来创建这个 Workflow：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ argo submit loops.yaml
 Name:                loops-ftm5r
 Namespace:           default
 ServiceAccount:      default
 Status:              Pending
-Created:             Tue Sep <span style="color:#bd93f9">10</span> <span style="color:#bd93f9">17</span>:33:50 +0800 <span style="color:#ff79c6">(</span>now<span style="color:#ff79c6">)</span></code></pre></div>
-<p>使用<code>argo get</code>命令来查看这个 Workflow 的详细信息，可以看到迭代了两个步骤出来，当然就会产生两个 Pod：</p>
+Created:             Tue Sep <span style="color:#bd93f9">10</span> <span style="color:#bd93f9">17</span>:33:50 +0800 <span style="color:#ff79c6">(</span>now<span style="color:#ff79c6">)</span></code></pre>
+            </div>
+            <p>
+              使用<code>argo get</code>命令来查看这个 Workflow
+              的详细信息，可以看到迭代了两个步骤出来，当然就会产生两个 Pod：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-loops-events.png" alt="argo loop events"><figcaption>argo loop events</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/argo-loops-events.png"
+                alt="argo loop events"
+              />
+              <figcaption>argo loop events</figcaption>
+            </figure>
 
-<p>我们去查看生成的两个 Pod 的日志信息，里面就包含上面的传入的两个参数<code>“hello kubernetes”</code>和<code>“hello argo”</code>的信息：</p>
+            <p>
+              我们去查看生成的两个 Pod
+              的日志信息，里面就包含上面的传入的两个参数<code
+                >“hello kubernetes”</code
+              >和<code>“hello argo”</code>的信息：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-loops-logs.png" alt="Workflow Execution with Looping Configuration"><figcaption>Workflow Execution with Looping Configuration</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/argo-loops-logs.png"
+                alt="Workflow Execution with Looping Configuration"
+              />
+              <figcaption>
+                Workflow Execution with Looping Configuration
+              </figcaption>
+            </figure>
 
-<p>类似的我们还可以完成更加复杂的循环：循环迭代一组 items，动态生成 items 列表等，具体的实现我们直接查看 Argo GitHub 仓库上面提供的 example 样例：<a href="https://github.com/argoproj/argo/blob/master/examples/">https://github.com/argoproj/argo/blob/master/examples/</a>。</p>
+            <p>
+              类似的我们还可以完成更加复杂的循环：循环迭代一组 items，动态生成
+              items 列表等，具体的实现我们直接查看 Argo GitHub 仓库上面提供的
+              example 样例：<a
+                href="https://github.com/argoproj/argo/blob/master/examples/"
+                >https://github.com/argoproj/argo/blob/master/examples/</a
+              >。
+            </p>
 
-<h2 id="由-dag-有向无环图-和步骤的依赖定义的多步骤工作流模板">由 DAG（有向无环图）和步骤的依赖定义的多步骤工作流模板</h2>
+            <h2 id="由-dag-有向无环图-和步骤的依赖定义的多步骤工作流模板">
+              由 DAG（有向无环图）和步骤的依赖定义的多步骤工作流模板
+            </h2>
 
-<p>Argo 允许用户使用简单的 Python 对象 DAG 启动多步骤的 Pipeline，还可以在工作流规范中定义多个模板（嵌套工作流）。</p>
+            <p>
+              Argo 允许用户使用简单的 Python 对象 DAG 启动多步骤的
+              Pipeline，还可以在工作流规范中定义多个模板（嵌套工作流）。
+            </p>
 
-<p>下载使用的示例文件：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ wget https://raw.githubusercontent.com/argoproj/argo/master/examples/dag-diamond.yaml</code></pre></div>
-<p>Workflow 更详细的内容如下所示：</p>
+            <p>下载使用的示例文件：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ wget https://raw.githubusercontent.com/argoproj/argo/master/examples/dag-diamond.yaml</code></pre>
+            </div>
+            <p>Workflow 更详细的内容如下所示：</p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-dag.png" alt="DAG Dependency based Workflow Configuration"><figcaption>DAG Dependency based Workflow Configuration</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/argo-dag.png"
+                alt="DAG Dependency based Workflow Configuration"
+              />
+              <figcaption>
+                DAG Dependency based Workflow Configuration
+              </figcaption>
+            </figure>
 
-<p>接下来我们来提交这个 Workflow：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ argo submit dag-diamond.yaml
+            <p>接下来我们来提交这个 Workflow：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ argo submit dag-diamond.yaml
 Name:                dag-diamond-qv45w
 Namespace:           default
 ServiceAccount:      default
 Status:              Pending
-Created:             Tue Sep <span style="color:#bd93f9">10</span> <span style="color:#bd93f9">18</span>:59:24 +0800 <span style="color:#ff79c6">(</span>now<span style="color:#ff79c6">)</span></code></pre></div>
-<p>然后使用<code>argo get</code>命令来查看这个 Workflow 的详细信息：</p>
+Created:             Tue Sep <span style="color:#bd93f9">10</span> <span style="color:#bd93f9">18</span>:59:24 +0800 <span style="color:#ff79c6">(</span>now<span style="color:#ff79c6">)</span></code></pre>
+            </div>
+            <p>
+              然后使用<code>argo get</code>命令来查看这个 Workflow 的详细信息：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-dag-events.png" alt="DAG Execution"><figcaption>DAG Execution</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/argo-dag-events.png"
+                alt="DAG Execution"
+              />
+              <figcaption>DAG Execution</figcaption>
+            </figure>
 
-<p>同样在 argo-ui 中也可以查看到这个 Workflow 的依赖关系：</p>
+            <p>同样在 argo-ui 中也可以查看到这个 Workflow 的依赖关系：</p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-dag-ui-view.png" alt="argo dag ui view"><figcaption>argo dag ui view</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/argo-dag-ui-view.png"
+                alt="argo dag ui view"
+              />
+              <figcaption>argo dag ui view</figcaption>
+            </figure>
 
-<h2 id="使用-minio-进行制品管理和-argo-集成">使用 Minio 进行制品管理和 Argo 集成</h2>
+            <h2 id="使用-minio-进行制品管理和-argo-集成">
+              使用 Minio 进行制品管理和 Argo 集成
+            </h2>
 
-<p>制品是任何工作流的一部分（比如：CI/CD 中），工作流中的步骤会生成制品，然后其他后续步骤可以使用这个制品。</p>
+            <p>
+              制品是任何工作流的一部分（比如：CI/CD
+              中），工作流中的步骤会生成制品，然后其他后续步骤可以使用这个制品。
+            </p>
 
-<p>我们这里使用 Minio 来作为制品仓库，Minio 是兼容 Amazon S3 API 的开源对象存储服务器。
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+            <p>
+              我们这里使用 Minio 来作为制品仓库，Minio 是兼容 Amazon S3 API
+              的开源对象存储服务器。
+              <script
+                async
+                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+              ></script>
 
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-5376999672787220"
-     data-ad-slot="9165834656"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
+              <ins
+                class="adsbygoogle"
+                style="display: block"
+                data-ad-client="ca-pub-5376999672787220"
+                data-ad-slot="9165834656"
+                data-ad-format="auto"
+                data-full-width-responsive="true"
+              ></ins>
+              <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+              </script>
 
-首先先安装 Minio，我们这里使用 Helm 来快速的安装，如果对 Helm 的使用还不熟悉的，可以查看前面我们的文章：<a href="https://www.qikqiak.com/post/first-use-helm-on-kubernetes/">Kubernetes Helm 初体验</a>。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ helm install stable/minio --name minio --set service.type<span style="color:#ff79c6">=</span>NodePort --set defaultBucket.enabled<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">true</span> --set defaultBucket.name<span style="color:#ff79c6">=</span>my-bucket --set persistence.enabled<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">false</span> --namespace argo</code></pre></div>
-<p>我们这里指定了一个名为 my-bucket 的默认 Bucket，使用 NodePort 类型的 Service，另外需要注意的是我这里单纯为了测试，所以将 persistence.enabled 设置为了 false，对于线上环境一定要记得持久化数据：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n argo  -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>minio
+              首先先安装 Minio，我们这里使用 Helm 来快速的安装，如果对 Helm
+              的使用还不熟悉的，可以查看前面我们的文章：<a
+                href="https://www.qikqiak.com/post/first-use-helm-on-kubernetes/"
+                >Kubernetes Helm 初体验</a
+              >。
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ helm install stable/minio --name minio --set service.type<span style="color:#ff79c6">=</span>NodePort --set defaultBucket.enabled<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">true</span> --set defaultBucket.name<span style="color:#ff79c6">=</span>my-bucket --set persistence.enabled<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">false</span> --namespace argo</code></pre>
+            </div>
+            <p>
+              我们这里指定了一个名为 my-bucket 的默认 Bucket，使用 NodePort
+              类型的 Service，另外需要注意的是我这里单纯为了测试，所以将
+              persistence.enabled 设置为了
+              false，对于线上环境一定要记得持久化数据：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get pods -n argo  -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>minio
 NAME                     READY   STATUS    RESTARTS   AGE
 minio-7954d6976d-jjm42   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          9m25s
 $ kubectl get svc -n argo  -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>minio
 NAME    TYPE       CLUSTER-IP       EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>          AGE
-minio   NodePort   <span style="color:#bd93f9">10</span>.109.167.218   &lt;none&gt;        <span style="color:#bd93f9">9000</span>:31311/TCP   9m31s</code></pre></div>
-<p>到这里证明 Minio 就已经安装成功了，然后我们就可以通过 31311 这个 NodePort 端口访问 Minio 的 Dashboard 页面，我们可以使用默认的 accessKey（AKIAIOSFODNN7EXAMPLE） 和 secretKey（wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY）登录：</p>
+minio   NodePort   <span style="color:#bd93f9">10</span>.109.167.218   &lt;none&gt;        <span style="color:#bd93f9">9000</span>:31311/TCP   9m31s</code></pre>
+            </div>
+            <p>
+              到这里证明 Minio 就已经安装成功了，然后我们就可以通过 31311 这个
+              NodePort 端口访问 Minio 的 Dashboard 页面，我们可以使用默认的
+              accessKey（AKIAIOSFODNN7EXAMPLE） 和
+              secretKey（wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY）登录：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/minio-ui.png" alt="minio ui"><figcaption>minio ui</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/minio-ui.png"
+                alt="minio ui"
+              />
+              <figcaption>minio ui</figcaption>
+            </figure>
 
-<p>然后我们需要把 Minio 和 Argo 集成在一起，通过编辑 workflow-controller configmap 来引用上面的 Minio Service 和 Secret，上面我们通过 Helm 安装 Minio 的时候会自动将默认的 accessKey 和 secretKey 添加到名为 minio 的 Secret 对象中去：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get secret minio -n argo -o yaml
+            <p>
+              然后我们需要把 Minio 和 Argo 集成在一起，通过编辑
+              workflow-controller configmap 来引用上面的 Minio Service 和
+              Secret，上面我们通过 Helm 安装 Minio 的时候会自动将默认的
+              accessKey 和 secretKey 添加到名为 minio 的 Secret 对象中去：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get secret minio -n argo -o yaml
 apiVersion: v1
 data:
   accesskey: <span style="color:#8be9fd;font-style:italic">QUtJQUlPU0ZPRE5ON0VYQU1QTEU</span><span style="color:#ff79c6">=</span>
   secretkey: <span style="color:#8be9fd;font-style:italic">d0phbHJYVXRuRkVNSS9LN01ERU5HL2JQeFJmaUNZRVhBTVBMRUtFWQ</span><span style="color:#ff79c6">==</span>
 kind: Secret
 ......
-type: Opaque</code></pre></div>
-<p>直接编辑 workflow-controller-configmap，按照如下方式添加上 Minio 相关配置：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">...
+type: Opaque</code></pre>
+            </div>
+            <p>
+              直接编辑 workflow-controller-configmap，按照如下方式添加上 Minio
+              相关配置：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">...
 data:
   config: <span style="color:#f1fa8c">|
 </span><span style="color:#f1fa8c">    artifactRepository:</span>
@@ -640,215 +1206,388 @@ metadata:
   namespace: argo
   resourceVersion: <span style="color:#f1fa8c">&#34;1890436&#34;</span>
   selfLink: /api/v1/namespaces/argo/configmaps/workflow-controller-configmap
-  uid: b1fd1a24-721d-4ce1-a02c-90fff0e931ee</code></pre></div>
-<p>编辑完成后我们就完成了 Minio 和 Argo 的集成。不过这里需要注意的是 Secret 对象是 namespace 作用域的，上面 ConfigMap 解析 Secret 对象是和我们使用的 Workflow 的 namespace 中获取 Minio Secret 的，所以如果 Minio 和 Workflow 不在同一个 namespace 下面，需要我们拷贝一份 Secret 到对应的 namespace 下面去，比如我们这里 Workflow 都在 default 这个 namespace 下面，那么我就需要在 default 下面创建相同的 Secret：(minio-secret.yaml)</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+  uid: b1fd1a24-721d-4ce1-a02c-90fff0e931ee</code></pre>
+            </div>
+            <p>
+              编辑完成后我们就完成了 Minio 和 Argo 的集成。不过这里需要注意的是
+              Secret 对象是 namespace 作用域的，上面 ConfigMap 解析 Secret
+              对象是和我们使用的 Workflow 的 namespace 中获取 Minio Secret
+              的，所以如果 Minio 和 Workflow 不在同一个 namespace
+              下面，需要我们拷贝一份 Secret 到对应的 namespace
+              下面去，比如我们这里 Workflow 都在 default 这个 namespace
+              下面，那么我就需要在 default 下面创建相同的
+              Secret：(minio-secret.yaml)
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: v1
 kind: Secret
 metadata:
   name: minio
 type: Opaque
 data:
   accesskey: QUtJQUlPU0ZPRE5ON0VYQU1QTEU=
-  secretkey: d0phbHJYVXRuRkVNSS9LN01ERU5HL2JQeFJmaUNZRVhBTVBMRUtFWQ==</code></pre></div>
-<p>创建上面的 Secret 对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create -f minio-secret.yaml</code></pre></div>
-<p>然后下载我们这里使用到的 Workflow 示例文件：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ wget https://raw.githubusercontent.com/argoproj/argo/master/examples/artifact-passing.yaml</code></pre></div>
-<p>详细的 Workflow 内容如下图所示：</p>
+  secretkey: d0phbHJYVXRuRkVNSS9LN01ERU5HL2JQeFJmaUNZRVhBTVBMRUtFWQ==</code></pre>
+            </div>
+            <p>创建上面的 Secret 对象：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl create -f minio-secret.yaml</code></pre>
+            </div>
+            <p>然后下载我们这里使用到的 Workflow 示例文件：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ wget https://raw.githubusercontent.com/argoproj/argo/master/examples/artifact-passing.yaml</code></pre>
+            </div>
+            <p>详细的 Workflow 内容如下图所示：</p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-artifact.png" alt="Artifactory Management Configuration"><figcaption>Artifactory Management Configuration</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/argo-artifact.png"
+                alt="Artifactory Management Configuration"
+              />
+              <figcaption>Artifactory Management Configuration</figcaption>
+            </figure>
 
-<p>上面 Workflow 包括两个步骤：</p>
+            <p>上面 Workflow 包括两个步骤：</p>
 
-<ul>
-<li>步骤1生成制品：使用 whalesay 模板生成制品</li>
-<li>步骤2消费制品：使用步骤1中创建的制品并打印消息。</li>
-</ul>
+            <ul>
+              <li>步骤1生成制品：使用 whalesay 模板生成制品</li>
+              <li>步骤2消费制品：使用步骤1中创建的制品并打印消息。</li>
+            </ul>
 
-<p>同样，我们使用<code>argo submit</code>命令提交这个 Workflow：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ argo submit artifact-passing.yaml
+            <p>同样，我们使用<code>argo submit</code>命令提交这个 Workflow：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ argo submit artifact-passing.yaml
 Name:                artifact-passing-x4rhq
 Namespace:           default
 ServiceAccount:      default
 Status:              Pending
-Created:             Wed Sep <span style="color:#bd93f9">11</span> <span style="color:#bd93f9">12</span>:01:07 +0800 <span style="color:#ff79c6">(</span>now<span style="color:#ff79c6">)</span></code></pre></div>
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/argo-artifact-events.png" alt="argo artifact events"><figcaption>argo artifact events</figcaption></figure>
+Created:             Wed Sep <span style="color:#bd93f9">11</span> <span style="color:#bd93f9">12</span>:01:07 +0800 <span style="color:#ff79c6">(</span>now<span style="color:#ff79c6">)</span></code></pre>
+            </div>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/argo-artifact-events.png"
+                alt="argo artifact events"
+              />
+              <figcaption>argo artifact events</figcaption>
+            </figure>
 
-<p>我们可以看到上面 Workflow 的两个步骤都已经成功了，然后我们去 minio-ui 上面就可以查看到上面 Workflow 生成的制品了：</p>
+            <p>
+              我们可以看到上面 Workflow 的两个步骤都已经成功了，然后我们去
+              minio-ui 上面就可以查看到上面 Workflow 生成的制品了：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/minio-ui-data.png" alt="minio ui data"><figcaption>minio ui data</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/minio-ui-data.png"
+                alt="minio ui data"
+              />
+              <figcaption>minio ui data</figcaption>
+            </figure>
 
-<p>上面我们创建的制品被存储在 Minio 的 my-bucket 中，消费制品的任务根据 Workflow 中的定义根据提供的配置拉取制品，Minio 类似于 S3 提供了一个可共享的链接来使用制品:</p>
+            <p>
+              上面我们创建的制品被存储在 Minio 的 my-bucket
+              中，消费制品的任务根据 Workflow
+              中的定义根据提供的配置拉取制品，Minio 类似于 S3
+              提供了一个可共享的链接来使用制品:
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/minio-ui-sharedata.png" alt="minio ui sharedata"><figcaption>minio ui sharedata</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/minio-ui-sharedata.png"
+                alt="minio ui sharedata"
+              />
+              <figcaption>minio ui sharedata</figcaption>
+            </figure>
 
-<p>除了上面提到的这些用法之外，Argo Workflow 还有很多其他用法，我们可以查看 Argo 官方提供的样例了解更多使用方法：<a href="https://github.com/argoproj/argo/tree/master/examples">https://github.com/argoproj/argo/tree/master/examples</a>。</p>
+            <p>
+              除了上面提到的这些用法之外，Argo Workflow
+              还有很多其他用法，我们可以查看 Argo
+              官方提供的样例了解更多使用方法：<a
+                href="https://github.com/argoproj/argo/tree/master/examples"
+                >https://github.com/argoproj/argo/tree/master/examples</a
+              >。
+            </p>
 
-<p>本文更多的是提到 Argo Workflow 的一些基本使用方法，下一篇文章我们再通过一个完整的示例来演示下 Argo Workflow 的实际用途。</p>
+            <p>
+              本文更多的是提到 Argo Workflow
+              的一些基本使用方法，下一篇文章我们再通过一个完整的示例来演示下
+              Argo Workflow 的实际用途。
+            </p>
 
-<h2 id="参考链接">参考链接</h2>
+            <h2 id="参考链接">参考链接</h2>
 
-<ul>
-<li><a href="https://argoproj.github.io/docs/argo/demo.html">Argo Getting Started</a></li>
-<li><a href="https://itnext.io/argo-workflow-engine-for-kubernetes-7ae81eda1cc5">Argo: Workflow Engine for Kubernetes</a></li>
-<li><a href="https://github.com/argoproj/argo/tree/master/examples">Argo examples</a></li>
-</ul>
+            <ul>
+              <li>
+                <a href="https://argoproj.github.io/docs/argo/demo.html"
+                  >Argo Getting Started</a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://itnext.io/argo-workflow-engine-for-kubernetes-7ae81eda1cc5"
+                  >Argo: Workflow Engine for Kubernetes</a
+                >
+              </li>
+              <li>
+                <a href="https://github.com/argoproj/argo/tree/master/examples"
+                  >Argo examples</a
+                >
+              </li>
+            </ul>
 
-<p><a href="https://youdianzhishi.com/web/course/1030" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+            <p>
+              <a
+                href="https://youdianzhishi.com/web/course/1030"
+                title="从 Docker 到 Kubernetes 进阶课程"
+                ><img
+                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
+                  alt="Kubernetes进阶训练营"
+              /></a>
+            </p>
 
+            <h2>微信公众号</h2>
+            <p>
+              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+              kubernetes 讨论群里面共同学习。
+            </p>
+            <img
+              src="https://picdn.youdianzhishi.com/images/qrcode.png"
+              alt="wechat-account-qrcode"
+            />
 
-          <h2>微信公众号</h2>
-<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
-
-  
-          
             <div class="entry-shang text-center">
-    <p>「真诚赞赏，手留余香」</p>
-    <button class="zs show-zs btn btn-bred">赞赏</button>
-</div>
-<div class="zs-modal-bg"></div>
-<div class="zs-modal-box">
-    <div class="zs-modal-head">
-        <button type="button" class="close">×</button>
-        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
-        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-    </div>
-    <div class="zs-modal-body">
-        <div class="zs-modal-btns">
-            <button class="btn btn-blink" data-num="2">2元</button>
-            <button class="btn btn-blink" data-num="5">5元</button>
-            <button class="btn btn-blink" data-num="10">10元</button>
-            <button class="btn btn-blink" data-num="50">50元</button>
-            <button class="btn btn-blink" data-num="100">100元</button>
-            <button class="btn btn-blink" data-num="1">任意金额</button>
-        </div>
-        <div class="zs-modal-pay">
-            <button class="btn btn-bred" id="pay-text">2元</button>
-            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
-        </div>
-    </div>
-    <div class="zs-modal-footer">
-        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
-    </div>
-</div>
-          
-          
-            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
-    <center>
-    <a href="#" class="social-share-icon icon-weibo"></a>
-    <a href="#" class="social-share-icon icon-wechat"></a>
-    <a href="#" class="social-share-icon icon-twitter"></a>
-    <a href="#" class="social-share-icon icon-linkedin"></a>
-    <a href="#" class="social-share-icon icon-facebook"></a>
-    <a href="#" class="social-share-icon icon-qq"></a>
-    <a href="#" class="social-share-icon icon-qzone"></a>
-    </center>
-</div>
+              <p>「真诚赞赏，手留余香」</p>
+              <button class="zs show-zs btn btn-bred">赞赏</button>
+            </div>
+            <div class="zs-modal-bg"></div>
+            <div class="zs-modal-box">
+              <div class="zs-modal-head">
+                <button type="button" class="close">×</button>
+                <span class="author"
+                  ><img
+                    src="https://www.qikqiak.com/img/avatar.jpeg"
+                  />阳明</span
+                >
+                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+              </div>
+              <div class="zs-modal-body">
+                <div class="zs-modal-btns">
+                  <button class="btn btn-blink" data-num="2">2元</button>
+                  <button class="btn btn-blink" data-num="5">5元</button>
+                  <button class="btn btn-blink" data-num="10">10元</button>
+                  <button class="btn btn-blink" data-num="50">50元</button>
+                  <button class="btn btn-blink" data-num="100">100元</button>
+                  <button class="btn btn-blink" data-num="1">任意金额</button>
+                </div>
+                <div class="zs-modal-pay">
+                  <button class="btn btn-bred" id="pay-text">2元</button>
+                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+                  <img
+                    src="https://www.qikqiak.com/img/wechat-2.png"
+                    id="pay-image"
+                  />
+                </div>
+              </div>
+              <div class="zs-modal-footer">
+                <span class="zs-wechat"
+                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
+                /></span>
+              </div>
+            </div>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+            <div
+              class="social-share"
+              data-initialized="true"
+              style="margin-bottom: 20px; margin-top: 20px"
+            >
+              <center>
+                <a href="#" class="social-share-icon icon-weibo"></a>
+                <a href="#" class="social-share-icon icon-wechat"></a>
+                <a href="#" class="social-share-icon icon-twitter"></a>
+                <a href="#" class="social-share-icon icon-linkedin"></a>
+                <a href="#" class="social-share-icon icon-facebook"></a>
+                <a href="#" class="social-share-icon icon-qq"></a>
+                <a href="#" class="social-share-icon icon-qzone"></a>
+              </center>
+            </div>
 
-          
-        </article>
-  
-        
-          
+            <link
+              rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
+            />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+          </article>
 
-<h3>相关文章</h3>
-<ul style="margin-bottom: 25px;">
-    
-    <li><a href="https://www.qikqiak.com/post/pod-workflow/">Kubernetes Pod 工作流</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/kustomize-101/">使用 Kustomize 配置 Kubernetes 应用</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/helm-chart-tips-and-tricks/">Helm Chart 模板开发技巧</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/helm-name-template-usage/">Helm 命名模板的使用</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/vmware-k8s-dashboard-octant/">VMWare 开源的 Kubernetes 可视化工具 Octant</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/use-kubeadm-install-kubernetes-1.15.3/">使用 kubeadm 搭建 v1.15.3 版本 Kubernetes 集群</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/install-kubesphere-on-k8s/">在现有 Kubernetes 集群上安装 KubeSphere</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-3/">Drone 结合 Helm 部署 Kubernetes 应用</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-2/">使用 Drone Pipeline 构建 Docker 镜像</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-1/">使用 Kubernetes Helm 安装 Drone</a></li>
-    
-</ul>
+          <h3>相关文章</h3>
+          <ul style="margin-bottom: 25px">
+            <li>
+              <a href="https://www.qikqiak.com/post/pod-workflow/"
+                >Kubernetes Pod 工作流</a
+              >
+            </li>
 
-        
-  
-        
-        <ul class="pager blog-pager">
-          
+            <li>
+              <a href="https://www.qikqiak.com/post/kustomize-101/"
+                >使用 Kustomize 配置 Kubernetes 应用</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/helm-chart-tips-and-tricks/"
+                >Helm Chart 模板开发技巧</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/helm-name-template-usage/"
+                >Helm 命名模板的使用</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/vmware-k8s-dashboard-octant/"
+                >VMWare 开源的 Kubernetes 可视化工具 Octant</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/use-kubeadm-install-kubernetes-1.15.3/"
+                >使用 kubeadm 搭建 v1.15.3 版本 Kubernetes 集群</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/install-kubesphere-on-k8s/"
+                >在现有 Kubernetes 集群上安装 KubeSphere</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/drone-with-k8s-3/"
+                >Drone 结合 Helm 部署 Kubernetes 应用</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/drone-with-k8s-2/"
+                >使用 Drone Pipeline 构建 Docker 镜像</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/drone-with-k8s-1/"
+                >使用 Kubernetes Helm 安装 Drone</a
+              >
+            </li>
+          </ul>
+
+          <ul class="pager blog-pager">
             <li class="previous">
-              <a href="https://www.qikqiak.com/post/maesh-service-mesh-by-trafik/" data-toggle="tooltip" data-placement="top" title="Traefik 团队开源的轻量级 Service Mesh 工具 Maesh">&larr; 前一篇</a>
+              <a
+                href="https://www.qikqiak.com/post/maesh-service-mesh-by-trafik/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="Traefik 团队开源的轻量级 Service Mesh 工具 Maesh"
+                >&larr; 前一篇</a
+              >
             </li>
-          
-          
-            <li class="next">
-              <a href="https://www.qikqiak.com/post/setup-psp-in-k8s/" data-toggle="tooltip" data-placement="top" title="Kubernetes Pod 安全策略(PSP)配置">后一篇 &rarr;</a>
-            </li>
-          
-        </ul>
-        
 
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-        
-        <ins class="adsbygoogle"
-            style="display:block"
+            <li class="next">
+              <a
+                href="https://www.qikqiak.com/post/setup-psp-in-k8s/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="Kubernetes Pod 安全策略(PSP)配置"
+                >后一篇 &rarr;</a
+              >
+            </li>
+          </ul>
+
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+          ></script>
+
+          <ins
+            class="adsbygoogle"
+            style="display: block"
             data-ad-client="ca-pub-5376999672787220"
             data-ad-slot="3700507799"
             data-ad-format="auto"
-            data-full-width-responsive="true"></ins>
-        <script>
+            data-full-width-responsive="true"
+          ></ins>
+          <script>
             (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
-  
-        
-    <div id="gitalk-container"></div>
-    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-    <script>
-    var gitalk = new Gitalk({
-        clientID: 'bdb76dbb2e9d0786e350',
-        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
-        repo: 'blog',
-        owner: 'cnych',
-        admin: ['cnych'],
-        labels: ['gitment'],
-        title: 'Kubernetes 工作流引擎：Argo（1）',
-        createIssueManually: true,
-        id: 'argo-workflow-engine-for-k8s',      
-        distractionFreeMode: true  
-    });
-    gitalk.render('gitalk-container');
-</script>
+          </script>
 
-
-        
-          
-
-        
-  
+          <div id="gitalk-container"></div>
+          <link
+            rel="stylesheet"
+            href="https://unpkg.com/gitalk/dist/gitalk.css"
+          />
+          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+          <script>
+            var gitalk = new Gitalk({
+              clientID: "bdb76dbb2e9d0786e350",
+              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
+              repo: "blog",
+              owner: "cnych",
+              admin: ["cnych"],
+              labels: ["gitment"],
+              title: "Kubernetes 工作流引擎：Argo（1）",
+              createIssueManually: true,
+              id: "argo-workflow-engine-for-k8s",
+              distractionFreeMode: true,
+            });
+            gitalk.render("gitalk-container");
+          </script>
+        </div>
       </div>
-    
-    
-  </div>
-</div>
+    </div>
 
     <footer>
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <ul class="list-inline text-center footer-links">
-          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
-          
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <ul class="list-inline text-center footer-links">
+              <img
+                src="https://www.qikqiak.com/img/wechatmp.png"
+                alt="k8s技术圈"
+              />
+
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -857,7 +1596,7 @@ Created:             Wed Sep <span style="color:#bd93f9">11</span> <span style="
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -866,7 +1605,7 @@ Created:             Wed Sep <span style="color:#bd93f9">11</span> <span style="
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -875,7 +1614,7 @@ Created:             Wed Sep <span style="color:#bd93f9">11</span> <span style="
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -884,121 +1623,158 @@ Created:             Wed Sep <span style="color:#bd93f9">11</span> <span style="
                   </span>
                 </a>
               </li>
-          
-          
-          <li>
-            <a href="https://www.qikqiak.com/index.xml" title="RSS">
-              <span class="fa-stack fa-lg">
-                <i class="fa fa-circle fa-stack-2x"></i>
-                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+
+              <li>
+                <a href="https://www.qikqiak.com/index.xml" title="RSS">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+            </ul>
+            <p class="credits copyright text-muted">
+              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/">阳明的博客</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/archive/">归档</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/friend/">友链</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://beian.miit.gov.cn/" target="_blank"
+                >蜀ICP备11027319号-5</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
+                >kubernetes.io</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
+                >Kubernetes中文社区</a
+              >
+            </p>
+            <p class="text-center text-muted">
+              <script
+                async
+                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
+              ></script>
+              <span id="busuanzi_container_site_pv" style="display: none">
+                本站总访问量<span id="busuanzi_value_site_pv"></span>次
               </span>
-            </a>
-          </li>
-          
-        </ul>
-        <p class="credits copyright text-muted">
-          
+              &nbsp;&bull;&nbsp;
+              <span id="busuanzi_container_site_uv" style="display: none">
+                访客数<span id="busuanzi_value_site_uv"></span>人次
+              </span>
+            </p>
 
-          &nbsp;&bull;&nbsp;
-          2023
-
-          
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/">阳明的博客</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/archive/">归档</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/friend/">友链</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
-          
-        </p>
-        <p class="text-center text-muted">
-          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-          <span id="busuanzi_container_site_pv" style="display:none">
-            本站总访问量<span id="busuanzi_value_site_pv"></span>次
-          </span>
-          &nbsp;&bull;&nbsp;
-          <span id="busuanzi_container_site_uv" style="display:none">
-            访客数<span id="busuanzi_value_site_uv"></span>人次
-          </span>
-        </p>
-        
-        <p class="credits theme-by text-muted">
-          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
-          
-        </p>
+            <p class="credits theme-by text-muted">
+              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
+              &nbsp;&bull;&nbsp; 主题
+              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+              移植自
+              <a href="https://github.com/rootsongjc/beautifulhugo"
+                >Beautiful Hugo</a
+              >
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</footer>
+    </footer>
 
+    <script
+      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
+      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
+    ></script>
 
-<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "UA-69668147-3");
+    </script>
+    <script>
+      (function () {
+        var bp = document.createElement("script");
+        var curProtocol = window.location.protocol.split(":")[0];
+        if (curProtocol === "https") {
+          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
+        } else {
+          bp.src = "http://push.zhanzhang.baidu.com/push.js";
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+      })();
+    </script>
+    <script>
+      $(document).ready(function () {
+        var int = setInterval(fixCount, 50);
 
-
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-69668147-3');
-</script>
-<script>
-(function(){
-    var bp = document.createElement('script');
-    var curProtocol = window.location.protocol.split(':')[0];
-    if (curProtocol === 'https') {
-        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
-    }
-    else {
-        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
-    }
-    var s = document.getElementsByTagName("script")[0];
-    s.parentNode.insertBefore(bp, s);
-})();
-</script>
-<script >
-$(document).ready(function() {
-  var int = setInterval(fixCount, 50);  
-  
-  var initPVCount = 584976;
-  var initUVCount = 153191;
-  function fixCount() {                   
-    if ($("#busuanzi_container_site_pv").css("display") != "none") {
-        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
-        clearInterval(int); 
-    }
-    if ($("#busuanzi_container_site_uv").css("display") != "none") {
-      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
-      clearInterval(int); 
-    }  
-  }           
-});
-</script>
- <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
-<script type="text/javascript">
-$('.carousel').slick({
-    dots: true,
-    arrows: true,
-    autoplay: true,
-    autoplaySpeed: 4000,
-    infinite: true,
-    speed: 500,
-    fade: true,
-    cssEase: 'linear',
-    centerMode: true,
-    prevArrow: '<button type="button" class="slick-prev"></button>',
-    nextArrow: '<button type="button" class="slick-next"></button>',
-});
-</script>
-
+        var initPVCount = 584976;
+        var initUVCount = 153191;
+        function fixCount() {
+          if ($("#busuanzi_container_site_pv").css("display") != "none") {
+            $("#busuanzi_value_site_pv").html(
+              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
+            );
+            clearInterval(int);
+          }
+          if ($("#busuanzi_container_site_uv").css("display") != "none") {
+            $("#busuanzi_value_site_uv").html(
+              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
+            );
+            clearInterval(int);
+          }
+        }
+      });
+    </script>
+    <script>
+      (function (w, d, s, id) {
+        if (typeof w.webpushr !== "undefined") return;
+        w.webpushr =
+          w.webpushr ||
+          function () {
+            (w.webpushr.q = w.webpushr.q || []).push(arguments);
+          };
+        var js,
+          fjs = d.getElementsByTagName(s)[0];
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "https://cdn.webpushr.com/app.min.js";
+        fjs.parentNode.appendChild(js);
+      })(window, document, "script", "webpushr-jssdk");
+      webpushr(
+        "init",
+        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
+      );
+    </script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
+    ></script>
+    <script type="text/javascript">
+      $(".carousel").slick({
+        dots: true,
+        arrows: true,
+        autoplay: true,
+        autoplaySpeed: 4000,
+        infinite: true,
+        speed: 500,
+        fade: true,
+        cssEase: "linear",
+        centerMode: true,
+        prevArrow: '<button type="button" class="slick-prev"></button>',
+        nextArrow: '<button type="button" class="slick-next"></button>',
+      });
+    </script>
   </body>
 </html>
-

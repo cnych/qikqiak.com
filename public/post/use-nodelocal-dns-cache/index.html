@@ -1,388 +1,543 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
 
+    <title>
+      在 Kubernetes 集群中使用 NodeLocal
+      DNSCache-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
+    </title>
+    <meta
+      property="og:title"
+      content="在 Kubernetes 集群中使用 NodeLocal DNSCache"
+    />
+    <meta
+      name="twitter:title"
+      content="在 Kubernetes 集群中使用 NodeLocal DNSCache"
+    />
 
-  <title>在 Kubernetes 集群中使用 NodeLocal DNSCache-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
-  <meta property="og:title" content="在 Kubernetes 集群中使用 NodeLocal DNSCache" />
-  <meta name="twitter:title" content="在 Kubernetes 集群中使用 NodeLocal DNSCache" />
+    <meta
+      name="description"
+      content="之前在解决 CoreDNS 的5秒超时问题的时候，除了通过 dnsConfig 去强制使用 tcp 方式解析之外，我们提到过使用 NodeLocal DNSCache 来解决这个问题。NodeLocal DNSCache 通过在集群节点上运行一个 DaemonSet 来提高 clusterDNS 性能和可靠性。处于 ClusterFirst 的 DNS 模式下的 Pod 可以连接到 kube-dns 的 serviceIP 进行 DNS 查询。通过 kube-proxy 组件添加的 iptables 规则将其转换为 CoreDNS 端点。通过在每个集群节点上运行 DNS 缓存，NodeLocal DNSCache 可以缩短 DNS 查找的延迟时间、使 DNS 查找时间更加一致，以及减少发送到 kube-dns 的 DNS 查询次数。"
+    />
+    <meta
+      property="og:description"
+      content="之前在解决 CoreDNS 的5秒超时问题的时候，除了通过 dnsConfig 去强制使用 tcp 方式解析之外，我们提到过使用 NodeLocal DNSCache 来解决这个问题。NodeLocal DNSCache 通过在集群节点上运行一个 DaemonSet 来提高 clusterDNS 性能和可靠性。处于 ClusterFirst 的 DNS 模式下的 Pod 可以连接到 kube-dns 的 serviceIP 进行 DNS 查询。通过 kube-proxy 组件添加的 iptables 规则将其转换为 CoreDNS 端点。通过在每个集群节点上运行 DNS 缓存，NodeLocal DNSCache 可以缩短 DNS 查找的延迟时间、使 DNS 查找时间更加一致，以及减少发送到 kube-dns 的 DNS 查询次数。"
+    />
+    <meta
+      name="twitter:description"
+      content="之前在解决 CoreDNS 的5秒超时问题的时候，除了通过 dnsConfig 去强制使用 tcp 方式解析之外，我们提到过使用 NodeLocal DNSCache 来解决这个问题。NodeLocal DNSCache 通过在集群节点上运行一个 DaemonSet 来提高 clusterDNS 性能和可靠性。处于 ClusterFirst 的 DNS 模式下的 Pod …"
+    />
+    <meta name="author" content="" />
+    <link
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+      rel="icon"
+      type="image/x-icon"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      property="og:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      name="twitter:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta
+      property="og:url"
+      content="https://www.qikqiak.com/post/use-nodelocal-dns-cache/"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="阳明的博客" />
 
-  <meta name="description" content="之前在解决 CoreDNS 的5秒超时问题的时候，除了通过 dnsConfig 去强制使用 tcp 方式解析之外，我们提到过使用 NodeLocal DNSCache 来解决这个问题。NodeLocal DNSCache 通过在集群节点上运行一个 DaemonSet 来提高 clusterDNS 性能和可靠性。处于 ClusterFirst 的 DNS 模式下的 Pod 可以连接到 kube-dns 的 serviceIP 进行 DNS 查询。通过 kube-proxy 组件添加的 iptables 规则将其转换为 CoreDNS 端点。通过在每个集群节点上运行 DNS 缓存，NodeLocal DNSCache 可以缩短 DNS 查找的延迟时间、使 DNS 查找时间更加一致，以及减少发送到 kube-dns 的 DNS 查询次数。">
-  <meta property="og:description" content="之前在解决 CoreDNS 的5秒超时问题的时候，除了通过 dnsConfig 去强制使用 tcp 方式解析之外，我们提到过使用 NodeLocal DNSCache 来解决这个问题。NodeLocal DNSCache 通过在集群节点上运行一个 DaemonSet 来提高 clusterDNS 性能和可靠性。处于 ClusterFirst 的 DNS 模式下的 Pod 可以连接到 kube-dns 的 serviceIP 进行 DNS 查询。通过 kube-proxy 组件添加的 iptables 规则将其转换为 CoreDNS 端点。通过在每个集群节点上运行 DNS 缓存，NodeLocal DNSCache 可以缩短 DNS 查找的延迟时间、使 DNS 查找时间更加一致，以及减少发送到 kube-dns 的 DNS 查询次数。">
-  <meta name="twitter:description" content="之前在解决 CoreDNS 的5秒超时问题的时候，除了通过 dnsConfig 去强制使用 tcp 方式解析之外，我们提到过使用 NodeLocal DNSCache 来解决这个问题。NodeLocal DNSCache 通过在集群节点上运行一个 DaemonSet 来提高 clusterDNS 性能和可靠性。处于 ClusterFirst 的 DNS 模式下的 Pod …">
-  <meta name="author" content=""/>
-  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
-  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
-  <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://www.qikqiak.com/post/use-nodelocal-dns-cache/" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="阳明的博客" />
+    <meta name="generator" content="Hugo 0.55.6" />
+    <link
+      rel="canonical"
+      href="https://www.qikqiak.com/post/use-nodelocal-dns-cache/"
+    />
+    <link
+      rel="alternate"
+      href="https://www.qikqiak.com/index.xml"
+      type="application/rss+xml"
+      title="阳明的博客"
+    />
 
-  <meta name="generator" content="Hugo 0.55.6" />
-  <link rel="canonical" href="https://www.qikqiak.com/post/use-nodelocal-dns-cache/" />
-  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+    <link
+      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
+      rel="stylesheet"
+    />
 
-  
-  
-  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
-  
+    <link
+      rel="stylesheet"
+      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
+      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
+    />
 
-  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
+    />
 
-  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
-  
-  
-    
     <!--[if lt IE 9]>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+        rel="stylesheet"
+      />
     <![endif]-->
-<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
-<meta name="baidu-site-verification" content="F5ojAyqaKU" />
-<meta name="keywords" content="kubernetes, coredns, NodeLocal, DNSCache">
-<script>
-var _hmt = _hmt || [];
-(function() {
-  var hm = document.createElement("script");
-  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-  var s = document.getElementsByTagName("script")[0];
-  s.parentNode.insertBefore(hm, s);
-})();
-</script>
+    <meta
+      name="google-site-verification"
+      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
+    />
+    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
+    <meta name="keywords" content="kubernetes, coredns, NodeLocal, DNSCache" />
+    <script>
+      var _hmt = _hmt || [];
+      (function () {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
 
+    <script type="application/javascript">
+      var doNotTrack = false;
+      if (!doNotTrack) {
+        window.ga =
+          window.ga ||
+          function () {
+            (ga.q = ga.q || []).push(arguments);
+          };
+        ga.l = +new Date();
+        ga("create", "UA-69668147-3", "auto");
 
-
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-	ga('create', 'UA-69668147-3', 'auto');
-	
-	ga('send', 'pageview');
-}
-</script>
-<script async src='https://www.google-analytics.com/analytics.js'></script>
-
-</head>
+        ga("send", "pageview");
+      }
+    </script>
+    <script async src="https://www.google-analytics.com/analytics.js"></script>
+  </head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
-        <span class="sr-only">切换导航</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
-        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
-      </a>
-    </div>
+      <div class="container">
+        <div class="navbar-header">
+          <button
+            type="button"
+            class="navbar-toggle"
+            data-toggle="collapse"
+            data-target="#main-navbar"
+          >
+            <span class="sr-only">切换导航</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a
+            class="navbar-brand"
+            href="https://www.qikqiak.com/"
+            title="阳明的博客"
+          >
+            <img
+              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
+              style="margin-top: -5px; height: 32px"
+              alt="阳明的博客"
+            />
+          </a>
+        </div>
 
-    <div class="collapse navbar-collapse" id="main-navbar">
-      <ul class="nav navbar-nav navbar-right">
-        
-          
+        <div class="collapse navbar-collapse" id="main-navbar">
+          <ul class="nav navbar-nav navbar-right">
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-          
-        
-          
+
             <li>
-              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+              <a
+                title="课程"
+                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
+                >课程</a
+              >
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/archives">Archive</a>
-                
-                  <a href="https://www.qikqiak.com/tags">tags</a>
-                
-                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-                
-                  <a href="https://www.qikqiak.com/tags/python">python</a>
-                
-                  <a href="https://www.qikqiak.com/tags/django">django</a>
-                
-                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
-                
+                <a href="https://www.qikqiak.com/archives">Archive</a>
+
+                <a href="https://www.qikqiak.com/tags">tags</a>
+
+                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+
+                <a href="https://www.qikqiak.com/tags/python">python</a>
+
+                <a href="https://www.qikqiak.com/tags/django">django</a>
+
+                <a href="https://www.qikqiak.com/tags/devops">devops</a>
               </div>
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-                
-                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-                
-                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-                
-                  <a href="https://md.qikqiak.com/">Markdown微信</a>
-                
+                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+
+                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+
+                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+
+                <a href="https://md.qikqiak.com/">Markdown微信</a>
               </div>
             </li>
-          
-        
-          
+
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+              <a title="关于" href="https://www.qikqiak.com/page/about/"
+                >关于</a
+              >
             </li>
-          
-        
-          
+
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
-          
-        
 
-        
-
-        
-
-        
-          <li>
-            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
-              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
-            </a>
-          </li>
-          
-
-      </ul>
-    </div>
-
-  </div>
-</nav>
-
-
-  <div id="modalSearch" class="modal fade" role="dialog">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-          <h4 class="modal-title">搜索</h4>
+            <li>
+              <a
+                href="#modalSearch"
+                data-toggle="modal"
+                data-target="#modalSearch"
+                style="outline: none"
+              >
+                <span
+                  id="searchGlyph"
+                  class="glyphicon glyphicon-search"
+                ></span>
+              </a>
+            </li>
+          </ul>
         </div>
-        <div class="modal-body">
-            
-<div class="aa-input-container" id="aa-input-container">
-    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
-    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
-    </svg>
-</div>
-<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+      </div>
+    </nav>
 
-<script>
-var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
-var index = client.initIndex('prod_blog');
+    <div id="modalSearch" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">
+              &times;
+            </button>
+            <h4 class="modal-title">搜索</h4>
+          </div>
+          <div class="modal-body">
+            <div class="aa-input-container" id="aa-input-container">
+              <input
+                type="search"
+                id="aa-search-input"
+                class="aa-input-search"
+                placeholder="Search for titles or URIs..."
+                name="search"
+                autocomplete="off"
+              />
+              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+                <path
+                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
+                />
+              </svg>
+            </div>
+            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-autocomplete('#aa-search-input',
-{ hint: false}, {
-    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
-    
-    displayKey: 'name',
-    
-    templates: {
-        
-        suggestion: function(suggestion) {
-            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
-            suggestion._highlightResult.title.value + '</a></span>';
-        }
-    }
-});
-</script>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+            <script>
+              var client = algoliasearch(
+                "1JDRAS0AZR",
+                "8804ac109158bb3bb60d74ce98fa332f"
+              );
+              var index = client.initIndex("prod_blog");
+
+              autocomplete(
+                "#aa-search-input",
+                { hint: false },
+                {
+                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
+
+                  displayKey: "name",
+
+                  templates: {
+                    suggestion: function (suggestion) {
+                      return (
+                        "<span>" +
+                        '<a href="https://www.qikqiak.com/post/' +
+                        suggestion.slug +
+                        '">' +
+                        suggestion._highlightResult.title.value +
+                        "</a></span>"
+                      );
+                    },
+                  },
+                }
+              );
+            </script>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">
+              close
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-    
-  
-  
-  
+    <div
+      id="header-big-imgs"
+      data-num-img="1"
+      data-img-src-1="https://picdn.youdianzhishi.com/images/20200423130200.png"
+      data-img-desc-1="Cairns City QLD, Australia"
+    ></div>
 
-
-
-
-  
-    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200423130200.png" data-img-desc-1="Cairns City QLD, Australia"></div>
-  
-
-  <header class="header-section has-img">
-    
+    <header class="header-section has-img">
       <div class="intro-header big-img">
-        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>在 Kubernetes 集群中使用 NodeLocal DNSCache</h1>
-                  
-                  
-                    <span class="post-meta">
-  
-    发表于 April 23, 2020
-  
-  
-</span>
 
-
-                  
+                <span class="post-meta"> 发表于 April 23, 2020 </span>
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline;"></span>
+        <span class="img-desc" style="display: inline"></span>
       </div>
-    
-    
-    
-    <div class="intro-header no-img">
-      
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <div class="post-heading">
-              <h1>在 Kubernetes 集群中使用 NodeLocal DNSCache</h1>
-                
-                
-                  <span class="post-meta">
-  
-    发表于 April 23, 2020
-  
-  
-</span>
 
+      <div class="intro-header no-img">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>在 Kubernetes 集群中使用 NodeLocal DNSCache</h1>
 
-                
+                <span class="post-meta"> 发表于 April 23, 2020 </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    
-    
-  </header>
+    </header>
 
+    <div class="container" role="main">
+      <div class="row">
+        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+          <div>
+            <h5 id="tags" style="margin-top: 30px">
+              标签:
 
-    
+              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
+              &nbsp;
 
-
-
-<div class="container" role="main">
-  <div class="row">
-
-    
-    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <div>
-            
-            
-            <h5 id="tags" style="margin-top: 30px;">标签:
-              
-                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/coredns/">coredns</a> &nbsp;
-              
+              <a href="https://www.qikqiak.com/tags/coredns/">coredns</a> &nbsp;
             </h5>
-            
-        </div>
-  
-        <article role="main" class="blog-post" itemprop="articleBody" id="content">
-          
-  
-          
-          
-          
-  
-          
-          
-          
-  
-          
-          
-          
+          </div>
 
-          <p>之前在解决 CoreDNS 的5秒超时问题的时候，除了通过 <code>dnsConfig</code> 去强制使用 tcp 方式解析之外，我们提到过使用 <code>NodeLocal DNSCache</code> 来解决这个问题。<code>NodeLocal DNSCache</code> 通过在集群节点上运行一个 DaemonSet 来提高 clusterDNS 性能和可靠性。处于 <code>ClusterFirst</code> 的 DNS 模式下的 Pod 可以连接到 <code>kube-dns</code> 的 serviceIP 进行 DNS 查询。通过 <code>kube-proxy</code> 组件添加的 <code>iptables</code> 规则将其转换为 <code>CoreDNS</code> 端点。通过在每个集群节点上运行 DNS 缓存，NodeLocal DNSCache 可以缩短 DNS 查找的延迟时间、使 DNS 查找时间更加一致，以及减少发送到 kube-dns 的 DNS 查询次数。</p>
+          <article
+            role="main"
+            class="blog-post"
+            itemprop="articleBody"
+            id="content"
+          >
+            <p>
+              之前在解决 CoreDNS 的5秒超时问题的时候，除了通过
+              <code>dnsConfig</code> 去强制使用 tcp 方式解析之外，我们提到过使用
+              <code>NodeLocal DNSCache</code> 来解决这个问题。<code
+                >NodeLocal DNSCache</code
+              >
+              通过在集群节点上运行一个 DaemonSet 来提高 clusterDNS
+              性能和可靠性。处于 <code>ClusterFirst</code> 的 DNS 模式下的 Pod
+              可以连接到 <code>kube-dns</code> 的 serviceIP 进行 DNS 查询。通过
+              <code>kube-proxy</code> 组件添加的
+              <code>iptables</code> 规则将其转换为
+              <code>CoreDNS</code> 端点。通过在每个集群节点上运行 DNS
+              缓存，NodeLocal DNSCache 可以缩短 DNS 查找的延迟时间、使 DNS
+              查找时间更加一致，以及减少发送到 kube-dns 的 DNS 查询次数。
+            </p>
 
-<p>在集群中运行 NodeLocal DNSCache 有如下几个好处：</p>
+            <p>在集群中运行 NodeLocal DNSCache 有如下几个好处：</p>
 
-<ul>
-<li>如果本地没有 CoreDNS 实例，则具有最高 DNS QPS 的 Pod 可能必须到另一个节点进行解析，使用 NodeLocal DNSCache 后，拥有本地缓存将有助于改善延迟</li>
-<li>跳过 iptables DNAT 和连接跟踪将有助于减少 <code>conntrack</code> 竞争并避免 UDP DNS 条目填满 <code>conntrack</code> 表（常见的5s超时问题就是这个原因造成的）</li>
-<li>从本地缓存代理到 kube-dns 服务的连接可以升级到 TCP，TCP conntrack 条目将在连接关闭时被删除，而 UDP 条目必须超时(<a href="https://www.kernel.org/doc/Documentation/networking/nf_conntrack-sysctl.txt">默认 nf_conntrack_udp_timeout 是 30 秒</a>)</li>
-<li>将 DNS 查询从 UDP 升级到 TCP 将减少归因于丢弃的 UDP 数据包和 DNS 超时的尾部等待时间，通常长达 30 秒（3 次重试+ 10 秒超时）</li>
-</ul>
+            <ul>
+              <li>
+                如果本地没有 CoreDNS 实例，则具有最高 DNS QPS 的 Pod
+                可能必须到另一个节点进行解析，使用 NodeLocal DNSCache
+                后，拥有本地缓存将有助于改善延迟
+              </li>
+              <li>
+                跳过 iptables DNAT 和连接跟踪将有助于减少
+                <code>conntrack</code> 竞争并避免 UDP DNS 条目填满
+                <code>conntrack</code> 表（常见的5s超时问题就是这个原因造成的）
+              </li>
+              <li>
+                从本地缓存代理到 kube-dns 服务的连接可以升级到 TCP，TCP
+                conntrack 条目将在连接关闭时被删除，而 UDP 条目必须超时(<a
+                  href="https://www.kernel.org/doc/Documentation/networking/nf_conntrack-sysctl.txt"
+                  >默认 nf_conntrack_udp_timeout 是 30 秒</a
+                >)
+              </li>
+              <li>
+                将 DNS 查询从 UDP 升级到 TCP 将减少归因于丢弃的 UDP 数据包和 DNS
+                超时的尾部等待时间，通常长达 30 秒（3 次重试+ 10 秒超时）
+              </li>
+            </ul>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200423111434.png" alt="NodeLocal DNSCache"><figcaption>NodeLocal DNSCache</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/20200423111434.png"
+                alt="NodeLocal DNSCache"
+              />
+              <figcaption>NodeLocal DNSCache</figcaption>
+            </figure>
 
-<p>要安装 NodeLocal DNSCache 也非常简单，直接获取官方的资源清单即可：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ wget https://github.com/kubernetes/kubernetes/raw/master/cluster/addons/dns/nodelocaldns/nodelocaldns.yaml</code></pre></div>
-<p>该资源清单文件中包含几个变量，其中：</p>
+            <p>
+              要安装 NodeLocal DNSCache 也非常简单，直接获取官方的资源清单即可：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ wget https://github.com/kubernetes/kubernetes/raw/master/cluster/addons/dns/nodelocaldns/nodelocaldns.yaml</code></pre>
+            </div>
+            <p>该资源清单文件中包含几个变量，其中：</p>
 
-<ul>
-<li><code>__PILLAR__DNS__SERVER__</code> ：表示 <code>kube-dns</code> 这个 Service 的 ClusterIP，可以通过命令 <code>kubectl get svc -n kube-system | grep kube-dns | awk '{ print $3 }'</code> 获取</li>
-<li><code>__PILLAR__LOCAL__DNS__</code>：表示 DNSCache 本地的 IP，默认为 169.254.20.10</li>
-<li><code>__PILLAR__DNS__DOMAIN__</code>：表示集群域，默认就是 <code>cluster.local</code></li>
-</ul>
+            <ul>
+              <li>
+                <code>__PILLAR__DNS__SERVER__</code> ：表示
+                <code>kube-dns</code> 这个 Service 的 ClusterIP，可以通过命令
+                <code
+                  >kubectl get svc -n kube-system | grep kube-dns | awk '{ print
+                  $3 }'</code
+                >
+                获取
+              </li>
+              <li>
+                <code>__PILLAR__LOCAL__DNS__</code>：表示 DNSCache 本地的
+                IP，默认为 169.254.20.10
+              </li>
+              <li>
+                <code>__PILLAR__DNS__DOMAIN__</code>：表示集群域，默认就是
+                <code>cluster.local</code>
+              </li>
+            </ul>
 
-<p>另外还有两个参数 <code>__PILLAR__CLUSTER__DNS__</code> 和 <code>__PILLAR__UPSTREAM__SERVERS__</code>，这两个参数会通过镜像 <code>1.15.6</code> 版本以上的去进行配置，对应的值来源于 kube-dns 的 ConfigMap 和定制的 Upstream Server 配置。直接执行如下所示的命令即可安装：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ sed <span style="color:#f1fa8c">&#39;s/k8s.gcr.io/cnych/g
+            <p>
+              另外还有两个参数 <code>__PILLAR__CLUSTER__DNS__</code> 和
+              <code>__PILLAR__UPSTREAM__SERVERS__</code>，这两个参数会通过镜像
+              <code>1.15.6</code> 版本以上的去进行配置，对应的值来源于 kube-dns
+              的 ConfigMap 和定制的 Upstream Server
+              配置。直接执行如下所示的命令即可安装：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ sed <span style="color:#f1fa8c">&#39;s/k8s.gcr.io/cnych/g
 </span><span style="color:#f1fa8c">s/__PILLAR__DNS__SERVER__/10.96.0.10/g
 </span><span style="color:#f1fa8c">s/__PILLAR__LOCAL__DNS__/169.254.20.10/g
 </span><span style="color:#f1fa8c">s/__PILLAR__DNS__DOMAIN__/cluster.local/g&#39;</span> nodelocaldns.yaml |
-kubectl apply -f -</code></pre></div>
-<p>可以通过如下命令来查看对应的 Pod 是否已经启动成功：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-system | grep node-local-dns
+kubectl apply -f -</code></pre>
+            </div>
+            <p>可以通过如下命令来查看对应的 Pod 是否已经启动成功：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-system | grep node-local-dns
 node-local-dns-8zm2f                    <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          9m54s
 node-local-dns-dd4xg                    <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          9m54s
 node-local-dns-hs8qq                    <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          9m54s
 node-local-dns-pxfxn                    <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          9m54s
 node-local-dns-stjm9                    <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          9m54s
 node-local-dns-wjxvz                    <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          9m54s
-node-local-dns-wn5wc                    <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          7m49s</code></pre></div>
-<blockquote>
-<p>需要注意的是这里使用 DaemonSet 部署 node-local-dns 使用了 <code>hostNetwork=true</code>，会占用宿主机的 8080 端口，所以需要保证该端口未被占用。</p>
-</blockquote>
+node-local-dns-wn5wc                    <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          7m49s</code></pre>
+            </div>
+            <blockquote>
+              <p>
+                需要注意的是这里使用 DaemonSet 部署 node-local-dns 使用了
+                <code>hostNetwork=true</code>，会占用宿主机的 8080
+                端口，所以需要保证该端口未被占用。
+              </p>
+            </blockquote>
 
-<p>但是到这里还没有完，如果 kube-proxy 组件使用的是 ipvs 模式的话我们还需要修改 kubelet 的 <code>--cluster-dns</code> 参数，将其指向 <code>169.254.20.10</code>，Daemonset 会在每个节点创建一个网卡来绑这个 IP，Pod 向本节点这个 IP 发 DNS 请求，缓存没有命中的时候才会再代理到上游集群 DNS 进行查询。
-<code>iptables</code> 模式下 Pod 还是向原来的集群 DNS 请求，节点上有这个 IP 监听，会被本机拦截，再请求集群上游 DNS，所以不需要更改 <code>--cluster-dns</code> 参数。</p>
+            <p>
+              但是到这里还没有完，如果 kube-proxy 组件使用的是 ipvs
+              模式的话我们还需要修改 kubelet 的
+              <code>--cluster-dns</code> 参数，将其指向
+              <code>169.254.20.10</code>，Daemonset
+              会在每个节点创建一个网卡来绑这个 IP，Pod 向本节点这个 IP 发 DNS
+              请求，缓存没有命中的时候才会再代理到上游集群 DNS 进行查询。
+              <code>iptables</code> 模式下 Pod 还是向原来的集群 DNS
+              请求，节点上有这个 IP 监听，会被本机拦截，再请求集群上游
+              DNS，所以不需要更改 <code>--cluster-dns</code> 参数。
+            </p>
 
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+            <script
+              async
+              src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+            ></script>
 
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-5376999672787220"
-     data-ad-slot="9165834656"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
+            <ins
+              class="adsbygoogle"
+              style="display: block"
+              data-ad-client="ca-pub-5376999672787220"
+              data-ad-slot="9165834656"
+              data-ad-format="auto"
+              data-full-width-responsive="true"
+            ></ins>
+            <script>
+              (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
 
-
-<p>由于我这里使用的是 kubeadm 安装的 1.16 版本的集群，所以我们只需要替换节点上 <code>/var/lib/kubelet/config.yaml</code> 文件中的 <code>clusterDNS</code> 这个参数值，然后重启即可，我们也可以完全在官方的 DaemonSet 资源对象中添加一个 initContainer 来完成这个工作：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">initContainers:  <span style="color:#6272a4"># ipvs模式下需要修改dns配置，重启kubelet</span>
+            <p>
+              由于我这里使用的是 kubeadm 安装的 1.16
+              版本的集群，所以我们只需要替换节点上
+              <code>/var/lib/kubelet/config.yaml</code> 文件中的
+              <code>clusterDNS</code>
+              这个参数值，然后重启即可，我们也可以完全在官方的 DaemonSet
+              资源对象中添加一个 initContainer 来完成这个工作：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">initContainers:  <span style="color:#6272a4"># ipvs模式下需要修改dns配置，重启kubelet</span>
   - name: setup
     image: alpine
     tty: <span style="color:#ff79c6">true</span>
@@ -405,12 +560,41 @@ node-local-dns-wn5wc                    <span style="color:#bd93f9">1</span>/1  
 </span><span style="color:#f1fa8c">      # 确保 kubelet --cluster-dns 被设置为 169.254.20.10</span>
       echo <span style="color:#f1fa8c">&#34;Configuring kubelet --cluster-dns=169.254.20.10&#34;</span>
       sed -i <span style="color:#f1fa8c">&#39;s/10.96.0.10/169.254.20.10/g&#39;</span> /var/lib/kubelet/config.yaml
-      systemctl daemon-reload <span style="color:#ff79c6">&amp;&amp;</span> systemctl restart kubelet</code></pre></div>
-<p>但是需要注意的是对于线上环境还是不推荐用上面的方式，因为它会优先将 kubelet 的 <code>cluster-dns</code> 参数进行修改，然后再去安装 <code>NodeLocal</code>，这中间毕竟有一段真空期，我们完全可以手动去一个节点一个节点验证：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ sed -i <span style="color:#f1fa8c">&#39;s/10.96.0.10/169.254.20.10/g&#39;</span> /var/lib/kubelet/config.yaml
-$ systemctl daemon-reload <span style="color:#ff79c6">&amp;&amp;</span> systemctl restart kubelet</code></pre></div>
-<p>待 <code>node-local-dns</code> 安装配置完成后，我们可以部署一个新的 Pod 来验证下：(test-node-local-dns.yaml)</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+      systemctl daemon-reload <span style="color:#ff79c6">&amp;&amp;</span> systemctl restart kubelet</code></pre>
+            </div>
+            <p>
+              但是需要注意的是对于线上环境还是不推荐用上面的方式，因为它会优先将
+              kubelet 的 <code>cluster-dns</code> 参数进行修改，然后再去安装
+              <code>NodeLocal</code
+              >，这中间毕竟有一段真空期，我们完全可以手动去一个节点一个节点验证：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ sed -i <span style="color:#f1fa8c">&#39;s/10.96.0.10/169.254.20.10/g&#39;</span> /var/lib/kubelet/config.yaml
+$ systemctl daemon-reload <span style="color:#ff79c6">&amp;&amp;</span> systemctl restart kubelet</code></pre>
+            </div>
+            <p>
+              待
+              <code>node-local-dns</code> 安装配置完成后，我们可以部署一个新的
+              Pod 来验证下：(test-node-local-dns.yaml)
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: v1
 kind: Pod
 metadata:
   name: test-node-local-dns
@@ -418,171 +602,255 @@ spec:
   containers:
   - name: local-dns
     image: busybox
-    command: [<span style="color:#f1fa8c">&#34;/bin/sh&#34;</span>, <span style="color:#f1fa8c">&#34;-c&#34;</span>, <span style="color:#f1fa8c">&#34;sleep 60m&#34;</span>]</code></pre></div>
-<p>直接部署：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl apply -f test-node-local-dns.yaml
+    command: [<span style="color:#f1fa8c">&#34;/bin/sh&#34;</span>, <span style="color:#f1fa8c">&#34;-c&#34;</span>, <span style="color:#f1fa8c">&#34;sleep 60m&#34;</span>]</code></pre>
+            </div>
+            <p>直接部署：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl apply -f test-node-local-dns.yaml
 $ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -it test-node-local-dns /bin/sh
 / <span style="color:#6272a4"># cat /etc/resolv.conf</span>
 nameserver <span style="color:#bd93f9">169</span>.254.20.10
 search default.svc.cluster.local svc.cluster.local cluster.local
-options ndots:5</code></pre></div>
-<p>我们可以看到 <code>nameserver</code> 已经变成 <code>169.254.20.10</code> 了，当然对于之前的历史 Pod 要想使用 <code>node-local-dns</code> 则需要重建，当然如果要想去跟踪 DNS 的解析过程的话可以去通过抓包来观察。</p>
+options ndots:5</code></pre>
+            </div>
+            <p>
+              我们可以看到 <code>nameserver</code> 已经变成
+              <code>169.254.20.10</code> 了，当然对于之前的历史 Pod 要想使用
+              <code>node-local-dns</code> 则需要重建，当然如果要想去跟踪 DNS
+              的解析过程的话可以去通过抓包来观察。
+            </p>
 
-<p><a href="https://youdianzhishi.com/web/course/1030" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+            <p>
+              <a
+                href="https://youdianzhishi.com/web/course/1030"
+                title="从 Docker 到 Kubernetes 进阶课程"
+                ><img
+                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
+                  alt="Kubernetes进阶训练营"
+              /></a>
+            </p>
 
+            <h2>微信公众号</h2>
+            <p>
+              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+              kubernetes 讨论群里面共同学习。
+            </p>
+            <img
+              src="https://picdn.youdianzhishi.com/images/qrcode.png"
+              alt="wechat-account-qrcode"
+            />
 
-          <h2>微信公众号</h2>
-<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
-
-  
-          
             <div class="entry-shang text-center">
-    <p>「真诚赞赏，手留余香」</p>
-    <button class="zs show-zs btn btn-bred">赞赏</button>
-</div>
-<div class="zs-modal-bg"></div>
-<div class="zs-modal-box">
-    <div class="zs-modal-head">
-        <button type="button" class="close">×</button>
-        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
-        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-    </div>
-    <div class="zs-modal-body">
-        <div class="zs-modal-btns">
-            <button class="btn btn-blink" data-num="2">2元</button>
-            <button class="btn btn-blink" data-num="5">5元</button>
-            <button class="btn btn-blink" data-num="10">10元</button>
-            <button class="btn btn-blink" data-num="50">50元</button>
-            <button class="btn btn-blink" data-num="100">100元</button>
-            <button class="btn btn-blink" data-num="1">任意金额</button>
-        </div>
-        <div class="zs-modal-pay">
-            <button class="btn btn-bred" id="pay-text">2元</button>
-            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
-        </div>
-    </div>
-    <div class="zs-modal-footer">
-        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
-    </div>
-</div>
-          
-          
-            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
-    <center>
-    <a href="#" class="social-share-icon icon-weibo"></a>
-    <a href="#" class="social-share-icon icon-wechat"></a>
-    <a href="#" class="social-share-icon icon-twitter"></a>
-    <a href="#" class="social-share-icon icon-linkedin"></a>
-    <a href="#" class="social-share-icon icon-facebook"></a>
-    <a href="#" class="social-share-icon icon-qq"></a>
-    <a href="#" class="social-share-icon icon-qzone"></a>
-    </center>
-</div>
+              <p>「真诚赞赏，手留余香」</p>
+              <button class="zs show-zs btn btn-bred">赞赏</button>
+            </div>
+            <div class="zs-modal-bg"></div>
+            <div class="zs-modal-box">
+              <div class="zs-modal-head">
+                <button type="button" class="close">×</button>
+                <span class="author"
+                  ><img
+                    src="https://www.qikqiak.com/img/avatar.jpeg"
+                  />阳明</span
+                >
+                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+              </div>
+              <div class="zs-modal-body">
+                <div class="zs-modal-btns">
+                  <button class="btn btn-blink" data-num="2">2元</button>
+                  <button class="btn btn-blink" data-num="5">5元</button>
+                  <button class="btn btn-blink" data-num="10">10元</button>
+                  <button class="btn btn-blink" data-num="50">50元</button>
+                  <button class="btn btn-blink" data-num="100">100元</button>
+                  <button class="btn btn-blink" data-num="1">任意金额</button>
+                </div>
+                <div class="zs-modal-pay">
+                  <button class="btn btn-bred" id="pay-text">2元</button>
+                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+                  <img
+                    src="https://www.qikqiak.com/img/wechat-2.png"
+                    id="pay-image"
+                  />
+                </div>
+              </div>
+              <div class="zs-modal-footer">
+                <span class="zs-wechat"
+                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
+                /></span>
+              </div>
+            </div>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+            <div
+              class="social-share"
+              data-initialized="true"
+              style="margin-bottom: 20px; margin-top: 20px"
+            >
+              <center>
+                <a href="#" class="social-share-icon icon-weibo"></a>
+                <a href="#" class="social-share-icon icon-wechat"></a>
+                <a href="#" class="social-share-icon icon-twitter"></a>
+                <a href="#" class="social-share-icon icon-linkedin"></a>
+                <a href="#" class="social-share-icon icon-facebook"></a>
+                <a href="#" class="social-share-icon icon-qq"></a>
+                <a href="#" class="social-share-icon icon-qzone"></a>
+              </center>
+            </div>
 
-          
-        </article>
-  
-        
-          
+            <link
+              rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
+            />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+          </article>
 
-<h3>相关文章</h3>
-<ul style="margin-bottom: 25px;">
-    
-    <li><a href="https://www.qikqiak.com/post/use-kubeadm-install-kubernetes-1.15.3/">使用 kubeadm 搭建 v1.15.3 版本 Kubernetes 集群</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/office-env-k8s-network/">办公环境下 kubernetes 网络互通方案</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/service-found-dns/">集群内部服务发现之 DNS</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/k8s-hpa-usage/">Kubernetes HPA 使用详解</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/envoy-usage-demo/">Envoy 简单入门示例</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/ingress-nginx-how-to-work/">ingress-nginx 控制器工作原理[译]</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/use-crd-create-grafana-dashboard/">用 Kubernetes 资源对象创建 Grafana Dashboard</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/alertmanager-when-alert/">AlertManager 何时报警</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/install-kafka-in-kubernetes/">在 Kubernetes 集群上部署 Kafka</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/k8s-cluster-balancer/">Kubernetes 集群均衡器 Descheduler</a></li>
-    
-</ul>
+          <h3>相关文章</h3>
+          <ul style="margin-bottom: 25px">
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/use-kubeadm-install-kubernetes-1.15.3/"
+                >使用 kubeadm 搭建 v1.15.3 版本 Kubernetes 集群</a
+              >
+            </li>
 
-        
-  
-        
-        <ul class="pager blog-pager">
-          
+            <li>
+              <a href="https://www.qikqiak.com/post/office-env-k8s-network/"
+                >办公环境下 kubernetes 网络互通方案</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/service-found-dns/"
+                >集群内部服务发现之 DNS</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/k8s-hpa-usage/"
+                >Kubernetes HPA 使用详解</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/envoy-usage-demo/"
+                >Envoy 简单入门示例</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/ingress-nginx-how-to-work/"
+                >ingress-nginx 控制器工作原理[译]</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/use-crd-create-grafana-dashboard/"
+                >用 Kubernetes 资源对象创建 Grafana Dashboard</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/alertmanager-when-alert/"
+                >AlertManager 何时报警</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/install-kafka-in-kubernetes/"
+                >在 Kubernetes 集群上部署 Kafka</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/k8s-cluster-balancer/"
+                >Kubernetes 集群均衡器 Descheduler</a
+              >
+            </li>
+          </ul>
+
+          <ul class="pager blog-pager">
             <li class="previous">
-              <a href="https://www.qikqiak.com/post/k8s-hpa-usage/" data-toggle="tooltip" data-placement="top" title="Kubernetes HPA 使用详解">&larr; 前一篇</a>
+              <a
+                href="https://www.qikqiak.com/post/k8s-hpa-usage/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="Kubernetes HPA 使用详解"
+                >&larr; 前一篇</a
+              >
             </li>
-          
-          
-            <li class="next">
-              <a href="https://www.qikqiak.com/post/use-cdk8s-define-k8s-apps/" data-toggle="tooltip" data-placement="top" title="使用编程语言描述 Kubernetes 应用 - cdk8s">后一篇 &rarr;</a>
-            </li>
-          
-        </ul>
-        
 
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-        
-        <ins class="adsbygoogle"
-            style="display:block"
+            <li class="next">
+              <a
+                href="https://www.qikqiak.com/post/use-cdk8s-define-k8s-apps/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="使用编程语言描述 Kubernetes 应用 - cdk8s"
+                >后一篇 &rarr;</a
+              >
+            </li>
+          </ul>
+
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+          ></script>
+
+          <ins
+            class="adsbygoogle"
+            style="display: block"
             data-ad-client="ca-pub-5376999672787220"
             data-ad-slot="3700507799"
             data-ad-format="auto"
-            data-full-width-responsive="true"></ins>
-        <script>
+            data-full-width-responsive="true"
+          ></ins>
+          <script>
             (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
-  
-        
-    <div id="gitalk-container"></div>
-    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-    <script>
-    var gitalk = new Gitalk({
-        clientID: 'bdb76dbb2e9d0786e350',
-        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
-        repo: 'blog',
-        owner: 'cnych',
-        admin: ['cnych'],
-        labels: ['gitment'],
-        title: '在 Kubernetes 集群中使用 NodeLocal DNSCache',
-        createIssueManually: true,
-        id: 'use-nodelocal-dns-cache',      
-        distractionFreeMode: true  
-    });
-    gitalk.render('gitalk-container');
-</script>
+          </script>
 
-
-        
-          
-
-        
-  
+          <div id="gitalk-container"></div>
+          <link
+            rel="stylesheet"
+            href="https://unpkg.com/gitalk/dist/gitalk.css"
+          />
+          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+          <script>
+            var gitalk = new Gitalk({
+              clientID: "bdb76dbb2e9d0786e350",
+              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
+              repo: "blog",
+              owner: "cnych",
+              admin: ["cnych"],
+              labels: ["gitment"],
+              title: "在 Kubernetes 集群中使用 NodeLocal DNSCache",
+              createIssueManually: true,
+              id: "use-nodelocal-dns-cache",
+              distractionFreeMode: true,
+            });
+            gitalk.render("gitalk-container");
+          </script>
+        </div>
       </div>
-    
-    
-  </div>
-</div>
+    </div>
 
     <footer>
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <ul class="list-inline text-center footer-links">
-          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
-          
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <ul class="list-inline text-center footer-links">
+              <img
+                src="https://www.qikqiak.com/img/wechatmp.png"
+                alt="k8s技术圈"
+              />
+
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -591,7 +859,7 @@ options ndots:5</code></pre></div>
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -600,7 +868,7 @@ options ndots:5</code></pre></div>
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -609,7 +877,7 @@ options ndots:5</code></pre></div>
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -618,121 +886,158 @@ options ndots:5</code></pre></div>
                   </span>
                 </a>
               </li>
-          
-          
-          <li>
-            <a href="https://www.qikqiak.com/index.xml" title="RSS">
-              <span class="fa-stack fa-lg">
-                <i class="fa fa-circle fa-stack-2x"></i>
-                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+
+              <li>
+                <a href="https://www.qikqiak.com/index.xml" title="RSS">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+            </ul>
+            <p class="credits copyright text-muted">
+              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/">阳明的博客</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/archive/">归档</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/friend/">友链</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://beian.miit.gov.cn/" target="_blank"
+                >蜀ICP备11027319号-5</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
+                >kubernetes.io</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
+                >Kubernetes中文社区</a
+              >
+            </p>
+            <p class="text-center text-muted">
+              <script
+                async
+                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
+              ></script>
+              <span id="busuanzi_container_site_pv" style="display: none">
+                本站总访问量<span id="busuanzi_value_site_pv"></span>次
               </span>
-            </a>
-          </li>
-          
-        </ul>
-        <p class="credits copyright text-muted">
-          
+              &nbsp;&bull;&nbsp;
+              <span id="busuanzi_container_site_uv" style="display: none">
+                访客数<span id="busuanzi_value_site_uv"></span>人次
+              </span>
+            </p>
 
-          &nbsp;&bull;&nbsp;
-          2023
-
-          
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/">阳明的博客</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/archive/">归档</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/friend/">友链</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
-          
-        </p>
-        <p class="text-center text-muted">
-          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-          <span id="busuanzi_container_site_pv" style="display:none">
-            本站总访问量<span id="busuanzi_value_site_pv"></span>次
-          </span>
-          &nbsp;&bull;&nbsp;
-          <span id="busuanzi_container_site_uv" style="display:none">
-            访客数<span id="busuanzi_value_site_uv"></span>人次
-          </span>
-        </p>
-        
-        <p class="credits theme-by text-muted">
-          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
-          
-        </p>
+            <p class="credits theme-by text-muted">
+              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
+              &nbsp;&bull;&nbsp; 主题
+              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+              移植自
+              <a href="https://github.com/rootsongjc/beautifulhugo"
+                >Beautiful Hugo</a
+              >
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</footer>
+    </footer>
 
+    <script
+      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
+      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
+    ></script>
 
-<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "UA-69668147-3");
+    </script>
+    <script>
+      (function () {
+        var bp = document.createElement("script");
+        var curProtocol = window.location.protocol.split(":")[0];
+        if (curProtocol === "https") {
+          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
+        } else {
+          bp.src = "http://push.zhanzhang.baidu.com/push.js";
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+      })();
+    </script>
+    <script>
+      $(document).ready(function () {
+        var int = setInterval(fixCount, 50);
 
-
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-69668147-3');
-</script>
-<script>
-(function(){
-    var bp = document.createElement('script');
-    var curProtocol = window.location.protocol.split(':')[0];
-    if (curProtocol === 'https') {
-        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
-    }
-    else {
-        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
-    }
-    var s = document.getElementsByTagName("script")[0];
-    s.parentNode.insertBefore(bp, s);
-})();
-</script>
-<script >
-$(document).ready(function() {
-  var int = setInterval(fixCount, 50);  
-  
-  var initPVCount = 584976;
-  var initUVCount = 153191;
-  function fixCount() {                   
-    if ($("#busuanzi_container_site_pv").css("display") != "none") {
-        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
-        clearInterval(int); 
-    }
-    if ($("#busuanzi_container_site_uv").css("display") != "none") {
-      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
-      clearInterval(int); 
-    }  
-  }           
-});
-</script>
- <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
-<script type="text/javascript">
-$('.carousel').slick({
-    dots: true,
-    arrows: true,
-    autoplay: true,
-    autoplaySpeed: 4000,
-    infinite: true,
-    speed: 500,
-    fade: true,
-    cssEase: 'linear',
-    centerMode: true,
-    prevArrow: '<button type="button" class="slick-prev"></button>',
-    nextArrow: '<button type="button" class="slick-next"></button>',
-});
-</script>
-
+        var initPVCount = 584976;
+        var initUVCount = 153191;
+        function fixCount() {
+          if ($("#busuanzi_container_site_pv").css("display") != "none") {
+            $("#busuanzi_value_site_pv").html(
+              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
+            );
+            clearInterval(int);
+          }
+          if ($("#busuanzi_container_site_uv").css("display") != "none") {
+            $("#busuanzi_value_site_uv").html(
+              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
+            );
+            clearInterval(int);
+          }
+        }
+      });
+    </script>
+    <script>
+      (function (w, d, s, id) {
+        if (typeof w.webpushr !== "undefined") return;
+        w.webpushr =
+          w.webpushr ||
+          function () {
+            (w.webpushr.q = w.webpushr.q || []).push(arguments);
+          };
+        var js,
+          fjs = d.getElementsByTagName(s)[0];
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "https://cdn.webpushr.com/app.min.js";
+        fjs.parentNode.appendChild(js);
+      })(window, document, "script", "webpushr-jssdk");
+      webpushr(
+        "init",
+        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
+      );
+    </script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
+    ></script>
+    <script type="text/javascript">
+      $(".carousel").slick({
+        dots: true,
+        arrows: true,
+        autoplay: true,
+        autoplaySpeed: 4000,
+        infinite: true,
+        speed: 500,
+        fade: true,
+        cssEase: "linear",
+        centerMode: true,
+        prevArrow: '<button type="button" class="slick-prev"></button>',
+        nextArrow: '<button type="button" class="slick-next"></button>',
+      });
+    </script>
   </body>
 </html>
-

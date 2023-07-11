@@ -1,371 +1,450 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
 
+    <title>
+      使用 Loki
+      进行日志监控和报警-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
+    </title>
+    <meta property="og:title" content="使用 Loki 进行日志监控和报警" />
+    <meta name="twitter:title" content="使用 Loki 进行日志监控和报警" />
 
-  <title>使用 Loki 进行日志监控和报警-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
-  <meta property="og:title" content="使用 Loki 进行日志监控和报警" />
-  <meta name="twitter:title" content="使用 Loki 进行日志监控和报警" />
+    <meta
+      name="description"
+      content="对于生产环境以及一个有追求的运维人员来说，哪怕是毫秒级别的宕机也是不能容忍的。对基础设施及应用进行适当的日志记录和监控非常有助于解决问题，还可以帮助优化成本和资源，以及帮助检测以后可能会发生的一些问题。前面我们介绍了使用 EFK 技术栈来收集和监控日志，本文我们将使用更加轻量级的 Grafana Loki 来实现日志的监控和报警，一般来说 Grafana Loki 包括3个主要的组件：Promtail、Loki 和 Grafana（简称 PLG），最为关键的是如果你熟悉使用 Prometheus 的话，对于 Loki 的使用也完全没问题，因为他们的使用方法基本一致的，如果是在 Kubernetes 集群中自动发现的还具有相同的 Label 标签。"
+    />
+    <meta
+      property="og:description"
+      content="对于生产环境以及一个有追求的运维人员来说，哪怕是毫秒级别的宕机也是不能容忍的。对基础设施及应用进行适当的日志记录和监控非常有助于解决问题，还可以帮助优化成本和资源，以及帮助检测以后可能会发生的一些问题。前面我们介绍了使用 EFK 技术栈来收集和监控日志，本文我们将使用更加轻量级的 Grafana Loki 来实现日志的监控和报警，一般来说 Grafana Loki 包括3个主要的组件：Promtail、Loki 和 Grafana（简称 PLG），最为关键的是如果你熟悉使用 Prometheus 的话，对于 Loki 的使用也完全没问题，因为他们的使用方法基本一致的，如果是在 Kubernetes 集群中自动发现的还具有相同的 Label 标签。"
+    />
+    <meta
+      name="twitter:description"
+      content="对于生产环境以及一个有追求的运维人员来说，哪怕是毫秒级别的宕机也是不能容忍的。对基础设施及应用进行适当的日志记录和监控非常有助于解决问题，还可以帮助优化成本和资源，以及帮助检测以后可能会发生的一些问题。前面我们介绍了使用 EFK 技术栈来收集和监控日志，本文我们将使用更加轻量级的 Grafana Loki 来实现日志的监控和报警，一般来说 Grafana Loki 包括3个主要的组 …"
+    />
+    <meta name="author" content="" />
+    <link
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+      rel="icon"
+      type="image/x-icon"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      property="og:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      name="twitter:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta
+      property="og:url"
+      content="https://www.qikqiak.com/post/use-loki-monitor-alert/"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="阳明的博客" />
 
-  <meta name="description" content="对于生产环境以及一个有追求的运维人员来说，哪怕是毫秒级别的宕机也是不能容忍的。对基础设施及应用进行适当的日志记录和监控非常有助于解决问题，还可以帮助优化成本和资源，以及帮助检测以后可能会发生的一些问题。前面我们介绍了使用 EFK 技术栈来收集和监控日志，本文我们将使用更加轻量级的 Grafana Loki 来实现日志的监控和报警，一般来说 Grafana Loki 包括3个主要的组件：Promtail、Loki 和 Grafana（简称 PLG），最为关键的是如果你熟悉使用 Prometheus 的话，对于 Loki 的使用也完全没问题，因为他们的使用方法基本一致的，如果是在 Kubernetes 集群中自动发现的还具有相同的 Label 标签。">
-  <meta property="og:description" content="对于生产环境以及一个有追求的运维人员来说，哪怕是毫秒级别的宕机也是不能容忍的。对基础设施及应用进行适当的日志记录和监控非常有助于解决问题，还可以帮助优化成本和资源，以及帮助检测以后可能会发生的一些问题。前面我们介绍了使用 EFK 技术栈来收集和监控日志，本文我们将使用更加轻量级的 Grafana Loki 来实现日志的监控和报警，一般来说 Grafana Loki 包括3个主要的组件：Promtail、Loki 和 Grafana（简称 PLG），最为关键的是如果你熟悉使用 Prometheus 的话，对于 Loki 的使用也完全没问题，因为他们的使用方法基本一致的，如果是在 Kubernetes 集群中自动发现的还具有相同的 Label 标签。">
-  <meta name="twitter:description" content="对于生产环境以及一个有追求的运维人员来说，哪怕是毫秒级别的宕机也是不能容忍的。对基础设施及应用进行适当的日志记录和监控非常有助于解决问题，还可以帮助优化成本和资源，以及帮助检测以后可能会发生的一些问题。前面我们介绍了使用 EFK 技术栈来收集和监控日志，本文我们将使用更加轻量级的 Grafana Loki 来实现日志的监控和报警，一般来说 Grafana Loki 包括3个主要的组 …">
-  <meta name="author" content=""/>
-  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
-  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
-  <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://www.qikqiak.com/post/use-loki-monitor-alert/" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="阳明的博客" />
+    <meta name="generator" content="Hugo 0.55.6" />
+    <link
+      rel="canonical"
+      href="https://www.qikqiak.com/post/use-loki-monitor-alert/"
+    />
+    <link
+      rel="alternate"
+      href="https://www.qikqiak.com/index.xml"
+      type="application/rss+xml"
+      title="阳明的博客"
+    />
 
-  <meta name="generator" content="Hugo 0.55.6" />
-  <link rel="canonical" href="https://www.qikqiak.com/post/use-loki-monitor-alert/" />
-  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+    <link
+      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
+      rel="stylesheet"
+    />
 
-  
-  
-  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
-  
+    <link
+      rel="stylesheet"
+      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
+      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
+    />
 
-  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
+    />
 
-  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
-  
-  
-    
     <!--[if lt IE 9]>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+        rel="stylesheet"
+      />
     <![endif]-->
-<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
-<meta name="baidu-site-verification" content="F5ojAyqaKU" />
-<meta name="keywords" content="kubernetes, loki, prometheus, alertmanager, EFK, ELK">
-<script>
-var _hmt = _hmt || [];
-(function() {
-  var hm = document.createElement("script");
-  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-  var s = document.getElementsByTagName("script")[0];
-  s.parentNode.insertBefore(hm, s);
-})();
-</script>
+    <meta
+      name="google-site-verification"
+      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
+    />
+    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
+    <meta
+      name="keywords"
+      content="kubernetes, loki, prometheus, alertmanager, EFK, ELK"
+    />
+    <script>
+      var _hmt = _hmt || [];
+      (function () {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
 
+    <script type="application/javascript">
+      var doNotTrack = false;
+      if (!doNotTrack) {
+        window.ga =
+          window.ga ||
+          function () {
+            (ga.q = ga.q || []).push(arguments);
+          };
+        ga.l = +new Date();
+        ga("create", "UA-69668147-3", "auto");
 
-
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-	ga('create', 'UA-69668147-3', 'auto');
-	
-	ga('send', 'pageview');
-}
-</script>
-<script async src='https://www.google-analytics.com/analytics.js'></script>
-
-</head>
+        ga("send", "pageview");
+      }
+    </script>
+    <script async src="https://www.google-analytics.com/analytics.js"></script>
+  </head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
-        <span class="sr-only">切换导航</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
-        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
-      </a>
-    </div>
+      <div class="container">
+        <div class="navbar-header">
+          <button
+            type="button"
+            class="navbar-toggle"
+            data-toggle="collapse"
+            data-target="#main-navbar"
+          >
+            <span class="sr-only">切换导航</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a
+            class="navbar-brand"
+            href="https://www.qikqiak.com/"
+            title="阳明的博客"
+          >
+            <img
+              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
+              style="margin-top: -5px; height: 32px"
+              alt="阳明的博客"
+            />
+          </a>
+        </div>
 
-    <div class="collapse navbar-collapse" id="main-navbar">
-      <ul class="nav navbar-nav navbar-right">
-        
-          
+        <div class="collapse navbar-collapse" id="main-navbar">
+          <ul class="nav navbar-nav navbar-right">
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-          
-        
-          
+
             <li>
-              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+              <a
+                title="课程"
+                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
+                >课程</a
+              >
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/archives">Archive</a>
-                
-                  <a href="https://www.qikqiak.com/tags">tags</a>
-                
-                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-                
-                  <a href="https://www.qikqiak.com/tags/python">python</a>
-                
-                  <a href="https://www.qikqiak.com/tags/django">django</a>
-                
-                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
-                
+                <a href="https://www.qikqiak.com/archives">Archive</a>
+
+                <a href="https://www.qikqiak.com/tags">tags</a>
+
+                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+
+                <a href="https://www.qikqiak.com/tags/python">python</a>
+
+                <a href="https://www.qikqiak.com/tags/django">django</a>
+
+                <a href="https://www.qikqiak.com/tags/devops">devops</a>
               </div>
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-                
-                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-                
-                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-                
-                  <a href="https://md.qikqiak.com/">Markdown微信</a>
-                
+                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+
+                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+
+                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+
+                <a href="https://md.qikqiak.com/">Markdown微信</a>
               </div>
             </li>
-          
-        
-          
+
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+              <a title="关于" href="https://www.qikqiak.com/page/about/"
+                >关于</a
+              >
             </li>
-          
-        
-          
+
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
-          
-        
 
-        
-
-        
-
-        
-          <li>
-            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
-              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
-            </a>
-          </li>
-          
-
-      </ul>
-    </div>
-
-  </div>
-</nav>
-
-
-  <div id="modalSearch" class="modal fade" role="dialog">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-          <h4 class="modal-title">搜索</h4>
+            <li>
+              <a
+                href="#modalSearch"
+                data-toggle="modal"
+                data-target="#modalSearch"
+                style="outline: none"
+              >
+                <span
+                  id="searchGlyph"
+                  class="glyphicon glyphicon-search"
+                ></span>
+              </a>
+            </li>
+          </ul>
         </div>
-        <div class="modal-body">
-            
-<div class="aa-input-container" id="aa-input-container">
-    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
-    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
-    </svg>
-</div>
-<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+      </div>
+    </nav>
 
-<script>
-var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
-var index = client.initIndex('prod_blog');
+    <div id="modalSearch" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">
+              &times;
+            </button>
+            <h4 class="modal-title">搜索</h4>
+          </div>
+          <div class="modal-body">
+            <div class="aa-input-container" id="aa-input-container">
+              <input
+                type="search"
+                id="aa-search-input"
+                class="aa-input-search"
+                placeholder="Search for titles or URIs..."
+                name="search"
+                autocomplete="off"
+              />
+              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+                <path
+                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
+                />
+              </svg>
+            </div>
+            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-autocomplete('#aa-search-input',
-{ hint: false}, {
-    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
-    
-    displayKey: 'name',
-    
-    templates: {
-        
-        suggestion: function(suggestion) {
-            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
-            suggestion._highlightResult.title.value + '</a></span>';
-        }
-    }
-});
-</script>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+            <script>
+              var client = algoliasearch(
+                "1JDRAS0AZR",
+                "8804ac109158bb3bb60d74ce98fa332f"
+              );
+              var index = client.initIndex("prod_blog");
+
+              autocomplete(
+                "#aa-search-input",
+                { hint: false },
+                {
+                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
+
+                  displayKey: "name",
+
+                  templates: {
+                    suggestion: function (suggestion) {
+                      return (
+                        "<span>" +
+                        '<a href="https://www.qikqiak.com/post/' +
+                        suggestion.slug +
+                        '">' +
+                        suggestion._highlightResult.title.value +
+                        "</a></span>"
+                      );
+                    },
+                  },
+                }
+              );
+            </script>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">
+              close
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-    
-  
-  
-  
+    <div
+      id="header-big-imgs"
+      data-num-img="1"
+      data-img-src-1="https://picdn.youdianzhishi.com/images/20200606144038.png"
+      data-img-desc-1="https://unsplash.com/photos/d5LZuoc3qOQ"
+    ></div>
 
-
-
-
-  
-    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200606144038.png" data-img-desc-1="https://unsplash.com/photos/d5LZuoc3qOQ"></div>
-  
-
-  <header class="header-section has-img">
-    
+    <header class="header-section has-img">
       <div class="intro-header big-img">
-        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>使用 Loki 进行日志监控和报警</h1>
-                  
-                  
-                    <span class="post-meta">
-  
-    发表于 June 6, 2020
-  
-  
-</span>
 
-
-                  
+                <span class="post-meta"> 发表于 June 6, 2020 </span>
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline;"></span>
+        <span class="img-desc" style="display: inline"></span>
       </div>
-    
-    
-    
-    <div class="intro-header no-img">
-      
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <div class="post-heading">
-              <h1>使用 Loki 进行日志监控和报警</h1>
-                
-                
-                  <span class="post-meta">
-  
-    发表于 June 6, 2020
-  
-  
-</span>
 
+      <div class="intro-header no-img">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>使用 Loki 进行日志监控和报警</h1>
 
-                
+                <span class="post-meta"> 发表于 June 6, 2020 </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    
-    
-  </header>
+    </header>
 
+    <div class="container" role="main">
+      <div class="row">
+        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+          <div>
+            <h5 id="tags" style="margin-top: 30px">
+              标签:
 
-    
+              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
+              &nbsp;
 
+              <a href="https://www.qikqiak.com/tags/loki/">loki</a> &nbsp;
 
+              <a href="https://www.qikqiak.com/tags/prometheus/">prometheus</a>
+              &nbsp;
 
-<div class="container" role="main">
-  <div class="row">
-
-    
-    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <div>
-            
-            
-            <h5 id="tags" style="margin-top: 30px;">标签:
-              
-                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/loki/">loki</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/prometheus/">prometheus</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/alertmanager/">alertmanager</a> &nbsp;
-              
+              <a href="https://www.qikqiak.com/tags/alertmanager/"
+                >alertmanager</a
+              >
+              &nbsp;
             </h5>
-            
-        </div>
-  
-        <article role="main" class="blog-post" itemprop="articleBody" id="content">
-          
-            
-<aside class="toc">
-  <nav id="TableOfContents">
-<ul>
-<li><a href="#组件">组件</a></li>
-<li><a href="#部署">部署</a></li>
-<li><a href="#测试">测试</a></li>
-<li><a href="#参考链接">参考链接</a></li>
-</ul>
-</nav>
-</aside>
+          </div>
 
-          
-  
-          
-          
-          
-  
-          
-          
-          
-  
-          
-          
-          
+          <article
+            role="main"
+            class="blog-post"
+            itemprop="articleBody"
+            id="content"
+          >
+            <aside class="toc">
+              <nav id="TableOfContents">
+                <ul>
+                  <li><a href="#组件">组件</a></li>
+                  <li><a href="#部署">部署</a></li>
+                  <li><a href="#测试">测试</a></li>
+                  <li><a href="#参考链接">参考链接</a></li>
+                </ul>
+              </nav>
+            </aside>
 
-          <p>对于生产环境以及一个有追求的运维人员来说，哪怕是毫秒级别的宕机也是不能容忍的。对基础设施及应用进行适当的日志记录和监控非常有助于解决问题，还可以帮助优化成本和资源，以及帮助检测以后可能会发生的一些问题。前面我们介绍了使用 EFK 技术栈来收集和监控日志，本文我们将使用更加轻量级的 Grafana Loki 来实现日志的监控和报警，一般来说 Grafana Loki 包括3个主要的组件：Promtail、Loki 和 Grafana（简称 PLG），最为关键的是如果你熟悉使用 Prometheus 的话，对于 Loki 的使用也完全没问题，因为他们的使用方法基本一致的，如果是在 Kubernetes 集群中自动发现的还具有相同的 Label 标签。</p>
+            <p>
+              对于生产环境以及一个有追求的运维人员来说，哪怕是毫秒级别的宕机也是不能容忍的。对基础设施及应用进行适当的日志记录和监控非常有助于解决问题，还可以帮助优化成本和资源，以及帮助检测以后可能会发生的一些问题。前面我们介绍了使用
+              EFK 技术栈来收集和监控日志，本文我们将使用更加轻量级的 Grafana
+              Loki 来实现日志的监控和报警，一般来说 Grafana Loki
+              包括3个主要的组件：Promtail、Loki 和 Grafana（简称
+              PLG），最为关键的是如果你熟悉使用 Prometheus 的话，对于 Loki
+              的使用也完全没问题，因为他们的使用方法基本一致的，如果是在
+              Kubernetes 集群中自动发现的还具有相同的 Label 标签。
+            </p>
 
-<h1 id="组件">组件</h1>
+            <h1 id="组件">组件</h1>
 
-<p>在使用 Grafana Loki 之前，我们先简单介绍下他包含的3个主要组件。</p>
+            <p>
+              在使用 Grafana Loki 之前，我们先简单介绍下他包含的3个主要组件。
+            </p>
 
-<p><strong>Promtail</strong></p>
+            <p><strong>Promtail</strong></p>
 
-<p>Promtail 是用来将容器日志发送到 Loki 或者 Grafana 服务上的日志收集工具，该工具主要包括发现采集目标以及给日志流添加上 Label 标签，然后发送给 Loki，另外 Promtail 的服务发现是基于 Prometheus 的服务发现机制实现的。</p>
+            <p>
+              Promtail 是用来将容器日志发送到 Loki 或者 Grafana
+              服务上的日志收集工具，该工具主要包括发现采集目标以及给日志流添加上
+              Label 标签，然后发送给 Loki，另外 Promtail 的服务发现是基于
+              Prometheus 的服务发现机制实现的。
+            </p>
 
-<p><strong>Loki</strong></p>
+            <p><strong>Loki</strong></p>
 
-<p>Loki 是一个受 Prometheus 启发的可以水平扩展、高可用以及支持多租户的日志聚合系统，使用了和 Prometheus 相同的服务发现机制，将标签添加到日志流中而不是构建全文索引。正因为如此，从 Promtail 接收到的日志和应用的 metrics 指标就具有相同的标签集。所以，它不仅提供了更好的日志和指标之间的上下文切换，还避免了对日志进行全文索引。</p>
+            <p>
+              Loki 是一个受 Prometheus
+              启发的可以水平扩展、高可用以及支持多租户的日志聚合系统，使用了和
+              Prometheus
+              相同的服务发现机制，将标签添加到日志流中而不是构建全文索引。正因为如此，从
+              Promtail 接收到的日志和应用的 metrics
+              指标就具有相同的标签集。所以，它不仅提供了更好的日志和指标之间的上下文切换，还避免了对日志进行全文索引。
+            </p>
 
-<p><strong>Grafana</strong></p>
+            <p><strong>Grafana</strong></p>
 
-<p>Grafana 是一个用于监控和可视化观测的开源平台，支持非常丰富的数据源，在 Loki 技术栈中它专门用来展示来自 Prometheus 和 Loki 等数据源的时间序列数据。此外，还允许我们进行查询、可视化、报警等操作，可以用于创建、探索和共享数据 Dashboard，鼓励数据驱动的文化。</p>
+            <p>
+              Grafana
+              是一个用于监控和可视化观测的开源平台，支持非常丰富的数据源，在
+              Loki 技术栈中它专门用来展示来自 Prometheus 和 Loki
+              等数据源的时间序列数据。此外，还允许我们进行查询、可视化、报警等操作，可以用于创建、探索和共享数据
+              Dashboard，鼓励数据驱动的文化。
+            </p>
 
-<h1 id="部署">部署</h1>
+            <h1 id="部署">部署</h1>
 
-<p>为了方便部署 Loki 技术栈，我们这里使用更加方便的 Helm Chart 包进行安装，根据自己的需求修改对应的 Values 值。</p>
+            <p>
+              为了方便部署 Loki 技术栈，我们这里使用更加方便的 Helm Chart
+              包进行安装，根据自己的需求修改对应的 Values 值。
+            </p>
 
-<p>首先我们先安装 Prometheus-Operator，因为该 Operator 里面就包含 Promtail、Prometheus、AlertManager 以及 Grafana，然后在单独安装 Loki 组件。</p>
+            <p>
+              首先我们先安装 Prometheus-Operator，因为该 Operator 里面就包含
+              Promtail、Prometheus、AlertManager 以及 Grafana，然后在单独安装
+              Loki 组件。
+            </p>
 
-<p>首先创建一个名为 loki-stack-values.yaml 的文件用于覆盖部署 Loki 的 Values 值，文件内容如下所示：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># Loki Stack Values</span>
+            <p>
+              首先创建一个名为 loki-stack-values.yaml 的文件用于覆盖部署 Loki 的
+              Values 值，文件内容如下所示：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># Loki Stack Values</span>
 promtail:
   serviceMonitor:
     enabled: <span style="color:#ff79c6">true</span>
@@ -386,17 +465,56 @@ promtail:
             description: <span style="color:#f1fa8c">&#34;Total nginx requests&#34;</span>
             source: hits
             config:
-              action: inc</code></pre></div>
-<p>这里我们为 Promtail 启用了 ServiceMonitor，并添加了两个标签。然后 Loki 对日志行进行转换，更改它的标签，并修改时间戳的格式。在这里我们添加了一个 match 的阶段，会去匹配具有 app=nginx 这样的日志流数据，然后下一个阶段是利用正则表达式过滤出包含 GET 关键字的日志行。</p>
+              action: inc</code></pre>
+            </div>
+            <p>
+              这里我们为 Promtail 启用了 ServiceMonitor，并添加了两个标签。然后
+              Loki
+              对日志行进行转换，更改它的标签，并修改时间戳的格式。在这里我们添加了一个
+              match 的阶段，会去匹配具有 app=nginx
+              这样的日志流数据，然后下一个阶段是利用正则表达式过滤出包含 GET
+              关键字的日志行。
+            </p>
 
-<p>在 metrics 指标阶段，我们定义了一个 nginx_hits 的指标，Promtail 通过其 <code>/metrics</code> 端点暴露这个自定义的指标数据。这里我们定义的是一个 <code>Counter</code> 类型的指标，当从 regex 阶段被过滤后，这个计数器就会递增。为了在 Prometheus 中查看这个指标，我们需要抓取 Promtail 的这个指标。</p>
+            <p>
+              在 metrics 指标阶段，我们定义了一个 nginx_hits 的指标，Promtail
+              通过其
+              <code>/metrics</code>
+              端点暴露这个自定义的指标数据。这里我们定义的是一个
+              <code>Counter</code> 类型的指标，当从 regex
+              阶段被过滤后，这个计数器就会递增。为了在 Prometheus
+              中查看这个指标，我们需要抓取 Promtail 的这个指标。
+            </p>
 
-<p>使用如下所示的命令安装 Loki：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ helm repo add loki https://grafana.github.io/loki/charts
+            <p>使用如下所示的命令安装 Loki：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-bash" data-lang="bash">$ helm repo add loki https://grafana.github.io/loki/charts
 $ helm repo update
-$ helm upgrade --install loki loki/loki-stack --values<span style="color:#ff79c6">=</span>loki-stack-values.yaml -n kube-mon</code></pre></div>
-<p>然后安装 Prometheus Operator，同样创建一个名为 <code>prom-oper-values.yaml</code> 的文件，用来覆盖默认的 Values 值，文件内容如下所示：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">grafana:
+$ helm upgrade --install loki loki/loki-stack --values<span style="color:#ff79c6">=</span>loki-stack-values.yaml -n kube-mon</code></pre>
+            </div>
+            <p>
+              然后安装 Prometheus Operator，同样创建一个名为
+              <code>prom-oper-values.yaml</code> 的文件，用来覆盖默认的 Values
+              值，文件内容如下所示：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">grafana:
   additionalDataSources:
   - name: loki
     access: proxy
@@ -434,26 +552,66 @@ alertmanager:
     - name: <span style="color:#f1fa8c">&#39;webhook-alert&#39;</span>
       webhook_configs:
       - url: <span style="color:#f1fa8c">&#39;http://dingtalk-hook:5000&#39;</span>
-        send_resolved: <span style="color:#ff79c6">true</span></code></pre></div>
-<p>这里我们为 Grafana 配置了 Loki 这个数据源，然后配置了名为 nginx_hits 的报警规则，这些规则在同一个分组中，每隔一定的时间间隔依次执行。触发报警的阈值通过 <code>expr</code> 表达式进行配置。我们这里表示的是1分钟之内新增的总和是否大于2，当 <code>expor</code> 表达式的条件持续了2分钟时间后，报警就会真正被触发，报警真正被触发之前会保持为 Pending 状态。
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        send_resolved: <span style="color:#ff79c6">true</span></code></pre>
+            </div>
+            <p>
+              这里我们为 Grafana 配置了 Loki 这个数据源，然后配置了名为
+              nginx_hits
+              的报警规则，这些规则在同一个分组中，每隔一定的时间间隔依次执行。触发报警的阈值通过
+              <code>expr</code>
+              表达式进行配置。我们这里表示的是1分钟之内新增的总和是否大于2，当
+              <code>expor</code>
+              表达式的条件持续了2分钟时间后，报警就会真正被触发，报警真正被触发之前会保持为
+              Pending 状态。
+              <script
+                async
+                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+              ></script>
 
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-5376999672787220"
-     data-ad-slot="9165834656"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
+              <ins
+                class="adsbygoogle"
+                style="display: block"
+                data-ad-client="ca-pub-5376999672787220"
+                data-ad-slot="9165834656"
+                data-ad-format="auto"
+                data-full-width-responsive="true"
+              ></ins>
+              <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+              </script>
 
-最后我们配置 Alertmanager 通过 WebHook 来发送通知，Alertmanager 根据树状结构来路由传入的告警信息。我们可以根据 alertname、job、cluster 等对报警进行分组。当告警信息匹配时，就会在预设的接收器上发送通知。</p>
+              最后我们配置 Alertmanager 通过 WebHook 来发送通知，Alertmanager
+              根据树状结构来路由传入的告警信息。我们可以根据
+              alertname、job、cluster
+              等对报警进行分组。当告警信息匹配时，就会在预设的接收器上发送通知。
+            </p>
 
-<p>安装命令如下所示：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ helm upgrade --install prometheus stable/prometheus-operator --values<span style="color:#ff79c6">=</span>prom-oper-values.yaml -n kube-mon</code></pre></div>
-<p>接下来我们可以安装一个测试使用的 Nginx 应用，对应的资源清单如下所示：（nginx-deploy.yaml）</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1 
+            <p>安装命令如下所示：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-bash" data-lang="bash">$ helm upgrade --install prometheus stable/prometheus-operator --values<span style="color:#ff79c6">=</span>prom-oper-values.yaml -n kube-mon</code></pre>
+            </div>
+            <p>
+              接下来我们可以安装一个测试使用的 Nginx
+              应用，对应的资源清单如下所示：（nginx-deploy.yaml）
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1 
 kind: Deployment
 metadata:
   name: nginx
@@ -487,11 +645,34 @@ spec:
     protocol: TCP
   selector:
     app: nginx
-  type: NodePort</code></pre></div>
-<p>为方便测试，我们这里使用 NodePort 类型的服务来暴露应用，直接安装即可：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">$ kubectl apply -f nginx-deploy.yaml</code></pre></div>
-<p>所有应用安装完成后的 Pod 列表如下所示：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-mon
+  type: NodePort</code></pre>
+            </div>
+            <p>
+              为方便测试，我们这里使用 NodePort
+              类型的服务来暴露应用，直接安装即可：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">$ kubectl apply -f nginx-deploy.yaml</code></pre>
+            </div>
+            <p>所有应用安装完成后的 Pod 列表如下所示：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-mon
 NAME                                                     READY   STATUS      RESTARTS   AGE
 alertmanager-prometheus-prometheus-oper-alertmanager-0   <span style="color:#bd93f9">2</span>/2     Running     <span style="color:#bd93f9">0</span>          6m16s
 loki-0                                                   <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          39m
@@ -508,193 +689,321 @@ prometheus-prometheus-oper-operator-765447bc5-vcdzs      <span style="color:#bd9
 prometheus-prometheus-prometheus-oper-prometheus-0       <span style="color:#bd93f9">3</span>/3     Running     <span style="color:#bd93f9">1</span>          6m17s
 $ kubectl get pods
 NAME                                  READY   STATUS      RESTARTS   AGE
-nginx-6f8b869ccf-58rzx                <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          16s</code></pre></div>
-<p>为方便测试，我们可以将 Prometheus Operator 安装的 Grafana 对应的 Service 改成 NodePort 类型，然后用默认的 admin 用户名和密码 prom-operator 可以登录到 Grafana。</p>
+nginx-6f8b869ccf-58rzx                <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          16s</code></pre>
+            </div>
+            <p>
+              为方便测试，我们可以将 Prometheus Operator 安装的 Grafana 对应的
+              Service 改成 NodePort 类型，然后用默认的 admin 用户名和密码
+              prom-operator 可以登录到 Grafana。
+            </p>
 
-<h1 id="测试">测试</h1>
+            <h1 id="测试">测试</h1>
 
-<p>这里我们来模拟触发告警，通过如下所示的 shell 命令来模拟每隔10s访问 Nginx 应用。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ <span style="color:#ff79c6">while</span> true; <span style="color:#ff79c6">do</span> curl --silent --output /dev/null --write-out <span style="color:#f1fa8c">&#39;%{http_code}&#39;</span> http://k8s.qikqiak.com:31940; sleep <span style="color:#bd93f9">10</span>; echo; <span style="color:#ff79c6">done</span>
+            <p>
+              这里我们来模拟触发告警，通过如下所示的 shell 命令来模拟每隔10s访问
+              Nginx 应用。
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-bash" data-lang="bash">$ <span style="color:#ff79c6">while</span> true; <span style="color:#ff79c6">do</span> curl --silent --output /dev/null --write-out <span style="color:#f1fa8c">&#39;%{http_code}&#39;</span> http://k8s.qikqiak.com:31940; sleep <span style="color:#bd93f9">10</span>; echo; <span style="color:#ff79c6">done</span>
 <span style="color:#bd93f9">200</span>
-<span style="color:#bd93f9">200</span></code></pre></div>
-<p>这个时候我们去 Grafana 页面筛选 Nginx 应用的日志就可以看到了：</p>
+<span style="color:#bd93f9">200</span></code></pre>
+            </div>
+            <p>
+              这个时候我们去 Grafana 页面筛选 Nginx 应用的日志就可以看到了：
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200605122402.png" alt="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200605122402.png"><figcaption>https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200605122402.png</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/20200605122402.png"
+                alt="https://picdn.youdianzhishi.com/images/20200605122402.png"
+              />
+              <figcaption>
+                https://picdn.youdianzhishi.com/images/20200605122402.png
+              </figcaption>
+            </figure>
 
-<p>同时这个时候我们配置的 nginx-hints 报警规则也被触发了：</p>
+            <p>同时这个时候我们配置的 nginx-hints 报警规则也被触发了：</p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200605122439.png" alt="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200605122439.png"><figcaption>https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200605122439.png</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/20200605122439.png"
+                alt="https://picdn.youdianzhishi.com/images/20200605122439.png"
+              />
+              <figcaption>
+                https://picdn.youdianzhishi.com/images/20200605122439.png
+              </figcaption>
+            </figure>
 
-<p>如果在两分钟之内报警阈值一直达到，则会触发报警：</p>
+            <p>如果在两分钟之内报警阈值一直达到，则会触发报警：</p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200605120911.png" alt="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200605120911.png"><figcaption>https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/20200605120911.png</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/20200605120911.png"
+                alt="https://picdn.youdianzhishi.com/images/20200605120911.png"
+              />
+              <figcaption>
+                https://picdn.youdianzhishi.com/images/20200605120911.png
+              </figcaption>
+            </figure>
 
-<p>正常这个时候我们的 WebHook 中也可以收到对应的报警信息了。</p>
+            <p>正常这个时候我们的 WebHook 中也可以收到对应的报警信息了。</p>
 
-<p>到这里我们就完成了使用 PLG 技术栈来对应用进行日志收集、监控和报警的操作。</p>
+            <p>
+              到这里我们就完成了使用 PLG
+              技术栈来对应用进行日志收集、监控和报警的操作。
+            </p>
 
-<h1 id="参考链接">参考链接</h1>
+            <h1 id="参考链接">参考链接</h1>
 
-<ul>
-<li><a href="https://github.com/grafana/loki/tree/master/docs">https://github.com/grafana/loki/tree/master/docs</a></li>
-<li><a href="https://www.infracloud.io/grafana-loki-log-monitoring-alerting/">https://www.infracloud.io/grafana-loki-log-monitoring-alerting/</a></li>
-</ul>
+            <ul>
+              <li>
+                <a href="https://github.com/grafana/loki/tree/master/docs"
+                  >https://github.com/grafana/loki/tree/master/docs</a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://www.infracloud.io/grafana-loki-log-monitoring-alerting/"
+                  >https://www.infracloud.io/grafana-loki-log-monitoring-alerting/</a
+                >
+              </li>
+            </ul>
 
-<p><a href="https://youdianzhishi.com/web/course/1030" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+            <p>
+              <a
+                href="https://youdianzhishi.com/web/course/1030"
+                title="从 Docker 到 Kubernetes 进阶课程"
+                ><img
+                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
+                  alt="Kubernetes进阶训练营"
+              /></a>
+            </p>
 
+            <h2>微信公众号</h2>
+            <p>
+              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+              kubernetes 讨论群里面共同学习。
+            </p>
+            <img
+              src="https://picdn.youdianzhishi.com/images/qrcode.png"
+              alt="wechat-account-qrcode"
+            />
 
-          <h2>微信公众号</h2>
-<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
-
-  
-          
             <div class="entry-shang text-center">
-    <p>「真诚赞赏，手留余香」</p>
-    <button class="zs show-zs btn btn-bred">赞赏</button>
-</div>
-<div class="zs-modal-bg"></div>
-<div class="zs-modal-box">
-    <div class="zs-modal-head">
-        <button type="button" class="close">×</button>
-        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
-        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-    </div>
-    <div class="zs-modal-body">
-        <div class="zs-modal-btns">
-            <button class="btn btn-blink" data-num="2">2元</button>
-            <button class="btn btn-blink" data-num="5">5元</button>
-            <button class="btn btn-blink" data-num="10">10元</button>
-            <button class="btn btn-blink" data-num="50">50元</button>
-            <button class="btn btn-blink" data-num="100">100元</button>
-            <button class="btn btn-blink" data-num="1">任意金额</button>
-        </div>
-        <div class="zs-modal-pay">
-            <button class="btn btn-bred" id="pay-text">2元</button>
-            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
-        </div>
-    </div>
-    <div class="zs-modal-footer">
-        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
-    </div>
-</div>
-          
-          
-            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
-    <center>
-    <a href="#" class="social-share-icon icon-weibo"></a>
-    <a href="#" class="social-share-icon icon-wechat"></a>
-    <a href="#" class="social-share-icon icon-twitter"></a>
-    <a href="#" class="social-share-icon icon-linkedin"></a>
-    <a href="#" class="social-share-icon icon-facebook"></a>
-    <a href="#" class="social-share-icon icon-qq"></a>
-    <a href="#" class="social-share-icon icon-qzone"></a>
-    </center>
-</div>
+              <p>「真诚赞赏，手留余香」</p>
+              <button class="zs show-zs btn btn-bred">赞赏</button>
+            </div>
+            <div class="zs-modal-bg"></div>
+            <div class="zs-modal-box">
+              <div class="zs-modal-head">
+                <button type="button" class="close">×</button>
+                <span class="author"
+                  ><img
+                    src="https://www.qikqiak.com/img/avatar.jpeg"
+                  />阳明</span
+                >
+                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+              </div>
+              <div class="zs-modal-body">
+                <div class="zs-modal-btns">
+                  <button class="btn btn-blink" data-num="2">2元</button>
+                  <button class="btn btn-blink" data-num="5">5元</button>
+                  <button class="btn btn-blink" data-num="10">10元</button>
+                  <button class="btn btn-blink" data-num="50">50元</button>
+                  <button class="btn btn-blink" data-num="100">100元</button>
+                  <button class="btn btn-blink" data-num="1">任意金额</button>
+                </div>
+                <div class="zs-modal-pay">
+                  <button class="btn btn-bred" id="pay-text">2元</button>
+                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+                  <img
+                    src="https://www.qikqiak.com/img/wechat-2.png"
+                    id="pay-image"
+                  />
+                </div>
+              </div>
+              <div class="zs-modal-footer">
+                <span class="zs-wechat"
+                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
+                /></span>
+              </div>
+            </div>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+            <div
+              class="social-share"
+              data-initialized="true"
+              style="margin-bottom: 20px; margin-top: 20px"
+            >
+              <center>
+                <a href="#" class="social-share-icon icon-weibo"></a>
+                <a href="#" class="social-share-icon icon-wechat"></a>
+                <a href="#" class="social-share-icon icon-twitter"></a>
+                <a href="#" class="social-share-icon icon-linkedin"></a>
+                <a href="#" class="social-share-icon icon-facebook"></a>
+                <a href="#" class="social-share-icon icon-qq"></a>
+                <a href="#" class="social-share-icon icon-qzone"></a>
+              </center>
+            </div>
 
-          
-        </article>
-  
-        
-          
+            <link
+              rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
+            />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+          </article>
 
-<h3>相关文章</h3>
-<ul style="margin-bottom: 25px;">
-    
-    <li><a href="https://www.qikqiak.com/post/alertmanager-when-alert/">AlertManager 何时报警</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/prometheus-operator-custom-alert/">Prometheus Operator 自定义报警</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/grafana-log-tool-loki/">Grafana 日志聚合工具 Loki</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/alertmanager-of-prometheus-in-practice/">Prometheus报警AlertManager实战</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/prometheus-operator-advance/">Prometheus Operator 高级配置</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/k8s-hpa-usage/">Kubernetes HPA 使用详解</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/use-crd-create-grafana-dashboard/">用 Kubernetes 资源对象创建 Grafana Dashboard</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/recording-rules-on-prometheus/">Prometheus 记录规则的使用</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/blackbox-exporter-on-prometheus/">Prometheus 黑盒监控</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/build-k8s-app-with-custom-metrics/">对 Kubernetes 应用进行自定义指标扩缩容</a></li>
-    
-</ul>
+          <h3>相关文章</h3>
+          <ul style="margin-bottom: 25px">
+            <li>
+              <a href="https://www.qikqiak.com/post/alertmanager-when-alert/"
+                >AlertManager 何时报警</a
+              >
+            </li>
 
-        
-  
-        
-        <ul class="pager blog-pager">
-          
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/prometheus-operator-custom-alert/"
+                >Prometheus Operator 自定义报警</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/grafana-log-tool-loki/"
+                >Grafana 日志聚合工具 Loki</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/alertmanager-of-prometheus-in-practice/"
+                >Prometheus报警AlertManager实战</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/prometheus-operator-advance/"
+                >Prometheus Operator 高级配置</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/k8s-hpa-usage/"
+                >Kubernetes HPA 使用详解</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/use-crd-create-grafana-dashboard/"
+                >用 Kubernetes 资源对象创建 Grafana Dashboard</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/recording-rules-on-prometheus/"
+                >Prometheus 记录规则的使用</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/blackbox-exporter-on-prometheus/"
+                >Prometheus 黑盒监控</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/build-k8s-app-with-custom-metrics/"
+                >对 Kubernetes 应用进行自定义指标扩缩容</a
+              >
+            </li>
+          </ul>
+
+          <ul class="pager blog-pager">
             <li class="previous">
-              <a href="https://www.qikqiak.com/post/create-ci-pipeline-with-tekton-3/" data-toggle="tooltip" data-placement="top" title="使用 Tekton 创建 CI/CD 流水线（3/4）">&larr; 前一篇</a>
+              <a
+                href="https://www.qikqiak.com/post/create-ci-pipeline-with-tekton-3/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="使用 Tekton 创建 CI/CD 流水线（3/4）"
+                >&larr; 前一篇</a
+              >
             </li>
-          
-          
-            <li class="next">
-              <a href="https://www.qikqiak.com/post/deploy-k8s-on-win-use-wsl2/" data-toggle="tooltip" data-placement="top" title="在 Windows 下使用 WSL2 搭建 Kubernetes 集群">后一篇 &rarr;</a>
-            </li>
-          
-        </ul>
-        
 
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-        
-        <ins class="adsbygoogle"
-            style="display:block"
+            <li class="next">
+              <a
+                href="https://www.qikqiak.com/post/deploy-k8s-on-win-use-wsl2/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="在 Windows 下使用 WSL2 搭建 Kubernetes 集群"
+                >后一篇 &rarr;</a
+              >
+            </li>
+          </ul>
+
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+          ></script>
+
+          <ins
+            class="adsbygoogle"
+            style="display: block"
             data-ad-client="ca-pub-5376999672787220"
             data-ad-slot="3700507799"
             data-ad-format="auto"
-            data-full-width-responsive="true"></ins>
-        <script>
+            data-full-width-responsive="true"
+          ></ins>
+          <script>
             (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
-  
-        
-    <div id="gitalk-container"></div>
-    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-    <script>
-    var gitalk = new Gitalk({
-        clientID: 'bdb76dbb2e9d0786e350',
-        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
-        repo: 'blog',
-        owner: 'cnych',
-        admin: ['cnych'],
-        labels: ['gitment'],
-        title: '使用 Loki 进行日志监控和报警',
-        createIssueManually: true,
-        id: 'use-loki-monitor-alert',      
-        distractionFreeMode: true  
-    });
-    gitalk.render('gitalk-container');
-</script>
+          </script>
 
-
-        
-          
-
-        
-  
+          <div id="gitalk-container"></div>
+          <link
+            rel="stylesheet"
+            href="https://unpkg.com/gitalk/dist/gitalk.css"
+          />
+          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+          <script>
+            var gitalk = new Gitalk({
+              clientID: "bdb76dbb2e9d0786e350",
+              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
+              repo: "blog",
+              owner: "cnych",
+              admin: ["cnych"],
+              labels: ["gitment"],
+              title: "使用 Loki 进行日志监控和报警",
+              createIssueManually: true,
+              id: "use-loki-monitor-alert",
+              distractionFreeMode: true,
+            });
+            gitalk.render("gitalk-container");
+          </script>
+        </div>
       </div>
-    
-    
-  </div>
-</div>
+    </div>
 
     <footer>
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <ul class="list-inline text-center footer-links">
-          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
-          
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <ul class="list-inline text-center footer-links">
+              <img
+                src="https://www.qikqiak.com/img/wechatmp.png"
+                alt="k8s技术圈"
+              />
+
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -703,7 +1012,7 @@ nginx-6f8b869ccf-58rzx                <span style="color:#bd93f9">1</span>/1    
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -712,7 +1021,7 @@ nginx-6f8b869ccf-58rzx                <span style="color:#bd93f9">1</span>/1    
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -721,7 +1030,7 @@ nginx-6f8b869ccf-58rzx                <span style="color:#bd93f9">1</span>/1    
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -730,121 +1039,158 @@ nginx-6f8b869ccf-58rzx                <span style="color:#bd93f9">1</span>/1    
                   </span>
                 </a>
               </li>
-          
-          
-          <li>
-            <a href="https://www.qikqiak.com/index.xml" title="RSS">
-              <span class="fa-stack fa-lg">
-                <i class="fa fa-circle fa-stack-2x"></i>
-                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+
+              <li>
+                <a href="https://www.qikqiak.com/index.xml" title="RSS">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+            </ul>
+            <p class="credits copyright text-muted">
+              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/">阳明的博客</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/archive/">归档</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/friend/">友链</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://beian.miit.gov.cn/" target="_blank"
+                >蜀ICP备11027319号-5</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
+                >kubernetes.io</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
+                >Kubernetes中文社区</a
+              >
+            </p>
+            <p class="text-center text-muted">
+              <script
+                async
+                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
+              ></script>
+              <span id="busuanzi_container_site_pv" style="display: none">
+                本站总访问量<span id="busuanzi_value_site_pv"></span>次
               </span>
-            </a>
-          </li>
-          
-        </ul>
-        <p class="credits copyright text-muted">
-          
+              &nbsp;&bull;&nbsp;
+              <span id="busuanzi_container_site_uv" style="display: none">
+                访客数<span id="busuanzi_value_site_uv"></span>人次
+              </span>
+            </p>
 
-          &nbsp;&bull;&nbsp;
-          2023
-
-          
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/">阳明的博客</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/archive/">归档</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/friend/">友链</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
-          
-        </p>
-        <p class="text-center text-muted">
-          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-          <span id="busuanzi_container_site_pv" style="display:none">
-            本站总访问量<span id="busuanzi_value_site_pv"></span>次
-          </span>
-          &nbsp;&bull;&nbsp;
-          <span id="busuanzi_container_site_uv" style="display:none">
-            访客数<span id="busuanzi_value_site_uv"></span>人次
-          </span>
-        </p>
-        
-        <p class="credits theme-by text-muted">
-          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
-          
-        </p>
+            <p class="credits theme-by text-muted">
+              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
+              &nbsp;&bull;&nbsp; 主题
+              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+              移植自
+              <a href="https://github.com/rootsongjc/beautifulhugo"
+                >Beautiful Hugo</a
+              >
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</footer>
+    </footer>
 
+    <script
+      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
+      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
+    ></script>
 
-<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "UA-69668147-3");
+    </script>
+    <script>
+      (function () {
+        var bp = document.createElement("script");
+        var curProtocol = window.location.protocol.split(":")[0];
+        if (curProtocol === "https") {
+          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
+        } else {
+          bp.src = "http://push.zhanzhang.baidu.com/push.js";
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+      })();
+    </script>
+    <script>
+      $(document).ready(function () {
+        var int = setInterval(fixCount, 50);
 
-
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-69668147-3');
-</script>
-<script>
-(function(){
-    var bp = document.createElement('script');
-    var curProtocol = window.location.protocol.split(':')[0];
-    if (curProtocol === 'https') {
-        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
-    }
-    else {
-        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
-    }
-    var s = document.getElementsByTagName("script")[0];
-    s.parentNode.insertBefore(bp, s);
-})();
-</script>
-<script >
-$(document).ready(function() {
-  var int = setInterval(fixCount, 50);  
-  
-  var initPVCount = 584976;
-  var initUVCount = 153191;
-  function fixCount() {                   
-    if ($("#busuanzi_container_site_pv").css("display") != "none") {
-        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
-        clearInterval(int); 
-    }
-    if ($("#busuanzi_container_site_uv").css("display") != "none") {
-      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
-      clearInterval(int); 
-    }  
-  }           
-});
-</script>
- <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
-<script type="text/javascript">
-$('.carousel').slick({
-    dots: true,
-    arrows: true,
-    autoplay: true,
-    autoplaySpeed: 4000,
-    infinite: true,
-    speed: 500,
-    fade: true,
-    cssEase: 'linear',
-    centerMode: true,
-    prevArrow: '<button type="button" class="slick-prev"></button>',
-    nextArrow: '<button type="button" class="slick-next"></button>',
-});
-</script>
-
+        var initPVCount = 584976;
+        var initUVCount = 153191;
+        function fixCount() {
+          if ($("#busuanzi_container_site_pv").css("display") != "none") {
+            $("#busuanzi_value_site_pv").html(
+              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
+            );
+            clearInterval(int);
+          }
+          if ($("#busuanzi_container_site_uv").css("display") != "none") {
+            $("#busuanzi_value_site_uv").html(
+              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
+            );
+            clearInterval(int);
+          }
+        }
+      });
+    </script>
+    <script>
+      (function (w, d, s, id) {
+        if (typeof w.webpushr !== "undefined") return;
+        w.webpushr =
+          w.webpushr ||
+          function () {
+            (w.webpushr.q = w.webpushr.q || []).push(arguments);
+          };
+        var js,
+          fjs = d.getElementsByTagName(s)[0];
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "https://cdn.webpushr.com/app.min.js";
+        fjs.parentNode.appendChild(js);
+      })(window, document, "script", "webpushr-jssdk");
+      webpushr(
+        "init",
+        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
+      );
+    </script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
+    ></script>
+    <script type="text/javascript">
+      $(".carousel").slick({
+        dots: true,
+        arrows: true,
+        autoplay: true,
+        autoplaySpeed: 4000,
+        infinite: true,
+        speed: 500,
+        fade: true,
+        cssEase: "linear",
+        centerMode: true,
+        prevArrow: '<button type="button" class="slick-prev"></button>',
+        nextArrow: '<button type="button" class="slick-next"></button>',
+      });
+    </script>
   </body>
 </html>
-

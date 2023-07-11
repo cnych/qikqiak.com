@@ -1,368 +1,405 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
 
+    <title>
+      基于 kubernetes 的动态 jenkins
+      slave-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
+    </title>
+    <meta property="og:title" content="基于 kubernetes 的动态 jenkins slave" />
+    <meta name="twitter:title" content="基于 kubernetes 的动态 jenkins slave" />
 
-  <title>基于 kubernetes 的动态 jenkins slave-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
-  <meta property="og:title" content="基于 kubernetes 的动态 jenkins slave" />
-  <meta name="twitter:title" content="基于 kubernetes 的动态 jenkins slave" />
+    <meta name="description" content="基于 Jenkins 的 CI/CD(一)" />
+    <meta property="og:description" content="基于 Jenkins 的 CI/CD(一)" />
+    <meta name="twitter:description" content="基于 Jenkins 的 CI/CD(一)" />
+    <meta name="author" content="" />
+    <link
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+      rel="icon"
+      type="image/x-icon"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      property="og:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta
+      name="twitter:image"
+      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta
+      property="og:url"
+      content="https://www.qikqiak.com/post/kubernetes-jenkins1/"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="阳明的博客" />
 
-  <meta name="description" content="基于 Jenkins 的 CI/CD(一)">
-  <meta property="og:description" content="基于 Jenkins 的 CI/CD(一)">
-  <meta name="twitter:description" content="基于 Jenkins 的 CI/CD(一)">
-  <meta name="author" content=""/>
-  <link href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
-  <link rel="apple-touch-icon" href="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png"/>
-  <meta property="og:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:image" content="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-favicon.png" />
-  <meta name="twitter:card" content="summary" />
-  <meta property="og:url" content="https://www.qikqiak.com/post/kubernetes-jenkins1/" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="阳明的博客" />
+    <meta name="generator" content="Hugo 0.55.6" />
+    <link
+      rel="canonical"
+      href="https://www.qikqiak.com/post/kubernetes-jenkins1/"
+    />
+    <link
+      rel="alternate"
+      href="https://www.qikqiak.com/index.xml"
+      type="application/rss+xml"
+      title="阳明的博客"
+    />
 
-  <meta name="generator" content="Hugo 0.55.6" />
-  <link rel="canonical" href="https://www.qikqiak.com/post/kubernetes-jenkins1/" />
-  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
+    <link
+      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
+      rel="stylesheet"
+    />
 
-  
-  
-  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
-  
+    <link
+      rel="stylesheet"
+      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
+      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
+    />
 
-  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
+    />
 
-  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
-  
-  
-    
     <!--[if lt IE 9]>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+        rel="stylesheet"
+      />
     <![endif]-->
-<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
-<meta name="baidu-site-verification" content="F5ojAyqaKU" />
-<meta name="keywords" content="kubernetes, devops, jenkins, slave, CI, CD, gitlab, 动态">
-<script>
-var _hmt = _hmt || [];
-(function() {
-  var hm = document.createElement("script");
-  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-  var s = document.getElementsByTagName("script")[0];
-  s.parentNode.insertBefore(hm, s);
-})();
-</script>
+    <meta
+      name="google-site-verification"
+      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
+    />
+    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
+    <meta
+      name="keywords"
+      content="kubernetes, devops, jenkins, slave, CI, CD, gitlab, 动态"
+    />
+    <script>
+      var _hmt = _hmt || [];
+      (function () {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
 
+    <script type="application/javascript">
+      var doNotTrack = false;
+      if (!doNotTrack) {
+        window.ga =
+          window.ga ||
+          function () {
+            (ga.q = ga.q || []).push(arguments);
+          };
+        ga.l = +new Date();
+        ga("create", "UA-69668147-3", "auto");
 
-
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-	ga('create', 'UA-69668147-3', 'auto');
-	
-	ga('send', 'pageview');
-}
-</script>
-<script async src='https://www.google-analytics.com/analytics.js'></script>
-
-</head>
+        ga("send", "pageview");
+      }
+    </script>
+    <script async src="https://www.google-analytics.com/analytics.js"></script>
+  </head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
-        <span class="sr-only">切换导航</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
-        <img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
-      </a>
-    </div>
+      <div class="container">
+        <div class="navbar-header">
+          <button
+            type="button"
+            class="navbar-toggle"
+            data-toggle="collapse"
+            data-target="#main-navbar"
+          >
+            <span class="sr-only">切换导航</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a
+            class="navbar-brand"
+            href="https://www.qikqiak.com/"
+            title="阳明的博客"
+          >
+            <img
+              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
+              style="margin-top: -5px; height: 32px"
+              alt="阳明的博客"
+            />
+          </a>
+        </div>
 
-    <div class="collapse navbar-collapse" id="main-navbar">
-      <ul class="nav navbar-nav navbar-right">
-        
-          
+        <div class="collapse navbar-collapse" id="main-navbar">
+          <ul class="nav navbar-nav navbar-right">
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-          
-        
-          
+
             <li>
-              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
+              <a
+                title="课程"
+                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
+                >课程</a
+              >
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/archives">Archive</a>
-                
-                  <a href="https://www.qikqiak.com/tags">tags</a>
-                
-                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-                
-                  <a href="https://www.qikqiak.com/tags/python">python</a>
-                
-                  <a href="https://www.qikqiak.com/tags/django">django</a>
-                
-                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
-                
+                <a href="https://www.qikqiak.com/archives">Archive</a>
+
+                <a href="https://www.qikqiak.com/tags">tags</a>
+
+                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+
+                <a href="https://www.qikqiak.com/tags/python">python</a>
+
+                <a href="https://www.qikqiak.com/tags/django">django</a>
+
+                <a href="https://www.qikqiak.com/tags/devops">devops</a>
               </div>
             </li>
-          
-        
-          
+
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                
-                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-                
-                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-                
-                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-                
-                  <a href="https://md.qikqiak.com/">Markdown微信</a>
-                
+                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+
+                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+
+                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+
+                <a href="https://md.qikqiak.com/">Markdown微信</a>
               </div>
             </li>
-          
-        
-          
+
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
+              <a title="关于" href="https://www.qikqiak.com/page/about/"
+                >关于</a
+              >
             </li>
-          
-        
-          
+
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
-          
-        
 
-        
-
-        
-
-        
-          <li>
-            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
-              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
-            </a>
-          </li>
-          
-
-      </ul>
-    </div>
-
-  </div>
-</nav>
-
-
-  <div id="modalSearch" class="modal fade" role="dialog">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-          <h4 class="modal-title">搜索</h4>
+            <li>
+              <a
+                href="#modalSearch"
+                data-toggle="modal"
+                data-target="#modalSearch"
+                style="outline: none"
+              >
+                <span
+                  id="searchGlyph"
+                  class="glyphicon glyphicon-search"
+                ></span>
+              </a>
+            </li>
+          </ul>
         </div>
-        <div class="modal-body">
-            
-<div class="aa-input-container" id="aa-input-container">
-    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
-    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
-    </svg>
-</div>
-<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+      </div>
+    </nav>
 
-<script>
-var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
-var index = client.initIndex('prod_blog');
+    <div id="modalSearch" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">
+              &times;
+            </button>
+            <h4 class="modal-title">搜索</h4>
+          </div>
+          <div class="modal-body">
+            <div class="aa-input-container" id="aa-input-container">
+              <input
+                type="search"
+                id="aa-search-input"
+                class="aa-input-search"
+                placeholder="Search for titles or URIs..."
+                name="search"
+                autocomplete="off"
+              />
+              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+                <path
+                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
+                />
+              </svg>
+            </div>
+            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-autocomplete('#aa-search-input',
-{ hint: false}, {
-    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
-    
-    displayKey: 'name',
-    
-    templates: {
-        
-        suggestion: function(suggestion) {
-            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
-            suggestion._highlightResult.title.value + '</a></span>';
-        }
-    }
-});
-</script>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
+            <script>
+              var client = algoliasearch(
+                "1JDRAS0AZR",
+                "8804ac109158bb3bb60d74ce98fa332f"
+              );
+              var index = client.initIndex("prod_blog");
+
+              autocomplete(
+                "#aa-search-input",
+                { hint: false },
+                {
+                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
+
+                  displayKey: "name",
+
+                  templates: {
+                    suggestion: function (suggestion) {
+                      return (
+                        "<span>" +
+                        '<a href="https://www.qikqiak.com/post/' +
+                        suggestion.slug +
+                        '">' +
+                        suggestion._highlightResult.title.value +
+                        "</a></span>"
+                      );
+                    },
+                  },
+                }
+              );
+            </script>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">
+              close
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-    
-  
-  
-  
+    <div
+      id="header-big-imgs"
+      data-num-img="1"
+      data-img-src-1="https://www.qikqiak.com/img/posts/photo-1532154984646-37dc46508066.jpeg"
+      data-img-desc-1="Rainbow after the Hailstorm"
+    ></div>
 
-
-
-
-  
-    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://www.qikqiak.com/img/posts/photo-1532154984646-37dc46508066.jpeg" data-img-desc-1="Rainbow after the Hailstorm"></div>
-  
-
-  <header class="header-section has-img">
-    
+    <header class="header-section has-img">
       <div class="intro-header big-img">
-        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>基于 kubernetes 的动态 jenkins slave</h1>
-                  
-                    
-                      <h2 class="post-subheading">基于 Jenkins 的 CI/CD(一)</h2>
-                    
-                  
-                  
-                    <span class="post-meta">
-  
-    发表于 July 28, 2018
-  
-  
-</span>
 
+                <h2 class="post-subheading">基于 Jenkins 的 CI/CD(一)</h2>
 
-                  
+                <span class="post-meta"> 发表于 July 28, 2018 </span>
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline;"></span>
+        <span class="img-desc" style="display: inline"></span>
       </div>
-    
-    
-    
-    <div class="intro-header no-img">
-      
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <div class="post-heading">
-              <h1>基于 kubernetes 的动态 jenkins slave</h1>
-                
-                  
-                    <h2 class="post-subheading">基于 Jenkins 的 CI/CD(一)</h2>
-                  
-                
-                
-                  <span class="post-meta">
-  
-    发表于 July 28, 2018
-  
-  
-</span>
 
+      <div class="intro-header no-img">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>基于 kubernetes 的动态 jenkins slave</h1>
 
-                
+                <h2 class="post-subheading">基于 Jenkins 的 CI/CD(一)</h2>
+
+                <span class="post-meta"> 发表于 July 28, 2018 </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    
-    
-  </header>
+    </header>
 
+    <div class="container" role="main">
+      <div class="row">
+        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+          <div>
+            <h5 id="tags" style="margin-top: 30px">
+              标签:
 
-    
+              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
+              &nbsp;
 
+              <a href="https://www.qikqiak.com/tags/devops/">devops</a> &nbsp;
 
+              <a href="https://www.qikqiak.com/tags/jenkins/">jenkins</a> &nbsp;
 
-<div class="container" role="main">
-  <div class="row">
+              <a href="https://www.qikqiak.com/tags/slave/">slave</a> &nbsp;
 
-    
-    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <div>
-            
-            
-            <h5 id="tags" style="margin-top: 30px;">标签:
-              
-                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/devops/">devops</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/jenkins/">jenkins</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/slave/">slave</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/ci/">CI</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/cd/">CD</a> &nbsp;
-              
-                  <a href="https://www.qikqiak.com/tags/gitlab/">gitlab</a> &nbsp;
-              
+              <a href="https://www.qikqiak.com/tags/ci/">CI</a> &nbsp;
+
+              <a href="https://www.qikqiak.com/tags/cd/">CD</a> &nbsp;
+
+              <a href="https://www.qikqiak.com/tags/gitlab/">gitlab</a> &nbsp;
             </h5>
-            
-        </div>
-  
-        <article role="main" class="blog-post" itemprop="articleBody" id="content">
-          
-            
-<aside class="toc">
-  <nav id="TableOfContents">
-<ul>
-<li>
-<ul>
-<li><a href="#安装">安装</a></li>
-<li><a href="#优点">优点</a></li>
-<li><a href="#配置">配置</a></li>
-<li><a href="#测试">测试</a></li>
-</ul></li>
-</ul>
-</nav>
-</aside>
+          </div>
 
-          
-  
-          
-          
-          
-  
-          
-          
-          
-  
-          
-          
-          
+          <article
+            role="main"
+            class="blog-post"
+            itemprop="articleBody"
+            id="content"
+          >
+            <aside class="toc">
+              <nav id="TableOfContents">
+                <ul>
+                  <li>
+                    <ul>
+                      <li><a href="#安装">安装</a></li>
+                      <li><a href="#优点">优点</a></li>
+                      <li><a href="#配置">配置</a></li>
+                      <li><a href="#测试">测试</a></li>
+                    </ul>
+                  </li>
+                </ul>
+              </nav>
+            </aside>
 
-          <p>前面的课程中我们学习了持久化数据存储在<code>Kubernetes</code>中的使用方法，其实接下来按照我们的课程进度来说应该是讲解服务发现这一部分的内容的，但是最近有很多同学要求我先讲解下 CI/CD 这块的内容，所以我们先把这块内容提前来讲解了。提到基于<code>Kubernete</code>的<code>CI/CD</code>，可以使用的工具有很多，比如<code>Jenkins</code>、<code>Gitlab CI</code>已经新兴的<code>drone</code>之类的，我们这里会使用大家最为熟悉的<code>Jenkins</code>来做<code>CI/CD</code>的工具。</p>
+            <p>
+              前面的课程中我们学习了持久化数据存储在<code>Kubernetes</code>中的使用方法，其实接下来按照我们的课程进度来说应该是讲解服务发现这一部分的内容的，但是最近有很多同学要求我先讲解下
+              CI/CD
+              这块的内容，所以我们先把这块内容提前来讲解了。提到基于<code>Kubernete</code>的<code>CI/CD</code>，可以使用的工具有很多，比如<code>Jenkins</code>、<code
+                >Gitlab CI</code
+              >已经新兴的<code>drone</code>之类的，我们这里会使用大家最为熟悉的<code>Jenkins</code>来做<code>CI/CD</code>的工具。
+            </p>
 
-<h2 id="安装">安装</h2>
+            <h2 id="安装">安装</h2>
 
-<p>听我们课程的大部分同学应该都或多或少的听说过<code>Jenkins</code>，我们这里就不再去详细讲述什么是 Jenkins 了，直接进入正题，后面我们会单独的关于 Jenkins 的学习课程，想更加深入学习的同学也可以关注下。既然要基于<code>Kubernetes</code>来做<code>CI/CD</code>，当然我们这里需要将 Jenkins 安装到 Kubernetes 集群当中，新建一个 Deployment：(jenkins2.yaml)</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">---
+            <p>
+              听我们课程的大部分同学应该都或多或少的听说过<code>Jenkins</code>，我们这里就不再去详细讲述什么是
+              Jenkins 了，直接进入正题，后面我们会单独的关于 Jenkins
+              的学习课程，想更加深入学习的同学也可以关注下。既然要基于<code>Kubernetes</code>来做<code>CI/CD</code>，当然我们这里需要将
+              Jenkins 安装到 Kubernetes 集群当中，新建一个
+              Deployment：(jenkins2.yaml)
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -438,11 +475,45 @@ spec:
     nodePort: <span style="color:#bd93f9">30002</span>
   - name: agent
     port: <span style="color:#bd93f9">50000</span>
-    targetPort: agent</code></pre></div>
-<p>为了方便演示，我们把本节课所有的对象资源都放置在一个名为 kube-ops 的 namespace 下面，所以我们需要添加创建一个 namespace：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create namespace kube-ops</code></pre></div>
-<p>我们这里使用一个名为 jenkins/jenkins:lts 的镜像，这是 jenkins 官方的 Docker 镜像，然后也有一些环境变量，当然我们也可以根据自己的需求来定制一个镜像，比如我们可以将一些插件打包在自定义的镜像当中，可以参考文档：<a href="https://github.com/jenkinsci/docker">https://github.com/jenkinsci/docker</a>，我们这里使用默认的官方镜像就行，另外一个还需要注意的是我们将容器的 /var/jenkins_home 目录挂载到了一个名为 opspvc 的 PVC 对象上面，所以我们同样还得提前创建一个对应的 PVC 对象，当然我们也可以使用我们前面的 StorageClass 对象来自动创建：(pvc.yaml)</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+    targetPort: agent</code></pre>
+            </div>
+            <p>
+              为了方便演示，我们把本节课所有的对象资源都放置在一个名为 kube-ops
+              的 namespace 下面，所以我们需要添加创建一个 namespace：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl create namespace kube-ops</code></pre>
+            </div>
+            <p>
+              我们这里使用一个名为 jenkins/jenkins:lts 的镜像，这是 jenkins
+              官方的 Docker
+              镜像，然后也有一些环境变量，当然我们也可以根据自己的需求来定制一个镜像，比如我们可以将一些插件打包在自定义的镜像当中，可以参考文档：<a
+                href="https://github.com/jenkinsci/docker"
+                >https://github.com/jenkinsci/docker</a
+              >，我们这里使用默认的官方镜像就行，另外一个还需要注意的是我们将容器的
+              /var/jenkins_home 目录挂载到了一个名为 opspvc 的 PVC
+              对象上面，所以我们同样还得提前创建一个对应的 PVC
+              对象，当然我们也可以使用我们前面的 StorageClass
+              对象来自动创建：(pvc.yaml)
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: opspv
@@ -467,11 +538,37 @@ spec:
     - ReadWriteMany
   resources:
     requests:
-      storage: 20Gi</code></pre></div>
-<p>创建需要用到的 PVC 对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create -f pvc.yaml</code></pre></div>
-<p>另外我们这里还需要使用到一个拥有相关权限的 serviceAccount：jenkins2，我们这里只是给 jenkins 赋予了一些必要的权限，当然如果你对 serviceAccount 的权限不是很熟悉的话，我们给这个 sa 绑定一个 cluster-admin 的集群角色权限也是可以的，当然这样具有一定的安全风险：（rbac.yaml）</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+      storage: 20Gi</code></pre>
+            </div>
+            <p>创建需要用到的 PVC 对象：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl create -f pvc.yaml</code></pre>
+            </div>
+            <p>
+              另外我们这里还需要使用到一个拥有相关权限的
+              serviceAccount：jenkins2，我们这里只是给 jenkins
+              赋予了一些必要的权限，当然如果你对 serviceAccount
+              的权限不是很熟悉的话，我们给这个 sa 绑定一个 cluster-admin
+              的集群角色权限也是可以的，当然这样具有一定的安全风险：（rbac.yaml）
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: jenkins2
@@ -515,331 +612,776 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: jenkins2
-    namespace: kube-ops</code></pre></div>
-<p>创建 rbac 相关的资源对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl create -f rbac.yaml
+    namespace: kube-ops</code></pre>
+            </div>
+            <p>创建 rbac 相关的资源对象：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl create -f rbac.yaml
 serviceaccount <span style="color:#f1fa8c">&#34;jenkins2&#34;</span> created
 role.rbac.authorization.k8s.io <span style="color:#f1fa8c">&#34;jenkins2&#34;</span> created
-rolebinding.rbac.authorization.k8s.io <span style="color:#f1fa8c">&#34;jenkins2&#34;</span> created</code></pre></div>
-<p>最后为了方便我们测试，我们这里通过 NodePort 的形式来暴露 Jenkins 的 web 服务，固定为30002端口，另外还需要暴露一个 agent 的端口，这个端口主要是用于 Jenkins 的 master 和 slave 之间通信使用的。</p>
+rolebinding.rbac.authorization.k8s.io <span style="color:#f1fa8c">&#34;jenkins2&#34;</span> created</code></pre>
+            </div>
+            <p>
+              最后为了方便我们测试，我们这里通过 NodePort 的形式来暴露 Jenkins
+              的 web 服务，固定为30002端口，另外还需要暴露一个 agent
+              的端口，这个端口主要是用于 Jenkins 的 master 和 slave
+              之间通信使用的。
+            </p>
 
-<p>一切准备的资源准备好过后，我们直接创建 Jenkins 服务：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">$ kubectl create -f jenkins2.yaml
+            <p>一切准备的资源准备好过后，我们直接创建 Jenkins 服务：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-yaml" data-lang="yaml">$ kubectl create -f jenkins2.yaml
 deployment.extensions <span style="color:#f1fa8c">&#34;jenkins2&#34;</span> created
-service <span style="color:#f1fa8c">&#34;jenkins2&#34;</span> created</code></pre></div>
-<p>创建完成后，要去拉取镜像可能需要等待一会儿，然后我们查看下 Pod 的状态：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-ops
+service <span style="color:#f1fa8c">&#34;jenkins2&#34;</span> created</code></pre>
+            </div>
+            <p>
+              创建完成后，要去拉取镜像可能需要等待一会儿，然后我们查看下 Pod
+              的状态：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-ops
 NAME                        READY     STATUS    RESTARTS   AGE
-jenkins2-7f5494cd44-pqpzs   <span style="color:#bd93f9">0</span>/1       Running   <span style="color:#bd93f9">0</span>          2m</code></pre></div>
-<p>可以看到该 Pod 处于 Running 状态，但是 READY 值确为0，然后我们用 describe 命令去查看下该 Pod 的详细信息：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl describe pod jenkins2-7f5494cd44-pqpzs -n kube-ops
+jenkins2-7f5494cd44-pqpzs   <span style="color:#bd93f9">0</span>/1       Running   <span style="color:#bd93f9">0</span>          2m</code></pre>
+            </div>
+            <p>
+              可以看到该 Pod 处于 Running 状态，但是 READY 值确为0，然后我们用
+              describe 命令去查看下该 Pod 的详细信息：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl describe pod jenkins2-7f5494cd44-pqpzs -n kube-ops
 ...
 Normal   Created                3m                kubelet, node01    Created container
   Normal   Started                3m                kubelet, node01    Started container
   Warning  Unhealthy              1m <span style="color:#ff79c6">(</span>x10 over 2m<span style="color:#ff79c6">)</span>  kubelet, node01    Liveness probe failed: Get http://10.244.1.165:8080/login: dial tcp <span style="color:#bd93f9">10</span>.244.1.165:8080: getsockopt: connection refused
-  Warning  Unhealthy              1m <span style="color:#ff79c6">(</span>x10 over 2m<span style="color:#ff79c6">)</span>  kubelet, node01    Readiness probe failed: Get http://10.244.1.165:8080/login: dial tcp <span style="color:#bd93f9">10</span>.244.1.165:8080: getsockopt: connection refused</code></pre></div>
-<p>可以看到上面的 Warning 信息，健康检查没有通过，具体原因是什么引起的呢？可以通过查看日志进一步了解：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl logs -f jenkins2-7f5494cd44-pqpzs -n kube-ops
+  Warning  Unhealthy              1m <span style="color:#ff79c6">(</span>x10 over 2m<span style="color:#ff79c6">)</span>  kubelet, node01    Readiness probe failed: Get http://10.244.1.165:8080/login: dial tcp <span style="color:#bd93f9">10</span>.244.1.165:8080: getsockopt: connection refused</code></pre>
+            </div>
+            <p>
+              可以看到上面的 Warning
+              信息，健康检查没有通过，具体原因是什么引起的呢？可以通过查看日志进一步了解：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl logs -f jenkins2-7f5494cd44-pqpzs -n kube-ops
 touch: cannot touch <span style="color:#f1fa8c">&#39;/var/jenkins_home/copy_reference_file.log&#39;</span>: Permission denied
-Can not write to /var/jenkins_home/copy_reference_file.log. Wrong volume permissions?</code></pre></div>
-<p>很明显可以看到上面的错误信息，意思就是我们没有权限在 jenkins 的 home 目录下面创建文件，这是因为默认的镜像使用的是 jenkins 这个用户，而我们通过 PVC 挂载到 nfs 服务器的共享数据目录下面却是 root 用户的，所以没有权限访问该目录，要解决该问题，也很简单，我只需要在 nfs 共享数据目录下面把我们的目录权限重新分配下即可：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ chown -R <span style="color:#bd93f9">1000</span> /data/k8s/jenkins2</code></pre></div>
-<blockquote>
-<p>当然还有另外一种方法是我们自定义一个镜像，在镜像中指定使用 root 用户也可以</p>
-</blockquote>
+Can not write to /var/jenkins_home/copy_reference_file.log. Wrong volume permissions?</code></pre>
+            </div>
+            <p>
+              很明显可以看到上面的错误信息，意思就是我们没有权限在 jenkins 的
+              home 目录下面创建文件，这是因为默认的镜像使用的是 jenkins
+              这个用户，而我们通过 PVC 挂载到 nfs 服务器的共享数据目录下面却是
+              root
+              用户的，所以没有权限访问该目录，要解决该问题，也很简单，我只需要在
+              nfs 共享数据目录下面把我们的目录权限重新分配下即可：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ chown -R <span style="color:#bd93f9">1000</span> /data/k8s/jenkins2</code></pre>
+            </div>
+            <blockquote>
+              <p>
+                当然还有另外一种方法是我们自定义一个镜像，在镜像中指定使用 root
+                用户也可以
+              </p>
+            </blockquote>
 
-<p>然后我们再重新创建：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl delete -f jenkins.yaml
+            <p>然后我们再重新创建：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl delete -f jenkins.yaml
 deployment.extensions <span style="color:#f1fa8c">&#34;jenkins2&#34;</span> deleted
 service <span style="color:#f1fa8c">&#34;jenkins2&#34;</span> deleted
 $ kubectl create -f jenkins.yaml
 deployment.extensions <span style="color:#f1fa8c">&#34;jenkins2&#34;</span> created
-service <span style="color:#f1fa8c">&#34;jenkins2&#34;</span> created</code></pre></div>
-<p>现在我们再去查看新生成的 Pod 已经没有错误信息了：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-ops
+service <span style="color:#f1fa8c">&#34;jenkins2&#34;</span> created</code></pre>
+            </div>
+            <p>现在我们再去查看新生成的 Pod 已经没有错误信息了：</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-ops
 NAME                        READY     STATUS        RESTARTS   AGE
-jenkins2-7f5494cd44-smn2r   <span style="color:#bd93f9">1</span>/1       Running       <span style="color:#bd93f9">0</span>          25s</code></pre></div>
-<p>等到服务启动成功后，我们就可以根据任意节点的 IP:30002 端口就可以访问 jenkins 服务了，可以根据提示信息进行安装配置即可：
-<img src="https://www.qikqiak.com/img/posts/setup-jenkins-01-unlock.jpg" alt="setup jenkins" />
-初始化的密码我们可以在 jenkins 的容器的日志中进行查看，也可以直接在 nfs 的共享数据目录中查看：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ cat /data/k8s/jenkins2/secrets/initAdminPassword</code></pre></div>
-<p>然后选择安装推荐的插件即可。
-<img src="https://www.qikqiak.com/img/posts/setup-jenkins-02-plugin.png" alt="setup plugin" /></p>
+jenkins2-7f5494cd44-smn2r   <span style="color:#bd93f9">1</span>/1       Running       <span style="color:#bd93f9">0</span>          25s</code></pre>
+            </div>
+            <p>
+              等到服务启动成功后，我们就可以根据任意节点的 IP:30002
+              端口就可以访问 jenkins 服务了，可以根据提示信息进行安装配置即可：
+              <img
+                src="https://www.qikqiak.com/img/posts/setup-jenkins-01-unlock.jpg"
+                alt="setup jenkins"
+              />
+              初始化的密码我们可以在 jenkins
+              的容器的日志中进行查看，也可以直接在 nfs 的共享数据目录中查看：
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ cat /data/k8s/jenkins2/secrets/initAdminPassword</code></pre>
+            </div>
+            <p>
+              然后选择安装推荐的插件即可。
+              <img
+                src="https://www.qikqiak.com/img/posts/setup-jenkins-02-plugin.png"
+                alt="setup plugin"
+              />
+            </p>
 
-<p>安装完成后添加管理员帐号即可进入到 jenkins 主界面：
-<img src="https://www.qikqiak.com/img/posts/setup-jenkins-home.png" alt="jenkins home" /></p>
+            <p>
+              安装完成后添加管理员帐号即可进入到 jenkins 主界面：
+              <img
+                src="https://www.qikqiak.com/img/posts/setup-jenkins-home.png"
+                alt="jenkins home"
+              />
+            </p>
 
-<h2 id="优点">优点</h2>
+            <h2 id="优点">优点</h2>
 
-<p>Jenkins 安装完成了，接下来我们不用急着就去使用，我们要了解下在 Kubernetes 环境下面使用 Jenkins 有什么好处。</p>
+            <p>
+              Jenkins 安装完成了，接下来我们不用急着就去使用，我们要了解下在
+              Kubernetes 环境下面使用 Jenkins 有什么好处。
+            </p>
 
-<p>我们知道持续构建与发布是我们日常工作中必不可少的一个步骤，目前大多公司都采用 Jenkins 集群来搭建符合需求的 CI/CD 流程，然而传统的 Jenkins Slave 一主多从方式会存在一些痛点，比如：</p>
+            <p>
+              我们知道持续构建与发布是我们日常工作中必不可少的一个步骤，目前大多公司都采用
+              Jenkins 集群来搭建符合需求的 CI/CD 流程，然而传统的 Jenkins Slave
+              一主多从方式会存在一些痛点，比如：
+            </p>
 
-<ul>
-<li>主 Master 发生单点故障时，整个流程都不可用了</li>
-<li>每个 Slave 的配置环境不一样，来完成不同语言的编译打包等操作，但是这些差异化的配置导致管理起来非常不方便，维护起来也是比较费劲</li>
-<li>资源分配不均衡，有的 Slave 要运行的 job 出现排队等待，而有的 Slave 处于空闲状态</li>
-<li>资源有浪费，每台 Slave 可能是物理机或者虚拟机，当 Slave 处于空闲状态时，也不会完全释放掉资源。</li>
-</ul>
+            <ul>
+              <li>主 Master 发生单点故障时，整个流程都不可用了</li>
+              <li>
+                每个 Slave
+                的配置环境不一样，来完成不同语言的编译打包等操作，但是这些差异化的配置导致管理起来非常不方便，维护起来也是比较费劲
+              </li>
+              <li>
+                资源分配不均衡，有的 Slave 要运行的 job 出现排队等待，而有的
+                Slave 处于空闲状态
+              </li>
+              <li>
+                资源有浪费，每台 Slave 可能是物理机或者虚拟机，当 Slave
+                处于空闲状态时，也不会完全释放掉资源。
+              </li>
+            </ul>
 
-<p>正因为上面的这些种种痛点，我们渴望一种更高效更可靠的方式来完成这个 CI/CD 流程，而 Docker 虚拟化容器技术能很好的解决这个痛点，又特别是在 Kubernetes 集群环境下面能够更好来解决上面的问题，下图是基于 Kubernetes 搭建 Jenkins 集群的简单示意图：
-<img src="https://www.qikqiak.com/img/posts/k8s-jenkins-slave.png" alt="k8s-jenkins" /></p>
+            <p>
+              正因为上面的这些种种痛点，我们渴望一种更高效更可靠的方式来完成这个
+              CI/CD 流程，而 Docker
+              虚拟化容器技术能很好的解决这个痛点，又特别是在 Kubernetes
+              集群环境下面能够更好来解决上面的问题，下图是基于 Kubernetes 搭建
+              Jenkins 集群的简单示意图：
+              <img
+                src="https://www.qikqiak.com/img/posts/k8s-jenkins-slave.png"
+                alt="k8s-jenkins"
+              />
+            </p>
 
-<p>从图上可以看到 Jenkins Master 和 Jenkins Slave 以 Pod 形式运行在 Kubernetes 集群的 Node 上，Master 运行在其中一个节点，并且将其配置数据存储到一个 Volume 上去，Slave 运行在各个节点上，并且它不是一直处于运行状态，它会按照需求动态的创建并自动删除。</p>
+            <p>
+              从图上可以看到 Jenkins Master 和 Jenkins Slave 以 Pod 形式运行在
+              Kubernetes 集群的 Node 上，Master
+              运行在其中一个节点，并且将其配置数据存储到一个 Volume 上去，Slave
+              运行在各个节点上，并且它不是一直处于运行状态，它会按照需求动态的创建并自动删除。
+            </p>
 
-<p>这种方式的工作流程大致为：当 Jenkins Master 接受到 Build 请求时，会根据配置的 Label 动态创建一个运行在 Pod 中的 Jenkins Slave 并注册到 Master 上，当运行完 Job 后，这个 Slave 会被注销并且这个 Pod 也会自动删除，恢复到最初状态。</p>
+            <p>
+              这种方式的工作流程大致为：当 Jenkins Master 接受到 Build
+              请求时，会根据配置的 Label 动态创建一个运行在 Pod 中的 Jenkins
+              Slave 并注册到 Master 上，当运行完 Job 后，这个 Slave
+              会被注销并且这个 Pod 也会自动删除，恢复到最初状态。
+            </p>
 
-<p>那么我们使用这种方式带来了哪些好处呢？</p>
+            <p>那么我们使用这种方式带来了哪些好处呢？</p>
 
-<ul>
-<li><strong>服务高可用</strong>，当 Jenkins Master 出现故障时，Kubernetes 会自动创建一个新的 Jenkins Master 容器，并且将 Volume 分配给新创建的容器，保证数据不丢失，从而达到集群服务高可用。</li>
-<li><strong>动态伸缩</strong>，合理使用资源，每次运行 Job 时，会自动创建一个 Jenkins Slave，Job 完成后，Slave 自动注销并删除容器，资源自动释放，而且 Kubernetes 会根据每个资源的使用情况，动态分配 Slave 到空闲的节点上创建，降低出现因某节点资源利用率高，还排队等待在该节点的情况。</li>
-<li><strong>扩展性好</strong>，当 Kubernetes 集群的资源严重不足而导致 Job 排队等待时，可以很容易的添加一个 Kubernetes Node 到集群中，从而实现扩展。</li>
-</ul>
+            <ul>
+              <li>
+                <strong>服务高可用</strong>，当 Jenkins Master
+                出现故障时，Kubernetes 会自动创建一个新的 Jenkins Master
+                容器，并且将 Volume
+                分配给新创建的容器，保证数据不丢失，从而达到集群服务高可用。
+              </li>
+              <li>
+                <strong>动态伸缩</strong>，合理使用资源，每次运行 Job
+                时，会自动创建一个 Jenkins Slave，Job 完成后，Slave
+                自动注销并删除容器，资源自动释放，而且 Kubernetes
+                会根据每个资源的使用情况，动态分配 Slave
+                到空闲的节点上创建，降低出现因某节点资源利用率高，还排队等待在该节点的情况。
+              </li>
+              <li>
+                <strong>扩展性好</strong>，当 Kubernetes
+                集群的资源严重不足而导致 Job 排队等待时，可以很容易的添加一个
+                Kubernetes Node 到集群中，从而实现扩展。
+              </li>
+            </ul>
 
-<p>是不是以前我们面临的种种问题在 Kubernetes 集群环境下面是不是都没有了啊？看上去非常完美。</p>
+            <p>
+              是不是以前我们面临的种种问题在 Kubernetes
+              集群环境下面是不是都没有了啊？看上去非常完美。
+            </p>
 
-<h2 id="配置">配置</h2>
+            <h2 id="配置">配置</h2>
 
-<p>接下来我们就需要来配置 Jenkins，让他能够动态的生成 Slave 的 Pod。</p>
+            <p>
+              接下来我们就需要来配置 Jenkins，让他能够动态的生成 Slave 的 Pod。
+            </p>
 
-<p><strong>第1步.</strong> 我们需要安装<strong>kubernetes plugin (新版本就叫 Kubernetes)</strong>， 点击 Manage Jenkins -&gt; Manage Plugins -&gt; Available -&gt; Kubernetes plugin 勾选安装即可。
-<img src="https://www.qikqiak.com/img/posts/setup-jenkins-k8s-plugin.png" alt="kubernetes plugin" /></p>
+            <p>
+              <strong>第1步.</strong> 我们需要安装<strong
+                >kubernetes plugin (新版本就叫 Kubernetes)</strong
+              >， 点击 Manage Jenkins -&gt; Manage Plugins -&gt; Available -&gt;
+              Kubernetes plugin 勾选安装即可。
+              <img
+                src="https://www.qikqiak.com/img/posts/setup-jenkins-k8s-plugin.png"
+                alt="kubernetes plugin"
+              />
+            </p>
 
-<p><strong>第2步.</strong> 安装完毕后，点击 Manage Jenkins —&gt; Configure System —&gt; (拖到最下方)Add a new cloud —&gt; 选择 Kubernetes，然后填写 Kubernetes 和 Jenkins 配置信息。
-<img src="https://www.qikqiak.com/img/posts/jenkins-k8s-config1.jpg" alt="kubernetes plugin config1" /></p>
+            <p>
+              <strong>第2步.</strong> 安装完毕后，点击 Manage Jenkins —&gt;
+              Configure System —&gt; (拖到最下方)Add a new cloud —&gt; 选择
+              Kubernetes，然后填写 Kubernetes 和 Jenkins 配置信息。
+              <img
+                src="https://www.qikqiak.com/img/posts/jenkins-k8s-config1.jpg"
+                alt="kubernetes plugin config1"
+              />
+            </p>
 
-<p>注意 namespace，我们这里填 kube-ops，然后点击<strong>Test Connection</strong>，如果出现 Connection test successful 的提示信息证明 Jenkins 已经可以和 Kubernetes 系统正常通信了，然后下方的 Jenkins URL 地址：<strong><a href="http://jenkins2.kube-ops.svc.cluster.local:8080">http://jenkins2.kube-ops.svc.cluster.local:8080</a></strong>，这里的格式为：服务名.namespace.svc.cluster.local:8080，<strong>根据上面创建的jenkins 的服务名填写，我这里是之前创建的名为jenkins，如果是用上面我们创建的就应该是jenkins2</strong></p>
+            <p>
+              注意 namespace，我们这里填 kube-ops，然后点击<strong
+                >Test Connection</strong
+              >，如果出现 Connection test successful 的提示信息证明 Jenkins
+              已经可以和 Kubernetes 系统正常通信了，然后下方的 Jenkins URL
+              地址：<strong
+                ><a href="http://jenkins2.kube-ops.svc.cluster.local:8080"
+                  >http://jenkins2.kube-ops.svc.cluster.local:8080</a
+                ></strong
+              >，这里的格式为：服务名.namespace.svc.cluster.local:8080，<strong
+                >根据上面创建的jenkins
+                的服务名填写，我这里是之前创建的名为jenkins，如果是用上面我们创建的就应该是jenkins2</strong
+              >
+            </p>
 
-<blockquote>
-<p>另外需要注意，如果这里 Test Connection 失败的话，很有可能是权限问题，这里就需要把我们创建的 jenkins 的 serviceAccount 对应的 secret 添加到这里的 Credentials 里面。</p>
-</blockquote>
+            <blockquote>
+              <p>
+                另外需要注意，如果这里 Test Connection
+                失败的话，很有可能是权限问题，这里就需要把我们创建的 jenkins 的
+                serviceAccount 对应的 secret 添加到这里的 Credentials 里面。
+              </p>
+            </blockquote>
 
-<p><strong>第3步.</strong> 配置 Pod Template，其实就是配置 Jenkins Slave 运行的 Pod 模板，命名空间我们同样是用 kube-ops，Labels 这里也非常重要，对于后面执行 Job 的时候需要用到该值，然后我们这里使用的是 cnych/jenkins:jnlp 这个镜像，这个镜像是在官方的 jnlp 镜像基础上定制的，加入了 kubectl 等一些实用的工具。
-<img src="https://www.qikqiak.com/img/posts/jenkins-k8s-config2.png" alt="kubernetes plugin config2" /></p>
+            <p>
+              <strong>第3步.</strong> 配置 Pod Template，其实就是配置 Jenkins
+              Slave 运行的 Pod 模板，命名空间我们同样是用 kube-ops，Labels
+              这里也非常重要，对于后面执行 Job
+              的时候需要用到该值，然后我们这里使用的是 cnych/jenkins:jnlp
+              这个镜像，这个镜像是在官方的 jnlp 镜像基础上定制的，加入了 kubectl
+              等一些实用的工具。
+              <img
+                src="https://www.qikqiak.com/img/posts/jenkins-k8s-config2.png"
+                alt="kubernetes plugin config2"
+              />
+            </p>
 
-<blockquote>
-<p>注意：由于新版本的 Kubernetes 插件变化较多，如果你使用的 Jenkins 版本在 2.176.x 版本以上，注意将上面的镜像替换成<code>cnych/jenkins:jnlp6</code>，否则使用会报错，配置如下图所示：
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/jenkins-slave-new.png" alt="kubernetes slave image config" /></p>
-</blockquote>
+            <blockquote>
+              <p>
+                注意：由于新版本的 Kubernetes 插件变化较多，如果你使用的 Jenkins
+                版本在 2.176.x
+                版本以上，注意将上面的镜像替换成<code>cnych/jenkins:jnlp6</code>，否则使用会报错，配置如下图所示：
+                <img
+                  src="https://picdn.youdianzhishi.com/images/jenkins-slave-new.png"
+                  alt="kubernetes slave image config"
+                />
+              </p>
+            </blockquote>
 
-<p>另外需要注意我们这里需要在下面挂载两个主机目录，一个是<code>/var/run/docker.sock</code>，该文件是用于 Pod 中的容器能够共享宿主机的 Docker，这就是大家说的 docker in docker 的方式，Docker 二进制文件我们已经打包到上面的镜像中了，另外一个目录下<code>/root/.kube</code>目录，我们将这个目录挂载到容器的 /root/.kube 目录下面这是为了让我们能够在 Pod 的容器中能够使用 kubectl 工具来访问我们的 Kubernetes 集群，方便我们后面在 Slave Pod 部署 Kubernetes 应用。</p>
+            <p>
+              另外需要注意我们这里需要在下面挂载两个主机目录，一个是<code>/var/run/docker.sock</code>，该文件是用于
+              Pod 中的容器能够共享宿主机的 Docker，这就是大家说的 docker in
+              docker 的方式，Docker
+              二进制文件我们已经打包到上面的镜像中了，另外一个目录下<code>/root/.kube</code>目录，我们将这个目录挂载到容器的
+              /root/.kube 目录下面这是为了让我们能够在 Pod 的容器中能够使用
+              kubectl 工具来访问我们的 Kubernetes 集群，方便我们后面在 Slave Pod
+              部署 Kubernetes 应用。
+            </p>
 
-<figure><img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/jenkins-slave-volume.png" alt="kubernetes plugin config3"><figcaption>kubernetes plugin config3</figcaption></figure>
+            <figure>
+              <img
+                src="https://picdn.youdianzhishi.com/images/jenkins-slave-volume.png"
+                alt="kubernetes plugin config3"
+              />
+              <figcaption>kubernetes plugin config3</figcaption>
+            </figure>
 
-<p>另外还有几个参数需要注意，如下图中的<strong>Time in minutes to retain slave when idle</strong>，这个参数表示的意思是当处于空闲状态的时候保留 Slave Pod 多长时间，这个参数最好我们保存默认就行了，如果你设置过大的话，Job 任务执行完成后，对应的 Slave Pod 就不会立即被销毁删除。
-<img src="https://www.qikqiak.com/img/posts/jenkins-k8s-config4.png" alt="kubernetes plugin config4" /></p>
+            <p>
+              另外还有几个参数需要注意，如下图中的<strong
+                >Time in minutes to retain slave when idle</strong
+              >，这个参数表示的意思是当处于空闲状态的时候保留 Slave Pod
+              多长时间，这个参数最好我们保存默认就行了，如果你设置过大的话，Job
+              任务执行完成后，对应的 Slave Pod 就不会立即被销毁删除。
+              <img
+                src="https://www.qikqiak.com/img/posts/jenkins-k8s-config4.png"
+                alt="kubernetes plugin config4"
+              />
+            </p>
 
-<p>另外一些同学在配置了后运行 Slave Pod 的时候出现了权限问题，如果出现了权限不足的问题，在 Slave Pod 配置的地方点击下面的高级，添加上对应的 ServiceAccount 即可：
-<img src="https://www.qikqiak.com/img/posts/jenkins-k8s-config5.png" alt="kubernetes plugin config5" /></p>
+            <p>
+              另外一些同学在配置了后运行 Slave Pod
+              的时候出现了权限问题，如果出现了权限不足的问题，在 Slave Pod
+              配置的地方点击下面的高级，添加上对应的 ServiceAccount 即可：
+              <img
+                src="https://www.qikqiak.com/img/posts/jenkins-k8s-config5.png"
+                alt="kubernetes plugin config5"
+              />
+            </p>
 
-<p>还有一些同学在配置完成后发现启动 Jenkins Slave Pod 的时候，出现 Slave Pod 连接不上，然后尝试100次连接之后销毁 Pod，然后会再创建一个 Slave Pod 继续尝试连接，无限循环，类似于下面的信息：
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/slave-pod-reconnect-100-times.png" alt="" /></p>
+            <p>
+              还有一些同学在配置完成后发现启动 Jenkins Slave Pod 的时候，出现
+              Slave Pod 连接不上，然后尝试100次连接之后销毁
+              Pod，然后会再创建一个 Slave Pod
+              继续尝试连接，无限循环，类似于下面的信息：
+              <img
+                src="https://picdn.youdianzhishi.com/images/slave-pod-reconnect-100-times.png"
+                alt=""
+              />
+            </p>
 
-<p>如果出现这种情况的话就需要将 Slave Pod 中的运行命令和参数两个值给清空掉
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/clean-slave-pod-cmd-args.png" alt="" /></p>
+            <p>
+              如果出现这种情况的话就需要将 Slave Pod
+              中的运行命令和参数两个值给清空掉
+              <img
+                src="https://picdn.youdianzhishi.com/images/clean-slave-pod-cmd-args.png"
+                alt=""
+              />
+            </p>
 
-<p>到这里我们的 Kubernetes Plugin 插件就算配置完成了。</p>
+            <p>到这里我们的 Kubernetes Plugin 插件就算配置完成了。</p>
 
-<h2 id="测试">测试</h2>
+            <h2 id="测试">测试</h2>
 
-<p>Kubernetes 插件的配置工作完成了，接下来我们就来添加一个 Job 任务，看是否能够在 Slave Pod 中执行，任务执行完成后看 Pod 是否会被销毁。</p>
+            <p>
+              Kubernetes 插件的配置工作完成了，接下来我们就来添加一个 Job
+              任务，看是否能够在 Slave Pod 中执行，任务执行完成后看 Pod
+              是否会被销毁。
+            </p>
 
-<p>在 Jenkins 首页点击<strong>create new jobs</strong>，创建一个测试的任务，输入任务名称，然后我们选择 Freestyle project 类型的任务：
-<img src="https://www.qikqiak.com/img/posts/jenkins-demo1.png" alt="jenkins demo" /></p>
+            <p>
+              在 Jenkins 首页点击<strong>create new jobs</strong
+              >，创建一个测试的任务，输入任务名称，然后我们选择 Freestyle
+              project 类型的任务：
+              <img
+                src="https://www.qikqiak.com/img/posts/jenkins-demo1.png"
+                alt="jenkins demo"
+              />
+            </p>
 
-<p>注意在下面的 Label Expression 这里要填入<strong>haimaxy-jnlp</strong>，就是前面我们配置的 Slave Pod 中的 Label，这两个地方必须保持一致
-<img src="https://www.qikqiak.com/img/posts/jenkins-demo1-config.jpeg" alt="config" /></p>
+            <p>
+              注意在下面的 Label Expression
+              这里要填入<strong>haimaxy-jnlp</strong>，就是前面我们配置的 Slave
+              Pod 中的 Label，这两个地方必须保持一致
+              <img
+                src="https://www.qikqiak.com/img/posts/jenkins-demo1-config.jpeg"
+                alt="config"
+              />
+            </p>
 
-<p>然后往下拉，在 Build 区域选择<strong>Execute shell</strong>
-<img src="https://www.qikqiak.com/img/posts/jenkins-demo1-config2.jpeg" alt="Build" /></p>
+            <p>
+              然后往下拉，在 Build 区域选择<strong>Execute shell</strong>
+              <img
+                src="https://www.qikqiak.com/img/posts/jenkins-demo1-config2.jpeg"
+                alt="Build"
+              />
+            </p>
 
-<p>然后输入我们测试命令</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;测试 Kubernetes 动态生成 jenkins slave&#34;</span>
+            <p>然后输入我们测试命令</p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell"><span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;测试 Kubernetes 动态生成 jenkins slave&#34;</span>
 <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;==============docker in docker===========&#34;</span>
 docker info
 
 <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;=============kubectl=============&#34;</span>
-kubectl get pods</code></pre></div>
-<p>最后点击保存
-<img src="https://www.qikqiak.com/img/posts/jenkins-demo1-config3.jpeg" alt="command" /></p>
+kubectl get pods</code></pre>
+            </div>
+            <p>
+              最后点击保存
+              <img
+                src="https://www.qikqiak.com/img/posts/jenkins-demo1-config3.jpeg"
+                alt="command"
+              />
+            </p>
 
-<blockquote>
-<p>注意：如果在执行<code>kubectl apply</code>这一步的时候出现类似于<code>Failed to download OpenAPI (unknown), falling back to swagger error: error validating: &quot;k8s.yaml&quot;: error validating data: unknown; if you choose to ignore these errors, trun validation off with --validate=false</code>这样的错误，这是因为我使用的镜像<code>cnych/jenkins:jnlp</code>里面内置的<code>kubectl</code>工具是 v1.10.0 版本的，如果你的 kubernetes 集群版本较高，就会出现这种情况，要解决这个问题也很简单，可以基于我这个镜像重新制作一个镜像，把 kubectl 工具用正确的版本覆盖掉即可，<a href="https://github.com/cnych/kubernetes-learning/blob/master/jenkins/jenkins-slave.Dockerfile">点击查看我原始的 Dockerfile 文件</a>。</p>
-</blockquote>
+            <blockquote>
+              <p>
+                注意：如果在执行<code>kubectl apply</code
+                >这一步的时候出现类似于<code
+                  >Failed to download OpenAPI (unknown), falling back to swagger
+                  error: error validating: &quot;k8s.yaml&quot;: error
+                  validating data: unknown; if you choose to ignore these
+                  errors, trun validation off with --validate=false</code
+                >这样的错误，这是因为我使用的镜像<code>cnych/jenkins:jnlp</code>里面内置的<code>kubectl</code>工具是
+                v1.10.0 版本的，如果你的 kubernetes
+                集群版本较高，就会出现这种情况，要解决这个问题也很简单，可以基于我这个镜像重新制作一个镜像，把
+                kubectl 工具用正确的版本覆盖掉即可，<a
+                  href="https://github.com/cnych/kubernetes-learning/blob/master/jenkins/jenkins-slave.Dockerfile"
+                  >点击查看我原始的 Dockerfile 文件</a
+                >。
+              </p>
+            </blockquote>
 
-<p>现在我们直接在页面点击做成的 Build now 触发构建即可，然后观察 Kubernetes 集群中 Pod 的变化</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-ops
+            <p>
+              现在我们直接在页面点击做成的 Build now 触发构建即可，然后观察
+              Kubernetes 集群中 Pod 的变化
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-ops
 NAME                       READY     STATUS              RESTARTS   AGE
 jenkins2-7c85b6f4bd-rfqgv   <span style="color:#bd93f9">1</span>/1       Running             <span style="color:#bd93f9">3</span>          1d
-jnlp-hfmvd                 <span style="color:#bd93f9">0</span>/1       ContainerCreating   <span style="color:#bd93f9">0</span>          7s</code></pre></div>
-<p>我们可以看到在我们点击立刻构建的时候可以看到一个新的 Pod：jnlp-hfmvd 被创建了，这就是我们的 Jenkins Slave。任务执行完成后我们可以看到任务信息，比如我们这里是 花费了 5.2s 时间在 jnlp-hfmvd 这个 Slave上面
-<img src="https://www.qikqiak.com/img/posts/jenkins-demo1-config4.jpeg" alt="jnlp slave" /></p>
+jnlp-hfmvd                 <span style="color:#bd93f9">0</span>/1       ContainerCreating   <span style="color:#bd93f9">0</span>          7s</code></pre>
+            </div>
+            <p>
+              我们可以看到在我们点击立刻构建的时候可以看到一个新的
+              Pod：jnlp-hfmvd 被创建了，这就是我们的 Jenkins
+              Slave。任务执行完成后我们可以看到任务信息，比如我们这里是 花费了
+              5.2s 时间在 jnlp-hfmvd 这个 Slave上面
+              <img
+                src="https://www.qikqiak.com/img/posts/jenkins-demo1-config4.jpeg"
+                alt="jnlp slave"
+              />
+            </p>
 
-<p>同样也可以查看到对应的控制台信息：
-<img src="https://www.qikqiak.com/img/posts/jenkins-demo1-config5.jpeg" alt="jnlp output" /></p>
+            <p>
+              同样也可以查看到对应的控制台信息：
+              <img
+                src="https://www.qikqiak.com/img/posts/jenkins-demo1-config5.jpeg"
+                alt="jnlp output"
+              />
+            </p>
 
-<p>到这里证明我们的任务已经构建完成，然后这个时候我们再去集群查看我们的 Pod 列表，发现 kube-ops 这个 namespace 下面已经没有之前的 Slave 这个 Pod 了。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-ops
+            <p>
+              到这里证明我们的任务已经构建完成，然后这个时候我们再去集群查看我们的
+              Pod 列表，发现 kube-ops 这个 namespace 下面已经没有之前的 Slave
+              这个 Pod 了。
+            </p>
+            <div class="highlight">
+              <pre
+                style="
+                  color: #f8f8f2;
+                  background-color: #282a36;
+                  -moz-tab-size: 4;
+                  -o-tab-size: 4;
+                  tab-size: 4;
+                "
+              ><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-ops
 NAME                       READY     STATUS    RESTARTS   AGE
-jenkins2-7c85b6f4bd-rfqgv   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">3</span>          1d</code></pre></div>
-<p>到这里我们就完成了使用 Kubernetes 动态生成 Jenkins Slave 的方法。下节课我们来给大家介绍下怎么在 Jenkins 中来发布我们的 Kubernetes 应用。最后感谢圈友<code>@TangT-newhope-成都</code>提供的帮助。</p>
+jenkins2-7c85b6f4bd-rfqgv   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">3</span>          1d</code></pre>
+            </div>
+            <p>
+              到这里我们就完成了使用 Kubernetes 动态生成 Jenkins Slave
+              的方法。下节课我们来给大家介绍下怎么在 Jenkins 中来发布我们的
+              Kubernetes
+              应用。最后感谢圈友<code>@TangT-newhope-成都</code>提供的帮助。
+            </p>
 
-<p><a href="https://youdianzhishi.com/web/course/1030" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
+            <p>
+              <a
+                href="https://youdianzhishi.com/web/course/1030"
+                title="从 Docker 到 Kubernetes 进阶课程"
+                ><img
+                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
+                  alt="Kubernetes进阶训练营"
+              /></a>
+            </p>
 
+            <h2>微信公众号</h2>
+            <p>
+              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+              kubernetes 讨论群里面共同学习。
+            </p>
+            <img
+              src="https://picdn.youdianzhishi.com/images/qrcode.png"
+              alt="wechat-account-qrcode"
+            />
 
-          <h2>微信公众号</h2>
-<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
-<img src="https://bxdc-static.oss-cn-beijing.aliyuncs.com/images/qrcode.png" alt="wechat-account-qrcode">
-
-  
-          
             <div class="entry-shang text-center">
-    <p>「真诚赞赏，手留余香」</p>
-    <button class="zs show-zs btn btn-bred">赞赏</button>
-</div>
-<div class="zs-modal-bg"></div>
-<div class="zs-modal-box">
-    <div class="zs-modal-head">
-        <button type="button" class="close">×</button>
-        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
-        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-    </div>
-    <div class="zs-modal-body">
-        <div class="zs-modal-btns">
-            <button class="btn btn-blink" data-num="2">2元</button>
-            <button class="btn btn-blink" data-num="5">5元</button>
-            <button class="btn btn-blink" data-num="10">10元</button>
-            <button class="btn btn-blink" data-num="50">50元</button>
-            <button class="btn btn-blink" data-num="100">100元</button>
-            <button class="btn btn-blink" data-num="1">任意金额</button>
-        </div>
-        <div class="zs-modal-pay">
-            <button class="btn btn-bred" id="pay-text">2元</button>
-            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
-        </div>
-    </div>
-    <div class="zs-modal-footer">
-        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
-    </div>
-</div>
-          
-          
-            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
-    <center>
-    <a href="#" class="social-share-icon icon-weibo"></a>
-    <a href="#" class="social-share-icon icon-wechat"></a>
-    <a href="#" class="social-share-icon icon-twitter"></a>
-    <a href="#" class="social-share-icon icon-linkedin"></a>
-    <a href="#" class="social-share-icon icon-facebook"></a>
-    <a href="#" class="social-share-icon icon-qq"></a>
-    <a href="#" class="social-share-icon icon-qzone"></a>
-    </center>
-</div>
+              <p>「真诚赞赏，手留余香」</p>
+              <button class="zs show-zs btn btn-bred">赞赏</button>
+            </div>
+            <div class="zs-modal-bg"></div>
+            <div class="zs-modal-box">
+              <div class="zs-modal-head">
+                <button type="button" class="close">×</button>
+                <span class="author"
+                  ><img
+                    src="https://www.qikqiak.com/img/avatar.jpeg"
+                  />阳明</span
+                >
+                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+              </div>
+              <div class="zs-modal-body">
+                <div class="zs-modal-btns">
+                  <button class="btn btn-blink" data-num="2">2元</button>
+                  <button class="btn btn-blink" data-num="5">5元</button>
+                  <button class="btn btn-blink" data-num="10">10元</button>
+                  <button class="btn btn-blink" data-num="50">50元</button>
+                  <button class="btn btn-blink" data-num="100">100元</button>
+                  <button class="btn btn-blink" data-num="1">任意金额</button>
+                </div>
+                <div class="zs-modal-pay">
+                  <button class="btn btn-bred" id="pay-text">2元</button>
+                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+                  <img
+                    src="https://www.qikqiak.com/img/wechat-2.png"
+                    id="pay-image"
+                  />
+                </div>
+              </div>
+              <div class="zs-modal-footer">
+                <span class="zs-wechat"
+                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
+                /></span>
+              </div>
+            </div>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+            <div
+              class="social-share"
+              data-initialized="true"
+              style="margin-bottom: 20px; margin-top: 20px"
+            >
+              <center>
+                <a href="#" class="social-share-icon icon-weibo"></a>
+                <a href="#" class="social-share-icon icon-wechat"></a>
+                <a href="#" class="social-share-icon icon-twitter"></a>
+                <a href="#" class="social-share-icon icon-linkedin"></a>
+                <a href="#" class="social-share-icon icon-facebook"></a>
+                <a href="#" class="social-share-icon icon-qq"></a>
+                <a href="#" class="social-share-icon icon-qzone"></a>
+              </center>
+            </div>
 
-          
-        </article>
-  
-        
-          
+            <link
+              rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
+            />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+          </article>
 
-<h3>相关文章</h3>
-<ul style="margin-bottom: 25px;">
-    
-    <li><a href="https://www.qikqiak.com/post/pod-mount-single-file/">Pod 中挂载单个文件的方法</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/kubernetes-persistent-volume2/">kubernetes 持久化存储(二)</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/kubernetes-persistent-volume1/">kubernetes 持久化存储(一)</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/use-rbac-in-k8s/">Kubernetes RBAC 详解</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/use-secret-in-k8s/">Secret 的使用</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/use-service-in-k8s/">Service 的使用</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/use-job-cronjob/">Job和CronJob 的使用方法</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/use-rc-rs-manage-pod/">RC、RS 使用方法</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/what-is-oci-runc-containerd-cri-docker/">名称解释OCI、runc、containerd、Docker、CRI、CRI-O</a></li>
-    
-    <li><a href="https://www.qikqiak.com/post/pod-init-container/">初始化容器</a></li>
-    
-</ul>
+          <h3>相关文章</h3>
+          <ul style="margin-bottom: 25px">
+            <li>
+              <a href="https://www.qikqiak.com/post/pod-mount-single-file/"
+                >Pod 中挂载单个文件的方法</a
+              >
+            </li>
 
-        
-  
-        
-        <ul class="pager blog-pager">
-          
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/kubernetes-persistent-volume2/"
+                >kubernetes 持久化存储(二)</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/kubernetes-persistent-volume1/"
+                >kubernetes 持久化存储(一)</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/use-rbac-in-k8s/"
+                >Kubernetes RBAC 详解</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/use-secret-in-k8s/"
+                >Secret 的使用</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/use-service-in-k8s/"
+                >Service 的使用</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/use-job-cronjob/"
+                >Job和CronJob 的使用方法</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/use-rc-rs-manage-pod/"
+                >RC、RS 使用方法</a
+              >
+            </li>
+
+            <li>
+              <a
+                href="https://www.qikqiak.com/post/what-is-oci-runc-containerd-cri-docker/"
+                >名称解释OCI、runc、containerd、Docker、CRI、CRI-O</a
+              >
+            </li>
+
+            <li>
+              <a href="https://www.qikqiak.com/post/pod-init-container/"
+                >初始化容器</a
+              >
+            </li>
+          </ul>
+
+          <ul class="pager blog-pager">
             <li class="previous">
-              <a href="https://www.qikqiak.com/post/pod-mount-single-file/" data-toggle="tooltip" data-placement="top" title="Pod 中挂载单个文件的方法">&larr; 前一篇</a>
+              <a
+                href="https://www.qikqiak.com/post/pod-mount-single-file/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="Pod 中挂载单个文件的方法"
+                >&larr; 前一篇</a
+              >
             </li>
-          
-          
-            <li class="next">
-              <a href="https://www.qikqiak.com/post/kubernetes-jenkins2/" data-toggle="tooltip" data-placement="top" title="Jenkins Pipeline 部署 Kubernetes 应用(二)">后一篇 &rarr;</a>
-            </li>
-          
-        </ul>
-        
 
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-        
-        <ins class="adsbygoogle"
-            style="display:block"
+            <li class="next">
+              <a
+                href="https://www.qikqiak.com/post/kubernetes-jenkins2/"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="Jenkins Pipeline 部署 Kubernetes 应用(二)"
+                >后一篇 &rarr;</a
+              >
+            </li>
+          </ul>
+
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+          ></script>
+
+          <ins
+            class="adsbygoogle"
+            style="display: block"
             data-ad-client="ca-pub-5376999672787220"
             data-ad-slot="3700507799"
             data-ad-format="auto"
-            data-full-width-responsive="true"></ins>
-        <script>
+            data-full-width-responsive="true"
+          ></ins>
+          <script>
             (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
-  
-        
-    <div id="gitalk-container"></div>
-    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-    <script>
-    var gitalk = new Gitalk({
-        clientID: 'bdb76dbb2e9d0786e350',
-        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
-        repo: 'blog',
-        owner: 'cnych',
-        admin: ['cnych'],
-        labels: ['gitment'],
-        title: '基于 kubernetes 的动态 jenkins slave',
-        createIssueManually: true,
-        id: 'kubernetes-jenkins1',      
-        distractionFreeMode: true  
-    });
-    gitalk.render('gitalk-container');
-</script>
+          </script>
 
-
-        
-          
-
-        
-  
+          <div id="gitalk-container"></div>
+          <link
+            rel="stylesheet"
+            href="https://unpkg.com/gitalk/dist/gitalk.css"
+          />
+          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+          <script>
+            var gitalk = new Gitalk({
+              clientID: "bdb76dbb2e9d0786e350",
+              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
+              repo: "blog",
+              owner: "cnych",
+              admin: ["cnych"],
+              labels: ["gitment"],
+              title: "基于 kubernetes 的动态 jenkins slave",
+              createIssueManually: true,
+              id: "kubernetes-jenkins1",
+              distractionFreeMode: true,
+            });
+            gitalk.render("gitalk-container");
+          </script>
+        </div>
       </div>
-    
-    
-  </div>
-</div>
+    </div>
 
     <footer>
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-        <ul class="list-inline text-center footer-links">
-          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
-          
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <ul class="list-inline text-center footer-links">
+              <img
+                src="https://www.qikqiak.com/img/wechatmp.png"
+                alt="k8s技术圈"
+              />
+
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -848,7 +1390,7 @@ jenkins2-7c85b6f4bd-rfqgv   <span style="color:#bd93f9">1</span>/1       Running
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -857,7 +1399,7 @@ jenkins2-7c85b6f4bd-rfqgv   <span style="color:#bd93f9">1</span>/1       Running
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -866,7 +1408,7 @@ jenkins2-7c85b6f4bd-rfqgv   <span style="color:#bd93f9">1</span>/1       Running
                   </span>
                 </a>
               </li>
-          
+
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -875,121 +1417,158 @@ jenkins2-7c85b6f4bd-rfqgv   <span style="color:#bd93f9">1</span>/1       Running
                   </span>
                 </a>
               </li>
-          
-          
-          <li>
-            <a href="https://www.qikqiak.com/index.xml" title="RSS">
-              <span class="fa-stack fa-lg">
-                <i class="fa fa-circle fa-stack-2x"></i>
-                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+
+              <li>
+                <a href="https://www.qikqiak.com/index.xml" title="RSS">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+            </ul>
+            <p class="credits copyright text-muted">
+              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/">阳明的博客</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/archive/">归档</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://www.qikqiak.com/page/friend/">友链</a>
+              &nbsp;&bull;&nbsp;
+              <a href="https://beian.miit.gov.cn/" target="_blank"
+                >蜀ICP备11027319号-5</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
+                >kubernetes.io</a
+              >
+              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
+                >Kubernetes中文社区</a
+              >
+            </p>
+            <p class="text-center text-muted">
+              <script
+                async
+                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
+              ></script>
+              <span id="busuanzi_container_site_pv" style="display: none">
+                本站总访问量<span id="busuanzi_value_site_pv"></span>次
               </span>
-            </a>
-          </li>
-          
-        </ul>
-        <p class="credits copyright text-muted">
-          
+              &nbsp;&bull;&nbsp;
+              <span id="busuanzi_container_site_uv" style="display: none">
+                访客数<span id="busuanzi_value_site_uv"></span>人次
+              </span>
+            </p>
 
-          &nbsp;&bull;&nbsp;
-          2023
-
-          
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/">阳明的博客</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/archive/">归档</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://www.qikqiak.com/page/friend/">友链</a>
-            &nbsp;&bull;&nbsp;
-            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
-            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
-          
-        </p>
-        <p class="text-center text-muted">
-          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-          <span id="busuanzi_container_site_pv" style="display:none">
-            本站总访问量<span id="busuanzi_value_site_pv"></span>次
-          </span>
-          &nbsp;&bull;&nbsp;
-          <span id="busuanzi_container_site_uv" style="display:none">
-            访客数<span id="busuanzi_value_site_uv"></span>人次
-          </span>
-        </p>
-        
-        <p class="credits theme-by text-muted">
-          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
-          
-        </p>
+            <p class="credits theme-by text-muted">
+              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
+              &nbsp;&bull;&nbsp; 主题
+              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+              移植自
+              <a href="https://github.com/rootsongjc/beautifulhugo"
+                >Beautiful Hugo</a
+              >
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</footer>
+    </footer>
 
+    <script
+      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
+      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
+    ></script>
 
-<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "UA-69668147-3");
+    </script>
+    <script>
+      (function () {
+        var bp = document.createElement("script");
+        var curProtocol = window.location.protocol.split(":")[0];
+        if (curProtocol === "https") {
+          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
+        } else {
+          bp.src = "http://push.zhanzhang.baidu.com/push.js";
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+      })();
+    </script>
+    <script>
+      $(document).ready(function () {
+        var int = setInterval(fixCount, 50);
 
-
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-69668147-3');
-</script>
-<script>
-(function(){
-    var bp = document.createElement('script');
-    var curProtocol = window.location.protocol.split(':')[0];
-    if (curProtocol === 'https') {
-        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
-    }
-    else {
-        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
-    }
-    var s = document.getElementsByTagName("script")[0];
-    s.parentNode.insertBefore(bp, s);
-})();
-</script>
-<script >
-$(document).ready(function() {
-  var int = setInterval(fixCount, 50);  
-  
-  var initPVCount = 584976;
-  var initUVCount = 153191;
-  function fixCount() {                   
-    if ($("#busuanzi_container_site_pv").css("display") != "none") {
-        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
-        clearInterval(int); 
-    }
-    if ($("#busuanzi_container_site_uv").css("display") != "none") {
-      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
-      clearInterval(int); 
-    }  
-  }           
-});
-</script>
- <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
-<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
-<script type="text/javascript">
-$('.carousel').slick({
-    dots: true,
-    arrows: true,
-    autoplay: true,
-    autoplaySpeed: 4000,
-    infinite: true,
-    speed: 500,
-    fade: true,
-    cssEase: 'linear',
-    centerMode: true,
-    prevArrow: '<button type="button" class="slick-prev"></button>',
-    nextArrow: '<button type="button" class="slick-next"></button>',
-});
-</script>
-
+        var initPVCount = 584976;
+        var initUVCount = 153191;
+        function fixCount() {
+          if ($("#busuanzi_container_site_pv").css("display") != "none") {
+            $("#busuanzi_value_site_pv").html(
+              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
+            );
+            clearInterval(int);
+          }
+          if ($("#busuanzi_container_site_uv").css("display") != "none") {
+            $("#busuanzi_value_site_uv").html(
+              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
+            );
+            clearInterval(int);
+          }
+        }
+      });
+    </script>
+    <script>
+      (function (w, d, s, id) {
+        if (typeof w.webpushr !== "undefined") return;
+        w.webpushr =
+          w.webpushr ||
+          function () {
+            (w.webpushr.q = w.webpushr.q || []).push(arguments);
+          };
+        var js,
+          fjs = d.getElementsByTagName(s)[0];
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "https://cdn.webpushr.com/app.min.js";
+        fjs.parentNode.appendChild(js);
+      })(window, document, "script", "webpushr-jssdk");
+      webpushr(
+        "init",
+        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
+      );
+    </script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
+    ></script>
+    <script type="text/javascript">
+      $(".carousel").slick({
+        dots: true,
+        arrows: true,
+        autoplay: true,
+        autoplaySpeed: 4000,
+        infinite: true,
+        speed: 500,
+        fade: true,
+        cssEase: "linear",
+        centerMode: true,
+        prevArrow: '<button type="button" class="slick-prev"></button>',
+        nextArrow: '<button type="button" class="slick-next"></button>',
+      });
+    </script>
   </body>
 </html>
-
