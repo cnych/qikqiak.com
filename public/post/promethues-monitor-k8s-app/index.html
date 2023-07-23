@@ -1,1009 +1,639 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
-    />
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-    <title>
-      Kubernetes
-      应用监控-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
-    </title>
-    <meta property="og:title" content="Kubernetes 应用监控" />
-    <meta name="twitter:title" content="Kubernetes 应用监控" />
 
-    <meta
-      name="description"
-      content="使用 Prometheus 监控 Kubernetes 集群应用"
-    />
-    <meta
-      property="og:description"
-      content="使用 Prometheus 监控 Kubernetes 集群应用"
-    />
-    <meta
-      name="twitter:description"
-      content="使用 Prometheus 监控 Kubernetes 集群应用"
-    />
-    <meta name="author" content="" />
-    <link
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-      rel="icon"
-      type="image/x-icon"
-    />
-    <link
-      rel="apple-touch-icon"
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      property="og:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      name="twitter:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta name="twitter:card" content="summary" />
-    <meta
-      property="og:url"
-      content="https://www.qikqiak.com/post/promethues-monitor-k8s-app/"
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="阳明的博客" />
+  <title>Kubernetes 应用监控-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="Kubernetes 应用监控" />
+  <meta name="twitter:title" content="Kubernetes 应用监控" />
 
-    <meta name="generator" content="Hugo 0.55.6" />
-    <link
-      rel="canonical"
-      href="https://www.qikqiak.com/post/promethues-monitor-k8s-app/"
-    />
-    <link
-      rel="alternate"
-      href="https://www.qikqiak.com/index.xml"
-      type="application/rss+xml"
-      title="阳明的博客"
-    />
+  <meta name="description" content="使用 Prometheus 监控 Kubernetes 集群应用">
+  <meta property="og:description" content="使用 Prometheus 监控 Kubernetes 集群应用">
+  <meta name="twitter:description" content="使用 Prometheus 监控 Kubernetes 集群应用">
+  <meta name="author" content=""/>
+  <link href="https://picdn.youdianzhishi.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://picdn.youdianzhishi.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/promethues-monitor-k8s-app/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
 
-    <link
-      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
-      rel="stylesheet"
-    />
+  <link rel="canonical" href="https://www.qikqiak.com/post/promethues-monitor-k8s-app/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
-    <link
-      rel="stylesheet"
-      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
-      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
-    />
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
 
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
-    />
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a6b62363fe57848ad01efa2a5d1bbb1047c2ffb71b53d8aeb42bc5ed5c77ea7c.css' integrity='sha256-prYjY/5XhIrQHvoqXRu7EEfC/7cbU9iutCvF7Vx36nw='>
 
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
     <!--[if lt IE 9]>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-      <link
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-        rel="stylesheet"
-      />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <![endif]-->
-    <meta
-      name="google-site-verification"
-      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
-    />
-    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-    <meta name="keywords" content="kubernetes, 监控, prometheus" />
-    <script>
-      var _hmt = _hmt || [];
-      (function () {
-        var hm = document.createElement("script");
-        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(hm, s);
-      })();
-    </script>
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, 监控, prometheus">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
 
-    <script type="application/javascript">
-      var doNotTrack = false;
-      if (!doNotTrack) {
-        window.ga =
-          window.ga ||
-          function () {
-            (ga.q = ga.q || []).push(arguments);
-          };
-        ga.l = +new Date();
-        ga("create", "UA-69668147-3", "auto");
 
-        ga("send", "pageview");
-      }
-    </script>
-    <script async src="https://www.google-analytics.com/analytics.js"></script>
-  </head>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-      <div class="container">
-        <div class="navbar-header">
-          <button
-            type="button"
-            class="navbar-toggle"
-            data-toggle="collapse"
-            data-target="#main-navbar"
-          >
-            <span class="sr-only">切换导航</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a
-            class="navbar-brand"
-            href="https://www.qikqiak.com/"
-            title="阳明的博客"
-          >
-            <img
-              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
-              style="margin-top: -5px; height: 32px"
-              alt="阳明的博客"
-            />
-          </a>
-        </div>
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://picdn.youdianzhishi.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
 
-        <div class="collapse navbar-collapse" id="main-navbar">
-          <ul class="nav navbar-nav navbar-right">
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-
+          
+        
+          
             <li>
-              <a
-                title="课程"
-                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
-                >课程</a
-              >
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/archives">Archive</a>
-
-                <a href="https://www.qikqiak.com/tags">tags</a>
-
-                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-
-                <a href="https://www.qikqiak.com/tags/python">python</a>
-
-                <a href="https://www.qikqiak.com/tags/django">django</a>
-
-                <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-
-                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-
-                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-
-                <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/"
-                >关于</a
-              >
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
             </li>
-
+          
+        
+          
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
+          
+        
 
-            <li>
-              <a
-                href="#modalSearch"
-                data-toggle="modal"
-                data-target="#modalSearch"
-                style="outline: none"
-              >
-                <span
-                  id="searchGlyph"
-                  class="glyphicon glyphicon-search"
-                ></span>
-              </a>
-            </li>
-          </ul>
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
         </div>
-      </div>
-    </nav>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-    <div id="modalSearch" class="modal fade" role="dialog">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal">
-              &times;
-            </button>
-            <h4 class="modal-title">搜索</h4>
-          </div>
-          <div class="modal-body">
-            <div class="aa-input-container" id="aa-input-container">
-              <input
-                type="search"
-                id="aa-search-input"
-                class="aa-input-search"
-                placeholder="Search for titles or URIs..."
-                name="search"
-                autocomplete="off"
-              />
-              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-                <path
-                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
-                />
-              </svg>
-            </div>
-            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
 
-            <script>
-              var client = algoliasearch(
-                "1JDRAS0AZR",
-                "8804ac109158bb3bb60d74ce98fa332f"
-              );
-              var index = client.initIndex("prod_blog");
-
-              autocomplete(
-                "#aa-search-input",
-                { hint: false },
-                {
-                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
-
-                  displayKey: "name",
-
-                  templates: {
-                    suggestion: function (suggestion) {
-                      return (
-                        "<span>" +
-                        '<a href="https://www.qikqiak.com/post/' +
-                        suggestion.slug +
-                        '">' +
-                        suggestion._highlightResult.title.value +
-                        "</a></span>"
-                      );
-                    },
-                  },
-                }
-              );
-            </script>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">
-              close
-            </button>
-          </div>
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <header class="header-section">
-      <div class="intro-header no-img">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-              <div class="post-heading">
-                <h1>Kubernetes 应用监控</h1>
+    
+  
+  
+  
 
-                <h2 class="post-subheading">
-                  使用 Prometheus 监控 Kubernetes 集群应用
-                </h2>
 
-                <span class="post-meta"> 发表于 October 28, 2018 </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
 
-    <div class="container" role="main">
-      <div class="row">
-        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-          <div>
-            <h5 id="tags" style="margin-top: 30px">
-              标签:
 
-              <a href="https://www.qikqiak.com/tags/prometheus/">prometheus</a>
-              &nbsp;
+  
 
-              <a href="https://www.qikqiak.com/tags/monitor/">monitor</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
-              &nbsp;
-            </h5>
-          </div>
-
-          <article
-            role="main"
-            class="blog-post"
-            itemprop="articleBody"
-            id="content"
-          >
-            <p>
-              <a href="https://mp.weixin.qq.com/s/cMy-ApGlIeYKIBnCanwwFQ"
-                ><img
-                  src="https://www.qikqiak.com/img/posts/promethus-k8s-cover.png"
-                  alt="promethues monitor k8s app"
-              /></a>
-              <a
-                href="https://www.qikqiak.com/k8s-book/docs/52.Prometheus%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8.html"
-                >上一节</a
-              >我们和大家介绍了<code>Prometheus</code>的数据指标是通过一个公开的
-              HTTP(S) 数据接口获取到的，我们不需要单独安装监控的
-              agent，只需要暴露一个 metrics 接口，Prometheus
-              就会定期去拉取数据；对于一些普通的 HTTP
-              服务，我们完全可以直接重用这个服务，添加一个<code>/metrics</code>接口暴露给
-              Prometheus；而且获取到的指标数据格式是非常易懂的，不需要太高的学习成本。
-            </p>
-
-            <p>
-              现在很多服务从一开始就内置了一个<code>/metrics</code>接口，比如
-              Kubernetes 的各个组件、istio
-              服务网格都直接提供了数据指标接口。有一些服务即使没有原生集成该接口，也完全可以使用一些
-              exporter 来获取到指标数据，比如
-              mysqld_exporter、node_exporter，这些 exporter
-              就有点类似于传统监控服务中的
-              agent，作为一直服务存在，用来收集目标服务的指标数据然后直接暴露给
-              Prometheus。
-            </p>
-
-            <h2 id="普通应用监控">普通应用监控</h2>
-
-            <p>
-              前面我们已经和大家学习了 ingress
-              的使用，我们采用的是<code>Traefik</code>作为我们的
-              ingress-controller，是我们 Kubernetes
-              集群内部服务和外部用户之间的桥梁。Traefik
-              本身内置了一个<code>/metrics</code>的接口，但是需要我们在参数中配置开启:
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">[metrics]
-  [metrics.prometheus]
-    entryPoint = <span style="color:#f1fa8c">&#34;traefik&#34;</span>
-    buckets = [<span style="color:#bd93f9">0.1</span>, <span style="color:#bd93f9">0.3</span>, <span style="color:#bd93f9">1.2</span>, <span style="color:#bd93f9">5.0</span>]</code></pre>
-            </div>
-            <blockquote>
-              <p>
-                之前的版本中是通过<code>--web</code>和<code>--web.metrics.prometheus</code>两个参数进行开启的，要注意查看对应版本的文档。
-              </p>
-            </blockquote>
-
-            <p>
-              我们需要在<code>traefik.toml</code>的配置文件中添加上上面的配置信息，然后更新
-              ConfigMap 和 Pod 资源对象即可，Traefik Pod
-              运行后，我们可以看到我们的服务 IP：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl get svc -n kube-system
-NAME                      TYPE        CLUSTER-IP       EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>                       AGE
-......
-traefik-ingress-service   NodePort    <span style="color:#bd93f9">10</span>.101.33.56     &lt;none&gt;        <span style="color:#bd93f9">80</span>:31692/TCP,8080:32115/TCP   63d</code></pre>
-            </div>
-            <p>
-              然后我们可以使用<code>curl</code>检查是否开启了 Prometheus
-              指标数据接口，或者通过 NodePort 访问也可以：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ curl <span style="color:#bd93f9">10</span>.101.33.56:8080/metrics
-<span style="color:#6272a4"># HELP go_gc_duration_seconds A summary of the GC invocation durations.</span>
-<span style="color:#6272a4"># TYPE go_gc_duration_seconds summary</span>
-go_gc_duration_seconds<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">quantile</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;0&#34;</span><span style="color:#ff79c6">}</span> <span style="color:#bd93f9">0</span>.000121036
-go_gc_duration_seconds<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">quantile</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;0.25&#34;</span><span style="color:#ff79c6">}</span> <span style="color:#bd93f9">0</span>.000210328
-go_gc_duration_seconds<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">quantile</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;0.5&#34;</span><span style="color:#ff79c6">}</span> <span style="color:#bd93f9">0</span>.000279974
-go_gc_duration_seconds<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">quantile</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;0.75&#34;</span><span style="color:#ff79c6">}</span> <span style="color:#bd93f9">0</span>.000420738
-go_gc_duration_seconds<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">quantile</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;1&#34;</span><span style="color:#ff79c6">}</span> <span style="color:#bd93f9">0</span>.001191494
-go_gc_duration_seconds_sum <span style="color:#bd93f9">0</span>.004353914
-go_gc_duration_seconds_count <span style="color:#bd93f9">12</span>
-<span style="color:#6272a4"># HELP go_goroutines Number of goroutines that currently exist.</span>
-<span style="color:#6272a4"># TYPE go_goroutines gauge</span>
-go_goroutines <span style="color:#bd93f9">63</span>
-......</code></pre>
-            </div>
-            <p>
-              从这里可以看到 Traefik
-              的监控数据接口已经开启成功了，然后我们就可以将这个<code>/metrics</code>接口配置到<code>prometheus.yml</code>中去了，直接加到默认的<code>prometheus</code>这个
-              job 下面：(prome-cm.yaml)
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: prometheus-config
-  namespace: kube-ops
-data:
-  prometheus.yml: <span style="color:#f1fa8c">|
-</span><span style="color:#f1fa8c">    global:</span>
-      scrape_interval: 30s
-      scrape_timeout: 30s
-
-    scrape_configs:
-    - job_name: <span style="color:#f1fa8c">&#39;prometheus&#39;</span>
-      static_configs:
-        - targets: [<span style="color:#f1fa8c">&#39;localhost:9090&#39;</span>]
-
-    - job_name: <span style="color:#f1fa8c">&#39;traefik&#39;</span>
-      static_configs:
-        - targets: [<span style="color:#f1fa8c">&#39;traefik-ingress-service.kube-system.svc.cluster.local:8080&#39;</span>]</code></pre>
-            </div>
-            <p>
-              当然，我们这里只是一个很简单的配置，scrape_configs
-              下面可以支持很多参数，例如：
-            </p>
-
-            <ul>
-              <li>
-                basic_auth 和
-                bearer_token：比如我们提供的<code>/metrics</code>接口需要 basic
-                认证的时候，通过传统的用户名/密码或者在请求的header中添加对应的
-                token 都可以支持
-              </li>
-              <li>
-                kubernetes_sd_configs 或
-                consul_sd_configs：可以用来自动发现一些应用的监控数据
-              </li>
-            </ul>
-
-            <p>
-              由于我们这里 Traefik 对应的 servicename
-              是<code>traefik-ingress-service</code>，并且在 kube-system 这个
-              namespace
-              下面，所以我们这里的<code>targets</code>的路径配置则需要使用<code>FQDN</code>的形式：<code>traefik-ingress-service.kube-system.svc.cluster.local</code>，当然如果你的
-              Traefik 和 Prometheus 都部署在同一个命名空间的话，则直接填
-              <code>servicename:serviceport</code>即可。然后我们重新更新这个
-              ConfigMap 资源对象：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl delete -f prome-cm.yaml
-configmap <span style="color:#f1fa8c">&#34;prometheus-config&#34;</span> deleted
-$ kubectl create -f prome-cm.yaml
-configmap <span style="color:#f1fa8c">&#34;prometheus-config&#34;</span> created</code></pre>
-            </div>
-            <p>
-              现在 Prometheus 的配置文件内容已经更改了，隔一会儿被挂载到 Pod
-              中的 prometheus.yml 文件也会更新，由于我们之前的 Prometheus
-              启动参数中添加了<code>--web.enable-lifecycle</code>参数，所以现在我们只需要执行一个
-              reload 命令即可让配置生效：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl get svc -n kube-ops
-NAME         TYPE       CLUSTER-IP     EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>                          AGE
-prometheus   NodePort   <span style="color:#bd93f9">10</span>.102.74.90   &lt;none&gt;        <span style="color:#bd93f9">9090</span>:30358/TCP                   3d
-$ curl -X POST <span style="color:#f1fa8c">&#34;http://10.102.74.90:9090/-/reload&#34;</span></code></pre>
-            </div>
-            <blockquote>
-              <p>
-                由于 ConfigMap 通过 Volume 的形式挂载到 Pod
-                中去的热更新需要一定的间隔时间才会生效，所以需要稍微等一小会儿。
-              </p>
-            </blockquote>
-
-            <p>
-              reload 这个 url 是一个 POST 请求，所以这里我们通过 service 的
-              CLUSTER-IP:PORT 就可以访问到这个重载的接口，这个时候我们再去看
-              Prometheus 的 Dashboard 中查看采集的目标数据：
-              <img
-                src="https://www.qikqiak.com/img/posts/prometheus-dashboard-targets.png"
-                alt="prometheus dashboard targets"
-              />
-            </p>
-
-            <p>
-              可以看到我们刚刚添加的<code>traefik</code>这个任务已经出现了，然后同样的我们可以切换到
-              Graph 下面去，我们可以找到一些 Traefik
-              的指标数据，至于这些指标数据代表什么意义，一般情况下，我们可以去查看对应的<code>/metrics</code>接口，里面一般情况下都会有对应的注释。
-            </p>
-
-            <p>到这里我们就在 Prometheus 上配置了第一个 Kubernetes 应用。</p>
-
-            <h2 id="使用-exporter-监控应用">使用 exporter 监控应用</h2>
-
-            <p>
-              上面我们也说过有一些应用可能没有自带<code>/metrics</code>接口供
-              Prometheus 使用，在这种情况下，我们就需要利用 exporter 服务来为
-              Prometheus 提供指标数据了。Prometheus 官方为许多应用就提供了对应的
-              exporter
-              应用，也有许多第三方的实现，我们可以前往官方网站进行查看：<a
-                href="https://prometheus.io/docs/instrumenting/exporters/"
-                >exporters</a
-              >
-            </p>
-
-            <p>
-              比如我们这里通过一个<a
-                href="https://github.com/oliver006/redis_exporter"
-                >redis-exporter</a
-              >的服务来监控 redis 服务，对于这类应用，我们一般会以 sidecar
-              的形式和主应用部署在同一个 Pod 中，比如我们这里来部署一个 redis
-              应用，并用 redis-exporter 的方式来采集监控数据供 Prometheus
-              使用，如下资源清单文件：（prome-redis.yaml）
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">apiVersion: extensions/v1beta1
-kind: Deployment
-metadata:
-  name: redis
-  namespace: kube-ops
-spec:
-  template:
-    metadata:
-      annotations:
-        prometheus.io/scrape: <span style="color:#f1fa8c">&#34;true&#34;</span>
-        prometheus.io/port: <span style="color:#f1fa8c">&#34;9121&#34;</span>
-      labels:
-        app: redis
-    spec:
-      containers:
-      - name: redis
-        image: redis:<span style="color:#bd93f9">4</span>
-        resources:
-          requests:
-            cpu: 100m
-            memory: 100Mi
-        ports:
-        - containerPort: <span style="color:#bd93f9">6379</span>
-      - name: redis-exporter
-        image: oliver006/redis_exporter:latest
-        resources:
-          requests:
-            cpu: 100m
-            memory: 100Mi
-        ports:
-        - containerPort: <span style="color:#bd93f9">9121</span>
----
-kind: Service
-apiVersion: v1
-metadata:
-  name: redis
-  namespace: kube-ops
-spec:
-  selector:
-    app: redis
-  ports:
-  - name: redis
-    port: <span style="color:#bd93f9">6379</span>
-    targetPort: <span style="color:#bd93f9">6379</span>
-  - name: prom
-    port: <span style="color:#bd93f9">9121</span>
-    targetPort: <span style="color:#bd93f9">9121</span></code></pre>
-            </div>
-            <p>
-              可以看到上面我们在 redis 这个 Pod 中包含了两个容器，一个就是 redis
-              本身的主应用，另外一个容器就是
-              redis_exporter。现在直接创建上面的应用：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl create -f prome-redis.yaml
-deployment.extensions <span style="color:#f1fa8c">&#34;redis&#34;</span> created
-service <span style="color:#f1fa8c">&#34;redis&#34;</span> created</code></pre>
-            </div>
-            <p>创建完成后，我们可以看到 redis 的 Pod 里面包含有两个容器：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-ops
-NAME                          READY     STATUS    RESTARTS   AGE
-prometheus-8566cd9699-gt9wh   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          3d
-redis-544b6c8c54-8xd2g        <span style="color:#bd93f9">2</span>/2       Running   <span style="color:#bd93f9">0</span>          3m
-$ kubectl get svc -n kube-ops
-NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>                          AGE
-prometheus   NodePort    <span style="color:#bd93f9">10</span>.102.74.90    &lt;none&gt;        <span style="color:#bd93f9">9090</span>:30358/TCP                   3d
-redis        ClusterIP   <span style="color:#bd93f9">10</span>.104.131.44   &lt;none&gt;        <span style="color:#bd93f9">6379</span>/TCP,9121/TCP                5m</code></pre>
-            </div>
-            <p>我们可以通过 9121 端口来校验是否能够采集到数据：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ curl <span style="color:#bd93f9">10</span>.104.131.44:9121/metrics
-<span style="color:#6272a4"># HELP go_gc_duration_seconds A summary of the GC invocation durations.</span>
-<span style="color:#6272a4"># TYPE go_gc_duration_seconds summary</span>
-go_gc_duration_seconds<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">quantile</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;0&#34;</span><span style="color:#ff79c6">}</span> <span style="color:#bd93f9">0</span>
-go_gc_duration_seconds<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">quantile</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;0.25&#34;</span><span style="color:#ff79c6">}</span> <span style="color:#bd93f9">0</span>
-go_gc_duration_seconds<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">quantile</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;0.5&#34;</span><span style="color:#ff79c6">}</span> <span style="color:#bd93f9">0</span>
-go_gc_duration_seconds<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">quantile</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;0.75&#34;</span><span style="color:#ff79c6">}</span> <span style="color:#bd93f9">0</span>
-go_gc_duration_seconds<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">quantile</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;1&#34;</span><span style="color:#ff79c6">}</span> <span style="color:#bd93f9">0</span>
-go_gc_duration_seconds_sum <span style="color:#bd93f9">0</span>
-go_gc_duration_seconds_count <span style="color:#bd93f9">0</span>
-......
-<span style="color:#6272a4"># HELP redis_used_cpu_user_children used_cpu_user_childrenmetric</span>
-<span style="color:#6272a4"># TYPE redis_used_cpu_user_children gauge</span>
-redis_used_cpu_user_children<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">addr</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;redis://localhost:6379&#34;</span>,alias<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;&#34;</span><span style="color:#ff79c6">}</span> <span style="color:#bd93f9">0</span></code></pre>
-            </div>
-            <p>同样的，现在我们只需要更新 Prometheus 的配置文件：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">- job_name: <span style="color:#f1fa8c">&#39;redis&#39;</span>
-  static_configs:
-  - targets: [<span style="color:#f1fa8c">&#39;redis:9121&#39;</span>]</code></pre>
-            </div>
-            <blockquote>
-              <p>
-                由于我们这里的 redis 服务和 Prometheus 处于同一个
-                namespace，所以我们直接使用 servicename 即可。
-              </p>
-            </blockquote>
-
-            <p>配置文件更新后，重新加载：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl delete -f prome-cm.yaml
-configmap <span style="color:#f1fa8c">&#34;prometheus-config&#34;</span> deleted
-$ kubectl create -f prome-cm.yaml
-configmap <span style="color:#f1fa8c">&#34;prometheus-config&#34;</span> created
-<span style="color:#6272a4"># 隔一会儿执行reload操作</span>
-$ curl -X POST <span style="color:#f1fa8c">&#34;http://10.102.74.90:9090/-/reload&#34;</span></code></pre>
-            </div>
-            <p>
-              这个时候我们再去看 Prometheus 的 Dashboard 中查看采集的目标数据：
-              <img
-                src="https://www.qikqiak.com/img/posts/prometheus-targets-redis.png"
-                alt="prometheus targets redis"
-              />
-            </p>
-
-            <p>
-              可以看到配置的 redis 这个 job 已经生效了。切换到 Graph
-              下面可以看到很多关于 redis 的指标数据：
-              <img
-                src="https://www.qikqiak.com/img/posts/redis-metrics.png"
-                alt="redis metrics"
-              />
-            </p>
-
-            <p>
-              我们选择任意一个指标，比如<code>redis_exporter_scrapes_total</code>，然后点击执行就可以看到对应的数据图表了：
-              <img
-                src="https://www.qikqiak.com/img/posts/redis-graph.png"
-                alt="redis scrapes total"
-              />
-            </p>
-
-            <blockquote>
-              <p>注意，如果时间有问题，我们需要手动在 Graph 下面调整下时间</p>
-            </blockquote>
-
-            <p>
-              除了监控群集中部署的服务之外，我们下节课再和大家学习怎样监视
-              Kubernetes 群集本身。
-            </p>
-
-            <p>
-              本文节选自<a
-                href="https://www.qikqiak.com/k8s-book/docs/53.%E7%9B%91%E6%8E%A7Kubernetes%E9%9B%86%E7%BE%A4%E5%BA%94%E7%94%A8.html"
-                >从Docker到Kubernetes进阶</a
-              >
-            </p>
-
-            <p>
-              <a
-                href="https://youdianzhishi.com/web/course/1030"
-                title="从 Docker 到 Kubernetes 进阶课程"
-                ><img
-                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
-                  alt="Kubernetes进阶训练营"
-              /></a>
-            </p>
-
-            <h2>微信公众号</h2>
-            <p>
-              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
-              kubernetes 讨论群里面共同学习。
-            </p>
-            <img
-              src="https://picdn.youdianzhishi.com/images/qrcode.png"
-              alt="wechat-account-qrcode"
-            />
-
-            <div class="entry-shang text-center">
-              <p>「真诚赞赏，手留余香」</p>
-              <button class="zs show-zs btn btn-bred">赞赏</button>
-            </div>
-            <div class="zs-modal-bg"></div>
-            <div class="zs-modal-box">
-              <div class="zs-modal-head">
-                <button type="button" class="close">×</button>
-                <span class="author"
-                  ><img
-                    src="https://www.qikqiak.com/img/avatar.jpeg"
-                  />阳明</span
-                >
-                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-              </div>
-              <div class="zs-modal-body">
-                <div class="zs-modal-btns">
-                  <button class="btn btn-blink" data-num="2">2元</button>
-                  <button class="btn btn-blink" data-num="5">5元</button>
-                  <button class="btn btn-blink" data-num="10">10元</button>
-                  <button class="btn btn-blink" data-num="50">50元</button>
-                  <button class="btn btn-blink" data-num="100">100元</button>
-                  <button class="btn btn-blink" data-num="1">任意金额</button>
-                </div>
-                <div class="zs-modal-pay">
-                  <button class="btn btn-bred" id="pay-text">2元</button>
-                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-                  <img
-                    src="https://www.qikqiak.com/img/wechat-2.png"
-                    id="pay-image"
-                  />
-                </div>
-              </div>
-              <div class="zs-modal-footer">
-                <span class="zs-wechat"
-                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
-                /></span>
-              </div>
-            </div>
-
-            <div
-              class="social-share"
-              data-initialized="true"
-              style="margin-bottom: 20px; margin-top: 20px"
-            >
-              <center>
-                <a href="#" class="social-share-icon icon-weibo"></a>
-                <a href="#" class="social-share-icon icon-wechat"></a>
-                <a href="#" class="social-share-icon icon-twitter"></a>
-                <a href="#" class="social-share-icon icon-linkedin"></a>
-                <a href="#" class="social-share-icon icon-facebook"></a>
-                <a href="#" class="social-share-icon icon-qq"></a>
-                <a href="#" class="social-share-icon icon-qzone"></a>
-              </center>
-            </div>
-
-            <link
-              rel="stylesheet"
-              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
-            />
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
-          </article>
-
-          <h3>相关文章</h3>
-          <ul style="margin-bottom: 25px">
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/kubernetes-monitor-prometheus-grafana/"
-                >Kubernetes使用Prometheus搭建监控平台</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/alertmanager-of-prometheus-in-practice/"
-                >Prometheus报警AlertManager实战</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/update-prometheus-2-in-kubernetes/"
-                >Kubernetes 下升级Prometheus2.0</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/kubernetes-affinity-scheduler/"
-                >重新理解 kubernetes 亲和性调度</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/kube-scheduler-introduction/"
-                >Kubernetes 调度器介绍</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/helm-hooks-usage/"
-                >Helm Hooks 的使用</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/k8s-course-promotion/"
-                >国庆 K8S 课程特别活动</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/helm-name-template-usage/"
-                >Helm 命名模板的使用</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/dockerfile-best-practice/"
-                >Dockerfile 最佳实践</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/kubernetes-qos-usage/"
-                >Kubernetes 服务质量 Qos 解析</a
-              >
-            </li>
-          </ul>
-
-          <ul class="pager blog-pager">
-            <li class="previous">
-              <a
-                href="https://www.qikqiak.com/post/kubernetes-affinity-scheduler/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="重新理解 kubernetes 亲和性调度"
-                >&larr; 前一篇</a
-              >
-            </li>
-
-            <li class="next">
-              <a
-                href="https://www.qikqiak.com/post/promethues-monitor-k8s-nodes/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="监控 Kubernetes 集群节点"
-                >后一篇 &rarr;</a
-              >
-            </li>
-          </ul>
-
-          <script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-          ></script>
-
-          <ins
-            class="adsbygoogle"
-            style="display: block"
-            data-ad-client="ca-pub-5376999672787220"
-            data-ad-slot="3700507799"
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          ></ins>
-          <script>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-          </script>
-
-          <div id="gitalk-container"></div>
-          <link
-            rel="stylesheet"
-            href="https://unpkg.com/gitalk/dist/gitalk.css"
-          />
-          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-          <script>
-            var gitalk = new Gitalk({
-              clientID: "bdb76dbb2e9d0786e350",
-              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
-              repo: "blog",
-              owner: "cnych",
-              admin: ["cnych"],
-              labels: ["gitment"],
-              title: "Kubernetes 应用监控",
-              createIssueManually: true,
-              id: "promethues-monitor-k8s-app",
-              distractionFreeMode: true,
-            });
-            gitalk.render("gitalk-container");
-          </script>
-        </div>
-      </div>
-    </div>
-
-    <footer>
+  <header class="header-section ">
+    
+    
+    
+    <div class="intro-header no-img">
+      
       <div class="container">
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <ul class="list-inline text-center footer-links">
-              <img
-                src="https://www.qikqiak.com/img/wechatmp.png"
-                alt="k8s技术圈"
-              />
+            <div class="post-heading">
+              <h1>Kubernetes 应用监控</h1>
+                
+                  
+                    <h2 class="post-subheading">使用 Prometheus 监控 Kubernetes 集群应用</h2>
+                  
+                
+                
+                  <span class="post-meta">
+  发表于 October 28, 2018  
+</span>
 
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/prometheus/">prometheus</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/monitor/">monitor</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p><a href="https://mp.weixin.qq.com/s/cMy-ApGlIeYKIBnCanwwFQ"><img src="https://www.qikqiak.com/img/posts/promethus-k8s-cover.png" alt="promethues monitor k8s app"></a>
+<a href="https://www.qikqiak.com/k8s-book/docs/52.Prometheus%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8.html">上一节</a>我们和大家介绍了<code>Prometheus</code>的数据指标是通过一个公开的 HTTP(S) 数据接口获取到的，我们不需要单独安装监控的 agent，只需要暴露一个 metrics 接口，Prometheus 就会定期去拉取数据；对于一些普通的 HTTP 服务，我们完全可以直接重用这个服务，添加一个<code>/metrics</code>接口暴露给 Prometheus；而且获取到的指标数据格式是非常易懂的，不需要太高的学习成本。</p>
+<p>现在很多服务从一开始就内置了一个<code>/metrics</code>接口，比如 Kubernetes 的各个组件、istio 服务网格都直接提供了数据指标接口。有一些服务即使没有原生集成该接口，也完全可以使用一些 exporter 来获取到指标数据，比如 mysqld_exporter、node_exporter，这些 exporter 就有点类似于传统监控服务中的 agent，作为一直服务存在，用来收集目标服务的指标数据然后直接暴露给 Prometheus。</p>
+<h2 id="普通应用监控">普通应用监控</h2>
+<p>前面我们已经和大家学习了 ingress 的使用，我们采用的是<code>Traefik</code>作为我们的 ingress-controller，是我们 Kubernetes 集群内部服务和外部用户之间的桥梁。Traefik 本身内置了一个<code>/metrics</code>的接口，但是需要我们在参数中配置开启:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>[metrics]
+</span></span><span style="display:flex;"><span>  [metrics.prometheus]
+</span></span><span style="display:flex;"><span>    entryPoint = &#34;traefik&#34;
+</span></span><span style="display:flex;"><span>    buckets = [0.1, 0.3, 1.2, 5.0]
+</span></span></code></pre></div><blockquote>
+<p>之前的版本中是通过<code>--web</code>和<code>--web.metrics.prometheus</code>两个参数进行开启的，要注意查看对应版本的文档。</p>
+</blockquote>
+<p>我们需要在<code>traefik.toml</code>的配置文件中添加上上面的配置信息，然后更新 ConfigMap 和 Pod 资源对象即可，Traefik Pod 运行后，我们可以看到我们的服务 IP：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl get svc -n kube-system
+</span></span><span style="display:flex;"><span>NAME                      TYPE        CLUSTER-IP       EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>                       AGE
+</span></span><span style="display:flex;"><span>......
+</span></span><span style="display:flex;"><span>traefik-ingress-service   NodePort    10.101.33.56     &lt;none&gt;        80:31692/TCP,8080:32115/TCP   63d
+</span></span></code></pre></div><p>然后我们可以使用<code>curl</code>检查是否开启了 Prometheus 指标数据接口，或者通过 NodePort 访问也可以：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ curl 10.101.33.56:8080/metrics
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># HELP go_gc_duration_seconds A summary of the GC invocation durations.</span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># TYPE go_gc_duration_seconds summary</span>
+</span></span><span style="display:flex;"><span>go_gc_duration_seconds<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">quantile</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;0&#34;</span><span style="color:#ff79c6">}</span> 0.000121036
+</span></span><span style="display:flex;"><span>go_gc_duration_seconds<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">quantile</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;0.25&#34;</span><span style="color:#ff79c6">}</span> 0.000210328
+</span></span><span style="display:flex;"><span>go_gc_duration_seconds<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">quantile</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;0.5&#34;</span><span style="color:#ff79c6">}</span> 0.000279974
+</span></span><span style="display:flex;"><span>go_gc_duration_seconds<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">quantile</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;0.75&#34;</span><span style="color:#ff79c6">}</span> 0.000420738
+</span></span><span style="display:flex;"><span>go_gc_duration_seconds<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">quantile</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;1&#34;</span><span style="color:#ff79c6">}</span> 0.001191494
+</span></span><span style="display:flex;"><span>go_gc_duration_seconds_sum 0.004353914
+</span></span><span style="display:flex;"><span>go_gc_duration_seconds_count <span style="color:#bd93f9">12</span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># HELP go_goroutines Number of goroutines that currently exist.</span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># TYPE go_goroutines gauge</span>
+</span></span><span style="display:flex;"><span>go_goroutines <span style="color:#bd93f9">63</span>
+</span></span><span style="display:flex;"><span>......
+</span></span></code></pre></div><p>从这里可以看到 Traefik 的监控数据接口已经开启成功了，然后我们就可以将这个<code>/metrics</code>接口配置到<code>prometheus.yml</code>中去了，直接加到默认的<code>prometheus</code>这个 job 下面：(prome-cm.yaml)</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: ConfigMap
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: prometheus-config
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">namespace</span>: kube-ops
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">data</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">prometheus.yml</span>: |<span style="color:#f1fa8c">
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">    global:
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">      scrape_interval: 30s
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">      scrape_timeout: 30s
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">    scrape_configs:
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">    - job_name: &#39;prometheus&#39;
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">      static_configs:
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">        - targets: [&#39;localhost:9090&#39;]
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">    - job_name: &#39;traefik&#39;
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">      static_configs:
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">        - targets: [&#39;traefik-ingress-service.kube-system.svc.cluster.local:8080&#39;]</span>    
+</span></span></code></pre></div><p>当然，我们这里只是一个很简单的配置，scrape_configs 下面可以支持很多参数，例如：</p>
+<ul>
+<li>basic_auth 和 bearer_token：比如我们提供的<code>/metrics</code>接口需要 basic 认证的时候，通过传统的用户名/密码或者在请求的header中添加对应的 token 都可以支持</li>
+<li>kubernetes_sd_configs 或 consul_sd_configs：可以用来自动发现一些应用的监控数据</li>
+</ul>
+<p>由于我们这里 Traefik 对应的 servicename 是<code>traefik-ingress-service</code>，并且在 kube-system 这个 namespace 下面，所以我们这里的<code>targets</code>的路径配置则需要使用<code>FQDN</code>的形式：<code>traefik-ingress-service.kube-system.svc.cluster.local</code>，当然如果你的 Traefik 和 Prometheus 都部署在同一个命名空间的话，则直接填 <code>servicename:serviceport</code>即可。然后我们重新更新这个 ConfigMap 资源对象：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl delete -f prome-cm.yaml
+</span></span><span style="display:flex;"><span>configmap <span style="color:#f1fa8c">&#34;prometheus-config&#34;</span> deleted
+</span></span><span style="display:flex;"><span>$ kubectl create -f prome-cm.yaml
+</span></span><span style="display:flex;"><span>configmap <span style="color:#f1fa8c">&#34;prometheus-config&#34;</span> created
+</span></span></code></pre></div><p>现在 Prometheus 的配置文件内容已经更改了，隔一会儿被挂载到 Pod 中的 prometheus.yml 文件也会更新，由于我们之前的 Prometheus 启动参数中添加了<code>--web.enable-lifecycle</code>参数，所以现在我们只需要执行一个 reload 命令即可让配置生效：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl get svc -n kube-ops
+</span></span><span style="display:flex;"><span>NAME         TYPE       CLUSTER-IP     EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>                          AGE
+</span></span><span style="display:flex;"><span>prometheus   NodePort   10.102.74.90   &lt;none&gt;        9090:30358/TCP                   3d
+</span></span><span style="display:flex;"><span>$ curl -X POST <span style="color:#f1fa8c">&#34;http://10.102.74.90:9090/-/reload&#34;</span>
+</span></span></code></pre></div><blockquote>
+<p>由于 ConfigMap 通过 Volume 的形式挂载到 Pod 中去的热更新需要一定的间隔时间才会生效，所以需要稍微等一小会儿。</p>
+</blockquote>
+<p>reload 这个 url 是一个 POST 请求，所以这里我们通过 service 的 CLUSTER-IP:PORT 就可以访问到这个重载的接口，这个时候我们再去看 Prometheus 的 Dashboard 中查看采集的目标数据：
+<img src="https://www.qikqiak.com/img/posts/prometheus-dashboard-targets.png" alt="prometheus dashboard targets"></p>
+<p>可以看到我们刚刚添加的<code>traefik</code>这个任务已经出现了，然后同样的我们可以切换到 Graph 下面去，我们可以找到一些 Traefik 的指标数据，至于这些指标数据代表什么意义，一般情况下，我们可以去查看对应的<code>/metrics</code>接口，里面一般情况下都会有对应的注释。</p>
+<p>到这里我们就在 Prometheus 上配置了第一个 Kubernetes 应用。</p>
+<h2 id="使用-exporter-监控应用">使用 exporter 监控应用</h2>
+<p>上面我们也说过有一些应用可能没有自带<code>/metrics</code>接口供 Prometheus 使用，在这种情况下，我们就需要利用 exporter 服务来为 Prometheus 提供指标数据了。Prometheus 官方为许多应用就提供了对应的 exporter 应用，也有许多第三方的实现，我们可以前往官方网站进行查看：<a href="https://prometheus.io/docs/instrumenting/exporters/">exporters</a></p>
+<p>比如我们这里通过一个<a href="https://github.com/oliver006/redis_exporter">redis-exporter</a>的服务来监控 redis 服务，对于这类应用，我们一般会以 sidecar 的形式和主应用部署在同一个 Pod 中，比如我们这里来部署一个 redis 应用，并用 redis-exporter 的方式来采集监控数据供 Prometheus 使用，如下资源清单文件：（prome-redis.yaml）</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: extensions/v1beta1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Deployment
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: redis
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">namespace</span>: kube-ops
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">template</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">annotations</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">prometheus.io/scrape</span>: <span style="color:#f1fa8c">&#34;true&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">prometheus.io/port</span>: <span style="color:#f1fa8c">&#34;9121&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">labels</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">app</span>: redis
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">containers</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">name</span>: redis
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">image</span>: redis:4
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">resources</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">requests</span>:
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">cpu</span>: 100m
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">memory</span>: 100Mi
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">ports</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">containerPort</span>: <span style="color:#bd93f9">6379</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">name</span>: redis-exporter
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">image</span>: oliver006/redis_exporter:latest
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">resources</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">requests</span>:
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">cpu</span>: 100m
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">memory</span>: 100Mi
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">ports</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">containerPort</span>: <span style="color:#bd93f9">9121</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Service
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: redis
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">namespace</span>: kube-ops
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">selector</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">app</span>: redis
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">ports</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff79c6">name</span>: redis
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">6379</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">targetPort</span>: <span style="color:#bd93f9">6379</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff79c6">name</span>: prom
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">9121</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">targetPort</span>: <span style="color:#bd93f9">9121</span>
+</span></span></code></pre></div><p>可以看到上面我们在 redis 这个 Pod 中包含了两个容器，一个就是 redis 本身的主应用，另外一个容器就是 redis_exporter。现在直接创建上面的应用：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl create -f prome-redis.yaml
+</span></span><span style="display:flex;"><span>deployment.extensions <span style="color:#f1fa8c">&#34;redis&#34;</span> created
+</span></span><span style="display:flex;"><span>service <span style="color:#f1fa8c">&#34;redis&#34;</span> created
+</span></span></code></pre></div><p>创建完成后，我们可以看到 redis 的 Pod 里面包含有两个容器：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl get pods -n kube-ops
+</span></span><span style="display:flex;"><span>NAME                          READY     STATUS    RESTARTS   AGE
+</span></span><span style="display:flex;"><span>prometheus-8566cd9699-gt9wh   1/1       Running   <span style="color:#bd93f9">0</span>          3d
+</span></span><span style="display:flex;"><span>redis-544b6c8c54-8xd2g        2/2       Running   <span style="color:#bd93f9">0</span>          3m
+</span></span><span style="display:flex;"><span>$ kubectl get svc -n kube-ops
+</span></span><span style="display:flex;"><span>NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>                          AGE
+</span></span><span style="display:flex;"><span>prometheus   NodePort    10.102.74.90    &lt;none&gt;        9090:30358/TCP                   3d
+</span></span><span style="display:flex;"><span>redis        ClusterIP   10.104.131.44   &lt;none&gt;        6379/TCP,9121/TCP                5m
+</span></span></code></pre></div><p>我们可以通过 9121 端口来校验是否能够采集到数据：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ curl 10.104.131.44:9121/metrics
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># HELP go_gc_duration_seconds A summary of the GC invocation durations.</span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># TYPE go_gc_duration_seconds summary</span>
+</span></span><span style="display:flex;"><span>go_gc_duration_seconds<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">quantile</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;0&#34;</span><span style="color:#ff79c6">}</span> <span style="color:#bd93f9">0</span>
+</span></span><span style="display:flex;"><span>go_gc_duration_seconds<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">quantile</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;0.25&#34;</span><span style="color:#ff79c6">}</span> <span style="color:#bd93f9">0</span>
+</span></span><span style="display:flex;"><span>go_gc_duration_seconds<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">quantile</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;0.5&#34;</span><span style="color:#ff79c6">}</span> <span style="color:#bd93f9">0</span>
+</span></span><span style="display:flex;"><span>go_gc_duration_seconds<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">quantile</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;0.75&#34;</span><span style="color:#ff79c6">}</span> <span style="color:#bd93f9">0</span>
+</span></span><span style="display:flex;"><span>go_gc_duration_seconds<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">quantile</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;1&#34;</span><span style="color:#ff79c6">}</span> <span style="color:#bd93f9">0</span>
+</span></span><span style="display:flex;"><span>go_gc_duration_seconds_sum <span style="color:#bd93f9">0</span>
+</span></span><span style="display:flex;"><span>go_gc_duration_seconds_count <span style="color:#bd93f9">0</span>
+</span></span><span style="display:flex;"><span>......
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># HELP redis_used_cpu_user_children used_cpu_user_childrenmetric</span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># TYPE redis_used_cpu_user_children gauge</span>
+</span></span><span style="display:flex;"><span>redis_used_cpu_user_children<span style="color:#ff79c6">{</span><span style="color:#8be9fd;font-style:italic">addr</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;redis://localhost:6379&#34;</span>,alias<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;&#34;</span><span style="color:#ff79c6">}</span> <span style="color:#bd93f9">0</span>
+</span></span></code></pre></div><p>同样的，现在我们只需要更新 Prometheus 的配置文件：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>- <span style="color:#ff79c6">job_name</span>: <span style="color:#f1fa8c">&#39;redis&#39;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">static_configs</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff79c6">targets</span>: [<span style="color:#f1fa8c">&#39;redis:9121&#39;</span>]
+</span></span></code></pre></div><blockquote>
+<p>由于我们这里的 redis 服务和 Prometheus 处于同一个 namespace，所以我们直接使用 servicename 即可。</p>
+</blockquote>
+<p>配置文件更新后，重新加载：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl delete -f prome-cm.yaml
+</span></span><span style="display:flex;"><span>configmap <span style="color:#f1fa8c">&#34;prometheus-config&#34;</span> deleted
+</span></span><span style="display:flex;"><span>$ kubectl create -f prome-cm.yaml
+</span></span><span style="display:flex;"><span>configmap <span style="color:#f1fa8c">&#34;prometheus-config&#34;</span> created
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 隔一会儿执行reload操作</span>
+</span></span><span style="display:flex;"><span>$ curl -X POST <span style="color:#f1fa8c">&#34;http://10.102.74.90:9090/-/reload&#34;</span>
+</span></span></code></pre></div><p>这个时候我们再去看 Prometheus 的 Dashboard 中查看采集的目标数据：
+<img src="https://www.qikqiak.com/img/posts/prometheus-targets-redis.png" alt="prometheus targets redis"></p>
+<p>可以看到配置的 redis 这个 job 已经生效了。切换到 Graph 下面可以看到很多关于 redis 的指标数据：
+<img src="https://www.qikqiak.com/img/posts/redis-metrics.png" alt="redis metrics"></p>
+<p>我们选择任意一个指标，比如<code>redis_exporter_scrapes_total</code>，然后点击执行就可以看到对应的数据图表了：
+<img src="https://www.qikqiak.com/img/posts/redis-graph.png" alt="redis scrapes total"></p>
+<blockquote>
+<p>注意，如果时间有问题，我们需要手动在 Graph 下面调整下时间</p>
+</blockquote>
+<p>除了监控群集中部署的服务之外，我们下节课再和大家学习怎样监视 Kubernetes 群集本身。</p>
+<p>本文节选自<a href="https://www.qikqiak.com/k8s-book/docs/53.%E7%9B%91%E6%8E%A7Kubernetes%E9%9B%86%E7%BE%A4%E5%BA%94%E7%94%A8.html">从Docker到Kubernetes进阶</a></p>
+<!-- raw HTML omitted -->
+
+          <h2>微信公众号</h2>
+<p>
+  扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+  kubernetes 讨论群里面共同学习。
+</p>
+<img
+  src="https://picdn.youdianzhishi.com/images/qrcode.png"
+  alt="wechat-account-qrcode"
+/>
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-monitor-prometheus-grafana/">Kubernetes使用Prometheus搭建监控平台</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/alertmanager-of-prometheus-in-practice/">Prometheus报警AlertManager实战</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/update-prometheus-2-in-kubernetes/">Kubernetes 下升级Prometheus2.0</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-affinity-scheduler/">重新理解 kubernetes 亲和性调度</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kube-scheduler-introduction/">Kubernetes 调度器介绍</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/helm-hooks-usage/">Helm Hooks 的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-course-promotion/">国庆 K8S 课程特别活动</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/helm-name-template-usage/">Helm 命名模板的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/dockerfile-best-practice/">Dockerfile 最佳实践</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-qos-usage/">Kubernetes 服务质量 Qos 解析</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/kubernetes-affinity-scheduler/" data-toggle="tooltip" data-placement="top" title="重新理解 kubernetes 亲和性调度">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/promethues-monitor-k8s-nodes/" data-toggle="tooltip" data-placement="top" title="监控 Kubernetes 集群节点">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: 'Kubernetes 应用监控',
+        createIssueManually: true,
+        id: 'promethues-monitor-k8s-app',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -1012,7 +642,7 @@ $ curl -X POST <span style="color:#f1fa8c">&#34;http://10.102.74.90:9090/-/reloa
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -1021,7 +651,7 @@ $ curl -X POST <span style="color:#f1fa8c">&#34;http://10.102.74.90:9090/-/reloa
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -1030,7 +660,7 @@ $ curl -X POST <span style="color:#f1fa8c">&#34;http://10.102.74.90:9090/-/reloa
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -1039,158 +669,121 @@ $ curl -X POST <span style="color:#f1fa8c">&#34;http://10.102.74.90:9090/-/reloa
                   </span>
                 </a>
               </li>
-
-              <li>
-                <a href="https://www.qikqiak.com/index.xml" title="RSS">
-                  <span class="fa-stack fa-lg">
-                    <i class="fa fa-circle fa-stack-2x"></i>
-                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
-                  </span>
-                </a>
-              </li>
-            </ul>
-            <p class="credits copyright text-muted">
-              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/">阳明的博客</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/archive/">归档</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/friend/">友链</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://beian.miit.gov.cn/" target="_blank"
-                >蜀ICP备11027319号-5</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
-                >kubernetes.io</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
-                >Kubernetes中文社区</a
-              >
-            </p>
-            <p class="text-center text-muted">
-              <script
-                async
-                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
-              ></script>
-              <span id="busuanzi_container_site_pv" style="display: none">
-                本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
               </span>
-              &nbsp;&bull;&nbsp;
-              <span id="busuanzi_container_site_uv" style="display: none">
-                访客数<span id="busuanzi_value_site_uv"></span>人次
-              </span>
-            </p>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
 
-            <p class="credits theme-by text-muted">
-              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
-              &nbsp;&bull;&nbsp; 主题
-              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
-              移植自
-              <a href="https://github.com/rootsongjc/beautifulhugo"
-                >Beautiful Hugo</a
-              >
-            </p>
-          </div>
-        </div>
+          &nbsp;&bull;&nbsp;
+          2023
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.115.4</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+          
+        </p>
       </div>
-    </footer>
+    </div>
+  </div>
+</footer>
 
-    <script
-      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
-      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
-    ></script>
 
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "UA-69668147-3");
-    </script>
-    <script>
-      (function () {
-        var bp = document.createElement("script");
-        var curProtocol = window.location.protocol.split(":")[0];
-        if (curProtocol === "https") {
-          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
-        } else {
-          bp.src = "http://push.zhanzhang.baidu.com/push.js";
-        }
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(bp, s);
-      })();
-    </script>
-    <script>
-      $(document).ready(function () {
-        var int = setInterval(fixCount, 50);
+<script src='https://www.qikqiak.com/js/bundle.min.af02a2d23b6651a566f0135a12e65fc2560faa7a969b3d1ad58d0afe0c9164ae.js' integrity='sha256-rwKi0jtmUaVm8BNaEuZfwlYPqnqWmz0a1Y0K/gyRZK4='></script>
 
-        var initPVCount = 584976;
-        var initUVCount = 153191;
-        function fixCount() {
-          if ($("#busuanzi_container_site_pv").css("display") != "none") {
-            $("#busuanzi_value_site_pv").html(
-              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
-            );
-            clearInterval(int);
-          }
-          if ($("#busuanzi_container_site_uv").css("display") != "none") {
-            $("#busuanzi_value_site_uv").html(
-              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
-            );
-            clearInterval(int);
-          }
-        }
-      });
-    </script>
-    <script>
-      (function (w, d, s, id) {
-        if (typeof w.webpushr !== "undefined") return;
-        w.webpushr =
-          w.webpushr ||
-          function () {
-            (w.webpushr.q = w.webpushr.q || []).push(arguments);
-          };
-        var js,
-          fjs = d.getElementsByTagName(s)[0];
-        js = d.createElement(s);
-        js.id = id;
-        js.src = "https://cdn.webpushr.com/app.min.js";
-        fjs.parentNode.appendChild(js);
-      })(window, document, "script", "webpushr-jssdk");
-      webpushr(
-        "init",
-        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
-      );
-    </script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
-    ></script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
-    ></script>
-    <script type="text/javascript">
-      $(".carousel").slick({
-        dots: true,
-        arrows: true,
-        autoplay: true,
-        autoplaySpeed: 4000,
-        infinite: true,
-        speed: 500,
-        fade: true,
-        cssEase: "linear",
-        centerMode: true,
-        prevArrow: '<button type="button" class="slick-prev"></button>',
-        nextArrow: '<button type="button" class="slick-next"></button>',
-      });
-    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
   </body>
 </html>
+

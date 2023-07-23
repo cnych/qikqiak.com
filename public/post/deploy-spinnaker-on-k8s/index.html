@@ -1,989 +1,626 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
-    />
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-    <title>
-      在 Kubernetes 上部署
-      Spinnaker-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
-    </title>
-    <meta property="og:title" content="在 Kubernetes 上部署 Spinnaker" />
-    <meta name="twitter:title" content="在 Kubernetes 上部署 Spinnaker" />
 
-    <meta
-      name="description"
-      content="
+  <title>在 Kubernetes 上部署 Spinnaker-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="在 Kubernetes 上部署 Spinnaker" />
+  <meta name="twitter:title" content="在 Kubernetes 上部署 Spinnaker" />
 
-Spinnaker 是一种持续交付平台，最初由 Netflix 开发，用于快速、可靠地发布软件变更。Spinnaker 使开发人员可以更轻松地专注于编写代码，而无需担心底层的云基础设施，它可以和 Jenkins 以及其他流行的构建工具无缝集成。很早就想要体验下 Spinnaker 了，但是由于 GFW 的原因尝试了很多次都无功而返，这次解决了代理的问题终于顺利的在 Kubernetes 集群上成功部署上了 Spinnaker。"
-    />
-    <meta
-      property="og:description"
-      content="
+  <meta name="description" content="
+Spinnaker 是一种持续交付平台，最初由 Netflix 开发，用于快速、可靠地发布软件变更。Spinnaker 使开发人员可以更轻松地专注于编写代码，而无需担心底层的云基础设施，它可以和 Jenkins 以及其他流行的构建工具无缝集成。很早就想要体验下 Spinnaker 了，但是由于 GFW 的原因尝试了很多次都无功而返，这次解决了代理的问题终于顺利的在 Kubernetes 集群上成功部署上了 Spinnaker。">
+  <meta property="og:description" content="
+Spinnaker 是一种持续交付平台，最初由 Netflix 开发，用于快速、可靠地发布软件变更。Spinnaker 使开发人员可以更轻松地专注于编写代码，而无需担心底层的云基础设施，它可以和 Jenkins 以及其他流行的构建工具无缝集成。很早就想要体验下 Spinnaker 了，但是由于 GFW 的原因尝试了很多次都无功而返，这次解决了代理的问题终于顺利的在 Kubernetes 集群上成功部署上了 Spinnaker。">
+  <meta name="twitter:description" content="
+Spinnaker 是一种持续交付平台，最初由 Netflix 开发，用于快速、可靠地发布软件变更。Spinnaker 使开发人员可以更轻松地专注于编写代码，而无需担心底层的云基础设施，它可以和 Jenkins 以及其他流行的构建工具无缝集成。很早就想要体验下 Spinnaker 了，但是由于 GFW 的原因尝试了很多次都无功而返，这次解决了代理的问题终于顺利的在 Kubernetes 集群上成 …">
+  <meta name="author" content=""/>
+  <link href="https://picdn.youdianzhishi.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://picdn.youdianzhishi.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/deploy-spinnaker-on-k8s/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
 
-Spinnaker 是一种持续交付平台，最初由 Netflix 开发，用于快速、可靠地发布软件变更。Spinnaker 使开发人员可以更轻松地专注于编写代码，而无需担心底层的云基础设施，它可以和 Jenkins 以及其他流行的构建工具无缝集成。很早就想要体验下 Spinnaker 了，但是由于 GFW 的原因尝试了很多次都无功而返，这次解决了代理的问题终于顺利的在 Kubernetes 集群上成功部署上了 Spinnaker。"
-    />
-    <meta
-      name="twitter:description"
-      content="
+  <link rel="canonical" href="https://www.qikqiak.com/post/deploy-spinnaker-on-k8s/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
-Spinnaker 是一种持续交付平台，最初由 Netflix 开发，用于快速、可靠地发布软件变更。Spinnaker 使开发人员可以更轻松地专注于编写代码，而无需担心底层的云基础设施，它可以和 Jenkins 以及其他流行的构建工具无缝集成。很早就想要体验下 Spinnaker 了，但是由于 GFW 的原因尝试了很多次都无功而返，这次解决了代理的问题终于顺利的在 Kubernetes 集群上 …"
-    />
-    <meta name="author" content="" />
-    <link
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-      rel="icon"
-      type="image/x-icon"
-    />
-    <link
-      rel="apple-touch-icon"
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      property="og:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      name="twitter:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta name="twitter:card" content="summary" />
-    <meta
-      property="og:url"
-      content="https://www.qikqiak.com/post/deploy-spinnaker-on-k8s/"
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="阳明的博客" />
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
 
-    <meta name="generator" content="Hugo 0.55.6" />
-    <link
-      rel="canonical"
-      href="https://www.qikqiak.com/post/deploy-spinnaker-on-k8s/"
-    />
-    <link
-      rel="alternate"
-      href="https://www.qikqiak.com/index.xml"
-      type="application/rss+xml"
-      title="阳明的博客"
-    />
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a6b62363fe57848ad01efa2a5d1bbb1047c2ffb71b53d8aeb42bc5ed5c77ea7c.css' integrity='sha256-prYjY/5XhIrQHvoqXRu7EEfC/7cbU9iutCvF7Vx36nw='>
 
-    <link
-      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
-      rel="stylesheet"
-    />
-
-    <link
-      rel="stylesheet"
-      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
-      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
-    />
-
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
-    />
-
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
     <!--[if lt IE 9]>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-      <link
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-        rel="stylesheet"
-      />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <![endif]-->
-    <meta
-      name="google-site-verification"
-      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
-    />
-    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-    <meta
-      name="keywords"
-      content="kubernetes, spinnaker, jenkins, ci/cd, helm, 安装"
-    />
-    <script>
-      var _hmt = _hmt || [];
-      (function () {
-        var hm = document.createElement("script");
-        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(hm, s);
-      })();
-    </script>
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, spinnaker, jenkins, ci/cd, helm, 安装">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
 
-    <script type="application/javascript">
-      var doNotTrack = false;
-      if (!doNotTrack) {
-        window.ga =
-          window.ga ||
-          function () {
-            (ga.q = ga.q || []).push(arguments);
-          };
-        ga.l = +new Date();
-        ga("create", "UA-69668147-3", "auto");
 
-        ga("send", "pageview");
-      }
-    </script>
-    <script async src="https://www.google-analytics.com/analytics.js"></script>
-  </head>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-      <div class="container">
-        <div class="navbar-header">
-          <button
-            type="button"
-            class="navbar-toggle"
-            data-toggle="collapse"
-            data-target="#main-navbar"
-          >
-            <span class="sr-only">切换导航</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a
-            class="navbar-brand"
-            href="https://www.qikqiak.com/"
-            title="阳明的博客"
-          >
-            <img
-              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
-              style="margin-top: -5px; height: 32px"
-              alt="阳明的博客"
-            />
-          </a>
-        </div>
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://picdn.youdianzhishi.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
 
-        <div class="collapse navbar-collapse" id="main-navbar">
-          <ul class="nav navbar-nav navbar-right">
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-
+          
+        
+          
             <li>
-              <a
-                title="课程"
-                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
-                >课程</a
-              >
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/archives">Archive</a>
-
-                <a href="https://www.qikqiak.com/tags">tags</a>
-
-                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-
-                <a href="https://www.qikqiak.com/tags/python">python</a>
-
-                <a href="https://www.qikqiak.com/tags/django">django</a>
-
-                <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-
-                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-
-                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-
-                <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/"
-                >关于</a
-              >
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
             </li>
-
+          
+        
+          
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
+          
+        
 
-            <li>
-              <a
-                href="#modalSearch"
-                data-toggle="modal"
-                data-target="#modalSearch"
-                style="outline: none"
-              >
-                <span
-                  id="searchGlyph"
-                  class="glyphicon glyphicon-search"
-                ></span>
-              </a>
-            </li>
-          </ul>
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
         </div>
-      </div>
-    </nav>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-    <div id="modalSearch" class="modal fade" role="dialog">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal">
-              &times;
-            </button>
-            <h4 class="modal-title">搜索</h4>
-          </div>
-          <div class="modal-body">
-            <div class="aa-input-container" id="aa-input-container">
-              <input
-                type="search"
-                id="aa-search-input"
-                class="aa-input-search"
-                placeholder="Search for titles or URIs..."
-                name="search"
-                autocomplete="off"
-              />
-              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-                <path
-                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
-                />
-              </svg>
-            </div>
-            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
 
-            <script>
-              var client = algoliasearch(
-                "1JDRAS0AZR",
-                "8804ac109158bb3bb60d74ce98fa332f"
-              );
-              var index = client.initIndex("prod_blog");
-
-              autocomplete(
-                "#aa-search-input",
-                { hint: false },
-                {
-                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
-
-                  displayKey: "name",
-
-                  templates: {
-                    suggestion: function (suggestion) {
-                      return (
-                        "<span>" +
-                        '<a href="https://www.qikqiak.com/post/' +
-                        suggestion.slug +
-                        '">' +
-                        suggestion._highlightResult.title.value +
-                        "</a></span>"
-                      );
-                    },
-                  },
-                }
-              );
-            </script>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">
-              close
-            </button>
-          </div>
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <header class="header-section">
-      <div class="intro-header no-img">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-              <div class="post-heading">
-                <h1>在 Kubernetes 上部署 Spinnaker</h1>
+    
+  
+  
+  
 
-                <span class="post-meta"> 发表于 February 18, 2020 </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
 
-    <div class="container" role="main">
-      <div class="row">
-        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-          <div>
-            <h5 id="tags" style="margin-top: 30px">
-              标签:
 
-              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
-              &nbsp;
 
-              <a href="https://www.qikqiak.com/tags/spinnaker/">spinnaker</a>
-              &nbsp;
+  
 
-              <a href="https://www.qikqiak.com/tags/jenkins/">jenkins</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/helm/">helm</a> &nbsp;
-            </h5>
-          </div>
-
-          <article
-            role="main"
-            class="blog-post"
-            itemprop="articleBody"
-            id="content"
-          >
-            <p>
-              <a href="https://www.qikqiak.com/post/deploy-spinnaker-on-k8s/"
-                ><img
-                  src="https://picdn.youdianzhishi.com/images/spinnaker-on-k8s.png"
-                  alt="在 Kubernetes 上部署 Spinnaker"
-              /></a>
-            </p>
-
-            <p>
-              <a href="https://www.spinnaker.io/">Spinnaker</a>
-              是一种持续交付平台，最初由 Netflix
-              开发，用于快速、可靠地发布软件变更。Spinnaker
-              使开发人员可以更轻松地专注于编写代码，而无需担心底层的云基础设施，它可以和
-              Jenkins 以及其他流行的构建工具无缝集成。很早就想要体验下 Spinnaker
-              了，但是由于 GFW
-              的原因尝试了很多次都无功而返，这次解决了代理的问题终于顺利的在
-              Kubernetes 集群上成功部署上了 Spinnaker。
-            </p>
-
-            <p>
-              本文将使用 helm3 来为大家演示在 Kubernetes 集群上安装
-              Spinnaker，对应的环境版本如下所示：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ helm version
-version.BuildInfo<span style="color:#ff79c6">{</span>Version:<span style="color:#f1fa8c">&#34;v3.0.1&#34;</span>, GitCommit:<span style="color:#f1fa8c">&#34;7c22ef9ce89e0ebeb7125ba2ebf7d421f3e82ffa&#34;</span>, GitTreeState:<span style="color:#f1fa8c">&#34;clean&#34;</span>, GoVersion:<span style="color:#f1fa8c">&#34;go1.13.4&#34;</span><span style="color:#ff79c6">}</span>
-$ kubectl version                          
-Client Version: version.Info<span style="color:#ff79c6">{</span>Major:<span style="color:#f1fa8c">&#34;1&#34;</span>, Minor:<span style="color:#f1fa8c">&#34;14&#34;</span>, GitVersion:<span style="color:#f1fa8c">&#34;v1.14.2&#34;</span>, GitCommit:<span style="color:#f1fa8c">&#34;66049e3b21efe110454d67df4fa62b08ea79a19b&#34;</span>, GitTreeState:<span style="color:#f1fa8c">&#34;clean&#34;</span>, BuildDate:<span style="color:#f1fa8c">&#34;2019-05-16T18:55:03Z&#34;</span>, GoVersion:<span style="color:#f1fa8c">&#34;go1.12.5&#34;</span>, Compiler:<span style="color:#f1fa8c">&#34;gc&#34;</span>, Platform:<span style="color:#f1fa8c">&#34;darwin/amd64&#34;</span><span style="color:#ff79c6">}</span>
-Server Version: version.Info<span style="color:#ff79c6">{</span>Major:<span style="color:#f1fa8c">&#34;1&#34;</span>, Minor:<span style="color:#f1fa8c">&#34;16&#34;</span>, GitVersion:<span style="color:#f1fa8c">&#34;v1.16.2&#34;</span>, GitCommit:<span style="color:#f1fa8c">&#34;c97fe5036ef3df2967d086711e6c0c405941e14b&#34;</span>, GitTreeState:<span style="color:#f1fa8c">&#34;clean&#34;</span>, BuildDate:<span style="color:#f1fa8c">&#34;2019-10-15T19:09:08Z&#34;</span>, GoVersion:<span style="color:#f1fa8c">&#34;go1.12.10&#34;</span>, Compiler:<span style="color:#f1fa8c">&#34;gc&#34;</span>, Platform:<span style="color:#f1fa8c">&#34;linux/amd64&#34;</span><span style="color:#ff79c6">}</span></code></pre>
-            </div>
-            <p>
-              对于 Helm3 的安装配置其实很简单，只需要在 kubectl
-              所在节点上面安装上 Helm3 客户端即可，默认就会读取 kubeconfig
-              文件来访问集群。我们这里使用微软提供的 helm chart 仓库源：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$  helm repo ls
-NAME            URL                                      
-stable          http://mirror.azure.cn/kubernetes/charts/
-$ helm repo update
-Hang tight <span style="color:#ff79c6">while</span> we grab the latest from your chart repositories...
-...Successfully got an update from the <span style="color:#f1fa8c">&#34;stable&#34;</span> chart repository
-Update Complete. ⎈ Happy Helming!⎈ </code></pre>
-            </div>
-            <p>
-              由于我们这里使用的是 Kubernetes 1.16.x
-              版本，该版本之后将之前很多资源对象的一些旧的 API 废弃掉了，比如
-              Deployment 只能使用
-              <code>apps/v1</code> 这个版本了，而我们这里要使用的 Spinnaker
-              对应的 chart 包目前还是使用的以前的 API
-              版本，所以我们需要手动下载下来做一次更改：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ helm fetch stable/spinnaker
-$ tar -xvf spinnaker-1.23.2.tgz</code></pre>
-            </div>
-            <p>
-              然后将 spinnaker chart 模板中的 Deployment、StatefulSet
-              这些资源对象的 apiVersion 更改成
-              <code>apps/v1</code>，也需要记住如果是 Deployment 还需要添加上
-              <code>selector.matchLabels</code> 字段，大家可以直接使用我更改后的
-              chart 模板
-              <a href="https://github.com/cnych/spinnaker-helm"
-                >https://github.com/cnych/spinnaker-helm</a
-              >。
-            </p>
-
-            <p>
-              在 chart 模板的 <code>values.yaml</code> 文件中指定了
-              <code>halyard.spinnakerVersion=1.17.6</code>，这还是因为
-              apiVersion 版本的问题，该版本以上就可以兼容 Kubernetes v1.16.x
-              的集群，另外将默认的
-              <code>gcr.io</code> 的镜像替换成了微软的镜像源
-              <code>gcr.azk8s.cn</code
-              >，此外还有一个非常重要的就是存储的指定，这里我们创建了一个
-              <code>StorageClass</code> 的资源对象来提供存储，我这里是创建的一个
-              <code>Ceph RBD</code> 类型的存储
-              <code>rook-ceph-block</code>，当然任何可用的
-              <code>StorageClass</code> 资源对象都是可以的：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-   name: rook-ceph-block
-provisioner: rook-ceph.rbd.csi.ceph.com
-reclaimPolicy: Retain
-parameters:
-    <span style="color:#6272a4"># clusterID 是 rook 集群运行的命名空间</span>
-    clusterID: rook-ceph
-
-    <span style="color:#6272a4"># 指定存储池</span>
-    pool: k8s-test-pool
-
-    <span style="color:#6272a4"># RBD image (实际的存储介质) 格式. 默认为 &#34;2&#34;.</span>
-    imageFormat: <span style="color:#f1fa8c">&#34;2&#34;</span>
-
-    <span style="color:#6272a4"># RBD image 特性. CSI RBD 现在只支持 `layering` .</span>
-    imageFeatures: layering
-
-    <span style="color:#6272a4"># Ceph 管理员认证信息，这些都是在 clusterID 命名空间下面自动生成的</span>
-    csi.storage.k8s.io/provisioner-secret-name: rook-csi-rbd-provisioner
-    csi.storage.k8s.io/provisioner-secret-namespace: rook-ceph
-    csi.storage.k8s.io/node-stage-secret-name: rook-csi-rbd-node
-    csi.storage.k8s.io/node-stage-secret-namespace: rook-ceph
-    <span style="color:#6272a4"># 指定 volume 的文件系统格式，如果不指定, csi-provisioner 会默认设置为 `ext4`</span>
-    csi.storage.k8s.io/fstype: ext4</code></pre>
-            </div>
-            <p>
-              需要为 halyard、redis、mino
-              都指定对应的存储，当然直接指定一个合适的 PVC
-              也是可以的，这里可以根据实际情况决定：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">halyard:
-  ...
-  persistence:
-    storageClass: rook-ceph-block
-...
-redis:
-  ...
-  master:
-    persistence:
-      storageClass: rook-ceph-block
-...
-minio:
-  ...
-  persistence:
-    storageClass: rook-ceph-block
-...</code></pre>
-            </div>
-            <p>
-              接下来<strong>最重要的一步就是必须要为 halyard 配置代理</strong
-              >，所以继续下去的前提是你需要配置一个在 Kubernetes 的 Pod
-              中可以访问的代理，比如我这里的代理地址为
-              <code>10.151.30.11:8118</code>，则需要配置如下所示的
-              <code>JAVA_OPTS</code> 这个环境变量：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">halyard:
-  env:
-    - name: JAVA_OPTS
-      value: <span style="color:#f1fa8c">&#39;&#34;-Djava.security.egd=file:/dev/./urandom&#34; &#34;-Dhttp.proxyHost=10.151.30.11&#34; &#34;-Dhttps.proxyHost=10.151.30.11&#34; &#34;-Dhttp.proxyPort=8118&#34; &#34;-Dhttps.proxyPort=8118&#34; &#34;-Dhttp.nonProxyHosts=\&#34;localhost|*.spinnaker.com\&#34;&#34;&#39;</span></code></pre>
-            </div>
-            <p>
-              获取上面我修改过后的 Spinnaker 的 Chart 模板，将
-              <code>values.yaml</code>
-              文件中上面对应的配置替换成自己对应的配置即可。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ git clone https://github.com/cnych/spinnaker-helm spinnaker
-$ kubectl create ns spinnaker
-<span style="color:#6272a4"># 安装 spinnaker</span>
-$ helm install spinnaker --namespace spinnaker ./spinnaker</code></pre>
-            </div>
-            <p>
-              由于安装过程非常耗时，可能上面的
-              <code>helm install</code> 的过程可能会有超时提示，这个可以忽略：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ helm ls -n spinnaker
-NAME            NAMESPACE       REVISION        UPDATED                                 STATUS  CHART            APP VERSION
-spinnaker       spinnaker       <span style="color:#bd93f9">1</span>               <span style="color:#bd93f9">2020</span>-02-17 <span style="color:#bd93f9">19</span>:28:02.644552 +0800 CST    failed  spinnaker-1.23.2 <span style="color:#bd93f9">1</span>.16.2 </code></pre>
-            </div>
-            <p>
-              安装完成后最开始会生成如下所示的几个 Pod，其中
-              <code>spinnaker-install-using-hal-th8qf</code> 就是用来去真正安装
-              Spinnaker 的一个 Job 任务：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl get pods -n spinnaker
-spinnaker-install-using-hal-th8qf   <span style="color:#bd93f9">0</span>/1     Completed   <span style="color:#bd93f9">0</span>          17h
-spinnaker-minio-86f5b8785-bkjfq     <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          17h
-spinnaker-redis-master-0            <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          17h
-spinnaker-spinnaker-halyard-0       <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          17h</code></pre>
-            </div>
-            <script
-              async
-              src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-            ></script>
-
-            <ins
-              class="adsbygoogle"
-              style="display: block"
-              data-ad-client="ca-pub-5376999672787220"
-              data-ad-slot="9165834656"
-              data-ad-format="auto"
-              data-full-width-responsive="true"
-            ></ins>
-            <script>
-              (adsbygoogle = window.adsbygoogle || []).push({});
-            </script>
-
-            <p>
-              不过由于在安装 Spinnaker 的过程中会使用
-              <code>gcr.io</code> 的镜像，所以会看到很多 Pod
-              镜像拉取失败的错误，这个时候我们可以手动编辑 Deployment
-              对象更改镜像地址：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl get deploy -n spinnaker
-NAME               READY   UP-TO-DATE   AVAILABLE   AGE
-spin-clouddriver   <span style="color:#bd93f9">0</span>/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">0</span>           17h
-spin-deck          <span style="color:#bd93f9">0</span>/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">0</span>           17h
-spin-echo          <span style="color:#bd93f9">0</span>/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">0</span>           17h
-spin-front50       <span style="color:#bd93f9">0</span>/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">0</span>           17h
-spin-gate          <span style="color:#bd93f9">0</span>/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">0</span>           17h
-spin-igor          <span style="color:#bd93f9">0</span>/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">0</span>           17h
-spin-orca          <span style="color:#bd93f9">0</span>/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">0</span>           17h
-spin-rosco         <span style="color:#bd93f9">0</span>/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">0</span>           17h
-spinnaker-minio    <span style="color:#bd93f9">1</span>/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">1</span>           17h</code></pre>
-            </div>
-            <p>
-              比如修改 <code>spin-deck</code> 这个 Deployment
-              资源对象的镜像地址：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl edit deploy spin-deck -n spinnaker
-<span style="color:#6272a4"># 然后在打开的编辑中将 gcr.io 替换成 gcr.azk8s.cn</span></code></pre>
-            </div>
-            <p>
-              用同样的方法替换其他资源对象，正常替换过后隔一段时间就可以正常启动
-              Pod 了，最终的 Pod 列表如下所示：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl get pods -n spinnaker           
-NAME                                READY   STATUS      RESTARTS   AGE
-spin-clouddriver-76b8989b4f-cjw8r   <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          17h
-spin-deck-5fd7b64b77-fnl5r          <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          17h
-spin-echo-644c4cb6b6-gh98w          <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          17h
-spin-front50-9d99cd697-cqbxb        <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          17h
-spin-gate-6c49bccb6f-nhbzx          <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          17h
-spin-igor-7c84d9bcb-rltw7           <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          17h
-spin-orca-b5944685-wbm5p            <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          17h
-spin-rosco-6d5f9c8f55-g89hq         <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          17h
-spinnaker-install-using-hal-th8qf   <span style="color:#bd93f9">0</span>/1     Completed   <span style="color:#bd93f9">0</span>          17h
-spinnaker-minio-86f5b8785-bkjfq     <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          17h
-spinnaker-redis-master-0            <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          17h
-spinnaker-spinnaker-halyard-0       <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          17h</code></pre>
-            </div>
-            <p>
-              到这里就证明我们的 Spinnaker
-              已经安装成功了，这个时候如果我们想要把 Spinnaker
-              暴露给外部用户访问，当然可以创建一个 NodePort 类型的
-              Service，或者创建一个 Ingress 资源对象即可，其实上面的 chart
-              模板中我们就可以通过配置指定 Ingress
-              资源对象的参数。由于我这里使用的是 Traefik2.1
-              版本，所以单独创建一个 IngressRoute 资源对象来暴露服务：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">apiVersion: traefik.containo.us/v1alpha1
-kind: IngressRoute
-metadata:
-  name: spin-deck-https
-  namespace: spinnaker
-spec:
-  entryPoints:
-  - websecure
-  routes:
-  - match: Host(`spinnaker.qikqiak.com`)
-    kind: Rule
-    services:
-    - name: spin-deck
-      port: <span style="color:#bd93f9">9000</span>
-  tls:
-    certResolver: ali
-    domains:
-    - main: <span style="color:#f1fa8c">&#34;*.qikqiak.com&#34;</span>
----
-apiVersion: traefik.containo.us/v1alpha1
-kind: Middleware
-metadata:
-  name: redirect-https
-  namespace: spinnaker
-spec:
-  redirectScheme:
-    scheme: https
----
-apiVersion: traefik.containo.us/v1alpha1
-kind: IngressRoute
-metadata:
-  name: spin-deck-http
-  namespace: spinnaker
-spec:
-  entryPoints:
-  - web
-  routes:
-  - match: Host(`spinnaker.qikqiak.com`)
-    kind: Rule
-    services:
-    - name: spin-deck
-      port: <span style="color:#bd93f9">9000</span>
-    middlewares: 
-    - name: redirect-https</code></pre>
-            </div>
-            <p>
-              直接创建上面的资源对象即可，对 Traefik2
-              使用不是很熟悉的，可以查看前面的文章
-              <a href="https://www.qikqiak.com/post/traefik-2.1-101/"
-                >一文搞懂 Traefik2.1 的使用</a
-              >
-              了解更多，然后直接对域名 <code>spinnaker.qikqiak.com</code> 做好
-              DNS 解析即可在浏览器中访问 Spinnaker 了：
-            </p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20200218133426.png"
-                alt="spinnaker dashboard"
-              />
-              <figcaption>spinnaker dashboard</figcaption>
-            </figure>
-
-            <p>
-              到这里就安装成功了，当然这只是万里长征的第一步呢，后面我们再慢慢的去了解
-              Spinnaker 到底有哪些值得我们关注的功能。
-            </p>
-
-            <p>
-              <a
-                href="https://youdianzhishi.com/web/course/1030"
-                title="从 Docker 到 Kubernetes 进阶课程"
-                ><img
-                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
-                  alt="Kubernetes进阶训练营"
-              /></a>
-            </p>
-
-            <h2>微信公众号</h2>
-            <p>
-              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
-              kubernetes 讨论群里面共同学习。
-            </p>
-            <img
-              src="https://picdn.youdianzhishi.com/images/qrcode.png"
-              alt="wechat-account-qrcode"
-            />
-
-            <div class="entry-shang text-center">
-              <p>「真诚赞赏，手留余香」</p>
-              <button class="zs show-zs btn btn-bred">赞赏</button>
-            </div>
-            <div class="zs-modal-bg"></div>
-            <div class="zs-modal-box">
-              <div class="zs-modal-head">
-                <button type="button" class="close">×</button>
-                <span class="author"
-                  ><img
-                    src="https://www.qikqiak.com/img/avatar.jpeg"
-                  />阳明</span
-                >
-                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-              </div>
-              <div class="zs-modal-body">
-                <div class="zs-modal-btns">
-                  <button class="btn btn-blink" data-num="2">2元</button>
-                  <button class="btn btn-blink" data-num="5">5元</button>
-                  <button class="btn btn-blink" data-num="10">10元</button>
-                  <button class="btn btn-blink" data-num="50">50元</button>
-                  <button class="btn btn-blink" data-num="100">100元</button>
-                  <button class="btn btn-blink" data-num="1">任意金额</button>
-                </div>
-                <div class="zs-modal-pay">
-                  <button class="btn btn-bred" id="pay-text">2元</button>
-                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-                  <img
-                    src="https://www.qikqiak.com/img/wechat-2.png"
-                    id="pay-image"
-                  />
-                </div>
-              </div>
-              <div class="zs-modal-footer">
-                <span class="zs-wechat"
-                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
-                /></span>
-              </div>
-            </div>
-
-            <div
-              class="social-share"
-              data-initialized="true"
-              style="margin-bottom: 20px; margin-top: 20px"
-            >
-              <center>
-                <a href="#" class="social-share-icon icon-weibo"></a>
-                <a href="#" class="social-share-icon icon-wechat"></a>
-                <a href="#" class="social-share-icon icon-twitter"></a>
-                <a href="#" class="social-share-icon icon-linkedin"></a>
-                <a href="#" class="social-share-icon icon-facebook"></a>
-                <a href="#" class="social-share-icon icon-qq"></a>
-                <a href="#" class="social-share-icon icon-qzone"></a>
-              </center>
-            </div>
-
-            <link
-              rel="stylesheet"
-              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
-            />
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
-          </article>
-
-          <h3>相关文章</h3>
-          <ul style="margin-bottom: 25px">
-            <li>
-              <a href="https://www.qikqiak.com/post/install-metrics-server/"
-                >Metrics Server 安装</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/"
-                >在 Kubernetes 上安装 Gitlab</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/devops-base-on-jenkins/"
-                >基于 Jenkins 的 DevOps 流水线实践</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/migrate-helm-to-v3/"
-                >Helm V2 迁移到 V3 版本</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/kustomize-101/"
-                >使用 Kustomize 配置 Kubernetes 应用</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/drone-with-k8s-3/"
-                >Drone 结合 Helm 部署 Kubernetes 应用</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/drone-with-k8s-2/"
-                >使用 Drone Pipeline 构建 Docker 镜像</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/drone-with-k8s-1/"
-                >使用 Kubernetes Helm 安装 Drone</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/helm-chart-tips-and-tricks/"
-                >Helm Chart 模板开发技巧</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/install-nginx-ingress/"
-                >nginx-ingress 的安装使用</a
-              >
-            </li>
-          </ul>
-
-          <ul class="pager blog-pager">
-            <li class="previous">
-              <a
-                href="https://www.qikqiak.com/post/github-cli-tool-usage/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="GitHub CLI 命令行工具使用"
-                >&larr; 前一篇</a
-              >
-            </li>
-
-            <li class="next">
-              <a
-                href="https://www.qikqiak.com/post/deploy-vault-on-k8s/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="在 Kubernetes 上部署 Vault"
-                >后一篇 &rarr;</a
-              >
-            </li>
-          </ul>
-
-          <script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-          ></script>
-
-          <ins
-            class="adsbygoogle"
-            style="display: block"
-            data-ad-client="ca-pub-5376999672787220"
-            data-ad-slot="3700507799"
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          ></ins>
-          <script>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-          </script>
-
-          <div id="gitalk-container"></div>
-          <link
-            rel="stylesheet"
-            href="https://unpkg.com/gitalk/dist/gitalk.css"
-          />
-          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-          <script>
-            var gitalk = new Gitalk({
-              clientID: "bdb76dbb2e9d0786e350",
-              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
-              repo: "blog",
-              owner: "cnych",
-              admin: ["cnych"],
-              labels: ["gitment"],
-              title: "在 Kubernetes 上部署 Spinnaker",
-              createIssueManually: true,
-              id: "deploy-spinnaker-on-k8s",
-              distractionFreeMode: true,
-            });
-            gitalk.render("gitalk-container");
-          </script>
-        </div>
-      </div>
-    </div>
-
-    <footer>
+  <header class="header-section ">
+    
+    
+    
+    <div class="intro-header no-img">
+      
       <div class="container">
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <ul class="list-inline text-center footer-links">
-              <img
-                src="https://www.qikqiak.com/img/wechatmp.png"
-                alt="k8s技术圈"
-              />
+            <div class="post-heading">
+              <h1>在 Kubernetes 上部署 Spinnaker</h1>
+                
+                
+                  <span class="post-meta">
+  发表于 February 18, 2020  
+</span>
 
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/spinnaker/">spinnaker</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/jenkins/">jenkins</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/helm/">helm</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p><a href="https://www.qikqiak.com/post/deploy-spinnaker-on-k8s/"><img src="https://picdn.youdianzhishi.com/images/spinnaker-on-k8s.png" alt="在 Kubernetes 上部署 Spinnaker"></a></p>
+<p><a href="https://www.spinnaker.io/">Spinnaker</a> 是一种持续交付平台，最初由 Netflix 开发，用于快速、可靠地发布软件变更。Spinnaker 使开发人员可以更轻松地专注于编写代码，而无需担心底层的云基础设施，它可以和 Jenkins 以及其他流行的构建工具无缝集成。很早就想要体验下 Spinnaker 了，但是由于 GFW 的原因尝试了很多次都无功而返，这次解决了代理的问题终于顺利的在 Kubernetes 集群上成功部署上了 Spinnaker。</p>
+<p>本文将使用 helm3 来为大家演示在 Kubernetes 集群上安装 Spinnaker，对应的环境版本如下所示：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ helm version
+</span></span><span style="display:flex;"><span>version.BuildInfo<span style="color:#ff79c6">{</span>Version:<span style="color:#f1fa8c">&#34;v3.0.1&#34;</span>, GitCommit:<span style="color:#f1fa8c">&#34;7c22ef9ce89e0ebeb7125ba2ebf7d421f3e82ffa&#34;</span>, GitTreeState:<span style="color:#f1fa8c">&#34;clean&#34;</span>, GoVersion:<span style="color:#f1fa8c">&#34;go1.13.4&#34;</span><span style="color:#ff79c6">}</span>
+</span></span><span style="display:flex;"><span>$ kubectl version
+</span></span><span style="display:flex;"><span>Client Version: version.Info<span style="color:#ff79c6">{</span>Major:<span style="color:#f1fa8c">&#34;1&#34;</span>, Minor:<span style="color:#f1fa8c">&#34;14&#34;</span>, GitVersion:<span style="color:#f1fa8c">&#34;v1.14.2&#34;</span>, GitCommit:<span style="color:#f1fa8c">&#34;66049e3b21efe110454d67df4fa62b08ea79a19b&#34;</span>, GitTreeState:<span style="color:#f1fa8c">&#34;clean&#34;</span>, BuildDate:<span style="color:#f1fa8c">&#34;2019-05-16T18:55:03Z&#34;</span>, GoVersion:<span style="color:#f1fa8c">&#34;go1.12.5&#34;</span>, Compiler:<span style="color:#f1fa8c">&#34;gc&#34;</span>, Platform:<span style="color:#f1fa8c">&#34;darwin/amd64&#34;</span><span style="color:#ff79c6">}</span>
+</span></span><span style="display:flex;"><span>Server Version: version.Info<span style="color:#ff79c6">{</span>Major:<span style="color:#f1fa8c">&#34;1&#34;</span>, Minor:<span style="color:#f1fa8c">&#34;16&#34;</span>, GitVersion:<span style="color:#f1fa8c">&#34;v1.16.2&#34;</span>, GitCommit:<span style="color:#f1fa8c">&#34;c97fe5036ef3df2967d086711e6c0c405941e14b&#34;</span>, GitTreeState:<span style="color:#f1fa8c">&#34;clean&#34;</span>, BuildDate:<span style="color:#f1fa8c">&#34;2019-10-15T19:09:08Z&#34;</span>, GoVersion:<span style="color:#f1fa8c">&#34;go1.12.10&#34;</span>, Compiler:<span style="color:#f1fa8c">&#34;gc&#34;</span>, Platform:<span style="color:#f1fa8c">&#34;linux/amd64&#34;</span><span style="color:#ff79c6">}</span>
+</span></span></code></pre></div><p>对于 Helm3 的安装配置其实很简单，只需要在 kubectl 所在节点上面安装上 Helm3 客户端即可，默认就会读取 kubeconfig 文件来访问集群。我们这里使用微软提供的 helm chart 仓库源：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$  helm repo ls
+</span></span><span style="display:flex;"><span>NAME            URL
+</span></span><span style="display:flex;"><span>stable          http://mirror.azure.cn/kubernetes/charts/
+</span></span><span style="display:flex;"><span>$ helm repo update
+</span></span><span style="display:flex;"><span>Hang tight <span style="color:#ff79c6">while</span> we grab the latest from your chart repositories...
+</span></span><span style="display:flex;"><span>...Successfully got an update from the <span style="color:#f1fa8c">&#34;stable&#34;</span> chart repository
+</span></span><span style="display:flex;"><span>Update Complete. ⎈ Happy Helming!⎈
+</span></span></code></pre></div><p>由于我们这里使用的是 Kubernetes 1.16.x 版本，该版本之后将之前很多资源对象的一些旧的 API 废弃掉了，比如 Deployment 只能使用 <code>apps/v1</code> 这个版本了，而我们这里要使用的 Spinnaker 对应的 chart 包目前还是使用的以前的 API 版本，所以我们需要手动下载下来做一次更改：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ helm fetch stable/spinnaker
+</span></span><span style="display:flex;"><span>$ tar -xvf spinnaker-1.23.2.tgz
+</span></span></code></pre></div><p>然后将 spinnaker chart 模板中的 Deployment、StatefulSet 这些资源对象的 apiVersion 更改成 <code>apps/v1</code>，也需要记住如果是 Deployment 还需要添加上 <code>selector.matchLabels</code> 字段，大家可以直接使用我更改后的 chart 模板 <a href="https://github.com/cnych/spinnaker-helm">https://github.com/cnych/spinnaker-helm</a>。</p>
+<p>在 chart 模板的 <code>values.yaml</code> 文件中指定了 <code>halyard.spinnakerVersion=1.17.6</code>，这还是因为 apiVersion 版本的问题，该版本以上就可以兼容 Kubernetes v1.16.x 的集群，另外将默认的 <code>gcr.io</code> 的镜像替换成了微软的镜像源 <code>gcr.azk8s.cn</code>，此外还有一个非常重要的就是存储的指定，这里我们创建了一个 <code>StorageClass</code> 的资源对象来提供存储，我这里是创建的一个 <code>Ceph RBD</code> 类型的存储 <code>rook-ceph-block</code>，当然任何可用的 <code>StorageClass</code> 资源对象都是可以的：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: storage.k8s.io/v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: StorageClass
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: rook-ceph-block
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">provisioner</span>: rook-ceph.rbd.csi.ceph.com
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">reclaimPolicy</span>: Retain
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">parameters</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#6272a4"># clusterID 是 rook 集群运行的命名空间</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">clusterID</span>: rook-ceph
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#6272a4"># 指定存储池</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">pool</span>: k8s-test-pool
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#6272a4"># RBD image (实际的存储介质) 格式. 默认为 &#34;2&#34;.</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">imageFormat</span>: <span style="color:#f1fa8c">&#34;2&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#6272a4"># RBD image 特性. CSI RBD 现在只支持 `layering` .</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">imageFeatures</span>: layering
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#6272a4"># Ceph 管理员认证信息，这些都是在 clusterID 命名空间下面自动生成的</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">csi.storage.k8s.io/provisioner-secret-name</span>: rook-csi-rbd-provisioner
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">csi.storage.k8s.io/provisioner-secret-namespace</span>: rook-ceph
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">csi.storage.k8s.io/node-stage-secret-name</span>: rook-csi-rbd-node
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">csi.storage.k8s.io/node-stage-secret-namespace</span>: rook-ceph
+</span></span><span style="display:flex;"><span>  <span style="color:#6272a4"># 指定 volume 的文件系统格式，如果不指定, csi-provisioner 会默认设置为 `ext4`</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">csi.storage.k8s.io/fstype</span>: ext4
+</span></span></code></pre></div><p>需要为 halyard、redis、mino 都指定对应的存储，当然直接指定一个合适的 PVC 也是可以的，这里可以根据实际情况决定：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">halyard</span>:
+</span></span><span style="display:flex;"><span>  ...
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">persistence</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">storageClass</span>: rook-ceph-block
+</span></span><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">redis</span>:
+</span></span><span style="display:flex;"><span>  ...
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">master</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">persistence</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">storageClass</span>: rook-ceph-block
+</span></span><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">minio</span>:
+</span></span><span style="display:flex;"><span>  ...
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">persistence</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">storageClass</span>: rook-ceph-block
+</span></span><span style="display:flex;"><span>...
+</span></span></code></pre></div><p>接下来<strong>最重要的一步就是必须要为 halyard 配置代理</strong>，所以继续下去的前提是你需要配置一个在 Kubernetes 的 Pod 中可以访问的代理，比如我这里的代理地址为 <code>10.151.30.11:8118</code>，则需要配置如下所示的 <code>JAVA_OPTS</code> 这个环境变量：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">halyard</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">env</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#ff79c6">name</span>: JAVA_OPTS
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">value</span>: <span style="color:#f1fa8c">&#39;&#34;-Djava.security.egd=file:/dev/./urandom&#34; &#34;-Dhttp.proxyHost=10.151.30.11&#34; &#34;-Dhttps.proxyHost=10.151.30.11&#34; &#34;-Dhttp.proxyPort=8118&#34; &#34;-Dhttps.proxyPort=8118&#34; &#34;-Dhttp.nonProxyHosts=\&#34;localhost|*.spinnaker.com\&#34;&#34;&#39;</span>
+</span></span></code></pre></div><p>获取上面我修改过后的 Spinnaker 的 Chart 模板，将 <code>values.yaml</code> 文件中上面对应的配置替换成自己对应的配置即可。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ git clone https://github.com/cnych/spinnaker-helm spinnaker
+</span></span><span style="display:flex;"><span>$ kubectl create ns spinnaker
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 安装 spinnaker</span>
+</span></span><span style="display:flex;"><span>$ helm install spinnaker --namespace spinnaker ./spinnaker
+</span></span></code></pre></div><p>由于安装过程非常耗时，可能上面的 <code>helm install</code> 的过程可能会有超时提示，这个可以忽略：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ helm ls -n spinnaker
+</span></span><span style="display:flex;"><span>NAME            NAMESPACE       REVISION        UPDATED                                 STATUS  CHART            APP VERSION
+</span></span><span style="display:flex;"><span>spinnaker       spinnaker       <span style="color:#bd93f9">1</span>               2020-02-17 19:28:02.644552 +0800 CST    failed  spinnaker-1.23.2 1.16.2
+</span></span></code></pre></div><p>安装完成后最开始会生成如下所示的几个 Pod，其中 <code>spinnaker-install-using-hal-th8qf</code> 就是用来去真正安装 Spinnaker 的一个 Job 任务：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl get pods -n spinnaker
+</span></span><span style="display:flex;"><span>spinnaker-install-using-hal-th8qf   0/1     Completed   <span style="color:#bd93f9">0</span>          17h
+</span></span><span style="display:flex;"><span>spinnaker-minio-86f5b8785-bkjfq     1/1     Running     <span style="color:#bd93f9">0</span>          17h
+</span></span><span style="display:flex;"><span>spinnaker-redis-master-0            1/1     Running     <span style="color:#bd93f9">0</span>          17h
+</span></span><span style="display:flex;"><span>spinnaker-spinnaker-halyard-0       1/1     Running     <span style="color:#bd93f9">0</span>          17h
+</span></span></code></pre></div><!-- raw HTML omitted -->
+<p>不过由于在安装 Spinnaker 的过程中会使用 <code>gcr.io</code> 的镜像，所以会看到很多 Pod 镜像拉取失败的错误，这个时候我们可以手动编辑 Deployment 对象更改镜像地址：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl get deploy -n spinnaker
+</span></span><span style="display:flex;"><span>NAME               READY   UP-TO-DATE   AVAILABLE   AGE
+</span></span><span style="display:flex;"><span>spin-clouddriver   0/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">0</span>           17h
+</span></span><span style="display:flex;"><span>spin-deck          0/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">0</span>           17h
+</span></span><span style="display:flex;"><span>spin-echo          0/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">0</span>           17h
+</span></span><span style="display:flex;"><span>spin-front50       0/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">0</span>           17h
+</span></span><span style="display:flex;"><span>spin-gate          0/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">0</span>           17h
+</span></span><span style="display:flex;"><span>spin-igor          0/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">0</span>           17h
+</span></span><span style="display:flex;"><span>spin-orca          0/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">0</span>           17h
+</span></span><span style="display:flex;"><span>spin-rosco         0/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">0</span>           17h
+</span></span><span style="display:flex;"><span>spinnaker-minio    1/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">1</span>           17h
+</span></span></code></pre></div><p>比如修改 <code>spin-deck</code> 这个 Deployment 资源对象的镜像地址：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl edit deploy spin-deck -n spinnaker
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 然后在打开的编辑中将 gcr.io 替换成 gcr.azk8s.cn</span>
+</span></span></code></pre></div><p>用同样的方法替换其他资源对象，正常替换过后隔一段时间就可以正常启动 Pod 了，最终的 Pod 列表如下所示：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl get pods -n spinnaker
+</span></span><span style="display:flex;"><span>NAME                                READY   STATUS      RESTARTS   AGE
+</span></span><span style="display:flex;"><span>spin-clouddriver-76b8989b4f-cjw8r   1/1     Running     <span style="color:#bd93f9">0</span>          17h
+</span></span><span style="display:flex;"><span>spin-deck-5fd7b64b77-fnl5r          1/1     Running     <span style="color:#bd93f9">0</span>          17h
+</span></span><span style="display:flex;"><span>spin-echo-644c4cb6b6-gh98w          1/1     Running     <span style="color:#bd93f9">0</span>          17h
+</span></span><span style="display:flex;"><span>spin-front50-9d99cd697-cqbxb        1/1     Running     <span style="color:#bd93f9">0</span>          17h
+</span></span><span style="display:flex;"><span>spin-gate-6c49bccb6f-nhbzx          1/1     Running     <span style="color:#bd93f9">0</span>          17h
+</span></span><span style="display:flex;"><span>spin-igor-7c84d9bcb-rltw7           1/1     Running     <span style="color:#bd93f9">0</span>          17h
+</span></span><span style="display:flex;"><span>spin-orca-b5944685-wbm5p            1/1     Running     <span style="color:#bd93f9">0</span>          17h
+</span></span><span style="display:flex;"><span>spin-rosco-6d5f9c8f55-g89hq         1/1     Running     <span style="color:#bd93f9">0</span>          17h
+</span></span><span style="display:flex;"><span>spinnaker-install-using-hal-th8qf   0/1     Completed   <span style="color:#bd93f9">0</span>          17h
+</span></span><span style="display:flex;"><span>spinnaker-minio-86f5b8785-bkjfq     1/1     Running     <span style="color:#bd93f9">0</span>          17h
+</span></span><span style="display:flex;"><span>spinnaker-redis-master-0            1/1     Running     <span style="color:#bd93f9">0</span>          17h
+</span></span><span style="display:flex;"><span>spinnaker-spinnaker-halyard-0       1/1     Running     <span style="color:#bd93f9">0</span>          17h
+</span></span></code></pre></div><p>到这里就证明我们的 Spinnaker 已经安装成功了，这个时候如果我们想要把 Spinnaker 暴露给外部用户访问，当然可以创建一个 NodePort 类型的 Service，或者创建一个 Ingress 资源对象即可，其实上面的 chart 模板中我们就可以通过配置指定 Ingress 资源对象的参数。由于我这里使用的是 Traefik2.1 版本，所以单独创建一个 IngressRoute 资源对象来暴露服务：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: traefik.containo.us/v1alpha1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: IngressRoute
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: spin-deck-https
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">namespace</span>: spinnaker
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">entryPoints</span>:
+</span></span><span style="display:flex;"><span>    - websecure
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">routes</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#ff79c6">match</span>: Host(`spinnaker.qikqiak.com`)
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">kind</span>: Rule
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">services</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">name</span>: spin-deck
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">9000</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">tls</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">certResolver</span>: ali
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">domains</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">main</span>: <span style="color:#f1fa8c">&#34;*.qikqiak.com&#34;</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: traefik.containo.us/v1alpha1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Middleware
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: redirect-https
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">namespace</span>: spinnaker
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">redirectScheme</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">scheme</span>: https
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: traefik.containo.us/v1alpha1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: IngressRoute
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: spin-deck-http
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">namespace</span>: spinnaker
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">entryPoints</span>:
+</span></span><span style="display:flex;"><span>    - web
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">routes</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#ff79c6">match</span>: Host(`spinnaker.qikqiak.com`)
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">kind</span>: Rule
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">services</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">name</span>: spin-deck
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">9000</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">middlewares</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">name</span>: redirect-https
+</span></span></code></pre></div><p>直接创建上面的资源对象即可，对 Traefik2 使用不是很熟悉的，可以查看前面的文章 <a href="https://www.qikqiak.com/post/traefik-2.1-101/">一文搞懂 Traefik2.1 的使用</a> 了解更多，然后直接对域名 <code>spinnaker.qikqiak.com</code> 做好 DNS 解析即可在浏览器中访问 Spinnaker 了：</p>
+<p><img src="https://picdn.youdianzhishi.com/images/20200218133426.png" alt="spinnaker dashboard"></p>
+<p>到这里就安装成功了，当然这只是万里长征的第一步呢，后面我们再慢慢的去了解 Spinnaker 到底有哪些值得我们关注的功能。</p>
+<!-- raw HTML omitted -->
+
+          <h2>微信公众号</h2>
+<p>
+  扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+  kubernetes 讨论群里面共同学习。
+</p>
+<img
+  src="https://picdn.youdianzhishi.com/images/qrcode.png"
+  alt="wechat-account-qrcode"
+/>
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/install-metrics-server/">Metrics Server 安装</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/">在 Kubernetes 上安装 Gitlab</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/devops-base-on-jenkins/">基于 Jenkins 的 DevOps 流水线实践</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/migrate-helm-to-v3/">Helm V2 迁移到 V3 版本</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kustomize-101/">使用 Kustomize 配置 Kubernetes 应用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-3/">Drone 结合 Helm 部署 Kubernetes 应用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-2/">使用 Drone Pipeline 构建 Docker 镜像</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-1/">使用 Kubernetes Helm 安装 Drone</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/helm-chart-tips-and-tricks/">Helm Chart 模板开发技巧</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/install-nginx-ingress/">nginx-ingress 的安装使用</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/github-cli-tool-usage/" data-toggle="tooltip" data-placement="top" title="GitHub CLI 命令行工具使用">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/deploy-vault-on-k8s/" data-toggle="tooltip" data-placement="top" title="在 Kubernetes 上部署 Vault">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '在 Kubernetes 上部署 Spinnaker',
+        createIssueManually: true,
+        id: 'deploy-spinnaker-on-k8s',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -992,7 +629,7 @@ spec:
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -1001,7 +638,7 @@ spec:
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -1010,7 +647,7 @@ spec:
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -1019,158 +656,121 @@ spec:
                   </span>
                 </a>
               </li>
-
-              <li>
-                <a href="https://www.qikqiak.com/index.xml" title="RSS">
-                  <span class="fa-stack fa-lg">
-                    <i class="fa fa-circle fa-stack-2x"></i>
-                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
-                  </span>
-                </a>
-              </li>
-            </ul>
-            <p class="credits copyright text-muted">
-              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/">阳明的博客</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/archive/">归档</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/friend/">友链</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://beian.miit.gov.cn/" target="_blank"
-                >蜀ICP备11027319号-5</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
-                >kubernetes.io</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
-                >Kubernetes中文社区</a
-              >
-            </p>
-            <p class="text-center text-muted">
-              <script
-                async
-                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
-              ></script>
-              <span id="busuanzi_container_site_pv" style="display: none">
-                本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
               </span>
-              &nbsp;&bull;&nbsp;
-              <span id="busuanzi_container_site_uv" style="display: none">
-                访客数<span id="busuanzi_value_site_uv"></span>人次
-              </span>
-            </p>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
 
-            <p class="credits theme-by text-muted">
-              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
-              &nbsp;&bull;&nbsp; 主题
-              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
-              移植自
-              <a href="https://github.com/rootsongjc/beautifulhugo"
-                >Beautiful Hugo</a
-              >
-            </p>
-          </div>
-        </div>
+          &nbsp;&bull;&nbsp;
+          2023
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.115.4</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+          
+        </p>
       </div>
-    </footer>
+    </div>
+  </div>
+</footer>
 
-    <script
-      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
-      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
-    ></script>
 
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "UA-69668147-3");
-    </script>
-    <script>
-      (function () {
-        var bp = document.createElement("script");
-        var curProtocol = window.location.protocol.split(":")[0];
-        if (curProtocol === "https") {
-          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
-        } else {
-          bp.src = "http://push.zhanzhang.baidu.com/push.js";
-        }
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(bp, s);
-      })();
-    </script>
-    <script>
-      $(document).ready(function () {
-        var int = setInterval(fixCount, 50);
+<script src='https://www.qikqiak.com/js/bundle.min.af02a2d23b6651a566f0135a12e65fc2560faa7a969b3d1ad58d0afe0c9164ae.js' integrity='sha256-rwKi0jtmUaVm8BNaEuZfwlYPqnqWmz0a1Y0K/gyRZK4='></script>
 
-        var initPVCount = 584976;
-        var initUVCount = 153191;
-        function fixCount() {
-          if ($("#busuanzi_container_site_pv").css("display") != "none") {
-            $("#busuanzi_value_site_pv").html(
-              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
-            );
-            clearInterval(int);
-          }
-          if ($("#busuanzi_container_site_uv").css("display") != "none") {
-            $("#busuanzi_value_site_uv").html(
-              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
-            );
-            clearInterval(int);
-          }
-        }
-      });
-    </script>
-    <script>
-      (function (w, d, s, id) {
-        if (typeof w.webpushr !== "undefined") return;
-        w.webpushr =
-          w.webpushr ||
-          function () {
-            (w.webpushr.q = w.webpushr.q || []).push(arguments);
-          };
-        var js,
-          fjs = d.getElementsByTagName(s)[0];
-        js = d.createElement(s);
-        js.id = id;
-        js.src = "https://cdn.webpushr.com/app.min.js";
-        fjs.parentNode.appendChild(js);
-      })(window, document, "script", "webpushr-jssdk");
-      webpushr(
-        "init",
-        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
-      );
-    </script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
-    ></script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
-    ></script>
-    <script type="text/javascript">
-      $(".carousel").slick({
-        dots: true,
-        arrows: true,
-        autoplay: true,
-        autoplaySpeed: 4000,
-        infinite: true,
-        speed: 500,
-        fade: true,
-        cssEase: "linear",
-        centerMode: true,
-        prevArrow: '<button type="button" class="slick-prev"></button>',
-        nextArrow: '<button type="button" class="slick-next"></button>',
-      });
-    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
   </body>
 </html>
+

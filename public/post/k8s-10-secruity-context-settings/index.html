@@ -1,1132 +1,627 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
-    />
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-    <title>
-      你应该了解的10个 Kubernetes
-      安全上下文设置[译]-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
-    </title>
-    <meta
-      property="og:title"
-      content="你应该了解的10个 Kubernetes 安全上下文设置[译]"
-    />
-    <meta
-      name="twitter:title"
-      content="你应该了解的10个 Kubernetes 安全上下文设置[译]"
-    />
 
-    <meta
-      name="description"
-      content="在 Kubernetes 中安全地运行工作负载是很困的，有很多配置都可能会影响到整个 Kubernetes API 的安全性，这需要我们有大量的知识积累来正确的实施。Kubernetes 在安全方面提供了一个强大的工具 securityContext，每个 Pod 和容器清单都可以使用这个属性。在本文中我们将了解各种 securityContext 的配置，探讨它们的含义，以及我们应该如何使用它们。
+  <title>你应该了解的10个 Kubernetes 安全上下文设置[译]-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="你应该了解的10个 Kubernetes 安全上下文设置[译]" />
+  <meta name="twitter:title" content="你应该了解的10个 Kubernetes 安全上下文设置[译]" />
 
+  <meta name="description" content="在 Kubernetes 中安全地运行工作负载是很困的，有很多配置都可能会影响到整个 Kubernetes API 的安全性，这需要我们有大量的知识积累来正确的实施。Kubernetes 在安全方面提供了一个强大的工具 securityContext，每个 Pod 和容器清单都可以使用这个属性。在本文中我们将了解各种 securityContext 的配置，探讨它们的含义，以及我们应该如何使用它们。
 
 securityContext 设置在 PodSpec 和ContainerSpec 规范中都有定义，这里我们分别用[P]和[C]来表示。需要注意的是，如果一个设置在两个作用域中都可以使用和配置，那么我们应该优先考虑设置容器级别的。
-"
-    />
-    <meta
-      property="og:description"
-      content="在 Kubernetes 中安全地运行工作负载是很困的，有很多配置都可能会影响到整个 Kubernetes API 的安全性，这需要我们有大量的知识积累来正确的实施。Kubernetes 在安全方面提供了一个强大的工具 securityContext，每个 Pod 和容器清单都可以使用这个属性。在本文中我们将了解各种 securityContext 的配置，探讨它们的含义，以及我们应该如何使用它们。
-
+">
+  <meta property="og:description" content="在 Kubernetes 中安全地运行工作负载是很困的，有很多配置都可能会影响到整个 Kubernetes API 的安全性，这需要我们有大量的知识积累来正确的实施。Kubernetes 在安全方面提供了一个强大的工具 securityContext，每个 Pod 和容器清单都可以使用这个属性。在本文中我们将了解各种 securityContext 的配置，探讨它们的含义，以及我们应该如何使用它们。
 
 securityContext 设置在 PodSpec 和ContainerSpec 规范中都有定义，这里我们分别用[P]和[C]来表示。需要注意的是，如果一个设置在两个作用域中都可以使用和配置，那么我们应该优先考虑设置容器级别的。
-"
-    />
-    <meta
-      name="twitter:description"
-      content="在 Kubernetes 中安全地运行工作负载是很困的，有很多配置都可能会影响到整个 Kubernetes API 的安全性，这需要我们有大量的知识积累来正确的实施。Kubernetes 在安全方面提供了一个强大的工具 securityContext，每个 Pod 和容器清单都可以使用这个属性。在本文中我们将了解各种 securityContext 的配置，探讨它们的含义，以及我们应该如何使用它 …"
-    />
-    <meta name="author" content="" />
-    <link
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-      rel="icon"
-      type="image/x-icon"
-    />
-    <link
-      rel="apple-touch-icon"
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      property="og:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      name="twitter:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta name="twitter:card" content="summary" />
-    <meta
-      property="og:url"
-      content="https://www.qikqiak.com/post/k8s-10-secruity-context-settings/"
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="阳明的博客" />
+">
+  <meta name="twitter:description" content="在 Kubernetes 中安全地运行工作负载是很困的，有很多配置都可能会影响到整个 Kubernetes API 的安全性，这需要我们有大量的知识积累来正确的实施。Kubernetes 在安全方面提供了一个强大的工具 securityContext，每个 Pod 和容器清单都可以使用这个属性。在本文中我们将了解各种 securityContext 的配置，探讨它们的含义，以及我们应该如何使用它 …">
+  <meta name="author" content=""/>
+  <link href="https://picdn.youdianzhishi.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://picdn.youdianzhishi.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/k8s-10-secruity-context-settings/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
 
-    <meta name="generator" content="Hugo 0.55.6" />
-    <link
-      rel="canonical"
-      href="https://www.qikqiak.com/post/k8s-10-secruity-context-settings/"
-    />
-    <link
-      rel="alternate"
-      href="https://www.qikqiak.com/index.xml"
-      type="application/rss+xml"
-      title="阳明的博客"
-    />
+  <link rel="canonical" href="https://www.qikqiak.com/post/k8s-10-secruity-context-settings/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
-    <link
-      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
-      rel="stylesheet"
-    />
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
 
-    <link
-      rel="stylesheet"
-      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
-      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
-    />
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a6b62363fe57848ad01efa2a5d1bbb1047c2ffb71b53d8aeb42bc5ed5c77ea7c.css' integrity='sha256-prYjY/5XhIrQHvoqXRu7EEfC/7cbU9iutCvF7Vx36nw='>
 
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
-    />
-
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
     <!--[if lt IE 9]>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-      <link
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-        rel="stylesheet"
-      />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <![endif]-->
-    <meta
-      name="google-site-verification"
-      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
-    />
-    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-    <meta name="keywords" content="kubernetes, docker, 安全, securityContext" />
-    <script>
-      var _hmt = _hmt || [];
-      (function () {
-        var hm = document.createElement("script");
-        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(hm, s);
-      })();
-    </script>
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, docker, 安全, securityContext">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
 
-    <script type="application/javascript">
-      var doNotTrack = false;
-      if (!doNotTrack) {
-        window.ga =
-          window.ga ||
-          function () {
-            (ga.q = ga.q || []).push(arguments);
-          };
-        ga.l = +new Date();
-        ga("create", "UA-69668147-3", "auto");
 
-        ga("send", "pageview");
-      }
-    </script>
-    <script async src="https://www.google-analytics.com/analytics.js"></script>
-  </head>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-      <div class="container">
-        <div class="navbar-header">
-          <button
-            type="button"
-            class="navbar-toggle"
-            data-toggle="collapse"
-            data-target="#main-navbar"
-          >
-            <span class="sr-only">切换导航</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a
-            class="navbar-brand"
-            href="https://www.qikqiak.com/"
-            title="阳明的博客"
-          >
-            <img
-              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
-              style="margin-top: -5px; height: 32px"
-              alt="阳明的博客"
-            />
-          </a>
-        </div>
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://picdn.youdianzhishi.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
 
-        <div class="collapse navbar-collapse" id="main-navbar">
-          <ul class="nav navbar-nav navbar-right">
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-
+          
+        
+          
             <li>
-              <a
-                title="课程"
-                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
-                >课程</a
-              >
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/archives">Archive</a>
-
-                <a href="https://www.qikqiak.com/tags">tags</a>
-
-                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-
-                <a href="https://www.qikqiak.com/tags/python">python</a>
-
-                <a href="https://www.qikqiak.com/tags/django">django</a>
-
-                <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-
-                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-
-                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-
-                <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/"
-                >关于</a
-              >
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
             </li>
-
+          
+        
+          
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
+          
+        
 
-            <li>
-              <a
-                href="#modalSearch"
-                data-toggle="modal"
-                data-target="#modalSearch"
-                style="outline: none"
-              >
-                <span
-                  id="searchGlyph"
-                  class="glyphicon glyphicon-search"
-                ></span>
-              </a>
-            </li>
-          </ul>
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
         </div>
-      </div>
-    </nav>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-    <div id="modalSearch" class="modal fade" role="dialog">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal">
-              &times;
-            </button>
-            <h4 class="modal-title">搜索</h4>
-          </div>
-          <div class="modal-body">
-            <div class="aa-input-container" id="aa-input-container">
-              <input
-                type="search"
-                id="aa-search-input"
-                class="aa-input-search"
-                placeholder="Search for titles or URIs..."
-                name="search"
-                autocomplete="off"
-              />
-              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-                <path
-                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
-                />
-              </svg>
-            </div>
-            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
 
-            <script>
-              var client = algoliasearch(
-                "1JDRAS0AZR",
-                "8804ac109158bb3bb60d74ce98fa332f"
-              );
-              var index = client.initIndex("prod_blog");
-
-              autocomplete(
-                "#aa-search-input",
-                { hint: false },
-                {
-                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
-
-                  displayKey: "name",
-
-                  templates: {
-                    suggestion: function (suggestion) {
-                      return (
-                        "<span>" +
-                        '<a href="https://www.qikqiak.com/post/' +
-                        suggestion.slug +
-                        '">' +
-                        suggestion._highlightResult.title.value +
-                        "</a></span>"
-                      );
-                    },
-                  },
-                }
-              );
-            </script>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">
-              close
-            </button>
-          </div>
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div
-      id="header-big-imgs"
-      data-num-img="1"
-      data-img-src-1="https://picdn.youdianzhishi.com/images/20210427160716.png"
-      data-img-desc-1="https://unsplash.com/photos/GI4G2ZXT1TQ"
-    ></div>
+    
+  
+  
+  
 
-    <header class="header-section has-img">
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://picdn.youdianzhishi.com/images/20210427160716.png" data-img-desc-1="https://unsplash.com/photos/GI4G2ZXT1TQ"></div>
+  
+
+  <header class="header-section has-img">
+    
       <div class="intro-header big-img">
+        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>你应该了解的10个 Kubernetes 安全上下文设置[译]</h1>
+                  
+                  
+                    <span class="post-meta">
+  发表于 April 27, 2021  
+</span>
 
-                <span class="post-meta"> 发表于 April 27, 2021 </span>
+                  
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline"></span>
+        <span class="img-desc" style="display: inline;"></span>
       </div>
-
-      <div class="intro-header no-img">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-              <div class="post-heading">
-                <h1>你应该了解的10个 Kubernetes 安全上下文设置[译]</h1>
-
-                <span class="post-meta"> 发表于 April 27, 2021 </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <div class="container" role="main">
-      <div class="row">
-        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-          <div>
-            <h5 id="tags" style="margin-top: 30px">
-              标签:
-
-              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
-              &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/docker/">docker</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/%E5%AE%89%E5%85%A8/"
-                >安全</a
-              >
-              &nbsp;
-            </h5>
-          </div>
-
-          <article
-            role="main"
-            class="blog-post"
-            itemprop="articleBody"
-            id="content"
-          >
-            <aside class="toc">
-              <nav id="TableOfContents">
-                <ul>
-                  <li>
-                    <ul>
-                      <li>
-                        <a href="#1-runasnonroot-p-c">1. runAsNonRoot [P/C]</a>
-                        <ul>
-                          <li>
-                            <a href="#1-1-使用基础镜像中提供的用户"
-                              >1.1 使用基础镜像中提供的用户</a
-                            >
-                          </li>
-                          <li>
-                            <a href="#1-2-基础镜像没有提供用户"
-                              >1.2 基础镜像没有提供用户</a
-                            >
-                          </li>
-                        </ul>
-                      </li>
-                      <li>
-                        <a href="#2-runasuser-runasgroup-p-c"
-                          >2. runAsUser/runAsGroup [P/C]</a
-                        >
-                      </li>
-                      <li>
-                        <a href="#3-selinuxoptions-p-c"
-                          >3. seLinuxOptions [P/C]</a
-                        >
-                      </li>
-                      <li>
-                        <a href="#4-seccompprofile-p-c"
-                          >4. seccompProfile [P/C]</a
-                        >
-                      </li>
-                      <li>
-                        <a href="#5-避免使用特权容器-c"
-                          >5. 避免使用特权容器 [C]</a
-                        >
-                      </li>
-                      <li>
-                        <a href="#6-linux-capabilities-c"
-                          >6. Linux Capabilities [C]</a
-                        >
-                      </li>
-                      <li>
-                        <a href="#7-以只读文件系统运行-c"
-                          >7. 以只读文件系统运行 [C]</a
-                        >
-                      </li>
-                      <li><a href="#8-procmount-c">8. procMount [C]</a></li>
-                      <li>
-                        <a href="#9-fsgroup-fsgroupchangepolicy-p"
-                          >9. fsGroup/fsGroupChangePolicy [P]</a
-                        >
-                      </li>
-                      <li><a href="#10-sysctls-p">10. sysctls [P]</a></li>
-                      <li><a href="#总结">总结</a></li>
-                    </ul>
-                  </li>
-                </ul>
-              </nav>
-            </aside>
-
-            <p>
-              在 Kubernetes
-              中安全地运行工作负载是很困的，有很多配置都可能会影响到整个
-              Kubernetes API
-              的安全性，这需要我们有大量的知识积累来正确的实施。Kubernetes
-              在安全方面提供了一个强大的工具 <code>securityContext</code>，每个
-              Pod 和容器清单都可以使用这个属性。在本文中我们将了解各种
-              <code>securityContext</code>
-              的配置，探讨它们的含义，以及我们应该如何使用它们。
-            </p>
-
-            <blockquote>
-              <p>
-                <code>securityContext</code> 设置在 <code>PodSpec</code> 和<code
-                  >ContainerSpec</code
-                >
-                规范中都有定义，这里我们分别用<code>[P]</code>和<code>[C]</code>来表示。需要注意的是，如果一个设置在两个作用域中都可以使用和配置，那么我们应该优先考虑设置容器级别的。
-              </p>
-            </blockquote>
-
-            <h2 id="1-runasnonroot-p-c">1. runAsNonRoot [P/C]</h2>
-
-            <p>
-              我们知道容器是使用 namespaces 和 cgroups
-              来限制其进程，但只要在部署的时候做了一次错误的配置，就可以让这些进程访问主机上的资源。如果该进程以
-              root 身份运行，它对这些资源的访问权限与主机 root
-              账户是相同的。此外，如果其他 pod 或容器设置被用来减少约束（比如
-              <code>procMount</code> 或 <code>capabilities</code>），拥有一个
-              <code>root UID</code>
-              就会提高风险，除非你有一个非常好的原因，否则你不应该以 root
-              身份运行一个容器。
-            </p>
-
-            <p>那么，如果你有一个使用 root 的镜像需要部署，那应该怎么办呢？</p>
-
-            <h3 id="1-1-使用基础镜像中提供的用户">
-              1.1 使用基础镜像中提供的用户
-            </h3>
-
-            <p>
-              通常情况下，基础镜像已经创建并提供了一个用户，例如，官方的 Node.js
-              镜像带有一个 UID 为 1000 的名为 node
-              的用户，我们就可以使用该身份来运行容器，但他们并没有在
-              <code>Dockerfile</code> 中明确地设置当前用户。我们可以在运行时用
-              <code>runAsUser</code> 设置来配置它，或者用自定义的
-              <code>Dockerfile</code>
-              来更改镜像中的当前用户。这里我们来看看使用自定义的
-              <code>Dockerfile</code> 来构建我们自己的镜像的例子。
-            </p>
-
-            <p>
-              在不深入了解镜像构建的情况下，让我们假设我们有一个预先构建好的 npm
-              应用程序。这里是一个最小的 Dockerfile 文件，用来构建一个基于
-              <code>node:slim</code> 的镜像，并以提供的 node 用户身份运行。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-docker" data-lang="docker"><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> node:slim</span>
-COPY --chown<span style="color:#ff79c6">=</span>node . /home/node/app/   <span style="color:#6272a4"># &lt;--- Copy app into the home directory with right ownership</span>
-USER <span style="color:#bd93f9">1000</span>                             <span style="color:#6272a4"># &lt;--- Switch active user to “node” (by UID)</span>
-<span style="color:#ff79c6">WORKDIR</span><span style="color:#f1fa8c"> /home/node/app                # &lt;--- Switch current directory to app</span>
-<span style="color:#ff79c6">ENTRYPOINT</span><span style="color:#f1fa8c"> [&#34;npm&#34;, &#34;start&#34;]           # &lt;--- This will now exec as the “node” user instead of root</span></code></pre>
-            </div>
-            <p>
-              其中以 USER 开头的一行就是关键设置，这使得 node
-              成为从这个镜像启动的任何容器里面的默认用户。我们使用 UID
-              而不是用户的名字，因为 Kubernetes
-              无法在启动容器前将镜像的默认用户名映射到 UID 上，并且在部署时指定
-              <code>runAsNotRoot: true</code>，会返回有关错误。
-            </p>
-
-            <h3 id="1-2-基础镜像没有提供用户">1.2 基础镜像没有提供用户</h3>
-
-            <p>
-              如果我们使用的基础镜像没有提供一个可以使用的用户，那么我们又应该怎么做呢？对于大部分进程来说，我们只需在自定义的
-              Dockerfile 中创建一个用户并使用它即可。如下所示：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-docker" data-lang="docker"><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> node:slim</span>
-<span style="color:#ff79c6">RUN</span> useradd somebody -u <span style="color:#bd93f9">10001</span> --create-home --user-group  <span style="color:#6272a4"># &lt;--- Create a user</span>
-COPY --chown<span style="color:#ff79c6">=</span>somebody . /home/somebody/app/
-USER <span style="color:#bd93f9">10001</span>
-<span style="color:#ff79c6">WORKDIR</span><span style="color:#f1fa8c"> /home/somebody/app</span>
-<span style="color:#ff79c6">ENTRYPOINT</span><span style="color:#f1fa8c"> [&#34;npm&#34;, &#34;start&#34;]</span></code></pre>
-            </div>
-            <p>
-              这里我们增加了一行创建用户的
-              <code>RUN</code> 命令即可。不过需要注意的是这对于
-              <code>node.js</code> 和
-              <code>npm</code>
-              来说，这很好用，但是其他工具可能需要文件系统的不同元素进行所有权变更。如果遇到任何问题，需要查阅对应工具的文档。
-            </p>
-
-            <h2 id="2-runasuser-runasgroup-p-c">
-              2. runAsUser/runAsGroup [P/C]
-            </h2>
-
-            <p>
-              容器镜像可能有一个特定的用户或组，我们可以用
-              <code>runAsUser</code> 和
-              <code>runAsGroup</code>
-              来进行覆盖。通常，这些设置与包含具有相同所有权 ID
-              的文件的卷挂载结合在一起。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">....
-spec:
-  containers:
-    - name: web
-      image: mycorp/webapp:<span style="color:#bd93f9">1.2</span>.<span style="color:#bd93f9">3</span>
-  securityContext:
-    runAsNonRoot: <span style="color:#ff79c6">true</span>
-    runAsUser: <span style="color:#bd93f9">10001</span>
-....</code></pre>
-            </div>
-            <p>
-              不过使用这些配置也是有风险的，因为你为容器做出的运行时决定可能与原始镜像不兼容。例如，<code
-                >jenkins/jenkins</code
-              >
-              镜像以名为
-              <code>jenkins:jenkins</code>
-              的<strong>组:用户</strong>身份运行，其应用文件全部由该用户拥有。如果我们配置一个不同的用户，它将无法启动，因为该用户不存在于镜像的
-              <code>/etc/passwd</code>
-              文件中。即使它以某种方式存在，它也很可能在读写
-              <code>jenkins:jenkins</code>
-              拥有的文件时出现问题。我们可以用一个简单的 docker
-              运行命令来验证这个问题。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ docker run --rm -it -u eric:eric jenkins/jenkins
-docker: Error response from daemon: unable to find user eric: no matching entries in passwd file.</code></pre>
-            </div>
-            <p>
-              上面我们提到确保容器进程不以 root
-              用户身份运行是一个非常好的主意，但不要依赖
-              <code>runAsUser</code> 或
-              <code>runAsGroup</code>
-              设置来保证这一点，未来有人可能会删除这些配置，请确保同时将
-              <code>runAsNonRoot</code> 设置为 true。
-            </p>
-
-            <h2 id="3-selinuxoptions-p-c">3. seLinuxOptions [P/C]</h2>
-
-            <p>
-              <code>SELinux</code> 是一个用于控制对 Linux
-              系统上的应用、进程和文件进行访问的策略驱动系统，它在 Linux
-              内核中实现了 Linux 安全模块框架。SELinux
-              是基于标签的策略，它将一些标签应用于系统中的所有元素，然后将元素进行分组。这些标签被称为<strong>安全上下文</strong>（不要和
-              Kubernetes 中的 <code>securityContext</code> 混淆了）-
-              由用户、角色、类型和可选的一些其他属性组成，格式为：<code>user:role:type:level</code>。
-            </p>
-
-            <p>
-              然后，SELinux
-              使用策略来定义特定上下文中的哪些进程可以访问系统中其他被标记的对象。SELinux
-              可以是严格执行
-              <code>enforced</code>
-              模式，在这种情况下，访问将被拒绝，如果被配置为允许的
-              <code>permissive</code>
-              模式，那么安全策略没有被强制执行，当安全策略规则应该拒绝访问时，访问仍然被允许，然而，此时会向日志文件发送一条消息，表示该访问应该被拒绝。在容器中，SELinux
-              通常给容器进程和容器镜像打上标签，以限制该进程只能访问镜像中的文件。
-            </p>
-
-            <p>
-              默认的 SELinux 策略将在实例化容器时由容器运行时应用，<code
-                >securityContext</code
-              >
-              中的 <code>seLinuxOptions</code> 允许配置自定义的 SELinux
-              策略标签，请注意，改变容器的 SELinux
-              策略标签有可能允许容器进程摆脱容器镜像并访问主机文件系统。
-            </p>
-
-            <p>当然只有当宿主机操作系统支持 SELinux 时，这个功能才会起作用。</p>
-
-            <h2 id="4-seccompprofile-p-c">4. seccompProfile [P/C]</h2>
-
-            <p>
-              <code>Seccomp</code> 表示一种安全计算模式，是 Linux
-              内核的一项功能，它可以限制一个特定进程从用户空间到内核的调用。seccomp
-              配置文件是使用一个 JSON
-              文件进行定义的，通常由一组系统调用和发生这些系统调用时的默认动作组成。如下配置所示：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-json" data-lang="json">{
-    <span style="color:#ff79c6">&#34;defaultAction&#34;</span>: <span style="color:#f1fa8c">&#34;SCMP_ACT_ERRNO&#34;</span>,
-    <span style="color:#ff79c6">&#34;architectures&#34;</span>: [
-        <span style="color:#f1fa8c">&#34;SCMP_ARCH_X86_64&#34;</span>,
-        <span style="color:#f1fa8c">&#34;SCMP_ARCH_X86&#34;</span>,
-        <span style="color:#f1fa8c">&#34;SCMP_ARCH_X32&#34;</span>
-    ],
-    <span style="color:#ff79c6">&#34;syscalls&#34;</span>: [
-        {
-            <span style="color:#ff79c6">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;accept&#34;</span>,
-            <span style="color:#ff79c6">&#34;action&#34;</span>: <span style="color:#f1fa8c">&#34;SCMP_ACT_ALLOW&#34;</span>,
-            <span style="color:#ff79c6">&#34;args&#34;</span>: []
-        },
-        {
-            <span style="color:#ff79c6">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;accept4&#34;</span>,
-            <span style="color:#ff79c6">&#34;action&#34;</span>: <span style="color:#f1fa8c">&#34;SCMP_ACT_ALLOW&#34;</span>,
-            <span style="color:#ff79c6">&#34;args&#34;</span>: []
-        },
-        ...
-    ]
-}</code></pre>
-            </div>
-            <p>
-              Kubernetes 通过在 <code>securityContext</code> 中的
-              <code>seccompProfile</code>
-              属性来提供一个使用自定义配置文件的机制。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">seccompProfile:
-  type: Localhost
-  localhostProfile: profiles/myprofile.json</code></pre>
-            </div>
-            <p>这里配置的 <code>type</code> 字段有三个可选的值：</p>
-
-            <ul>
-              <li>
-                <code>Localhost</code>：其中
-                <code>localhostProfile</code> 配置为容器内的
-                <code>seccomp</code> 配置文件路径。
-              </li>
-              <li><code>Unconfined</code>：其中没有配置文件。</li>
-              <li>
-                <code>RuntimeDefault</code
-                >：其中使用容器运行时的默认值&ndash;如果没有指定类型，就是默认值。
-              </li>
-            </ul>
-
-            <p>
-              我们可以在 <code>PodSecurityContext</code> 或
-              <code>securityContext</code>
-              中使用这些配置，如果两者都配置了，就会使用容器级别中的配置。
-            </p>
-
-            <p>
-              此外与大多数安全相关的设置一样，<strong>最小权限原则</strong>在此同样适用。只给你的容器访问它所需要的权限即可。首先创建一个配置文件，简单地记录哪些系统调用正在发生，然后测试你的应用程序，建立一套允许的系统调用规则。我们可以在
-              <a href="https://kubernetes.io/docs/tutorials/clusters/seccomp"
-                >Kubernetes 教程</a
-              >中找到关于 <code>Seccomp</code> 的更多信息。
-            </p>
-
-            <h2 id="5-避免使用特权容器-c">5. 避免使用特权容器 [C]</h2>
-
-            <p>
-              给容器授予特权模式是非常危险的，一般会有一种更简单的方式来实现特定的权限，或者可以通过授予
-              <code>Linux Capabilities</code>
-              权限来控制。容器运行时控制器着特权模式的具体实现，但是它会授予容器所有的特权，并解除由
-              cgroup 控制器执行的限制，它还可以修改 Linux
-              安全模块的配置，并允许容器内的进程逃离容器。
-            </p>
-
-            <p>
-              容器在宿主机中提供了进程隔离，所以即使容器是使用 root
-              身份运行的，也有容器运行时不授予容器的
-              <code>Capabilities</code
-              >。如果配置了特权模式，容器运行时就会授予系统 root
-              的所有能力，从安全角度来看，这是很危险的，因为它允许对底层宿主机系统的所有操作访问。
-              <script
-                async
-                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-              ></script>
-
-              <ins
-                class="adsbygoogle"
-                style="display: block"
-                data-ad-client="ca-pub-5376999672787220"
-                data-ad-slot="9165834656"
-                data-ad-format="auto"
-                data-full-width-responsive="true"
-              ></ins>
-              <script>
-                (adsbygoogle = window.adsbygoogle || []).push({});
-              </script>
-
-              避免使用特权模式，如果你的容器确实需要额外的能力，只需通过添加
-              <code>capabilities</code>
-              来满足你的需求。除非你的容器需要控制主机内核中的系统级设置，如访问特定的硬件或重新配置网络，并且需要访问主机文件系统，那么它就不需要特权模式。
-            </p>
-
-            <h2 id="6-linux-capabilities-c">6. Linux Capabilities [C]</h2>
-
-            <p>
-              <code>Capabilities</code>
-              是一个内核级别的权限，它允许对内核调用权限进行更细粒度的控制，而不是简单地以
-              root 身份运行。<code>Capabilities</code>
-              包括更改文件权限、控制网络子系统和执行系统管理等功能。在
-              <code>securityContext</code> 中，Kubernetes 可以添加或删除
-              <code>Capabilities</code>，单个
-              <code>Capabilities</code>
-              或逗号分隔的列表可以作为一个字符串数组进行配置。另外，我们也可以使用
-              <code>all</code>
-              来添加或删除所有的配置。这种配置会被传递给容器运行时，在它创建容器的时候会配置上
-              <code>Capabilities</code> 集合，如果
-              <code>securityContext</code>
-              中没有配置，那么容器将会直接容器运行时提供的所有默认配置。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">securityContext:
-  capabilities:
-    drop:
-      - all
-    add: [<span style="color:#f1fa8c">&#34;MKNOD&#34;</span>]</code></pre>
-            </div>
-            <p>
-              一般推荐的做法是先删除所有的配置，然后只添加你的应用程序实际需要的，在大部分情况下，应用程序在正常运行中实际上不需要任何
-              <code>Capabilities</code
-              >，通过删除所有配置来测试，并通过监控审计日志来调试问题，看看哪些功能被阻止了。
-            </p>
-
-            <p>
-              请注意，当在 <code>securityContext</code> 中列出要放弃或添加的
-              <code>Capabilities</code> 时，你要删除内核在命名
-              <code>Capabilities</code> 时使用的 <code>CAP_</code> 前缀。<code
-                >capsh</code
-              >
-              工具可以给我们一个比较友好的调试信息，可以来说明你的容器中到底启用了哪些
-              <code>Capabilities</code
-              >，当然不要在生产容器中使用这个工具，因为这使得攻击者很容易弄清楚哪些
-              <code>Capabilities</code> 被启用了。
-            </p>
-
-            <h2 id="7-以只读文件系统运行-c">7. 以只读文件系统运行 [C]</h2>
-
-            <p>
-              如果你的容器被入侵，而且它有一个可读写的文件系统，那么攻击者就可以随意地改变它的配置、安装软件，并有可能启动其他的漏洞。拥有一个只读的文件系统有助于防止这些类型的安全问题，因为它限制了攻击者可以执行的操作。一般来说，容器不应该要求对容器文件系统进行写入，如果你的应用程序是有状态数据，那么你应该使用外部持久化方法，如数据库、volume
-              或其他一些服务。另外，确保所有的日志都写到 stdout 或日志转发器上。
-            </p>
-
-            <h2 id="8-procmount-c">8. procMount [C]</h2>
-
-            <p>
-              默认情况下，为了防止潜在的安全问题，容器运行时会屏蔽容器内
-              <code>/proc</code> 文件系统的某些部分文件。然而有时需要访问
-              <code>/proc</code>
-              的这些文件，特别是在使用嵌套容器时，因为它经常被用作集群内构建过程的一部分。该配置只有两个有效的选项：
-            </p>
-
-            <ul>
-              <li><code>Default</code>：保持标准的容器运行时行为</li>
-              <li>
-                <code>Unmasked</code>：它删除
-                <code>/proc</code> 文件系统的所有屏蔽行为
-              </li>
-            </ul>
-
-            <p>
-              显然只有当我们知道在做什么的时候才应该使用这个配置，如果你是为了构建镜像而使用它，请检查构建工具的最新版本，因为许多工具不再需要这个设置了，最好升级下工具并设置为
-              <code>Default</code> 默认的 <code>procMount</code>。
-            </p>
-
-            <h2 id="9-fsgroup-fsgroupchangepolicy-p">
-              9. fsGroup/fsGroupChangePolicy [P]
-            </h2>
-
-            <p>
-              <code>fsGroup</code> 设置定义了一个组，当卷被 pod
-              挂载时，Kubernetes 将把卷中所有文件的权限改为该组。这里的行为也由
-              <code>fsGroupChangePolicy</code> 控制，它可以被设置为
-              <code>onRootMismatch</code> 或 <code>Always</code>。如果设置为
-              <code>onRootMismatch</code> 则只有当权限与容器 root
-              的权限不匹配时才会被改变。
-            </p>
-
-            <p>
-              不过在使用 <code>fsGroup</code> 时也要慎重，改变整个 volume
-              卷的组所有权会导致<strong>变慢</strong>，如果是大型文件系统<strong>启动也会延迟</strong>。如果共享同一卷的其他进程没有对新的
-              GID
-              的访问权限，它也会对这些进程造成损害。由于这个原因，一些共享文件系统如
-              NFS，没有实现这个功能。这些设置也不影响临时的 ephemeral 卷。
-            </p>
-
-            <h2 id="10-sysctls-p">10. sysctls [P]</h2>
-
-            <p>
-              <code>Sysctls</code> 是 Linux
-              内核的一个功能，它允许管理员修改内核配置。在一个完整的 Linux
-              操作系统中，这些是通过使用
-              <code>/etc/sysctl.conf</code> 定义的，也可以使用
-              <code>sysctl</code> 工具进行修改。
-            </p>
-
-            <p>
-              <code>securityContext</code> 中的
-              <code>sysctls</code> 配置允许在容器中修改特定的
-              <code>sysctls</code>。只有一小部分的
-              <code>sysctls</code>
-              可以在每个容器的基础上进行修改，它们都在内核中被命名的。
-              在这个可以配置的子集中，有些被认为是安全的，而更多的则被认为是不安全的，这取决于对其他
-              pod 的潜在影响。在集群中，不安全的
-              <code>sysctls</code> 通常是被禁用，需要由集群管理员专门开启。
-            </p>
-
-            <p>
-              鉴于有可能破坏底层操作系统的稳定，除非你有非常特殊的要求，否则应该避免通过
-              <code>sysctls</code> 修改内核参数。
-            </p>
-
-            <h2 id="总结">总结</h2>
-
-            <p>
-              在用
-              <code>securityContext</code>
-              加固你的应用时，有很多事情需要注意。如果使用得当，它们是一种非常有效的工具，我们希望这个列表能帮助你的团队为你的工作负载和环境进行正确的安全配置。
-            </p>
-
-            <blockquote>
-              <p>
-                原文链接：<a
-                  href="https://snyk.io/blog/10-kubernetes-security-context-settings-you-should-understand/"
-                  >https://snyk.io/blog/10-kubernetes-security-context-settings-you-should-understand/</a
-                >
-              </p>
-            </blockquote>
-
-            <p>
-              <a
-                href="https://youdianzhishi.com/web/course/1030"
-                title="从 Docker 到 Kubernetes 进阶课程"
-                ><img
-                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
-                  alt="Kubernetes进阶训练营"
-              /></a>
-            </p>
-
-            <h2>微信公众号</h2>
-            <p>
-              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
-              kubernetes 讨论群里面共同学习。
-            </p>
-            <img
-              src="https://picdn.youdianzhishi.com/images/qrcode.png"
-              alt="wechat-account-qrcode"
-            />
-
-            <div class="entry-shang text-center">
-              <p>「真诚赞赏，手留余香」</p>
-              <button class="zs show-zs btn btn-bred">赞赏</button>
-            </div>
-            <div class="zs-modal-bg"></div>
-            <div class="zs-modal-box">
-              <div class="zs-modal-head">
-                <button type="button" class="close">×</button>
-                <span class="author"
-                  ><img
-                    src="https://www.qikqiak.com/img/avatar.jpeg"
-                  />阳明</span
-                >
-                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-              </div>
-              <div class="zs-modal-body">
-                <div class="zs-modal-btns">
-                  <button class="btn btn-blink" data-num="2">2元</button>
-                  <button class="btn btn-blink" data-num="5">5元</button>
-                  <button class="btn btn-blink" data-num="10">10元</button>
-                  <button class="btn btn-blink" data-num="50">50元</button>
-                  <button class="btn btn-blink" data-num="100">100元</button>
-                  <button class="btn btn-blink" data-num="1">任意金额</button>
-                </div>
-                <div class="zs-modal-pay">
-                  <button class="btn btn-bred" id="pay-text">2元</button>
-                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-                  <img
-                    src="https://www.qikqiak.com/img/wechat-2.png"
-                    id="pay-image"
-                  />
-                </div>
-              </div>
-              <div class="zs-modal-footer">
-                <span class="zs-wechat"
-                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
-                /></span>
-              </div>
-            </div>
-
-            <div
-              class="social-share"
-              data-initialized="true"
-              style="margin-bottom: 20px; margin-top: 20px"
-            >
-              <center>
-                <a href="#" class="social-share-icon icon-weibo"></a>
-                <a href="#" class="social-share-icon icon-wechat"></a>
-                <a href="#" class="social-share-icon icon-twitter"></a>
-                <a href="#" class="social-share-icon icon-linkedin"></a>
-                <a href="#" class="social-share-icon icon-facebook"></a>
-                <a href="#" class="social-share-icon icon-qq"></a>
-                <a href="#" class="social-share-icon icon-qzone"></a>
-              </center>
-            </div>
-
-            <link
-              rel="stylesheet"
-              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
-            />
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
-          </article>
-
-          <h3>相关文章</h3>
-          <ul style="margin-bottom: 25px">
-            <li>
-              <a href="https://www.qikqiak.com/post/capabilities-on-k8s/"
-                >在 Kubernetes 中配置 Container Capabilities</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/accelerate-ci-cd-pipelines-with-kind/"
-                >使用 KinD 加速 CI/CD 流水线</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/speed-up-develop-flow-dockerfile-best-practices/"
-                >加速开发流程的 Dockerfile 最佳实践</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/get-client-realip/"
-                >获取客户端访问真实 IP</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/"
-                >在 Kubernetes 上安装 Gitlab</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/harbor-quick-install/"
-                >在 Kubernetes 在快速安装 Harbor</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/harbor-code-analysis/"
-                >Harbor 源码浅析</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/dockerfile-best-practice/"
-                >Dockerfile 最佳实践</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/pod-init-container/"
-                >初始化容器</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/write-kubernets-golang-service-step-by-step/"
-                >手摸手教你写 Kubernetes 的 golang 服务</a
-              >
-            </li>
-          </ul>
-
-          <ul class="pager blog-pager">
-            <li class="previous">
-              <a
-                href="https://www.qikqiak.com/post/collect-multiline-logs/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="如何收集管理多行日志？"
-                >&larr; 前一篇</a
-              >
-            </li>
-
-            <li class="next">
-              <a
-                href="https://www.qikqiak.com/post/use-kube-vip-ha-k8s-lb/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="使用 kube-vip 搭建高可用 Kubernetes 集群"
-                >后一篇 &rarr;</a
-              >
-            </li>
-          </ul>
-
-          <script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-          ></script>
-
-          <ins
-            class="adsbygoogle"
-            style="display: block"
-            data-ad-client="ca-pub-5376999672787220"
-            data-ad-slot="3700507799"
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          ></ins>
-          <script>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-          </script>
-
-          <div id="gitalk-container"></div>
-          <link
-            rel="stylesheet"
-            href="https://unpkg.com/gitalk/dist/gitalk.css"
-          />
-          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-          <script>
-            var gitalk = new Gitalk({
-              clientID: "bdb76dbb2e9d0786e350",
-              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
-              repo: "blog",
-              owner: "cnych",
-              admin: ["cnych"],
-              labels: ["gitment"],
-              title: "你应该了解的10个 Kubernetes 安全上下文设置[译]",
-              createIssueManually: true,
-              id: "k8s-10-secruity-context-settings",
-              distractionFreeMode: true,
-            });
-            gitalk.render("gitalk-container");
-          </script>
-        </div>
-      </div>
-    </div>
-
-    <footer>
+    
+    
+    
+    <div class="intro-header no-img">
+      
       <div class="container">
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <ul class="list-inline text-center footer-links">
-              <img
-                src="https://www.qikqiak.com/img/wechatmp.png"
-                alt="k8s技术圈"
-              />
+            <div class="post-heading">
+              <h1>你应该了解的10个 Kubernetes 安全上下文设置[译]</h1>
+                
+                
+                  <span class="post-meta">
+  发表于 April 27, 2021  
+</span>
 
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/docker/">docker</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/%E5%AE%89%E5%85%A8/">安全</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#1-runasnonroot-pc">1. runAsNonRoot [P/C]</a>
+      <ul>
+        <li><a href="#11-使用基础镜像中提供的用户">1.1 使用基础镜像中提供的用户</a></li>
+        <li><a href="#12-基础镜像没有提供用户">1.2 基础镜像没有提供用户</a></li>
+      </ul>
+    </li>
+    <li><a href="#2-runasuserrunasgroup-pc">2. runAsUser/runAsGroup [P/C]</a></li>
+    <li><a href="#3-selinuxoptions-pc">3. seLinuxOptions [P/C]</a></li>
+    <li><a href="#4-seccompprofile-pc">4. seccompProfile [P/C]</a></li>
+    <li><a href="#5-避免使用特权容器-c">5. 避免使用特权容器 [C]</a></li>
+    <li><a href="#6-linux-capabilities-c">6. Linux Capabilities [C]</a></li>
+    <li><a href="#7-以只读文件系统运行-c">7. 以只读文件系统运行 [C]</a></li>
+    <li><a href="#8-procmount-c">8. procMount [C]</a></li>
+    <li><a href="#9-fsgroupfsgroupchangepolicy-p">9. fsGroup/fsGroupChangePolicy [P]</a></li>
+    <li><a href="#10-sysctls-p">10. sysctls [P]</a></li>
+    <li><a href="#总结">总结</a></li>
+  </ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>在 Kubernetes 中安全地运行工作负载是很困的，有很多配置都可能会影响到整个 Kubernetes API 的安全性，这需要我们有大量的知识积累来正确的实施。Kubernetes 在安全方面提供了一个强大的工具 <code>securityContext</code>，每个 Pod 和容器清单都可以使用这个属性。在本文中我们将了解各种 <code>securityContext</code> 的配置，探讨它们的含义，以及我们应该如何使用它们。</p>
+<blockquote>
+<p><code>securityContext</code> 设置在 <code>PodSpec</code> 和<code>ContainerSpec</code> 规范中都有定义，这里我们分别用<code>[P]</code>和<code>[C]</code>来表示。需要注意的是，如果一个设置在两个作用域中都可以使用和配置，那么我们应该优先考虑设置容器级别的。</p>
+</blockquote>
+<h2 id="1-runasnonroot-pc">1. runAsNonRoot [P/C]</h2>
+<p>我们知道容器是使用 namespaces 和 cgroups 来限制其进程，但只要在部署的时候做了一次错误的配置，就可以让这些进程访问主机上的资源。如果该进程以 root 身份运行，它对这些资源的访问权限与主机 root 账户是相同的。此外，如果其他 pod 或容器设置被用来减少约束（比如 <code>procMount</code> 或 <code>capabilities</code>），拥有一个 <code>root UID</code> 就会提高风险，除非你有一个非常好的原因，否则你不应该以 root 身份运行一个容器。</p>
+<p>那么，如果你有一个使用 root 的镜像需要部署，那应该怎么办呢？</p>
+<h3 id="11-使用基础镜像中提供的用户">1.1 使用基础镜像中提供的用户</h3>
+<p>通常情况下，基础镜像已经创建并提供了一个用户，例如，官方的 Node.js 镜像带有一个 UID 为 1000 的名为 node 的用户，我们就可以使用该身份来运行容器，但他们并没有在 <code>Dockerfile</code> 中明确地设置当前用户。我们可以在运行时用 <code>runAsUser</code> 设置来配置它，或者用自定义的 <code>Dockerfile</code> 来更改镜像中的当前用户。这里我们来看看使用自定义的 <code>Dockerfile</code> 来构建我们自己的镜像的例子。</p>
+<p>在不深入了解镜像构建的情况下，让我们假设我们有一个预先构建好的 npm 应用程序。这里是一个最小的 Dockerfile 文件，用来构建一个基于 <code>node:slim</code> 的镜像，并以提供的 node 用户身份运行。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-docker" data-lang="docker"><span style="display:flex;"><span><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> node:slim</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">COPY</span> --chown<span style="color:#ff79c6">=</span>node . /home/node/app/   <span style="color:#6272a4"># &lt;--- Copy app into the home directory with right ownership</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">USER</span><span style="color:#f1fa8c"> 1000                             # &lt;--- Switch active user to “node” (by UID)</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">WORKDIR</span><span style="color:#f1fa8c"> /home/node/app                # &lt;--- Switch current directory to app</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">ENTRYPOINT</span> [<span style="color:#f1fa8c">&#34;npm&#34;</span>, <span style="color:#f1fa8c">&#34;start&#34;</span>]           <span style="color:#6272a4"># &lt;--- This will now exec as the “node” user instead of root</span>
+</span></span></code></pre></div><p>其中以 USER 开头的一行就是关键设置，这使得 node 成为从这个镜像启动的任何容器里面的默认用户。我们使用 UID 而不是用户的名字，因为 Kubernetes 无法在启动容器前将镜像的默认用户名映射到 UID 上，并且在部署时指定 <code>runAsNotRoot: true</code>，会返回有关错误。</p>
+<h3 id="12-基础镜像没有提供用户">1.2 基础镜像没有提供用户</h3>
+<p>如果我们使用的基础镜像没有提供一个可以使用的用户，那么我们又应该怎么做呢？对于大部分进程来说，我们只需在自定义的 Dockerfile 中创建一个用户并使用它即可。如下所示：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-docker" data-lang="docker"><span style="display:flex;"><span><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> node:slim</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">RUN</span> useradd somebody -u <span style="color:#bd93f9">10001</span> --create-home --user-group  <span style="color:#6272a4"># &lt;--- Create a user</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">COPY</span> --chown<span style="color:#ff79c6">=</span>somebody . /home/somebody/app/
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">USER</span><span style="color:#f1fa8c"> 10001</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">WORKDIR</span><span style="color:#f1fa8c"> /home/somebody/app</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">ENTRYPOINT</span> [<span style="color:#f1fa8c">&#34;npm&#34;</span>, <span style="color:#f1fa8c">&#34;start&#34;</span>]
+</span></span></code></pre></div><p>这里我们增加了一行创建用户的 <code>RUN</code> 命令即可。不过需要注意的是这对于 <code>node.js</code> 和 <code>npm</code> 来说，这很好用，但是其他工具可能需要文件系统的不同元素进行所有权变更。如果遇到任何问题，需要查阅对应工具的文档。</p>
+<h2 id="2-runasuserrunasgroup-pc">2. runAsUser/runAsGroup [P/C]</h2>
+<p>容器镜像可能有一个特定的用户或组，我们可以用 <code>runAsUser</code> 和 <code>runAsGroup</code> 来进行覆盖。通常，这些设置与包含具有相同所有权 ID 的文件的卷挂载结合在一起。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>....
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">containers</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#ff79c6">name</span>: web
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">image</span>: mycorp/webapp:1.2.3
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">securityContext</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">runAsNonRoot</span>: <span style="color:#ff79c6">true</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">runAsUser</span>: <span style="color:#bd93f9">10001</span>
+</span></span><span style="display:flex;"><span>....
+</span></span></code></pre></div><p>不过使用这些配置也是有风险的，因为你为容器做出的运行时决定可能与原始镜像不兼容。例如，<code>jenkins/jenkins</code> 镜像以名为 <code>jenkins:jenkins</code> 的<strong>组:用户</strong>身份运行，其应用文件全部由该用户拥有。如果我们配置一个不同的用户，它将无法启动，因为该用户不存在于镜像的 <code>/etc/passwd</code> 文件中。即使它以某种方式存在，它也很可能在读写 <code>jenkins:jenkins</code> 拥有的文件时出现问题。我们可以用一个简单的 docker 运行命令来验证这个问题。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ docker run --rm -it -u eric:eric jenkins/jenkins
+</span></span><span style="display:flex;"><span>docker: Error response from daemon: unable to find user eric: no matching entries in passwd file.
+</span></span></code></pre></div><p>上面我们提到确保容器进程不以 root 用户身份运行是一个非常好的主意，但不要依赖 <code>runAsUser</code> 或 <code>runAsGroup</code> 设置来保证这一点，未来有人可能会删除这些配置，请确保同时将 <code>runAsNonRoot</code> 设置为 true。</p>
+<h2 id="3-selinuxoptions-pc">3. seLinuxOptions [P/C]</h2>
+<p><code>SELinux</code> 是一个用于控制对 Linux 系统上的应用、进程和文件进行访问的策略驱动系统，它在 Linux 内核中实现了 Linux 安全模块框架。SELinux 是基于标签的策略，它将一些标签应用于系统中的所有元素，然后将元素进行分组。这些标签被称为<strong>安全上下文</strong>（不要和 Kubernetes 中的 <code>securityContext</code> 混淆了）- 由用户、角色、类型和可选的一些其他属性组成，格式为：<code>user:role:type:level</code>。</p>
+<p>然后，SELinux 使用策略来定义特定上下文中的哪些进程可以访问系统中其他被标记的对象。SELinux 可以是严格执行 <code>enforced</code> 模式，在这种情况下，访问将被拒绝，如果被配置为允许的 <code>permissive</code> 模式，那么安全策略没有被强制执行，当安全策略规则应该拒绝访问时，访问仍然被允许，然而，此时会向日志文件发送一条消息，表示该访问应该被拒绝。在容器中，SELinux 通常给容器进程和容器镜像打上标签，以限制该进程只能访问镜像中的文件。</p>
+<p>默认的 SELinux 策略将在实例化容器时由容器运行时应用，<code>securityContext</code> 中的 <code>seLinuxOptions</code> 允许配置自定义的 SELinux 策略标签，请注意，改变容器的 SELinux 策略标签有可能允许容器进程摆脱容器镜像并访问主机文件系统。</p>
+<p>当然只有当宿主机操作系统支持 SELinux 时，这个功能才会起作用。</p>
+<h2 id="4-seccompprofile-pc">4. seccompProfile [P/C]</h2>
+<p><code>Seccomp</code> 表示一种安全计算模式，是 Linux 内核的一项功能，它可以限制一个特定进程从用户空间到内核的调用。seccomp 配置文件是使用一个 JSON 文件进行定义的，通常由一组系统调用和发生这些系统调用时的默认动作组成。如下配置所示：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">&#34;defaultAction&#34;</span>: <span style="color:#f1fa8c">&#34;SCMP_ACT_ERRNO&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">&#34;architectures&#34;</span>: [
+</span></span><span style="display:flex;"><span>        <span style="color:#f1fa8c">&#34;SCMP_ARCH_X86_64&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f1fa8c">&#34;SCMP_ARCH_X86&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f1fa8c">&#34;SCMP_ARCH_X32&#34;</span>
+</span></span><span style="display:flex;"><span>    ],
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">&#34;syscalls&#34;</span>: [
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;accept&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">&#34;action&#34;</span>: <span style="color:#f1fa8c">&#34;SCMP_ACT_ALLOW&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">&#34;args&#34;</span>: []
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;accept4&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">&#34;action&#34;</span>: <span style="color:#f1fa8c">&#34;SCMP_ACT_ALLOW&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">&#34;args&#34;</span>: []
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>        ...
+</span></span><span style="display:flex;"><span>    ]
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>Kubernetes 通过在 <code>securityContext</code> 中的 <code>seccompProfile</code> 属性来提供一个使用自定义配置文件的机制。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">seccompProfile</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">type</span>: Localhost
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">localhostProfile</span>: profiles/myprofile.json
+</span></span></code></pre></div><p>这里配置的 <code>type</code> 字段有三个可选的值：</p>
+<ul>
+<li><code>Localhost</code>：其中 <code>localhostProfile</code> 配置为容器内的 <code>seccomp</code> 配置文件路径。</li>
+<li><code>Unconfined</code>：其中没有配置文件。</li>
+<li><code>RuntimeDefault</code>：其中使用容器运行时的默认值&ndash;如果没有指定类型，就是默认值。</li>
+</ul>
+<p>我们可以在 <code>PodSecurityContext</code> 或 <code>securityContext</code> 中使用这些配置，如果两者都配置了，就会使用容器级别中的配置。</p>
+<p>此外与大多数安全相关的设置一样，<strong>最小权限原则</strong>在此同样适用。只给你的容器访问它所需要的权限即可。首先创建一个配置文件，简单地记录哪些系统调用正在发生，然后测试你的应用程序，建立一套允许的系统调用规则。我们可以在 <a href="https://kubernetes.io/docs/tutorials/clusters/seccomp">Kubernetes 教程</a>中找到关于 <code>Seccomp</code> 的更多信息。</p>
+<h2 id="5-避免使用特权容器-c">5. 避免使用特权容器 [C]</h2>
+<p>给容器授予特权模式是非常危险的，一般会有一种更简单的方式来实现特定的权限，或者可以通过授予 <code>Linux Capabilities</code> 权限来控制。容器运行时控制器着特权模式的具体实现，但是它会授予容器所有的特权，并解除由 cgroup 控制器执行的限制，它还可以修改 Linux 安全模块的配置，并允许容器内的进程逃离容器。</p>
+<p>容器在宿主机中提供了进程隔离，所以即使容器是使用 root 身份运行的，也有容器运行时不授予容器的 <code>Capabilities</code>。如果配置了特权模式，容器运行时就会授予系统 root 的所有能力，从安全角度来看，这是很危险的，因为它允许对底层宿主机系统的所有操作访问。</p>
+<!-- raw HTML omitted -->
+<p>避免使用特权模式，如果你的容器确实需要额外的能力，只需通过添加 <code>capabilities</code> 来满足你的需求。除非你的容器需要控制主机内核中的系统级设置，如访问特定的硬件或重新配置网络，并且需要访问主机文件系统，那么它就不需要特权模式。</p>
+<h2 id="6-linux-capabilities-c">6. Linux Capabilities [C]</h2>
+<p><code>Capabilities</code> 是一个内核级别的权限，它允许对内核调用权限进行更细粒度的控制，而不是简单地以 root 身份运行。<code>Capabilities</code> 包括更改文件权限、控制网络子系统和执行系统管理等功能。在 <code>securityContext</code> 中，Kubernetes 可以添加或删除 <code>Capabilities</code>，单个 <code>Capabilities</code> 或逗号分隔的列表可以作为一个字符串数组进行配置。另外，我们也可以使用 <code>all</code> 来添加或删除所有的配置。这种配置会被传递给容器运行时，在它创建容器的时候会配置上 <code>Capabilities</code> 集合，如果 <code>securityContext</code> 中没有配置，那么容器将会直接容器运行时提供的所有默认配置。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">securityContext</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">capabilities</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">drop</span>:
+</span></span><span style="display:flex;"><span>      - all
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">add</span>: [<span style="color:#f1fa8c">&#34;MKNOD&#34;</span>]
+</span></span></code></pre></div><p>一般推荐的做法是先删除所有的配置，然后只添加你的应用程序实际需要的，在大部分情况下，应用程序在正常运行中实际上不需要任何 <code>Capabilities</code>，通过删除所有配置来测试，并通过监控审计日志来调试问题，看看哪些功能被阻止了。</p>
+<p>请注意，当在 <code>securityContext</code> 中列出要放弃或添加的 <code>Capabilities</code> 时，你要删除内核在命名 <code>Capabilities</code> 时使用的 <code>CAP_</code> 前缀。<code>capsh</code> 工具可以给我们一个比较友好的调试信息，可以来说明你的容器中到底启用了哪些 <code>Capabilities</code>，当然不要在生产容器中使用这个工具，因为这使得攻击者很容易弄清楚哪些 <code>Capabilities</code> 被启用了。</p>
+<h2 id="7-以只读文件系统运行-c">7. 以只读文件系统运行 [C]</h2>
+<p>如果你的容器被入侵，而且它有一个可读写的文件系统，那么攻击者就可以随意地改变它的配置、安装软件，并有可能启动其他的漏洞。拥有一个只读的文件系统有助于防止这些类型的安全问题，因为它限制了攻击者可以执行的操作。一般来说，容器不应该要求对容器文件系统进行写入，如果你的应用程序是有状态数据，那么你应该使用外部持久化方法，如数据库、volume 或其他一些服务。另外，确保所有的日志都写到 stdout 或日志转发器上。</p>
+<h2 id="8-procmount-c">8. procMount [C]</h2>
+<p>默认情况下，为了防止潜在的安全问题，容器运行时会屏蔽容器内 <code>/proc</code> 文件系统的某些部分文件。然而有时需要访问 <code>/proc</code> 的这些文件，特别是在使用嵌套容器时，因为它经常被用作集群内构建过程的一部分。该配置只有两个有效的选项：</p>
+<ul>
+<li><code>Default</code>：保持标准的容器运行时行为</li>
+<li><code>Unmasked</code>：它删除 <code>/proc</code> 文件系统的所有屏蔽行为</li>
+</ul>
+<p>显然只有当我们知道在做什么的时候才应该使用这个配置，如果你是为了构建镜像而使用它，请检查构建工具的最新版本，因为许多工具不再需要这个设置了，最好升级下工具并设置为 <code>Default</code> 默认的 <code>procMount</code>。</p>
+<h2 id="9-fsgroupfsgroupchangepolicy-p">9. fsGroup/fsGroupChangePolicy [P]</h2>
+<p><code>fsGroup</code> 设置定义了一个组，当卷被 pod 挂载时，Kubernetes 将把卷中所有文件的权限改为该组。这里的行为也由 <code>fsGroupChangePolicy</code> 控制，它可以被设置为 <code>onRootMismatch</code> 或 <code>Always</code>。如果设置为 <code>onRootMismatch</code> 则只有当权限与容器 root 的权限不匹配时才会被改变。</p>
+<p>不过在使用 <code>fsGroup</code> 时也要慎重，改变整个 volume 卷的组所有权会导致<strong>变慢</strong>，如果是大型文件系统<strong>启动也会延迟</strong>。如果共享同一卷的其他进程没有对新的 GID 的访问权限，它也会对这些进程造成损害。由于这个原因，一些共享文件系统如 NFS，没有实现这个功能。这些设置也不影响临时的 ephemeral 卷。</p>
+<h2 id="10-sysctls-p">10. sysctls [P]</h2>
+<p><code>Sysctls</code> 是 Linux 内核的一个功能，它允许管理员修改内核配置。在一个完整的 Linux 操作系统中，这些是通过使用 <code>/etc/sysctl.conf</code> 定义的，也可以使用 <code>sysctl</code> 工具进行修改。</p>
+<p><code>securityContext</code> 中的 <code>sysctls</code> 配置允许在容器中修改特定的 <code>sysctls</code>。只有一小部分的 <code>sysctls</code> 可以在每个容器的基础上进行修改，它们都在内核中被命名的。 在这个可以配置的子集中，有些被认为是安全的，而更多的则被认为是不安全的，这取决于对其他 pod 的潜在影响。在集群中，不安全的 <code>sysctls</code> 通常是被禁用，需要由集群管理员专门开启。</p>
+<p>鉴于有可能破坏底层操作系统的稳定，除非你有非常特殊的要求，否则应该避免通过 <code>sysctls</code> 修改内核参数。</p>
+<h2 id="总结">总结</h2>
+<p>在用 <code>securityContext</code> 加固你的应用时，有很多事情需要注意。如果使用得当，它们是一种非常有效的工具，我们希望这个列表能帮助你的团队为你的工作负载和环境进行正确的安全配置。</p>
+<blockquote>
+<p>原文链接：<a href="https://snyk.io/blog/10-kubernetes-security-context-settings-you-should-understand/">https://snyk.io/blog/10-kubernetes-security-context-settings-you-should-understand/</a></p>
+</blockquote>
+<!-- raw HTML omitted -->
+
+          <h2>微信公众号</h2>
+<p>
+  扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+  kubernetes 讨论群里面共同学习。
+</p>
+<img
+  src="https://picdn.youdianzhishi.com/images/qrcode.png"
+  alt="wechat-account-qrcode"
+/>
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/capabilities-on-k8s/">在 Kubernetes 中配置 Container Capabilities</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/accelerate-ci-cd-pipelines-with-kind/">使用 KinD 加速 CI/CD 流水线</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/speed-up-develop-flow-dockerfile-best-practices/">加速开发流程的 Dockerfile 最佳实践</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/get-client-realip/">获取客户端访问真实 IP</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/">在 Kubernetes 上安装 Gitlab</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/harbor-quick-install/">在 Kubernetes 在快速安装 Harbor</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/harbor-code-analysis/">Harbor 源码浅析</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/dockerfile-best-practice/">Dockerfile 最佳实践</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/pod-init-container/">初始化容器</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/write-kubernets-golang-service-step-by-step/">手摸手教你写 Kubernetes 的 golang 服务</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/collect-multiline-logs/" data-toggle="tooltip" data-placement="top" title="如何收集管理多行日志？">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/use-kube-vip-ha-k8s-lb/" data-toggle="tooltip" data-placement="top" title="使用 kube-vip 搭建高可用 Kubernetes 集群">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '你应该了解的10个 Kubernetes 安全上下文设置[译]',
+        createIssueManually: true,
+        id: 'k8s-10-secruity-context-settings',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -1135,7 +630,7 @@ docker: Error response from daemon: unable to find user eric: no matching entrie
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -1144,7 +639,7 @@ docker: Error response from daemon: unable to find user eric: no matching entrie
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -1153,7 +648,7 @@ docker: Error response from daemon: unable to find user eric: no matching entrie
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -1162,158 +657,121 @@ docker: Error response from daemon: unable to find user eric: no matching entrie
                   </span>
                 </a>
               </li>
-
-              <li>
-                <a href="https://www.qikqiak.com/index.xml" title="RSS">
-                  <span class="fa-stack fa-lg">
-                    <i class="fa fa-circle fa-stack-2x"></i>
-                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
-                  </span>
-                </a>
-              </li>
-            </ul>
-            <p class="credits copyright text-muted">
-              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/">阳明的博客</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/archive/">归档</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/friend/">友链</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://beian.miit.gov.cn/" target="_blank"
-                >蜀ICP备11027319号-5</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
-                >kubernetes.io</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
-                >Kubernetes中文社区</a
-              >
-            </p>
-            <p class="text-center text-muted">
-              <script
-                async
-                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
-              ></script>
-              <span id="busuanzi_container_site_pv" style="display: none">
-                本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
               </span>
-              &nbsp;&bull;&nbsp;
-              <span id="busuanzi_container_site_uv" style="display: none">
-                访客数<span id="busuanzi_value_site_uv"></span>人次
-              </span>
-            </p>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
 
-            <p class="credits theme-by text-muted">
-              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
-              &nbsp;&bull;&nbsp; 主题
-              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
-              移植自
-              <a href="https://github.com/rootsongjc/beautifulhugo"
-                >Beautiful Hugo</a
-              >
-            </p>
-          </div>
-        </div>
+          &nbsp;&bull;&nbsp;
+          2023
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.115.4</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+          
+        </p>
       </div>
-    </footer>
+    </div>
+  </div>
+</footer>
 
-    <script
-      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
-      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
-    ></script>
 
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "UA-69668147-3");
-    </script>
-    <script>
-      (function () {
-        var bp = document.createElement("script");
-        var curProtocol = window.location.protocol.split(":")[0];
-        if (curProtocol === "https") {
-          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
-        } else {
-          bp.src = "http://push.zhanzhang.baidu.com/push.js";
-        }
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(bp, s);
-      })();
-    </script>
-    <script>
-      $(document).ready(function () {
-        var int = setInterval(fixCount, 50);
+<script src='https://www.qikqiak.com/js/bundle.min.af02a2d23b6651a566f0135a12e65fc2560faa7a969b3d1ad58d0afe0c9164ae.js' integrity='sha256-rwKi0jtmUaVm8BNaEuZfwlYPqnqWmz0a1Y0K/gyRZK4='></script>
 
-        var initPVCount = 584976;
-        var initUVCount = 153191;
-        function fixCount() {
-          if ($("#busuanzi_container_site_pv").css("display") != "none") {
-            $("#busuanzi_value_site_pv").html(
-              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
-            );
-            clearInterval(int);
-          }
-          if ($("#busuanzi_container_site_uv").css("display") != "none") {
-            $("#busuanzi_value_site_uv").html(
-              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
-            );
-            clearInterval(int);
-          }
-        }
-      });
-    </script>
-    <script>
-      (function (w, d, s, id) {
-        if (typeof w.webpushr !== "undefined") return;
-        w.webpushr =
-          w.webpushr ||
-          function () {
-            (w.webpushr.q = w.webpushr.q || []).push(arguments);
-          };
-        var js,
-          fjs = d.getElementsByTagName(s)[0];
-        js = d.createElement(s);
-        js.id = id;
-        js.src = "https://cdn.webpushr.com/app.min.js";
-        fjs.parentNode.appendChild(js);
-      })(window, document, "script", "webpushr-jssdk");
-      webpushr(
-        "init",
-        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
-      );
-    </script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
-    ></script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
-    ></script>
-    <script type="text/javascript">
-      $(".carousel").slick({
-        dots: true,
-        arrows: true,
-        autoplay: true,
-        autoplaySpeed: 4000,
-        infinite: true,
-        speed: 500,
-        fade: true,
-        cssEase: "linear",
-        centerMode: true,
-        prevArrow: '<button type="button" class="slick-prev"></button>',
-        nextArrow: '<button type="button" class="slick-next"></button>',
-      });
-    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
   </body>
 </html>
+

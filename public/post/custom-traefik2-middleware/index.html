@@ -1,910 +1,619 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
-    />
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-    <title>
-      自定义 Traefik2
-      中间件-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
-    </title>
-    <meta property="og:title" content="自定义 Traefik2 中间件" />
-    <meta name="twitter:title" content="自定义 Traefik2 中间件" />
 
-    <meta
-      name="description"
-      content="Traefik 2.X 版本发布以来受到了很大的关注，特别是提供的中间件机制非常受欢迎，但是目前对于用户来说能使用的也只有官方提供的中间件，这对于某些特殊场景可能就满足不了需求了，自然而然就想到了自定义中间件，然而现在要想自定义中间件不是一件容易的事情，虽然实现一个中间件很简单，因为目前官方没有提供方法可以将我们自定义的中间件配置到 Traefik 中，所以只能采用比较 low 的一种方法，那就是直接更改官方的源代码了，下面我们以一个简单的示例来说明下如何自定义一个 Traefik 中间件。"
-    />
-    <meta
-      property="og:description"
-      content="Traefik 2.X 版本发布以来受到了很大的关注，特别是提供的中间件机制非常受欢迎，但是目前对于用户来说能使用的也只有官方提供的中间件，这对于某些特殊场景可能就满足不了需求了，自然而然就想到了自定义中间件，然而现在要想自定义中间件不是一件容易的事情，虽然实现一个中间件很简单，因为目前官方没有提供方法可以将我们自定义的中间件配置到 Traefik 中，所以只能采用比较 low 的一种方法，那就是直接更改官方的源代码了，下面我们以一个简单的示例来说明下如何自定义一个 Traefik 中间件。"
-    />
-    <meta
-      name="twitter:description"
-      content="Traefik 2.X 版本发布以来受到了很大的关注，特别是提供的中间件机制非常受欢迎，但是目前对于用户来说能使用的也只有官方提供的中间件，这对于某些特殊场景可能就满足不了需求了，自然而然就想到了自定义中间件，然而现在要想自定义中间件不是一件容易的事情，虽然实现一个中间件很简单，因为目前官方没有提供方法可以将我们自定义的中间件配置到 Traefik 中，所以只能采用比较 low 的一种方法，那就是 …"
-    />
-    <meta name="author" content="" />
-    <link
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-      rel="icon"
-      type="image/x-icon"
-    />
-    <link
-      rel="apple-touch-icon"
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      property="og:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      name="twitter:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta name="twitter:card" content="summary" />
-    <meta
-      property="og:url"
-      content="https://www.qikqiak.com/post/custom-traefik2-middleware/"
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="阳明的博客" />
+  <title>自定义 Traefik2 中间件-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="自定义 Traefik2 中间件" />
+  <meta name="twitter:title" content="自定义 Traefik2 中间件" />
 
-    <meta name="generator" content="Hugo 0.55.6" />
-    <link
-      rel="canonical"
-      href="https://www.qikqiak.com/post/custom-traefik2-middleware/"
-    />
-    <link
-      rel="alternate"
-      href="https://www.qikqiak.com/index.xml"
-      type="application/rss+xml"
-      title="阳明的博客"
-    />
+  <meta name="description" content="Traefik 2.X 版本发布以来受到了很大的关注，特别是提供的中间件机制非常受欢迎，但是目前对于用户来说能使用的也只有官方提供的中间件，这对于某些特殊场景可能就满足不了需求了，自然而然就想到了自定义中间件，然而现在要想自定义中间件不是一件容易的事情，虽然实现一个中间件很简单，因为目前官方没有提供方法可以将我们自定义的中间件配置到 Traefik 中，所以只能采用比较 low 的一种方法，那就是直接更改官方的源代码了，下面我们以一个简单的示例来说明下如何自定义一个 Traefik 中间件。">
+  <meta property="og:description" content="Traefik 2.X 版本发布以来受到了很大的关注，特别是提供的中间件机制非常受欢迎，但是目前对于用户来说能使用的也只有官方提供的中间件，这对于某些特殊场景可能就满足不了需求了，自然而然就想到了自定义中间件，然而现在要想自定义中间件不是一件容易的事情，虽然实现一个中间件很简单，因为目前官方没有提供方法可以将我们自定义的中间件配置到 Traefik 中，所以只能采用比较 low 的一种方法，那就是直接更改官方的源代码了，下面我们以一个简单的示例来说明下如何自定义一个 Traefik 中间件。">
+  <meta name="twitter:description" content="Traefik 2.X 版本发布以来受到了很大的关注，特别是提供的中间件机制非常受欢迎，但是目前对于用户来说能使用的也只有官方提供的中间件，这对于某些特殊场景可能就满足不了需求了，自然而然就想到了自定义中间件，然而现在要想自定义中间件不是一件容易的事情，虽然实现一个中间件很简单，因为目前官方没有提供方法可以将我们自定义的中间件配置到 Traefik 中，所以只能采用比较 low 的一种方法，那就是 …">
+  <meta name="author" content=""/>
+  <link href="https://picdn.youdianzhishi.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://picdn.youdianzhishi.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/custom-traefik2-middleware/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
 
-    <link
-      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
-      rel="stylesheet"
-    />
+  <link rel="canonical" href="https://www.qikqiak.com/post/custom-traefik2-middleware/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
-    <link
-      rel="stylesheet"
-      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
-      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
-    />
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
 
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
-    />
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a6b62363fe57848ad01efa2a5d1bbb1047c2ffb71b53d8aeb42bc5ed5c77ea7c.css' integrity='sha256-prYjY/5XhIrQHvoqXRu7EEfC/7cbU9iutCvF7Vx36nw='>
 
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
     <!--[if lt IE 9]>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-      <link
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-        rel="stylesheet"
-      />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <![endif]-->
-    <meta
-      name="google-site-verification"
-      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
-    />
-    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-    <meta name="keywords" content="traefik, 中间件, middleware, lua" />
-    <script>
-      var _hmt = _hmt || [];
-      (function () {
-        var hm = document.createElement("script");
-        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(hm, s);
-      })();
-    </script>
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="traefik, 中间件, middleware, lua">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
 
-    <script type="application/javascript">
-      var doNotTrack = false;
-      if (!doNotTrack) {
-        window.ga =
-          window.ga ||
-          function () {
-            (ga.q = ga.q || []).push(arguments);
-          };
-        ga.l = +new Date();
-        ga("create", "UA-69668147-3", "auto");
 
-        ga("send", "pageview");
-      }
-    </script>
-    <script async src="https://www.google-analytics.com/analytics.js"></script>
-  </head>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-      <div class="container">
-        <div class="navbar-header">
-          <button
-            type="button"
-            class="navbar-toggle"
-            data-toggle="collapse"
-            data-target="#main-navbar"
-          >
-            <span class="sr-only">切换导航</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a
-            class="navbar-brand"
-            href="https://www.qikqiak.com/"
-            title="阳明的博客"
-          >
-            <img
-              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
-              style="margin-top: -5px; height: 32px"
-              alt="阳明的博客"
-            />
-          </a>
-        </div>
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://picdn.youdianzhishi.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
 
-        <div class="collapse navbar-collapse" id="main-navbar">
-          <ul class="nav navbar-nav navbar-right">
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-
+          
+        
+          
             <li>
-              <a
-                title="课程"
-                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
-                >课程</a
-              >
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/archives">Archive</a>
-
-                <a href="https://www.qikqiak.com/tags">tags</a>
-
-                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-
-                <a href="https://www.qikqiak.com/tags/python">python</a>
-
-                <a href="https://www.qikqiak.com/tags/django">django</a>
-
-                <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-
-                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-
-                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-
-                <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/"
-                >关于</a
-              >
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
             </li>
-
+          
+        
+          
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
+          
+        
 
-            <li>
-              <a
-                href="#modalSearch"
-                data-toggle="modal"
-                data-target="#modalSearch"
-                style="outline: none"
-              >
-                <span
-                  id="searchGlyph"
-                  class="glyphicon glyphicon-search"
-                ></span>
-              </a>
-            </li>
-          </ul>
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
         </div>
-      </div>
-    </nav>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-    <div id="modalSearch" class="modal fade" role="dialog">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal">
-              &times;
-            </button>
-            <h4 class="modal-title">搜索</h4>
-          </div>
-          <div class="modal-body">
-            <div class="aa-input-container" id="aa-input-container">
-              <input
-                type="search"
-                id="aa-search-input"
-                class="aa-input-search"
-                placeholder="Search for titles or URIs..."
-                name="search"
-                autocomplete="off"
-              />
-              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-                <path
-                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
-                />
-              </svg>
-            </div>
-            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
 
-            <script>
-              var client = algoliasearch(
-                "1JDRAS0AZR",
-                "8804ac109158bb3bb60d74ce98fa332f"
-              );
-              var index = client.initIndex("prod_blog");
-
-              autocomplete(
-                "#aa-search-input",
-                { hint: false },
-                {
-                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
-
-                  displayKey: "name",
-
-                  templates: {
-                    suggestion: function (suggestion) {
-                      return (
-                        "<span>" +
-                        '<a href="https://www.qikqiak.com/post/' +
-                        suggestion.slug +
-                        '">' +
-                        suggestion._highlightResult.title.value +
-                        "</a></span>"
-                      );
-                    },
-                  },
-                }
-              );
-            </script>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">
-              close
-            </button>
-          </div>
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div
-      id="header-big-imgs"
-      data-num-img="1"
-      data-img-src-1="https://picdn.youdianzhishi.com/images/photo-1579463971814-a71f6a2a3858.jpeg"
-      data-img-desc-1="https://unsplash.com/photos/P8fQMbVWqTk"
-    ></div>
+    
+  
+  
+  
 
-    <header class="header-section has-img">
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://picdn.youdianzhishi.com/images/photo-1579463971814-a71f6a2a3858.jpeg" data-img-desc-1="https://unsplash.com/photos/P8fQMbVWqTk"></div>
+  
+
+  <header class="header-section has-img">
+    
       <div class="intro-header big-img">
+        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>自定义 Traefik2 中间件</h1>
+                  
+                  
+                    <span class="post-meta">
+  发表于 January 20, 2020  
+</span>
 
-                <span class="post-meta"> 发表于 January 20, 2020 </span>
+                  
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline"></span>
+        <span class="img-desc" style="display: inline;"></span>
       </div>
-
-      <div class="intro-header no-img">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-              <div class="post-heading">
-                <h1>自定义 Traefik2 中间件</h1>
-
-                <span class="post-meta"> 发表于 January 20, 2020 </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <div class="container" role="main">
-      <div class="row">
-        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-          <div>
-            <h5 id="tags" style="margin-top: 30px">
-              标签:
-
-              <a href="https://www.qikqiak.com/tags/traefik/">traefik</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
-              &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/ingress/">ingress</a> &nbsp;
-            </h5>
-          </div>
-
-          <article
-            role="main"
-            class="blog-post"
-            itemprop="articleBody"
-            id="content"
-          >
-            <aside class="toc">
-              <nav id="TableOfContents">
-                <ul>
-                  <li>
-                    <ul>
-                      <li><a href="#自定义">自定义</a></li>
-                      <li><a href="#测试">测试</a></li>
-                      <li><a href="#参考资料">参考资料</a></li>
-                    </ul>
-                  </li>
-                </ul>
-              </nav>
-            </aside>
-
-            <p>
-              <a href="https://www.qikqiak.com/tags/traefik/">Traefik 2.X</a>
-              版本发布以来受到了很大的关注，特别是提供的中间件机制非常受欢迎，但是目前对于用户来说能使用的也只有官方提供的中间件，这对于某些特殊场景可能就满足不了需求了，自然而然就想到了自定义中间件，然而现在要想自定义中间件不是一件容易的事情，虽然实现一个中间件很简单，因为目前官方没有提供方法可以将我们自定义的中间件配置到
-              Traefik 中，所以只能采用比较 low
-              的一种方法，那就是直接更改官方的源代码了，下面我们以一个简单的示例来说明下如何自定义一个
-              Traefik 中间件。
-            </p>
-
-            <h2 id="自定义">自定义</h2>
-
-            <p>首先下载 Traefik 源码，切换到最新的 v2.1 代码分支：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ git clone https://github.com/containous/traefik
-$ <span style="color:#8be9fd;font-style:italic">cd</span> traefik
-$ git checkout v2.1
-$ git checkout -b dev</code></pre>
-            </div>
-            <p>
-              在 v2.1 分支基础上创建一个本地的 dev 分支，然后添加我们自定义的
-              luascript 中间件：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ git submodule add https://github.com/cnych/traefik2-luascript pkg/middlewares/luascript
-$ git status
-On branch dev
-Changes to be committed:
-  <span style="color:#ff79c6">(</span>use <span style="color:#f1fa8c">&#34;git reset HEAD &lt;file&gt;...&#34;</span> to unstage<span style="color:#ff79c6">)</span>
-
-        new file:   .gitmodules
-        new file:   pkg/middlewares/luascript</code></pre>
-            </div>
-            <p>
-              这样就将我们自定义的 luascript 中间件代码添加到了 Traefik
-              源码中，但是这还不够，只是声明了中间件而已，还需要将该中间件配置到
-              Traefik 的中间件中去才能生效，前往
-              <code>pkg/config/dynamic/middleware.go</code> 文件在
-              <code>Middleware</code> 结构体下面添加自定义脚本字段：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go"><span style="color:#6272a4">// pkg/config/dynamic/middleware.go
-</span><span style="color:#6272a4">// Middleware holds the Middleware configuration.
-</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">type</span> Middleware <span style="color:#8be9fd;font-style:italic">struct</span> {
-    <span style="color:#ff79c6">......</span>
-    LuaScript         <span style="color:#ff79c6">*</span>LuaScript         <span style="color:#f1fa8c">`json:&#34;lua,omitempty&#34; toml:&#34;lua,omitempty&#34; yaml:&#34;lua,omitempty&#34;`</span>
-}
-
-<span style="color:#6272a4">// +k8s:deepcopy-gen=true
-</span><span style="color:#6272a4"></span>
-<span style="color:#6272a4">// LuaScript config
-</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">type</span> LuaScript <span style="color:#8be9fd;font-style:italic">struct</span> {
-	Script <span style="color:#8be9fd">string</span> <span style="color:#f1fa8c">`json:&#34;script,omitempty&#34; toml:&#34;script,omitempty&#34; yaml:&#34;script,omitempty&#34;`</span>
-}</code></pre>
-            </div>
-            <p>
-              然后在服务端构建器中注册上面定义的
-              <code>LuaScript</code> 中间件，代码位于
-              <code>pkg/server/middleware/middlewares.go</code>，在
-              <code>buildConstructor</code> 方法中添加上自定义中间件的信息：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go"><span style="color:#6272a4">// pkg/server/middleware/middlewares.go
-</span><span style="color:#6272a4"></span><span style="color:#ff79c6">import</span> (
-    <span style="color:#6272a4">// ...
-</span><span style="color:#6272a4"></span>    <span style="color:#f1fa8c">&#34;github.com/containous/traefik/v2/pkg/middlewares/luascript&#34;</span>  
-    <span style="color:#6272a4">// ...
-</span><span style="color:#6272a4"></span>)
-
-<span style="color:#6272a4">// ...
-</span><span style="color:#6272a4"></span>
-<span style="color:#6272a4">// it is the responsibility of the caller to make sure that b.configs[middlewareName].Middleware exists
-</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">func</span> (b <span style="color:#ff79c6">*</span>Builder) <span style="color:#50fa7b">buildConstructor</span>(ctx context.Context, middlewareName <span style="color:#8be9fd">string</span>) (alice.Constructor, <span style="color:#8be9fd">error</span>) {
-    <span style="color:#6272a4">// ... other middlewares
-</span><span style="color:#6272a4"></span>
-    <span style="color:#6272a4">// LuaScript
-</span><span style="color:#6272a4"></span>	<span style="color:#ff79c6">if</span> config.LuaScript <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-		<span style="color:#ff79c6">if</span> middleware <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-			<span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, badConf
-		}
-		middleware = <span style="color:#8be9fd;font-style:italic">func</span>(next http.Handler) (http.Handler, <span style="color:#8be9fd">error</span>) {
-			<span style="color:#ff79c6">return</span> luascript.<span style="color:#50fa7b">New</span>(ctx, next, <span style="color:#ff79c6">*</span>config.LuaScript, middlewareName)
-		}
-	}
-
-	<span style="color:#ff79c6">if</span> middleware <span style="color:#ff79c6">==</span> <span style="color:#ff79c6">nil</span> {
-		<span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, fmt.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;invalid middleware %q configuration: invalid middleware type or middleware does not exist&#34;</span>, middlewareName)
-	}
-
-	<span style="color:#ff79c6">return</span> tracing.<span style="color:#50fa7b">Wrap</span>(ctx, middleware), <span style="color:#ff79c6">nil</span>
-}</code></pre>
-            </div>
-            <p>到这里我们就完成了自定义中间件。</p>
-
-            <h2 id="测试">测试</h2>
-
-            <p>接下来重新编译打包 Traefik 即可：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ go generate
-$ <span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">GOPROXY</span><span style="color:#ff79c6">=</span>https://goproxy.cn 
-$ <span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">GO111MODULE</span><span style="color:#ff79c6">=</span>on 
-$ go build ./cmd/traefik</code></pre>
-            </div>
-            <p>
-              编译完成后可以用这个包来测试下这个中间件，首先创建一个
-              FileProvider 的配置文件：(config.toml)
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-toml" data-lang="toml">[http.routers]
-  [http.routers.router1]
-    service = <span style="color:#f1fa8c">&#34;service1&#34;</span>
-    middlewares = [<span style="color:#f1fa8c">&#34;example-luascript&#34;</span>]
-    rule = <span style="color:#f1fa8c">&#34;Host(`localhost`)&#34;</span>
-
-[http.middlewares]
- [http.middlewares.example-luascript.lua]
-   script = <span style="color:#f1fa8c">&#34;example.lua&#34;</span>
-
-[http.services]
- [http.services.service1]
-   [http.services.service1.loadBalancer]
-     [[http.services.service1.LoadBalancer.servers]]
-       url = <span style="color:#f1fa8c">&#34;https://www.baidu.com&#34;</span></code></pre>
-            </div>
-            <p>
-              这个配置文件我们使用 FileProvider 来配置了一个请求，将域名
-              <code>localhost</code> 的请求转发到 <code>service1</code> 这个
-              Service 上，在中间使用了 <code>example-luascript</code> 这个 lua
-              中间件，可以看到这里我们用 <code>script</code> 属性指定了一个名为
-              <code>example.lua</code> 的脚本，下面来定义这个脚本：(example.lua)
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-lua" data-lang="lua"><span style="color:#8be9fd;font-style:italic">local</span> http <span style="color:#ff79c6">=</span> require(<span style="color:#f1fa8c">&#39;http&#39;</span>)
-<span style="color:#8be9fd;font-style:italic">local</span> log <span style="color:#ff79c6">=</span> require(<span style="color:#f1fa8c">&#39;log&#39;</span>)
-
-log.warn(<span style="color:#f1fa8c">&#39;Hello from LUA script&#39;</span>)
-http.setResponseHeader(<span style="color:#f1fa8c">&#39;X-New-Response-Header&#39;</span>, <span style="color:#f1fa8c">&#39;QikQiak&#39;</span>)</code></pre>
-            </div>
-            <p>
-              现在我们可以直接使用上面编译好的 Traefik 二进制文件来启动服务：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># 用 --providers.file 开启 FileProvider，指定配置文件</span>
-$ ./traefik --providers.file.filename<span style="color:#ff79c6">=</span>config.toml --log.level<span style="color:#ff79c6">=</span>warn 
-INFO<span style="color:#ff79c6">[</span><span style="color:#bd93f9">0000</span><span style="color:#ff79c6">]</span> Configuration loaded from flags.</code></pre>
-            </div>
-            <script
-              async
-              src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-            ></script>
-
-            <ins
-              class="adsbygoogle"
-              style="display: block"
-              data-ad-client="ca-pub-5376999672787220"
-              data-ad-slot="9165834656"
-              data-ad-format="auto"
-              data-full-width-responsive="true"
-            ></ins>
-            <script>
-              (adsbygoogle = window.adsbygoogle || []).push({});
-            </script>
-
-            <p>然后我们打开另外一个终端，在终端中输入如下请求命令：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ curl -v http://localhost
-* Rebuilt URL to: http://localhost/
-*   Trying ::1...
-* TCP_NODELAY <span style="color:#8be9fd;font-style:italic">set</span>
-* Connected to localhost <span style="color:#ff79c6">(</span>::1<span style="color:#ff79c6">)</span> port <span style="color:#bd93f9">80</span> <span style="color:#ff79c6">(</span><span style="color:#6272a4">#0)</span>
-&gt; GET / HTTP/1.1
-&gt; Host: localhost
-&gt; User-Agent: curl/7.54.0
-&gt; Accept: */*
-&gt;
-&lt; HTTP/1.1 <span style="color:#bd93f9">403</span> Forbidden
-&lt; Content-Length: <span style="color:#bd93f9">0</span>
-&lt; Content-Type: text/plain; <span style="color:#8be9fd;font-style:italic">charset</span><span style="color:#ff79c6">=</span>utf-8
-&lt; Date: Mon, <span style="color:#bd93f9">20</span> Jan <span style="color:#bd93f9">2020</span> <span style="color:#bd93f9">04</span>:00:15 GMT
-&lt; Server: bfe
-&lt; X-New-Response-Header: QikQiak
-&lt;
-* Connection <span style="color:#6272a4">#0 to host localhost left intact</span></code></pre>
-            </div>
-            <p>
-              我们可以看到 baidu.com 给我们返回的响应 Header 里面有我们在 lua
-              脚本里面的定义信息：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">...
-&lt; X-New-Response-Header: QikQiak
-...</code></pre>
-            </div>
-            <p>同时也可以发现 Traefik 日志中新的记录输出：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">WARN<span style="color:#ff79c6">[</span><span style="color:#bd93f9">2020</span>-01-20T12:03:51+08:00<span style="color:#ff79c6">]</span> Hello from LUA script                         <span style="color:#8be9fd;font-style:italic">middlewareName</span><span style="color:#ff79c6">=</span>example-luascript@file <span style="color:#8be9fd;font-style:italic">middlewareType</span><span style="color:#ff79c6">=</span>LuaScript</code></pre>
-            </div>
-            <p>
-              到这里我们就完成了自定义 Traefik
-              中间件。不过我们也可以看到上面的方式耦合性太高了，需要我们去官方的源代码中去添加代码，这样显然不是一个很好的做法，即使我们自定义的中间件非常有用，要想合并到官方的主线中去也是比较困难的，至少时间成本非常高。在
-              Traefik 的
-              <a href="https://github.com/containous/traefik/issues/1336"
-                >Github Issue</a
-              >
-              中也有关于自定义插件的讨论，不过讨论虽然非常热闹，不过这个已经过去两年了还是没有什么进展，所以要想等到官方支持这个特性，估计需要很长一段路要走了&hellip;&hellip;
-            </p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/traefik-custom-middleware-issue.png"
-                alt="custom traefik middleware"
-              />
-              <figcaption>custom traefik middleware</figcaption>
-            </figure>
-
-            <h2 id="参考资料">参考资料</h2>
-
-            <ul>
-              <li>
-                <a href="https://github.com/containous/traefik/issues/1336"
-                  >enable custom plugins/middlewares for Traefik #1336</a
-                >
-              </li>
-              <li>
-                <a href="https://github.com/negasus/traefik2-luascript"
-                  >LuaScript middleware for Traefik v2</a
-                >
-              </li>
-            </ul>
-
-            <p>
-              <a
-                href="https://youdianzhishi.com/web/course/1030"
-                title="从 Docker 到 Kubernetes 进阶课程"
-                ><img
-                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
-                  alt="Kubernetes进阶训练营"
-              /></a>
-            </p>
-
-            <h2>微信公众号</h2>
-            <p>
-              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
-              kubernetes 讨论群里面共同学习。
-            </p>
-            <img
-              src="https://picdn.youdianzhishi.com/images/qrcode.png"
-              alt="wechat-account-qrcode"
-            />
-
-            <div class="entry-shang text-center">
-              <p>「真诚赞赏，手留余香」</p>
-              <button class="zs show-zs btn btn-bred">赞赏</button>
-            </div>
-            <div class="zs-modal-bg"></div>
-            <div class="zs-modal-box">
-              <div class="zs-modal-head">
-                <button type="button" class="close">×</button>
-                <span class="author"
-                  ><img
-                    src="https://www.qikqiak.com/img/avatar.jpeg"
-                  />阳明</span
-                >
-                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-              </div>
-              <div class="zs-modal-body">
-                <div class="zs-modal-btns">
-                  <button class="btn btn-blink" data-num="2">2元</button>
-                  <button class="btn btn-blink" data-num="5">5元</button>
-                  <button class="btn btn-blink" data-num="10">10元</button>
-                  <button class="btn btn-blink" data-num="50">50元</button>
-                  <button class="btn btn-blink" data-num="100">100元</button>
-                  <button class="btn btn-blink" data-num="1">任意金额</button>
-                </div>
-                <div class="zs-modal-pay">
-                  <button class="btn btn-bred" id="pay-text">2元</button>
-                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-                  <img
-                    src="https://www.qikqiak.com/img/wechat-2.png"
-                    id="pay-image"
-                  />
-                </div>
-              </div>
-              <div class="zs-modal-footer">
-                <span class="zs-wechat"
-                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
-                /></span>
-              </div>
-            </div>
-
-            <div
-              class="social-share"
-              data-initialized="true"
-              style="margin-bottom: 20px; margin-top: 20px"
-            >
-              <center>
-                <a href="#" class="social-share-icon icon-weibo"></a>
-                <a href="#" class="social-share-icon icon-wechat"></a>
-                <a href="#" class="social-share-icon icon-twitter"></a>
-                <a href="#" class="social-share-icon icon-linkedin"></a>
-                <a href="#" class="social-share-icon icon-facebook"></a>
-                <a href="#" class="social-share-icon icon-qq"></a>
-                <a href="#" class="social-share-icon icon-qzone"></a>
-              </center>
-            </div>
-
-            <link
-              rel="stylesheet"
-              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
-            />
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
-          </article>
-
-          <h3>相关文章</h3>
-          <ul style="margin-bottom: 25px">
-            <li>
-              <a href="https://www.qikqiak.com/post/url-rewrite-on-traefik2.x/"
-                >Traefik2.X 版本 中 URL Rewrite 的使用</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/traefik-2.1-101/"
-                >一文搞懂 Traefik2.1 的使用</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/canary-with-traefik2/"
-                >Traefik 2.0 实现灰度发布</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/automatic-https-with-traefik2/"
-                >Traefik 2.0 实现自动化 HTTPS</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/expose-redis-by-traefik2/"
-                >Traefik 2.0 暴露 Redis(TCP) 服务</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/traefik2-ga/"
-                >Traefik 2.0 正式版发布</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/install-nginx-ingress/"
-                >nginx-ingress 的安装使用</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/how-to-protect-exposed-k8s-server/"
-                >如何保护对外暴露的 Kubernetes 服务</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/automatic-kubernetes-ingress-https-with-lets-encrypt/"
-                >Kubernetes Ingress 自动化 HTTPS</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/ingress-traefik2/"
-                >外部服务发现之 ingress(二)</a
-              >
-            </li>
-          </ul>
-
-          <ul class="pager blog-pager">
-            <li class="previous">
-              <a
-                href="https://www.qikqiak.com/post/devops-base-on-jenkins/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="基于 Jenkins 的 DevOps 流水线实践"
-                >&larr; 前一篇</a
-              >
-            </li>
-
-            <li class="next">
-              <a
-                href="https://www.qikqiak.com/post/deploy-vscode-on-k8s/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="在 Kubernetes 集群上部署 VSCode"
-                >后一篇 &rarr;</a
-              >
-            </li>
-          </ul>
-
-          <script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-          ></script>
-
-          <ins
-            class="adsbygoogle"
-            style="display: block"
-            data-ad-client="ca-pub-5376999672787220"
-            data-ad-slot="3700507799"
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          ></ins>
-          <script>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-          </script>
-
-          <div id="gitalk-container"></div>
-          <link
-            rel="stylesheet"
-            href="https://unpkg.com/gitalk/dist/gitalk.css"
-          />
-          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-          <script>
-            var gitalk = new Gitalk({
-              clientID: "bdb76dbb2e9d0786e350",
-              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
-              repo: "blog",
-              owner: "cnych",
-              admin: ["cnych"],
-              labels: ["gitment"],
-              title: "自定义 Traefik2 中间件",
-              createIssueManually: true,
-              id: "custom-traefik2-middleware",
-              distractionFreeMode: true,
-            });
-            gitalk.render("gitalk-container");
-          </script>
-        </div>
-      </div>
-    </div>
-
-    <footer>
+    
+    
+    
+    <div class="intro-header no-img">
+      
       <div class="container">
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <ul class="list-inline text-center footer-links">
-              <img
-                src="https://www.qikqiak.com/img/wechatmp.png"
-                alt="k8s技术圈"
-              />
+            <div class="post-heading">
+              <h1>自定义 Traefik2 中间件</h1>
+                
+                
+                  <span class="post-meta">
+  发表于 January 20, 2020  
+</span>
 
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/traefik/">traefik</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/ingress/">ingress</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#自定义">自定义</a></li>
+    <li><a href="#测试">测试</a></li>
+    <li><a href="#参考资料">参考资料</a></li>
+  </ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p><a href="https://www.qikqiak.com/tags/traefik/">Traefik 2.X</a> 版本发布以来受到了很大的关注，特别是提供的中间件机制非常受欢迎，但是目前对于用户来说能使用的也只有官方提供的中间件，这对于某些特殊场景可能就满足不了需求了，自然而然就想到了自定义中间件，然而现在要想自定义中间件不是一件容易的事情，虽然实现一个中间件很简单，因为目前官方没有提供方法可以将我们自定义的中间件配置到 Traefik 中，所以只能采用比较 low 的一种方法，那就是直接更改官方的源代码了，下面我们以一个简单的示例来说明下如何自定义一个 Traefik 中间件。</p>
+<h2 id="自定义">自定义</h2>
+<p>首先下载 Traefik 源码，切换到最新的 v2.1 代码分支：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ git clone https://github.com/containous/traefik
+</span></span><span style="display:flex;"><span>$ <span style="color:#8be9fd;font-style:italic">cd</span> traefik
+</span></span><span style="display:flex;"><span>$ git checkout v2.1
+</span></span><span style="display:flex;"><span>$ git checkout -b dev
+</span></span></code></pre></div><p>在 v2.1 分支基础上创建一个本地的 dev 分支，然后添加我们自定义的 luascript 中间件：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ git submodule add https://github.com/cnych/traefik2-luascript pkg/middlewares/luascript
+</span></span><span style="display:flex;"><span>$ git status
+</span></span><span style="display:flex;"><span>On branch dev
+</span></span><span style="display:flex;"><span>Changes to be committed:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">(</span>use <span style="color:#f1fa8c">&#34;git reset HEAD &lt;file&gt;...&#34;</span> to unstage<span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        new file:   .gitmodules
+</span></span><span style="display:flex;"><span>        new file:   pkg/middlewares/luascript
+</span></span></code></pre></div><p>这样就将我们自定义的 luascript 中间件代码添加到了 Traefik 源码中，但是这还不够，只是声明了中间件而已，还需要将该中间件配置到 Traefik 的中间件中去才能生效，前往 <code>pkg/config/dynamic/middleware.go</code> 文件在 <code>Middleware</code> 结构体下面添加自定义脚本字段：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#6272a4">// pkg/config/dynamic/middleware.go
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4">// Middleware holds the Middleware configuration.
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">type</span> Middleware <span style="color:#8be9fd;font-style:italic">struct</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">......</span>
+</span></span><span style="display:flex;"><span>    LuaScript         <span style="color:#ff79c6">*</span>LuaScript         <span style="color:#f1fa8c">`json:&#34;lua,omitempty&#34; toml:&#34;lua,omitempty&#34; yaml:&#34;lua,omitempty&#34;`</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4">// +k8s:deepcopy-gen=true
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4"></span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4">// LuaScript config
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">type</span> LuaScript <span style="color:#8be9fd;font-style:italic">struct</span> {
+</span></span><span style="display:flex;"><span>	Script <span style="color:#8be9fd">string</span> <span style="color:#f1fa8c">`json:&#34;script,omitempty&#34; toml:&#34;script,omitempty&#34; yaml:&#34;script,omitempty&#34;`</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>然后在服务端构建器中注册上面定义的 <code>LuaScript</code> 中间件，代码位于 <code>pkg/server/middleware/middlewares.go</code>，在 <code>buildConstructor</code> 方法中添加上自定义中间件的信息：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#6272a4">// pkg/server/middleware/middlewares.go
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4"></span><span style="color:#ff79c6">import</span> (
+</span></span><span style="display:flex;"><span>    <span style="color:#6272a4">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4"></span>    <span style="color:#f1fa8c">&#34;github.com/containous/traefik/v2/pkg/middlewares/luascript&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#6272a4">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4"></span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4"></span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4">// it is the responsibility of the caller to make sure that b.configs[middlewareName].Middleware exists
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">func</span> (b <span style="color:#ff79c6">*</span>Builder) <span style="color:#50fa7b">buildConstructor</span>(ctx context.Context, middlewareName <span style="color:#8be9fd">string</span>) (alice.Constructor, <span style="color:#8be9fd">error</span>) {
+</span></span><span style="display:flex;"><span>    <span style="color:#6272a4">// ... other middlewares
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4"></span>
+</span></span><span style="display:flex;"><span>    <span style="color:#6272a4">// LuaScript
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4"></span>	<span style="color:#ff79c6">if</span> config.LuaScript <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#ff79c6">if</span> middleware <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+</span></span><span style="display:flex;"><span>			<span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, badConf
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		middleware = <span style="color:#8be9fd;font-style:italic">func</span>(next http.Handler) (http.Handler, <span style="color:#8be9fd">error</span>) {
+</span></span><span style="display:flex;"><span>			<span style="color:#ff79c6">return</span> luascript.<span style="color:#50fa7b">New</span>(ctx, next, <span style="color:#ff79c6">*</span>config.LuaScript, middlewareName)
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#ff79c6">if</span> middleware <span style="color:#ff79c6">==</span> <span style="color:#ff79c6">nil</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, fmt.<span style="color:#50fa7b">Errorf</span>(<span style="color:#f1fa8c">&#34;invalid middleware %q configuration: invalid middleware type or middleware does not exist&#34;</span>, middlewareName)
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#ff79c6">return</span> tracing.<span style="color:#50fa7b">Wrap</span>(ctx, middleware), <span style="color:#ff79c6">nil</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>到这里我们就完成了自定义中间件。</p>
+<h2 id="测试">测试</h2>
+<p>接下来重新编译打包 Traefik 即可：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ go generate
+</span></span><span style="display:flex;"><span>$ <span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">GOPROXY</span><span style="color:#ff79c6">=</span>https://goproxy.cn
+</span></span><span style="display:flex;"><span>$ <span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">GO111MODULE</span><span style="color:#ff79c6">=</span>on
+</span></span><span style="display:flex;"><span>$ go build ./cmd/traefik
+</span></span></code></pre></div><p>编译完成后可以用这个包来测试下这个中间件，首先创建一个 FileProvider 的配置文件：(config.toml)</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-toml" data-lang="toml"><span style="display:flex;"><span>[http.routers]
+</span></span><span style="display:flex;"><span>  [http.routers.router1]
+</span></span><span style="display:flex;"><span>    service = <span style="color:#f1fa8c">&#34;service1&#34;</span>
+</span></span><span style="display:flex;"><span>    middlewares = [<span style="color:#f1fa8c">&#34;example-luascript&#34;</span>]
+</span></span><span style="display:flex;"><span>    rule = <span style="color:#f1fa8c">&#34;Host(`localhost`)&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>[http.middlewares]
+</span></span><span style="display:flex;"><span> [http.middlewares.example-luascript.lua]
+</span></span><span style="display:flex;"><span>   script = <span style="color:#f1fa8c">&#34;example.lua&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>[http.services]
+</span></span><span style="display:flex;"><span> [http.services.service1]
+</span></span><span style="display:flex;"><span>   [http.services.service1.loadBalancer]
+</span></span><span style="display:flex;"><span>     [[http.services.service1.LoadBalancer.servers]]
+</span></span><span style="display:flex;"><span>       url = <span style="color:#f1fa8c">&#34;https://www.baidu.com&#34;</span>
+</span></span></code></pre></div><p>这个配置文件我们使用 FileProvider 来配置了一个请求，将域名 <code>localhost</code> 的请求转发到 <code>service1</code> 这个 Service 上，在中间使用了 <code>example-luascript</code> 这个 lua 中间件，可以看到这里我们用 <code>script</code> 属性指定了一个名为 <code>example.lua</code> 的脚本，下面来定义这个脚本：(example.lua)</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-lua" data-lang="lua"><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">local</span> http <span style="color:#ff79c6">=</span> require(<span style="color:#f1fa8c">&#39;http&#39;</span>)
+</span></span><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">local</span> log <span style="color:#ff79c6">=</span> require(<span style="color:#f1fa8c">&#39;log&#39;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>log.warn(<span style="color:#f1fa8c">&#39;Hello from LUA script&#39;</span>)
+</span></span><span style="display:flex;"><span>http.setResponseHeader(<span style="color:#f1fa8c">&#39;X-New-Response-Header&#39;</span>, <span style="color:#f1fa8c">&#39;QikQiak&#39;</span>)
+</span></span></code></pre></div><p>现在我们可以直接使用上面编译好的 Traefik 二进制文件来启动服务：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#6272a4"># 用 --providers.file 开启 FileProvider，指定配置文件</span>
+</span></span><span style="display:flex;"><span>$ ./traefik --providers.file.filename<span style="color:#ff79c6">=</span>config.toml --log.level<span style="color:#ff79c6">=</span>warn
+</span></span><span style="display:flex;"><span>INFO<span style="color:#ff79c6">[</span>0000<span style="color:#ff79c6">]</span> Configuration loaded from flags.
+</span></span></code></pre></div><!-- raw HTML omitted -->
+<p>然后我们打开另外一个终端，在终端中输入如下请求命令：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ curl -v http://localhost
+</span></span><span style="display:flex;"><span>* Rebuilt URL to: http://localhost/
+</span></span><span style="display:flex;"><span>*   Trying ::1...
+</span></span><span style="display:flex;"><span>* TCP_NODELAY <span style="color:#8be9fd;font-style:italic">set</span>
+</span></span><span style="display:flex;"><span>* Connected to localhost <span style="color:#ff79c6">(</span>::1<span style="color:#ff79c6">)</span> port <span style="color:#bd93f9">80</span> <span style="color:#ff79c6">(</span><span style="color:#6272a4">#0)</span>
+</span></span><span style="display:flex;"><span>&gt; GET / HTTP/1.1
+</span></span><span style="display:flex;"><span>&gt; Host: localhost
+</span></span><span style="display:flex;"><span>&gt; User-Agent: curl/7.54.0
+</span></span><span style="display:flex;"><span>&gt; Accept: */*
+</span></span><span style="display:flex;"><span>&gt;
+</span></span><span style="display:flex;"><span>&lt; HTTP/1.1 <span style="color:#bd93f9">403</span> Forbidden
+</span></span><span style="display:flex;"><span>&lt; Content-Length: <span style="color:#bd93f9">0</span>
+</span></span><span style="display:flex;"><span>&lt; Content-Type: text/plain; <span style="color:#8be9fd;font-style:italic">charset</span><span style="color:#ff79c6">=</span>utf-8
+</span></span><span style="display:flex;"><span>&lt; Date: Mon, <span style="color:#bd93f9">20</span> Jan <span style="color:#bd93f9">2020</span> 04:00:15 GMT
+</span></span><span style="display:flex;"><span>&lt; Server: bfe
+</span></span><span style="display:flex;"><span>&lt; X-New-Response-Header: QikQiak
+</span></span><span style="display:flex;"><span>&lt;
+</span></span><span style="display:flex;"><span>* Connection <span style="color:#6272a4">#0 to host localhost left intact</span>
+</span></span></code></pre></div><p>我们可以看到 baidu.com 给我们返回的响应 Header 里面有我们在 lua 脚本里面的定义信息：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span>&lt; X-New-Response-Header: QikQiak
+</span></span><span style="display:flex;"><span>...
+</span></span></code></pre></div><p>同时也可以发现 Traefik 日志中新的记录输出：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>WARN<span style="color:#ff79c6">[</span>2020-01-20T12:03:51+08:00<span style="color:#ff79c6">]</span> Hello from LUA script                         <span style="color:#8be9fd;font-style:italic">middlewareName</span><span style="color:#ff79c6">=</span>example-luascript@file <span style="color:#8be9fd;font-style:italic">middlewareType</span><span style="color:#ff79c6">=</span>LuaScript
+</span></span></code></pre></div><p>到这里我们就完成了自定义 Traefik 中间件。不过我们也可以看到上面的方式耦合性太高了，需要我们去官方的源代码中去添加代码，这样显然不是一个很好的做法，即使我们自定义的中间件非常有用，要想合并到官方的主线中去也是比较困难的，至少时间成本非常高。在 Traefik 的 <a href="https://github.com/containous/traefik/issues/1336">Github Issue</a> 中也有关于自定义插件的讨论，不过讨论虽然非常热闹，不过这个已经过去两年了还是没有什么进展，所以要想等到官方支持这个特性，估计需要很长一段路要走了&hellip;&hellip;</p>
+<p><img src="https://picdn.youdianzhishi.com/images/traefik-custom-middleware-issue.png" alt="custom traefik middleware"></p>
+<h2 id="参考资料">参考资料</h2>
+<ul>
+<li><a href="https://github.com/containous/traefik/issues/1336">enable custom plugins/middlewares for Traefik #1336</a></li>
+<li><a href="https://github.com/negasus/traefik2-luascript">LuaScript middleware for Traefik v2</a></li>
+</ul>
+<!-- raw HTML omitted -->
+
+          <h2>微信公众号</h2>
+<p>
+  扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+  kubernetes 讨论群里面共同学习。
+</p>
+<img
+  src="https://picdn.youdianzhishi.com/images/qrcode.png"
+  alt="wechat-account-qrcode"
+/>
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/url-rewrite-on-traefik2.x/">Traefik2.X 版本 中 URL Rewrite 的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/traefik-2.1-101/">一文搞懂 Traefik2.1 的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/canary-with-traefik2/">Traefik 2.0 实现灰度发布</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/automatic-https-with-traefik2/">Traefik 2.0 实现自动化 HTTPS</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/expose-redis-by-traefik2/">Traefik 2.0 暴露 Redis(TCP) 服务</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/traefik2-ga/">Traefik 2.0 正式版发布</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/install-nginx-ingress/">nginx-ingress 的安装使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/how-to-protect-exposed-k8s-server/">如何保护对外暴露的 Kubernetes 服务</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/automatic-kubernetes-ingress-https-with-lets-encrypt/">Kubernetes Ingress 自动化 HTTPS</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/ingress-traefik2/">外部服务发现之 ingress(二)</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/devops-base-on-jenkins/" data-toggle="tooltip" data-placement="top" title="基于 Jenkins 的 DevOps 流水线实践">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/deploy-vscode-on-k8s/" data-toggle="tooltip" data-placement="top" title="在 Kubernetes 集群上部署 VSCode">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '自定义 Traefik2 中间件',
+        createIssueManually: true,
+        id: 'custom-traefik2-middleware',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -913,7 +622,7 @@ INFO<span style="color:#ff79c6">[</span><span style="color:#bd93f9">0000</span><
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -922,7 +631,7 @@ INFO<span style="color:#ff79c6">[</span><span style="color:#bd93f9">0000</span><
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -931,7 +640,7 @@ INFO<span style="color:#ff79c6">[</span><span style="color:#bd93f9">0000</span><
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -940,158 +649,121 @@ INFO<span style="color:#ff79c6">[</span><span style="color:#bd93f9">0000</span><
                   </span>
                 </a>
               </li>
-
-              <li>
-                <a href="https://www.qikqiak.com/index.xml" title="RSS">
-                  <span class="fa-stack fa-lg">
-                    <i class="fa fa-circle fa-stack-2x"></i>
-                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
-                  </span>
-                </a>
-              </li>
-            </ul>
-            <p class="credits copyright text-muted">
-              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/">阳明的博客</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/archive/">归档</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/friend/">友链</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://beian.miit.gov.cn/" target="_blank"
-                >蜀ICP备11027319号-5</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
-                >kubernetes.io</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
-                >Kubernetes中文社区</a
-              >
-            </p>
-            <p class="text-center text-muted">
-              <script
-                async
-                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
-              ></script>
-              <span id="busuanzi_container_site_pv" style="display: none">
-                本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
               </span>
-              &nbsp;&bull;&nbsp;
-              <span id="busuanzi_container_site_uv" style="display: none">
-                访客数<span id="busuanzi_value_site_uv"></span>人次
-              </span>
-            </p>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
 
-            <p class="credits theme-by text-muted">
-              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
-              &nbsp;&bull;&nbsp; 主题
-              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
-              移植自
-              <a href="https://github.com/rootsongjc/beautifulhugo"
-                >Beautiful Hugo</a
-              >
-            </p>
-          </div>
-        </div>
+          &nbsp;&bull;&nbsp;
+          2023
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.115.4</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+          
+        </p>
       </div>
-    </footer>
+    </div>
+  </div>
+</footer>
 
-    <script
-      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
-      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
-    ></script>
 
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "UA-69668147-3");
-    </script>
-    <script>
-      (function () {
-        var bp = document.createElement("script");
-        var curProtocol = window.location.protocol.split(":")[0];
-        if (curProtocol === "https") {
-          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
-        } else {
-          bp.src = "http://push.zhanzhang.baidu.com/push.js";
-        }
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(bp, s);
-      })();
-    </script>
-    <script>
-      $(document).ready(function () {
-        var int = setInterval(fixCount, 50);
+<script src='https://www.qikqiak.com/js/bundle.min.af02a2d23b6651a566f0135a12e65fc2560faa7a969b3d1ad58d0afe0c9164ae.js' integrity='sha256-rwKi0jtmUaVm8BNaEuZfwlYPqnqWmz0a1Y0K/gyRZK4='></script>
 
-        var initPVCount = 584976;
-        var initUVCount = 153191;
-        function fixCount() {
-          if ($("#busuanzi_container_site_pv").css("display") != "none") {
-            $("#busuanzi_value_site_pv").html(
-              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
-            );
-            clearInterval(int);
-          }
-          if ($("#busuanzi_container_site_uv").css("display") != "none") {
-            $("#busuanzi_value_site_uv").html(
-              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
-            );
-            clearInterval(int);
-          }
-        }
-      });
-    </script>
-    <script>
-      (function (w, d, s, id) {
-        if (typeof w.webpushr !== "undefined") return;
-        w.webpushr =
-          w.webpushr ||
-          function () {
-            (w.webpushr.q = w.webpushr.q || []).push(arguments);
-          };
-        var js,
-          fjs = d.getElementsByTagName(s)[0];
-        js = d.createElement(s);
-        js.id = id;
-        js.src = "https://cdn.webpushr.com/app.min.js";
-        fjs.parentNode.appendChild(js);
-      })(window, document, "script", "webpushr-jssdk");
-      webpushr(
-        "init",
-        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
-      );
-    </script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
-    ></script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
-    ></script>
-    <script type="text/javascript">
-      $(".carousel").slick({
-        dots: true,
-        arrows: true,
-        autoplay: true,
-        autoplaySpeed: 4000,
-        infinite: true,
-        speed: 500,
-        fade: true,
-        cssEase: "linear",
-        centerMode: true,
-        prevArrow: '<button type="button" class="slick-prev"></button>',
-        nextArrow: '<button type="button" class="slick-next"></button>',
-      });
-    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
   </body>
 </html>
+

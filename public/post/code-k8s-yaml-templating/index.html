@@ -1,987 +1,635 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
-    />
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-    <title>
-      自己动手写一个 Kubernetes YAML
-      模板化工具-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
-    </title>
-    <meta
-      property="og:title"
-      content="自己动手写一个 Kubernetes YAML 模板化工具"
-    />
-    <meta
-      name="twitter:title"
-      content="自己动手写一个 Kubernetes YAML 模板化工具"
-    />
 
-    <meta
-      name="description"
-      content="
+  <title>自己动手写一个 Kubernetes YAML 模板化工具-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="自己动手写一个 Kubernetes YAML 模板化工具" />
+  <meta name="twitter:title" content="自己动手写一个 Kubernetes YAML 模板化工具" />
 
-我们在使用 Kubernetes 编写资源清单文件的时候，往往会使用类似于 Helm 或者 Kustomize 这样的工具来进行模板化处理，一来是提高了资源清单的灵活性，另一方面也确实降低了我们安装复杂的 Kubernetes 应用的门槛。本文我们尝试自己使用 Golang 来实现一个 YAML 资源清单文件模板化的方案。"
-    />
-    <meta
-      property="og:description"
-      content="
+  <meta name="description" content="
+我们在使用 Kubernetes 编写资源清单文件的时候，往往会使用类似于 Helm 或者 Kustomize 这样的工具来进行模板化处理，一来是提高了资源清单的灵活性，另一方面也确实降低了我们安装复杂的 Kubernetes 应用的门槛。本文我们尝试自己使用 Golang 来实现一个 YAML 资源清单文件模板化的方案。">
+  <meta property="og:description" content="
+我们在使用 Kubernetes 编写资源清单文件的时候，往往会使用类似于 Helm 或者 Kustomize 这样的工具来进行模板化处理，一来是提高了资源清单的灵活性，另一方面也确实降低了我们安装复杂的 Kubernetes 应用的门槛。本文我们尝试自己使用 Golang 来实现一个 YAML 资源清单文件模板化的方案。">
+  <meta name="twitter:description" content="
+我们在使用 Kubernetes 编写资源清单文件的时候，往往会使用类似于 Helm 或者 Kustomize 这样的工具来进行模板化处理，一来是提高了资源清单的灵活性，另一方面也确实降低了我们安装复杂的 Kubernetes 应用的门槛。本文我们尝试自己使用 Golang 来实现一个 YAML 资源清单文件模板化的方案。">
+  <meta name="author" content=""/>
+  <link href="https://picdn.youdianzhishi.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://picdn.youdianzhishi.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/code-k8s-yaml-templating/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
 
-我们在使用 Kubernetes 编写资源清单文件的时候，往往会使用类似于 Helm 或者 Kustomize 这样的工具来进行模板化处理，一来是提高了资源清单的灵活性，另一方面也确实降低了我们安装复杂的 Kubernetes 应用的门槛。本文我们尝试自己使用 Golang 来实现一个 YAML 资源清单文件模板化的方案。"
-    />
-    <meta
-      name="twitter:description"
-      content="
+  <link rel="canonical" href="https://www.qikqiak.com/post/code-k8s-yaml-templating/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
-我们在使用 Kubernetes 编写资源清单文件的时候，往往会使用类似于 Helm 或者 Kustomize 这样的工具来进行模板化处理，一来是提高了资源清单的灵活性，另一方面也确实降低了我们安装复杂的 Kubernetes 应用的门槛。本文我们尝试自己使用 Golang 来实现一个 YAML 资源清单文件模板化的方案。"
-    />
-    <meta name="author" content="" />
-    <link
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-      rel="icon"
-      type="image/x-icon"
-    />
-    <link
-      rel="apple-touch-icon"
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      property="og:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      name="twitter:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta name="twitter:card" content="summary" />
-    <meta
-      property="og:url"
-      content="https://www.qikqiak.com/post/code-k8s-yaml-templating/"
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="阳明的博客" />
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
 
-    <meta name="generator" content="Hugo 0.55.6" />
-    <link
-      rel="canonical"
-      href="https://www.qikqiak.com/post/code-k8s-yaml-templating/"
-    />
-    <link
-      rel="alternate"
-      href="https://www.qikqiak.com/index.xml"
-      type="application/rss+xml"
-      title="阳明的博客"
-    />
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a6b62363fe57848ad01efa2a5d1bbb1047c2ffb71b53d8aeb42bc5ed5c77ea7c.css' integrity='sha256-prYjY/5XhIrQHvoqXRu7EEfC/7cbU9iutCvF7Vx36nw='>
 
-    <link
-      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
-      rel="stylesheet"
-    />
-
-    <link
-      rel="stylesheet"
-      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
-      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
-    />
-
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
-    />
-
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
     <!--[if lt IE 9]>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-      <link
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-        rel="stylesheet"
-      />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <![endif]-->
-    <meta
-      name="google-site-verification"
-      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
-    />
-    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-    <meta
-      name="keywords"
-      content="kubernetes, yaml, go, helm, kustomize, 模板"
-    />
-    <script>
-      var _hmt = _hmt || [];
-      (function () {
-        var hm = document.createElement("script");
-        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(hm, s);
-      })();
-    </script>
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, yaml, go, helm, kustomize, 模板">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
 
-    <script type="application/javascript">
-      var doNotTrack = false;
-      if (!doNotTrack) {
-        window.ga =
-          window.ga ||
-          function () {
-            (ga.q = ga.q || []).push(arguments);
-          };
-        ga.l = +new Date();
-        ga("create", "UA-69668147-3", "auto");
 
-        ga("send", "pageview");
-      }
-    </script>
-    <script async src="https://www.google-analytics.com/analytics.js"></script>
-  </head>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-      <div class="container">
-        <div class="navbar-header">
-          <button
-            type="button"
-            class="navbar-toggle"
-            data-toggle="collapse"
-            data-target="#main-navbar"
-          >
-            <span class="sr-only">切换导航</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a
-            class="navbar-brand"
-            href="https://www.qikqiak.com/"
-            title="阳明的博客"
-          >
-            <img
-              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
-              style="margin-top: -5px; height: 32px"
-              alt="阳明的博客"
-            />
-          </a>
-        </div>
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://picdn.youdianzhishi.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
 
-        <div class="collapse navbar-collapse" id="main-navbar">
-          <ul class="nav navbar-nav navbar-right">
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-
+          
+        
+          
             <li>
-              <a
-                title="课程"
-                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
-                >课程</a
-              >
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/archives">Archive</a>
-
-                <a href="https://www.qikqiak.com/tags">tags</a>
-
-                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-
-                <a href="https://www.qikqiak.com/tags/python">python</a>
-
-                <a href="https://www.qikqiak.com/tags/django">django</a>
-
-                <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-
-                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-
-                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-
-                <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/"
-                >关于</a
-              >
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
             </li>
-
+          
+        
+          
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
+          
+        
 
-            <li>
-              <a
-                href="#modalSearch"
-                data-toggle="modal"
-                data-target="#modalSearch"
-                style="outline: none"
-              >
-                <span
-                  id="searchGlyph"
-                  class="glyphicon glyphicon-search"
-                ></span>
-              </a>
-            </li>
-          </ul>
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
         </div>
-      </div>
-    </nav>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-    <div id="modalSearch" class="modal fade" role="dialog">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal">
-              &times;
-            </button>
-            <h4 class="modal-title">搜索</h4>
-          </div>
-          <div class="modal-body">
-            <div class="aa-input-container" id="aa-input-container">
-              <input
-                type="search"
-                id="aa-search-input"
-                class="aa-input-search"
-                placeholder="Search for titles or URIs..."
-                name="search"
-                autocomplete="off"
-              />
-              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-                <path
-                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
-                />
-              </svg>
-            </div>
-            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
 
-            <script>
-              var client = algoliasearch(
-                "1JDRAS0AZR",
-                "8804ac109158bb3bb60d74ce98fa332f"
-              );
-              var index = client.initIndex("prod_blog");
-
-              autocomplete(
-                "#aa-search-input",
-                { hint: false },
-                {
-                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
-
-                  displayKey: "name",
-
-                  templates: {
-                    suggestion: function (suggestion) {
-                      return (
-                        "<span>" +
-                        '<a href="https://www.qikqiak.com/post/' +
-                        suggestion.slug +
-                        '">' +
-                        suggestion._highlightResult.title.value +
-                        "</a></span>"
-                      );
-                    },
-                  },
-                }
-              );
-            </script>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">
-              close
-            </button>
-          </div>
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <header class="header-section">
-      <div class="intro-header no-img">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-              <div class="post-heading">
-                <h1>自己动手写一个 Kubernetes YAML 模板化工具</h1>
+    
+  
+  
+  
 
-                <span class="post-meta"> 发表于 November 8, 2020 </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
 
-    <div class="container" role="main">
-      <div class="row">
-        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-          <div>
-            <h5 id="tags" style="margin-top: 30px">
-              标签:
 
-              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
-              &nbsp;
 
-              <a href="https://www.qikqiak.com/tags/yaml/">yaml</a> &nbsp;
+  
 
-              <a href="https://www.qikqiak.com/tags/go/">go</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/helm/">helm</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/kustomize/">kustomize</a>
-              &nbsp;
-            </h5>
-          </div>
-
-          <article
-            role="main"
-            class="blog-post"
-            itemprop="articleBody"
-            id="content"
-          >
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/use-go-code-k8s-yaml-template.png"
-                alt="自己动手写一个 Kubernetes YAML 模板化工具"
-              />
-              <figcaption>自己动手写一个 Kubernetes YAML 模板化工具</figcaption>
-            </figure>
-
-            <p>
-              我们在使用 Kubernetes 编写资源清单文件的时候，往往会使用类似于
-              <code>Helm</code> 或者
-              <code>Kustomize</code>
-              这样的工具来进行模板化处理，一来是提高了资源清单的灵活性，另一方面也确实降低了我们安装复杂的
-              Kubernetes 应用的门槛。本文我们尝试自己使用 Golang 来实现一个 YAML
-              资源清单文件模板化的方案。
-            </p>
-
-            <h2 id="golang-的模板化">Golang 的模板化</h2>
-
-            <p>
-              Golang 中有一个支持模板文本文件的标准库
-              <code>text/template</code
-              >，这个库允许我们运行函数、赋值等操作，并可以执行一些逻辑来替换一些源文本中的模板值，我们可以从文件中读取这些文本，也可以从一个字符串去进行解析。由于我们想要模板化
-              YAML
-              文件，所以会从文件中去读取，这样我们就可以用如下所示的代码来进行处理：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go"><span style="color:#ff79c6">package</span> templates
-
-<span style="color:#ff79c6">import</span> (
-    <span style="color:#f1fa8c">&#34;bytes&#34;</span>
-    <span style="color:#f1fa8c">&#34;path/filepath&#34;</span>
-    <span style="color:#f1fa8c">&#34;text/template&#34;</span>
-    <span style="color:#ff79c6">...</span>
-)
-
-<span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">Read</span>(filePath <span style="color:#8be9fd">string</span>) ([]<span style="color:#8be9fd">byte</span>, <span style="color:#8be9fd">error</span>) {
-    tmpl, err <span style="color:#ff79c6">:=</span> template.<span style="color:#50fa7b">New</span>(filepath.<span style="color:#50fa7b">Base</span>(filePath)).
-    <span style="color:#50fa7b">Funcs</span>(availableFunctions).
-    <span style="color:#50fa7b">ParseFiles</span>(filePath)
-    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-        <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, err
-    }
-    <span style="color:#8be9fd;font-style:italic">var</span> buf bytes.Buffer
-    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">:=</span> tmpl.<span style="color:#50fa7b">Execute</span>(<span style="color:#ff79c6">&amp;</span>buf, availableData); err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-        <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, err
-    }
-    <span style="color:#ff79c6">return</span> buf.<span style="color:#50fa7b">Bytes</span>(), <span style="color:#ff79c6">nil</span>
-}</code></pre>
-            </div>
-            <p>
-              上面的代码读取一个位于 filePath 的文件，并将其作为模板，使用
-              <code>availableFunctions</code> 中的函数和
-              <code>availableData</code>
-              中的数据来填充所有的模板值。比如我们读取的是一个 ConfigMap 的 YAML
-              文件。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: my-configmap
-  namespace: {{ .Namespace }}
-  labels:
-    app: myapp
-data:
-  USER: admin
-  PASSWORD: {{ GeneratePassword }}</code></pre>
-            </div>
-            <p>
-              然后我们把 <code>availableData</code> 和
-              <code>availableFunctions</code> 定义成如下所示的代码。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go"><span style="color:#8be9fd;font-style:italic">var</span> availableData = <span style="color:#8be9fd;font-style:italic">map</span>[<span style="color:#8be9fd">string</span>]<span style="color:#8be9fd">string</span>{
-    <span style="color:#f1fa8c">&#34;Namespace&#34;</span>: <span style="color:#f1fa8c">&#34;my-namespace&#34;</span>,
-}
-<span style="color:#8be9fd;font-style:italic">var</span> availableFunctions = template.FuncMap{
-    <span style="color:#f1fa8c">&#34;GeneratePassword&#34;</span>: GeneratePasswordFunc,
-}
-
-<span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">GeneratePasswordFunc</span>() (<span style="color:#8be9fd">string</span>, <span style="color:#8be9fd">error</span>) {
-<span style="color:#ff79c6">...</span>
-}</code></pre>
-            </div>
-            <p>这样上面定义的 Read 函数调用后的输出结果如下所示。</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: my-configmap
-  namespace: my-namespace
-  labels:
-    app: myapp
-data:
-  USER: admin
-  PASSWORD: s0m3p455w0rd <span style="color:#6272a4"># 依赖你的 GeneratePassword 函数</span></code></pre>
-            </div>
-            <h2 id="在程序中使用-yaml">在程序中使用 YAML</h2>
-
-            <p>
-              当我们使用 kubectl 这样的 CLI 工具的时候，在 Kubernetes 中使用
-              YAML 非常简单：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">kubectl create -f myfile.yaml</code></pre>
-            </div>
-            <p>
-              但是如果要我们自己去编写代码来应用 YAML
-              文件的话，一般情况下会去使用
-              <code>client-go</code> 这个客户端工具包，但是 client-go
-              是针对静态类型的，而 YAML
-              文件中是没有对应的信息的，但是我们还可以通过下面两种方案来解决这个问题。
-            </p>
-
-            <ul>
-              <li>
-                使用 YAML 中的 <strong>Kind</strong> 和
-                <strong>Version</strong> 反序列化为静态类型，然后使用它的类型化
-                REST 客户端进行通信。
-              </li>
-              <li>
-                使用 <strong>Discovery</strong> 功能，Discovery
-                允许我们动态地查找给定类型的 REST
-                客户端，而不是通过静态类型去访问，下面我们就使用这种方式来进行演示。
-              </li>
-            </ul>
-
-            <script
-              async
-              src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-            ></script>
-
-            <ins
-              class="adsbygoogle"
-              style="display: block"
-              data-ad-client="ca-pub-5376999672787220"
-              data-ad-slot="9165834656"
-              data-ad-format="auto"
-              data-full-width-responsive="true"
-            ></ins>
-            <script>
-              (adsbygoogle = window.adsbygoogle || []).push({});
-            </script>
-
-            <p>
-              首先我们需要像往常一样与 APIServer 通信创建一个
-              <strong>ClientSet</strong> 对象，如果我们从一个可以使用 kubectl
-              的系统执行代码，就意味着有一个可用的
-              <code>kubeconfig</code> 文件可以使用，通常这个文件为
-              <code>$HOME/.kube/config</code> 文件，如下所示：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go"><span style="color:#ff79c6">import</span> (
-    <span style="color:#f1fa8c">&#34;k8s.io/client-go/tools/clientcmd&#34;</span>
-    <span style="color:#f1fa8c">&#34;k8s.io/client-go/kubernetes&#34;</span>
-)
-<span style="color:#ff79c6">...</span>
-<span style="color:#6272a4">// 使用本地 ~/.kube/config 创建配置
-</span><span style="color:#6272a4"></span>kubeConfigPath <span style="color:#ff79c6">:=</span> os.<span style="color:#50fa7b">ExpandEnv</span>(<span style="color:#f1fa8c">&#34;$HOME/.kube/config&#34;</span>)
-config, err <span style="color:#ff79c6">:=</span> clientcmd.<span style="color:#50fa7b">BuildConfigFromFlags</span>(<span style="color:#f1fa8c">&#34;&#34;</span>, kubeConfigPath)
-<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-    log.<span style="color:#50fa7b">Fatal</span>(err)
-}
-<span style="color:#6272a4">// 使用上面的配置获取连接
-</span><span style="color:#6272a4"></span>c, err <span style="color:#ff79c6">:=</span> kubernetes.<span style="color:#50fa7b">NewForConfig</span>(config)
-<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-    log.<span style="color:#50fa7b">Fatal</span>(err)
-}</code></pre>
-            </div>
-            <p>
-              <strong>ClientSet</strong> 相当于和 K8S
-              集群通信的网关，使用它我们可以获取对象来给我们提供发现接口。对于我们想要实现的功能，需要能够查询给定资源的类型，并与该类型的
-              REST 客户端进行通信，所以我们分别需要一个
-              <strong>Discovery REST mapper</strong> 和一个<strong
-                >动态的 REST 接口</strong
-              >，代码如下所示：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go"><span style="color:#ff79c6">import</span> (
-    <span style="color:#f1fa8c">&#34;k8s.io/client-go/restmapper&#34;</span>
-    <span style="color:#f1fa8c">&#34;k8s.io/client-go/dynamic&#34;</span>
-)
-<span style="color:#ff79c6">...</span>
-<span style="color:#6272a4">// 获取支持的资源类型列表
-</span><span style="color:#6272a4"></span>resources, err <span style="color:#ff79c6">:=</span> restmapper.<span style="color:#50fa7b">GetAPIGroupResources</span>(c.<span style="color:#50fa7b">Discovery</span>())
-<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-    log.<span style="color:#50fa7b">Fatal</span>(err)
-}
-<span style="color:#6272a4">// 创建 &#39;Discovery REST Mapper&#39;，获取查询的资源的类型
-</span><span style="color:#6272a4"></span>mapper<span style="color:#ff79c6">:=</span> restmapper.<span style="color:#50fa7b">NewDiscoveryRESTMapper</span>(resourcesAvailable)
-<span style="color:#6272a4">// 获取 &#39;Dynamic REST Interface&#39;，获取一个指定资源类型的 REST 接口
-</span><span style="color:#6272a4"></span>dynamicREST, err <span style="color:#ff79c6">:=</span> dynamic.<span style="color:#50fa7b">NewForConfig</span>(config)
-<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-    log.<span style="color:#50fa7b">Fatal</span>(err)
-}</code></pre>
-            </div>
-            <p>
-              接下来我们去查找 YAML 文件中所代表的对象类型，并得到一个支持它的
-              REST 客户端是不是就可以去操作这个资源对象了？
-            </p>
-
-            <p>首先调用前面的 <strong>Read</strong> 函数读取并执行一个模板：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go">finalYAML, err <span style="color:#ff79c6">:=</span> templates.<span style="color:#50fa7b">Read</span>(myFilePath)
-<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-    log.<span style="color:#50fa7b">Fatal</span>(err)
-}</code></pre>
-            </div>
-            <p>
-              为了使用我们的 <strong>Discovery</strong>
-              <strong>REST mapper</strong> 和<strong>动态 REST 接口</strong
-              >，我们需要将 YAML 文件的内容 decode 成一个
-              <code>runtime.Objects</code> 对象。
-            </p>
-
-            <p>
-              首先将 YAML 文件内容根据 <code>---</code> 进行分割（一个 YAML
-              文件中可能有多个资源对象）：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go">objectsInYAML <span style="color:#ff79c6">:=</span> bytes.<span style="color:#50fa7b">Split</span>(yamlBytes, []<span style="color:#8be9fd;font-style:italic">byte</span>(<span style="color:#f1fa8c">&#34;---&#34;</span>))
-<span style="color:#ff79c6">if</span> <span style="color:#8be9fd;font-style:italic">len</span>(objectsInYAML) <span style="color:#ff79c6">==</span> <span style="color:#bd93f9">0</span> {
-    <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, <span style="color:#ff79c6">nil</span>
-}</code></pre>
-            </div>
-            <p>
-              然后在每个片段上使用
-              <strong>k8s.io</strong> 的反序列化功能输出得到
-              <strong>runtime.Object</strong> 对象，以及一个持有
-              <strong>Group</strong>、<strong>Version</strong> 和
-              <strong>Kind</strong> 信息的结构体。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go"><span style="color:#ff79c6">import</span>(
-    <span style="color:#f1fa8c">&#34;k8s.io/apimachinery/pkg/runtime/serializer/yaml&#34;</span>
-)
-<span style="color:#ff79c6">...</span>
-<span style="color:#ff79c6">for</span> _, objectInYAML <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">range</span> objectsInYAML {
-    runtimeObject, groupVersionAndKind, err <span style="color:#ff79c6">:=</span> 
-    yaml.
-        <span style="color:#50fa7b">NewDecodingSerializer</span>(unstructured.UnstructuredJSONScheme).
-        <span style="color:#50fa7b">Decode</span>(objectInYAML.Raw, <span style="color:#ff79c6">nil</span>, <span style="color:#ff79c6">nil</span>)
-    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-        log.<span style="color:#50fa7b">Fatal</span>(err)
-    }
-<span style="color:#ff79c6">...</span></code></pre>
-            </div>
-            <p>
-              现在我们可以回头去使用我们的 RESTMapper，通过上面得到的
-              <strong>GVK</strong> 来获取一个映射：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go"><span style="color:#6272a4">// 查找 Group/Version/Kind 的 REST 映射
-</span><span style="color:#6272a4"></span>mapping, err <span style="color:#ff79c6">:=</span> d.mapper.<span style="color:#50fa7b">RESTMapping</span>(groupVersionAndKind.<span style="color:#50fa7b">GroupKind</span>(), groupVersionAndKind.Version)
-<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-    log.<span style="color:#50fa7b">Fatal</span>(err)
-}</code></pre>
-            </div>
-            <p>
-              有了资源类型，我们就可以使用前面的动态 REST
-              接口获取特定资源对象的客户端了：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go">unstructuredObj <span style="color:#ff79c6">:=</span> runtimeObject.(<span style="color:#ff79c6">*</span>unstructured.Unstructured)
-<span style="color:#8be9fd;font-style:italic">var</span> resourceREST dynamic.ResourceInterface
-<span style="color:#6272a4">// 需要为 namespace 范围内的资源提供不同的接口
-</span><span style="color:#6272a4"></span><span style="color:#ff79c6">if</span> mapping.Scope.<span style="color:#50fa7b">Name</span>() <span style="color:#ff79c6">==</span> meta.RESTScopeNameNamespace {
-    <span style="color:#ff79c6">if</span> unstructuredObj.<span style="color:#50fa7b">GetNamespace</span>() <span style="color:#ff79c6">==</span> <span style="color:#f1fa8c">&#34;&#34;</span> {
-        unstructuredObj.<span style="color:#50fa7b">SetNamespace</span>(<span style="color:#f1fa8c">&#34;default&#34;</span>)
-    }
-    resourceREST = 
-    d.
-      dynamicREST.
-      <span style="color:#50fa7b">Resource</span>(mapping.Resource).
-      <span style="color:#50fa7b">Namespace</span>(unstructuredObj.<span style="color:#50fa7b">GetNamespace</span>())
-} <span style="color:#ff79c6">else</span> {
-    resourceREST = d.dynamicREST.<span style="color:#50fa7b">Resource</span>(mapping.Resource)
-}</code></pre>
-            </div>
-            <p>
-              到这里我们就可以在 Kubernetes 中使用得到的 client
-              对象来执行创建删除等操作了！
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go"><span style="color:#ff79c6">import</span> (
-    metav1 <span style="color:#f1fa8c">&#34;k8s.io/apimachinery/pkg/apis/meta/v1&#34;</span>
-)
-<span style="color:#6272a4">// 创建对象
-</span><span style="color:#6272a4"></span>_, err = resourceREST.<span style="color:#50fa7b">Create</span>(unstructuredObj, metav1.CreateOptions{})
-<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-    log.<span style="color:#50fa7b">Fatal</span>(err)
-}
-<span style="color:#6272a4">// 删除对象
-</span><span style="color:#6272a4"></span>prop <span style="color:#ff79c6">:=</span> metav1.DeletePropagationForeground
-err = resourceREST.<span style="color:#50fa7b">Delete</span>(unstructuredObj.<span style="color:#50fa7b">GetName</span>(),
-    <span style="color:#ff79c6">&amp;</span>metav1.DeleteOptions{
-       PropagationPolicy: <span style="color:#ff79c6">&amp;</span>prop,
-    })
-<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-   log.<span style="color:#50fa7b">Fatal</span>(err)
-}</code></pre>
-            </div>
-            <p>
-              到这里我们就使用 Golang 完成了一个轻量级的 YAML 模板处理工具了。
-            </p>
-
-            <p>
-              <a
-                href="https://youdianzhishi.com/web/course/1030"
-                title="从 Docker 到 Kubernetes 进阶课程"
-                ><img
-                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
-                  alt="Kubernetes进阶训练营"
-              /></a>
-            </p>
-
-            <h2>微信公众号</h2>
-            <p>
-              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
-              kubernetes 讨论群里面共同学习。
-            </p>
-            <img
-              src="https://picdn.youdianzhishi.com/images/qrcode.png"
-              alt="wechat-account-qrcode"
-            />
-
-            <div class="entry-shang text-center">
-              <p>「真诚赞赏，手留余香」</p>
-              <button class="zs show-zs btn btn-bred">赞赏</button>
-            </div>
-            <div class="zs-modal-bg"></div>
-            <div class="zs-modal-box">
-              <div class="zs-modal-head">
-                <button type="button" class="close">×</button>
-                <span class="author"
-                  ><img
-                    src="https://www.qikqiak.com/img/avatar.jpeg"
-                  />阳明</span
-                >
-                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-              </div>
-              <div class="zs-modal-body">
-                <div class="zs-modal-btns">
-                  <button class="btn btn-blink" data-num="2">2元</button>
-                  <button class="btn btn-blink" data-num="5">5元</button>
-                  <button class="btn btn-blink" data-num="10">10元</button>
-                  <button class="btn btn-blink" data-num="50">50元</button>
-                  <button class="btn btn-blink" data-num="100">100元</button>
-                  <button class="btn btn-blink" data-num="1">任意金额</button>
-                </div>
-                <div class="zs-modal-pay">
-                  <button class="btn btn-bred" id="pay-text">2元</button>
-                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-                  <img
-                    src="https://www.qikqiak.com/img/wechat-2.png"
-                    id="pay-image"
-                  />
-                </div>
-              </div>
-              <div class="zs-modal-footer">
-                <span class="zs-wechat"
-                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
-                /></span>
-              </div>
-            </div>
-
-            <div
-              class="social-share"
-              data-initialized="true"
-              style="margin-bottom: 20px; margin-top: 20px"
-            >
-              <center>
-                <a href="#" class="social-share-icon icon-weibo"></a>
-                <a href="#" class="social-share-icon icon-wechat"></a>
-                <a href="#" class="social-share-icon icon-twitter"></a>
-                <a href="#" class="social-share-icon icon-linkedin"></a>
-                <a href="#" class="social-share-icon icon-facebook"></a>
-                <a href="#" class="social-share-icon icon-qq"></a>
-                <a href="#" class="social-share-icon icon-qzone"></a>
-              </center>
-            </div>
-
-            <link
-              rel="stylesheet"
-              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
-            />
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
-          </article>
-
-          <h3>相关文章</h3>
-          <ul style="margin-bottom: 25px">
-            <li>
-              <a href="https://www.qikqiak.com/post/kustomize-101/"
-                >使用 Kustomize 配置 Kubernetes 应用</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/use-cdk8s-define-k8s-apps/"
-                >使用编程语言描述 Kubernetes 应用 - cdk8s</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/helm-chart-tips-and-tricks/"
-                >Helm Chart 模板开发技巧</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/helm-name-template-usage/"
-                >Helm 命名模板的使用</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/gitops-devops-on-k8s/"
-                >GitOps - 在 Kubernetes 中进行 DevOps 的方式</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/install-kafka-in-kubernetes/"
-                >在 Kubernetes 集群上部署 Kafka</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/deploy-vault-on-k8s/"
-                >在 Kubernetes 上部署 Vault</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/deploy-spinnaker-on-k8s/"
-                >在 Kubernetes 上部署 Spinnaker</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/migrate-helm-to-v3/"
-                >Helm V2 迁移到 V3 版本</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/drone-with-k8s-3/"
-                >Drone 结合 Helm 部署 Kubernetes 应用</a
-              >
-            </li>
-          </ul>
-
-          <ul class="pager blog-pager">
-            <li class="previous">
-              <a
-                href="https://www.qikqiak.com/post/visually-explained-k8s-ingress/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="图解 Kubernetes Ingress"
-                >&larr; 前一篇</a
-              >
-            </li>
-
-            <li class="next">
-              <a
-                href="https://www.qikqiak.com/post/learn-linux-net-namespace/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="理解 Linux 网络命名空间"
-                >后一篇 &rarr;</a
-              >
-            </li>
-          </ul>
-
-          <script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-          ></script>
-
-          <ins
-            class="adsbygoogle"
-            style="display: block"
-            data-ad-client="ca-pub-5376999672787220"
-            data-ad-slot="3700507799"
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          ></ins>
-          <script>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-          </script>
-
-          <div id="gitalk-container"></div>
-          <link
-            rel="stylesheet"
-            href="https://unpkg.com/gitalk/dist/gitalk.css"
-          />
-          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-          <script>
-            var gitalk = new Gitalk({
-              clientID: "bdb76dbb2e9d0786e350",
-              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
-              repo: "blog",
-              owner: "cnych",
-              admin: ["cnych"],
-              labels: ["gitment"],
-              title: "自己动手写一个 Kubernetes YAML 模板化工具",
-              createIssueManually: true,
-              id: "code-k8s-yaml-templating",
-              distractionFreeMode: true,
-            });
-            gitalk.render("gitalk-container");
-          </script>
-        </div>
-      </div>
-    </div>
-
-    <footer>
+  <header class="header-section ">
+    
+    
+    
+    <div class="intro-header no-img">
+      
       <div class="container">
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <ul class="list-inline text-center footer-links">
-              <img
-                src="https://www.qikqiak.com/img/wechatmp.png"
-                alt="k8s技术圈"
-              />
+            <div class="post-heading">
+              <h1>自己动手写一个 Kubernetes YAML 模板化工具</h1>
+                
+                
+                  <span class="post-meta">
+  发表于 November 8, 2020  
+</span>
 
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/yaml/">yaml</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/go/">go</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/helm/">helm</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/kustomize/">kustomize</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p><img src="https://picdn.youdianzhishi.com/images/use-go-code-k8s-yaml-template.png" alt="自己动手写一个 Kubernetes YAML 模板化工具"></p>
+<p>我们在使用 Kubernetes 编写资源清单文件的时候，往往会使用类似于 <code>Helm</code> 或者 <code>Kustomize</code> 这样的工具来进行模板化处理，一来是提高了资源清单的灵活性，另一方面也确实降低了我们安装复杂的 Kubernetes 应用的门槛。本文我们尝试自己使用 Golang 来实现一个 YAML 资源清单文件模板化的方案。</p>
+<h2 id="golang-的模板化">Golang 的模板化</h2>
+<p>Golang 中有一个支持模板文本文件的标准库 <code>text/template</code>，这个库允许我们运行函数、赋值等操作，并可以执行一些逻辑来替换一些源文本中的模板值，我们可以从文件中读取这些文本，也可以从一个字符串去进行解析。由于我们想要模板化 YAML 文件，所以会从文件中去读取，这样我们就可以用如下所示的代码来进行处理：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#ff79c6">package</span> templates
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">import</span> (
+</span></span><span style="display:flex;"><span>    <span style="color:#f1fa8c">&#34;bytes&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f1fa8c">&#34;path/filepath&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f1fa8c">&#34;text/template&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">...</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">Read</span>(filePath <span style="color:#8be9fd">string</span>) ([]<span style="color:#8be9fd">byte</span>, <span style="color:#8be9fd">error</span>) {
+</span></span><span style="display:flex;"><span>    tmpl, err <span style="color:#ff79c6">:=</span> template.<span style="color:#50fa7b">New</span>(filepath.<span style="color:#50fa7b">Base</span>(filePath)).
+</span></span><span style="display:flex;"><span>    <span style="color:#50fa7b">Funcs</span>(availableFunctions).
+</span></span><span style="display:flex;"><span>    <span style="color:#50fa7b">ParseFiles</span>(filePath)
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, err
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#8be9fd;font-style:italic">var</span> buf bytes.Buffer
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">:=</span> tmpl.<span style="color:#50fa7b">Execute</span>(<span style="color:#ff79c6">&amp;</span>buf, availableData); err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, err
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">return</span> buf.<span style="color:#50fa7b">Bytes</span>(), <span style="color:#ff79c6">nil</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>上面的代码读取一个位于 filePath 的文件，并将其作为模板，使用 <code>availableFunctions</code> 中的函数和 <code>availableData</code> 中的数据来填充所有的模板值。比如我们读取的是一个 ConfigMap 的 YAML 文件。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: ConfigMap
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: my-configmap
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">namespace</span>: { { .Namespace } }
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">labels</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">app</span>: myapp
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">data</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">USER</span>: admin
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">PASSWORD</span>: { { GeneratePassword } }
+</span></span></code></pre></div><p>然后我们把 <code>availableData</code> 和 <code>availableFunctions</code> 定义成如下所示的代码。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">var</span> availableData = <span style="color:#8be9fd;font-style:italic">map</span>[<span style="color:#8be9fd">string</span>]<span style="color:#8be9fd">string</span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#f1fa8c">&#34;Namespace&#34;</span>: <span style="color:#f1fa8c">&#34;my-namespace&#34;</span>,
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">var</span> availableFunctions = template.FuncMap{
+</span></span><span style="display:flex;"><span>    <span style="color:#f1fa8c">&#34;GeneratePassword&#34;</span>: GeneratePasswordFunc,
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">GeneratePasswordFunc</span>() (<span style="color:#8be9fd">string</span>, <span style="color:#8be9fd">error</span>) {
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">...</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>这样上面定义的 Read 函数调用后的输出结果如下所示。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: ConfigMap
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: my-configmap
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">namespace</span>: my-namespace
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">labels</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">app</span>: myapp
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">data</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">USER</span>: admin
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">PASSWORD</span>: s0m3p455w0rd <span style="color:#6272a4"># 依赖你的 GeneratePassword 函数</span>
+</span></span></code></pre></div><h2 id="在程序中使用-yaml">在程序中使用 YAML</h2>
+<p>当我们使用 kubectl 这样的 CLI 工具的时候，在 Kubernetes 中使用 YAML 非常简单：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>kubectl create -f myfile.yaml
+</span></span></code></pre></div><p>但是如果要我们自己去编写代码来应用 YAML 文件的话，一般情况下会去使用 <code>client-go</code> 这个客户端工具包，但是 client-go 是针对静态类型的，而 YAML 文件中是没有对应的信息的，但是我们还可以通过下面两种方案来解决这个问题。</p>
+<ul>
+<li>使用 YAML 中的 <strong>Kind</strong> 和 <strong>Version</strong> 反序列化为静态类型，然后使用它的类型化 REST 客户端进行通信。</li>
+<li>使用 <strong>Discovery</strong> 功能，Discovery 允许我们动态地查找给定类型的 REST 客户端，而不是通过静态类型去访问，下面我们就使用这种方式来进行演示。</li>
+</ul>
+<!-- raw HTML omitted -->
+<p>首先我们需要像往常一样与 APIServer 通信创建一个 <strong>ClientSet</strong> 对象，如果我们从一个可以使用 kubectl 的系统执行代码，就意味着有一个可用的 <code>kubeconfig</code> 文件可以使用，通常这个文件为 <code>$HOME/.kube/config</code> 文件，如下所示：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#ff79c6">import</span> (
+</span></span><span style="display:flex;"><span>    <span style="color:#f1fa8c">&#34;k8s.io/client-go/tools/clientcmd&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f1fa8c">&#34;k8s.io/client-go/kubernetes&#34;</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">...</span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4">// 使用本地 ~/.kube/config 创建配置
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4"></span>kubeConfigPath <span style="color:#ff79c6">:=</span> os.<span style="color:#50fa7b">ExpandEnv</span>(<span style="color:#f1fa8c">&#34;$HOME/.kube/config&#34;</span>)
+</span></span><span style="display:flex;"><span>config, err <span style="color:#ff79c6">:=</span> clientcmd.<span style="color:#50fa7b">BuildConfigFromFlags</span>(<span style="color:#f1fa8c">&#34;&#34;</span>, kubeConfigPath)
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+</span></span><span style="display:flex;"><span>    log.<span style="color:#50fa7b">Fatal</span>(err)
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#6272a4">// 使用上面的配置获取连接
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4"></span>c, err <span style="color:#ff79c6">:=</span> kubernetes.<span style="color:#50fa7b">NewForConfig</span>(config)
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+</span></span><span style="display:flex;"><span>    log.<span style="color:#50fa7b">Fatal</span>(err)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p><strong>ClientSet</strong> 相当于和 K8S 集群通信的网关，使用它我们可以获取对象来给我们提供发现接口。对于我们想要实现的功能，需要能够查询给定资源的类型，并与该类型的 REST 客户端进行通信，所以我们分别需要一个 <strong>Discovery REST mapper</strong> 和一个<strong>动态的 REST 接口</strong>，代码如下所示：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#ff79c6">import</span> (
+</span></span><span style="display:flex;"><span>    <span style="color:#f1fa8c">&#34;k8s.io/client-go/restmapper&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f1fa8c">&#34;k8s.io/client-go/dynamic&#34;</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">...</span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4">// 获取支持的资源类型列表
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4"></span>resources, err <span style="color:#ff79c6">:=</span> restmapper.<span style="color:#50fa7b">GetAPIGroupResources</span>(c.<span style="color:#50fa7b">Discovery</span>())
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+</span></span><span style="display:flex;"><span>    log.<span style="color:#50fa7b">Fatal</span>(err)
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#6272a4">// 创建 &#39;Discovery REST Mapper&#39;，获取查询的资源的类型
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4"></span>mapper<span style="color:#ff79c6">:=</span> restmapper.<span style="color:#50fa7b">NewDiscoveryRESTMapper</span>(resourcesAvailable)
+</span></span><span style="display:flex;"><span><span style="color:#6272a4">// 获取 &#39;Dynamic REST Interface&#39;，获取一个指定资源类型的 REST 接口
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4"></span>dynamicREST, err <span style="color:#ff79c6">:=</span> dynamic.<span style="color:#50fa7b">NewForConfig</span>(config)
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+</span></span><span style="display:flex;"><span>    log.<span style="color:#50fa7b">Fatal</span>(err)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>接下来我们去查找 YAML 文件中所代表的对象类型，并得到一个支持它的 REST 客户端是不是就可以去操作这个资源对象了？</p>
+<p>首先调用前面的 <strong>Read</strong> 函数读取并执行一个模板：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>finalYAML, err <span style="color:#ff79c6">:=</span> templates.<span style="color:#50fa7b">Read</span>(myFilePath)
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+</span></span><span style="display:flex;"><span>    log.<span style="color:#50fa7b">Fatal</span>(err)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>为了使用我们的 <strong>Discovery</strong> <strong>REST mapper</strong> 和<strong>动态 REST 接口</strong>，我们需要将 YAML 文件的内容 decode 成一个 <code>runtime.Objects</code> 对象。</p>
+<p>首先将 YAML 文件内容根据 <code>---</code> 进行分割（一个 YAML 文件中可能有多个资源对象）：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>objectsInYAML <span style="color:#ff79c6">:=</span> bytes.<span style="color:#50fa7b">Split</span>(yamlBytes, []<span style="color:#8be9fd;font-style:italic">byte</span>(<span style="color:#f1fa8c">&#34;---&#34;</span>))
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">if</span> <span style="color:#8be9fd;font-style:italic">len</span>(objectsInYAML) <span style="color:#ff79c6">==</span> <span style="color:#bd93f9">0</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">nil</span>, <span style="color:#ff79c6">nil</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>然后在每个片段上使用 <strong>k8s.io</strong> 的反序列化功能输出得到 <strong>runtime.Object</strong> 对象，以及一个持有 <strong>Group</strong>、<strong>Version</strong> 和 <strong>Kind</strong> 信息的结构体。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#ff79c6">import</span>(
+</span></span><span style="display:flex;"><span>    <span style="color:#f1fa8c">&#34;k8s.io/apimachinery/pkg/runtime/serializer/yaml&#34;</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">...</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">for</span> _, objectInYAML <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">range</span> objectsInYAML {
+</span></span><span style="display:flex;"><span>    runtimeObject, groupVersionAndKind, err <span style="color:#ff79c6">:=</span>
+</span></span><span style="display:flex;"><span>    yaml.
+</span></span><span style="display:flex;"><span>        <span style="color:#50fa7b">NewDecodingSerializer</span>(unstructured.UnstructuredJSONScheme).
+</span></span><span style="display:flex;"><span>        <span style="color:#50fa7b">Decode</span>(objectInYAML.Raw, <span style="color:#ff79c6">nil</span>, <span style="color:#ff79c6">nil</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+</span></span><span style="display:flex;"><span>        log.<span style="color:#50fa7b">Fatal</span>(err)
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">...</span>
+</span></span></code></pre></div><p>现在我们可以回头去使用我们的 RESTMapper，通过上面得到的 <strong>GVK</strong> 来获取一个映射：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#6272a4">// 查找 Group/Version/Kind 的 REST 映射
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4"></span>mapping, err <span style="color:#ff79c6">:=</span> d.mapper.<span style="color:#50fa7b">RESTMapping</span>(groupVersionAndKind.<span style="color:#50fa7b">GroupKind</span>(), groupVersionAndKind.Version)
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+</span></span><span style="display:flex;"><span>    log.<span style="color:#50fa7b">Fatal</span>(err)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>有了资源类型，我们就可以使用前面的动态 REST 接口获取特定资源对象的客户端了：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>unstructuredObj <span style="color:#ff79c6">:=</span> runtimeObject.(<span style="color:#ff79c6">*</span>unstructured.Unstructured)
+</span></span><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">var</span> resourceREST dynamic.ResourceInterface
+</span></span><span style="display:flex;"><span><span style="color:#6272a4">// 需要为 namespace 范围内的资源提供不同的接口
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4"></span><span style="color:#ff79c6">if</span> mapping.Scope.<span style="color:#50fa7b">Name</span>() <span style="color:#ff79c6">==</span> meta.RESTScopeNameNamespace {
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">if</span> unstructuredObj.<span style="color:#50fa7b">GetNamespace</span>() <span style="color:#ff79c6">==</span> <span style="color:#f1fa8c">&#34;&#34;</span> {
+</span></span><span style="display:flex;"><span>        unstructuredObj.<span style="color:#50fa7b">SetNamespace</span>(<span style="color:#f1fa8c">&#34;default&#34;</span>)
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    resourceREST =
+</span></span><span style="display:flex;"><span>    d.
+</span></span><span style="display:flex;"><span>      dynamicREST.
+</span></span><span style="display:flex;"><span>      <span style="color:#50fa7b">Resource</span>(mapping.Resource).
+</span></span><span style="display:flex;"><span>      <span style="color:#50fa7b">Namespace</span>(unstructuredObj.<span style="color:#50fa7b">GetNamespace</span>())
+</span></span><span style="display:flex;"><span>} <span style="color:#ff79c6">else</span> {
+</span></span><span style="display:flex;"><span>    resourceREST = d.dynamicREST.<span style="color:#50fa7b">Resource</span>(mapping.Resource)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>到这里我们就可以在 Kubernetes 中使用得到的 client 对象来执行创建删除等操作了！</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#ff79c6">import</span> (
+</span></span><span style="display:flex;"><span>    metav1 <span style="color:#f1fa8c">&#34;k8s.io/apimachinery/pkg/apis/meta/v1&#34;</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span><span style="color:#6272a4">// 创建对象
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4"></span>_, err = resourceREST.<span style="color:#50fa7b">Create</span>(unstructuredObj, metav1.CreateOptions{})
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+</span></span><span style="display:flex;"><span>    log.<span style="color:#50fa7b">Fatal</span>(err)
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#6272a4">// 删除对象
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4"></span>prop <span style="color:#ff79c6">:=</span> metav1.DeletePropagationForeground
+</span></span><span style="display:flex;"><span>err = resourceREST.<span style="color:#50fa7b">Delete</span>(unstructuredObj.<span style="color:#50fa7b">GetName</span>(),
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">&amp;</span>metav1.DeleteOptions{
+</span></span><span style="display:flex;"><span>       PropagationPolicy: <span style="color:#ff79c6">&amp;</span>prop,
+</span></span><span style="display:flex;"><span>    })
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+</span></span><span style="display:flex;"><span>   log.<span style="color:#50fa7b">Fatal</span>(err)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>到这里我们就使用 Golang 完成了一个轻量级的 YAML 模板处理工具了。</p>
+<!-- raw HTML omitted -->
+
+          <h2>微信公众号</h2>
+<p>
+  扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+  kubernetes 讨论群里面共同学习。
+</p>
+<img
+  src="https://picdn.youdianzhishi.com/images/qrcode.png"
+  alt="wechat-account-qrcode"
+/>
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/kustomize-101/">使用 Kustomize 配置 Kubernetes 应用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-cdk8s-define-k8s-apps/">使用编程语言描述 Kubernetes 应用 - cdk8s</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/helm-chart-tips-and-tricks/">Helm Chart 模板开发技巧</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/helm-name-template-usage/">Helm 命名模板的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/gitops-devops-on-k8s/">GitOps - 在 Kubernetes 中进行 DevOps 的方式</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/install-kafka-in-kubernetes/">在 Kubernetes 集群上部署 Kafka</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/deploy-vault-on-k8s/">在 Kubernetes 上部署 Vault</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/deploy-spinnaker-on-k8s/">在 Kubernetes 上部署 Spinnaker</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/migrate-helm-to-v3/">Helm V2 迁移到 V3 版本</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-3/">Drone 结合 Helm 部署 Kubernetes 应用</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/visually-explained-k8s-ingress/" data-toggle="tooltip" data-placement="top" title="图解 Kubernetes Ingress">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/learn-linux-net-namespace/" data-toggle="tooltip" data-placement="top" title="理解 Linux 网络命名空间">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '自己动手写一个 Kubernetes YAML 模板化工具',
+        createIssueManually: true,
+        id: 'code-k8s-yaml-templating',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -990,7 +638,7 @@ err = resourceREST.<span style="color:#50fa7b">Delete</span>(unstructuredObj.<sp
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -999,7 +647,7 @@ err = resourceREST.<span style="color:#50fa7b">Delete</span>(unstructuredObj.<sp
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -1008,7 +656,7 @@ err = resourceREST.<span style="color:#50fa7b">Delete</span>(unstructuredObj.<sp
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -1017,158 +665,121 @@ err = resourceREST.<span style="color:#50fa7b">Delete</span>(unstructuredObj.<sp
                   </span>
                 </a>
               </li>
-
-              <li>
-                <a href="https://www.qikqiak.com/index.xml" title="RSS">
-                  <span class="fa-stack fa-lg">
-                    <i class="fa fa-circle fa-stack-2x"></i>
-                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
-                  </span>
-                </a>
-              </li>
-            </ul>
-            <p class="credits copyright text-muted">
-              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/">阳明的博客</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/archive/">归档</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/friend/">友链</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://beian.miit.gov.cn/" target="_blank"
-                >蜀ICP备11027319号-5</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
-                >kubernetes.io</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
-                >Kubernetes中文社区</a
-              >
-            </p>
-            <p class="text-center text-muted">
-              <script
-                async
-                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
-              ></script>
-              <span id="busuanzi_container_site_pv" style="display: none">
-                本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
               </span>
-              &nbsp;&bull;&nbsp;
-              <span id="busuanzi_container_site_uv" style="display: none">
-                访客数<span id="busuanzi_value_site_uv"></span>人次
-              </span>
-            </p>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
 
-            <p class="credits theme-by text-muted">
-              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
-              &nbsp;&bull;&nbsp; 主题
-              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
-              移植自
-              <a href="https://github.com/rootsongjc/beautifulhugo"
-                >Beautiful Hugo</a
-              >
-            </p>
-          </div>
-        </div>
+          &nbsp;&bull;&nbsp;
+          2023
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.115.4</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+          
+        </p>
       </div>
-    </footer>
+    </div>
+  </div>
+</footer>
 
-    <script
-      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
-      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
-    ></script>
 
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "UA-69668147-3");
-    </script>
-    <script>
-      (function () {
-        var bp = document.createElement("script");
-        var curProtocol = window.location.protocol.split(":")[0];
-        if (curProtocol === "https") {
-          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
-        } else {
-          bp.src = "http://push.zhanzhang.baidu.com/push.js";
-        }
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(bp, s);
-      })();
-    </script>
-    <script>
-      $(document).ready(function () {
-        var int = setInterval(fixCount, 50);
+<script src='https://www.qikqiak.com/js/bundle.min.af02a2d23b6651a566f0135a12e65fc2560faa7a969b3d1ad58d0afe0c9164ae.js' integrity='sha256-rwKi0jtmUaVm8BNaEuZfwlYPqnqWmz0a1Y0K/gyRZK4='></script>
 
-        var initPVCount = 584976;
-        var initUVCount = 153191;
-        function fixCount() {
-          if ($("#busuanzi_container_site_pv").css("display") != "none") {
-            $("#busuanzi_value_site_pv").html(
-              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
-            );
-            clearInterval(int);
-          }
-          if ($("#busuanzi_container_site_uv").css("display") != "none") {
-            $("#busuanzi_value_site_uv").html(
-              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
-            );
-            clearInterval(int);
-          }
-        }
-      });
-    </script>
-    <script>
-      (function (w, d, s, id) {
-        if (typeof w.webpushr !== "undefined") return;
-        w.webpushr =
-          w.webpushr ||
-          function () {
-            (w.webpushr.q = w.webpushr.q || []).push(arguments);
-          };
-        var js,
-          fjs = d.getElementsByTagName(s)[0];
-        js = d.createElement(s);
-        js.id = id;
-        js.src = "https://cdn.webpushr.com/app.min.js";
-        fjs.parentNode.appendChild(js);
-      })(window, document, "script", "webpushr-jssdk");
-      webpushr(
-        "init",
-        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
-      );
-    </script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
-    ></script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
-    ></script>
-    <script type="text/javascript">
-      $(".carousel").slick({
-        dots: true,
-        arrows: true,
-        autoplay: true,
-        autoplaySpeed: 4000,
-        infinite: true,
-        speed: 500,
-        fade: true,
-        cssEase: "linear",
-        centerMode: true,
-        prevArrow: '<button type="button" class="slick-prev"></button>',
-        nextArrow: '<button type="button" class="slick-next"></button>',
-      });
-    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
   </body>
 </html>
+

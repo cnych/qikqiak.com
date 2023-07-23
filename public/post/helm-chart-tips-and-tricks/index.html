@@ -1,1032 +1,599 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
-    />
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-    <title>
-      Helm Chart
-      模板开发技巧-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
-    </title>
-    <meta property="og:title" content="Helm Chart 模板开发技巧" />
-    <meta name="twitter:title" content="Helm Chart 模板开发技巧" />
 
-    <meta
-      name="description"
-      content="Helm Chart 在我们使用的时候非常方便的，但是对于开发人员来说 Helm Chart 模板就并不一定显得那么友好了，本文主要介绍了 Helm Chart 模板开发人员在构建生产级的 Chart 包时的一些技巧和窍门。"
-    />
-    <meta
-      property="og:description"
-      content="Helm Chart 在我们使用的时候非常方便的，但是对于开发人员来说 Helm Chart 模板就并不一定显得那么友好了，本文主要介绍了 Helm Chart 模板开发人员在构建生产级的 Chart 包时的一些技巧和窍门。"
-    />
-    <meta
-      name="twitter:description"
-      content="Helm Chart 在我们使用的时候非常方便的，但是对于开发人员来说 Helm Chart 模板就并不一定显得那么友好了，本文主要介绍了 Helm Chart 模板开发人员在构建生产级的 Chart 包时的一些技巧和窍门。"
-    />
-    <meta name="author" content="" />
-    <link
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-      rel="icon"
-      type="image/x-icon"
-    />
-    <link
-      rel="apple-touch-icon"
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      property="og:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      name="twitter:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta name="twitter:card" content="summary" />
-    <meta
-      property="og:url"
-      content="https://www.qikqiak.com/post/helm-chart-tips-and-tricks/"
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="阳明的博客" />
+  <title>Helm Chart 模板开发技巧-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="Helm Chart 模板开发技巧" />
+  <meta name="twitter:title" content="Helm Chart 模板开发技巧" />
 
-    <meta name="generator" content="Hugo 0.55.6" />
-    <link
-      rel="canonical"
-      href="https://www.qikqiak.com/post/helm-chart-tips-and-tricks/"
-    />
-    <link
-      rel="alternate"
-      href="https://www.qikqiak.com/index.xml"
-      type="application/rss+xml"
-      title="阳明的博客"
-    />
+  <meta name="description" content="Helm Chart 在我们使用的时候非常方便的，但是对于开发人员来说 Helm Chart 模板就并不一定显得那么友好了，本文主要介绍了 Helm Chart 模板开发人员在构建生产级的 Chart 包时的一些技巧和窍门。">
+  <meta property="og:description" content="Helm Chart 在我们使用的时候非常方便的，但是对于开发人员来说 Helm Chart 模板就并不一定显得那么友好了，本文主要介绍了 Helm Chart 模板开发人员在构建生产级的 Chart 包时的一些技巧和窍门。">
+  <meta name="twitter:description" content="Helm Chart 在我们使用的时候非常方便的，但是对于开发人员来说 Helm Chart 模板就并不一定显得那么友好了，本文主要介绍了 Helm Chart 模板开发人员在构建生产级的 Chart 包时的一些技巧和窍门。">
+  <meta name="author" content=""/>
+  <link href="https://picdn.youdianzhishi.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://picdn.youdianzhishi.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/helm-chart-tips-and-tricks/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
 
-    <link
-      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
-      rel="stylesheet"
-    />
+  <link rel="canonical" href="https://www.qikqiak.com/post/helm-chart-tips-and-tricks/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
-    <link
-      rel="stylesheet"
-      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
-      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
-    />
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
 
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
-    />
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a6b62363fe57848ad01efa2a5d1bbb1047c2ffb71b53d8aeb42bc5ed5c77ea7c.css' integrity='sha256-prYjY/5XhIrQHvoqXRu7EEfC/7cbU9iutCvF7Vx36nw='>
 
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
     <!--[if lt IE 9]>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-      <link
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-        rel="stylesheet"
-      />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <![endif]-->
-    <meta
-      name="google-site-verification"
-      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
-    />
-    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-    <meta
-      name="keywords"
-      content="kubernetes, helm, chart, template, golang, 模板"
-    />
-    <script>
-      var _hmt = _hmt || [];
-      (function () {
-        var hm = document.createElement("script");
-        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(hm, s);
-      })();
-    </script>
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, helm, chart, template, golang, 模板">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
 
-    <script type="application/javascript">
-      var doNotTrack = false;
-      if (!doNotTrack) {
-        window.ga =
-          window.ga ||
-          function () {
-            (ga.q = ga.q || []).push(arguments);
-          };
-        ga.l = +new Date();
-        ga("create", "UA-69668147-3", "auto");
 
-        ga("send", "pageview");
-      }
-    </script>
-    <script async src="https://www.google-analytics.com/analytics.js"></script>
-  </head>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-      <div class="container">
-        <div class="navbar-header">
-          <button
-            type="button"
-            class="navbar-toggle"
-            data-toggle="collapse"
-            data-target="#main-navbar"
-          >
-            <span class="sr-only">切换导航</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a
-            class="navbar-brand"
-            href="https://www.qikqiak.com/"
-            title="阳明的博客"
-          >
-            <img
-              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
-              style="margin-top: -5px; height: 32px"
-              alt="阳明的博客"
-            />
-          </a>
-        </div>
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://picdn.youdianzhishi.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
 
-        <div class="collapse navbar-collapse" id="main-navbar">
-          <ul class="nav navbar-nav navbar-right">
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-
+          
+        
+          
             <li>
-              <a
-                title="课程"
-                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
-                >课程</a
-              >
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/archives">Archive</a>
-
-                <a href="https://www.qikqiak.com/tags">tags</a>
-
-                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-
-                <a href="https://www.qikqiak.com/tags/python">python</a>
-
-                <a href="https://www.qikqiak.com/tags/django">django</a>
-
-                <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-
-                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-
-                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-
-                <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/"
-                >关于</a
-              >
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
             </li>
-
+          
+        
+          
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
+          
+        
 
-            <li>
-              <a
-                href="#modalSearch"
-                data-toggle="modal"
-                data-target="#modalSearch"
-                style="outline: none"
-              >
-                <span
-                  id="searchGlyph"
-                  class="glyphicon glyphicon-search"
-                ></span>
-              </a>
-            </li>
-          </ul>
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
         </div>
-      </div>
-    </nav>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-    <div id="modalSearch" class="modal fade" role="dialog">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal">
-              &times;
-            </button>
-            <h4 class="modal-title">搜索</h4>
-          </div>
-          <div class="modal-body">
-            <div class="aa-input-container" id="aa-input-container">
-              <input
-                type="search"
-                id="aa-search-input"
-                class="aa-input-search"
-                placeholder="Search for titles or URIs..."
-                name="search"
-                autocomplete="off"
-              />
-              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-                <path
-                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
-                />
-              </svg>
-            </div>
-            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
 
-            <script>
-              var client = algoliasearch(
-                "1JDRAS0AZR",
-                "8804ac109158bb3bb60d74ce98fa332f"
-              );
-              var index = client.initIndex("prod_blog");
-
-              autocomplete(
-                "#aa-search-input",
-                { hint: false },
-                {
-                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
-
-                  displayKey: "name",
-
-                  templates: {
-                    suggestion: function (suggestion) {
-                      return (
-                        "<span>" +
-                        '<a href="https://www.qikqiak.com/post/' +
-                        suggestion.slug +
-                        '">' +
-                        suggestion._highlightResult.title.value +
-                        "</a></span>"
-                      );
-                    },
-                  },
-                }
-              );
-            </script>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">
-              close
-            </button>
-          </div>
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div
-      id="header-big-imgs"
-      data-num-img="1"
-      data-img-src-1="https://picdn.youdianzhishi.com/images/bxf3k.jpeg"
-      data-img-desc-1="https://unsplash.com/photos/gfaxAiOgxSc"
-    ></div>
+    
+  
+  
+  
 
-    <header class="header-section has-img">
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://picdn.youdianzhishi.com/images/bxf3k.jpeg" data-img-desc-1="https://unsplash.com/photos/gfaxAiOgxSc"></div>
+  
+
+  <header class="header-section has-img">
+    
       <div class="intro-header big-img">
+        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>Helm Chart 模板开发技巧</h1>
+                  
+                  
+                    <span class="post-meta">
+  发表于 April 29, 2019  
+</span>
 
-                <span class="post-meta"> 发表于 April 29, 2019 </span>
+                  
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline"></span>
+        <span class="img-desc" style="display: inline;"></span>
       </div>
-
-      <div class="intro-header no-img">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-              <div class="post-heading">
-                <h1>Helm Chart 模板开发技巧</h1>
-
-                <span class="post-meta"> 发表于 April 29, 2019 </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <div class="container" role="main">
-      <div class="row">
-        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-          <div>
-            <h5 id="tags" style="margin-top: 30px">
-              标签:
-
-              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
-              &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/helm/">helm</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/golang/">golang</a> &nbsp;
-            </h5>
-          </div>
-
-          <article
-            role="main"
-            class="blog-post"
-            itemprop="articleBody"
-            id="content"
-          >
-            <p>
-              <a href="https://www.qikqiak.com/tags/helm/">Helm</a> Chart
-              在我们使用的时候非常方便的，但是对于开发人员来说 Helm Chart
-              模板就并不一定显得那么友好了，本文主要介绍了 Helm Chart
-              模板开发人员在构建生产级的 Chart 包时的一些技巧和窍门。
-            </p>
-
-            <h3 id="了解你的模板功能">了解你的模板功能</h3>
-
-            <p>
-              <a href="https://www.qikqiak.com/tags/helm/">Helm</a> 使用<a
-                href="https://godoc.org/text/template"
-                >Go Template</a
-              >来模板化资源文件。在 Go
-              提供的内置函数基础上，还添加了许多其他功能。
-            </p>
-
-            <p>
-              首先，添加了<a
-                href="https://godoc.org/github.com/Masterminds/sprig"
-                >Sprig库</a
-              >中的几乎所有函数，出于安全原因，删除了两个函数：<code>env</code>和<code>expandenv</code>（这会让
-              Chart 模板开发者访问到 Tiller 的环境）。
-              <script
-                async
-                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-              ></script>
-
-              <ins
-                class="adsbygoogle"
-                style="display: block"
-                data-ad-client="ca-pub-5376999672787220"
-                data-ad-slot="9165834656"
-                data-ad-format="auto"
-                data-full-width-responsive="true"
-              ></ins>
-              <script>
-                (adsbygoogle = window.adsbygoogle || []).push({});
-              </script>
-
-              另外还添加了两个特殊的模板函数：<code>include</code>和<code>required</code>，<code>include</code>函数允许你引入另一个模板，然后将结果传递给其他模板函数。
-            </p>
-
-            <p>
-              例如，下面的模板片段中引用了一个名为<code>mytpl</code>的模板，然后将结果转成小写，并用双引号包装起来：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go">value: {{ include <span style="color:#f1fa8c">&#34;mytpl&#34;</span> . | lower | quote }}</code></pre>
-            </div>
-            <p>
-              <code>required</code
-              >函数允许你根据模板的需要声明特定的值，如果值为空，则默认渲染的时候会报错。下面的这个示例被声明为
-              .Values.who 是必须的，为空的时候会打印出一段错误提示信息：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go">value: {{required <span style="color:#f1fa8c">&#34;A valid .Values.who entry required!&#34;</span> .Values.who }}</code></pre>
-            </div>
-            <h3 id="引用字符串-不要引用整数">引用字符串，不要引用整数</h3>
-
-            <p>
-              当你使用字符串数据的时候，为了安全考虑应该总是使用字符串而不是直接暴露出来：露：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go">name: {{ .Values.MyName | quote }}</code></pre>
-            </div>
-            <p>
-              当使用整数时，不要直接引用这些值，在很多情况下，可能会导致
-              <a href="https://www.qikqiak.com/tags/kubernetes/">Kubernetes</a>
-              内部的解析错误。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go">port: {{ .Values.Port }}</code></pre>
-            </div>
-            <h3 id="使用-include-功能">使用 include 功能</h3>
-
-            <p>
-              Go
-              提供了一种使用内置<code>template</code>指令将一个模板包含在另外一个模板中的方法。但是，内置函数不能用于
-              Go 模板管道。为了能够包含模板，然后对该模板的输出执行操作，Helm
-              提供了特殊的<code>include</code>功能：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go">{{ include <span style="color:#f1fa8c">&#34;toYaml&#34;</span> $value | indent <span style="color:#bd93f9">2</span>}}</code></pre>
-            </div>
-            <p>
-              上面包含一个名为<code>toYaml</code>的模板，然后将值<code>$value</code>传递给模板，最后将该模板的输出传递给<code>indent</code>函数。
-            </p>
-
-            <p>
-              由于 YAML
-              对于缩进级别和空格的重要性，所以这是包含代码片段的一种很好的方法，但是需要在相关的上下文中处理缩进。
-            </p>
-
-            <h3 id="使用-tpl-函数">使用 tpl 函数</h3>
-
-            <p>
-              <code>tpl</code
-              >函数运行允许开发人员将字符串计算为模板内的模板，这对于将模板字符串作为值传递给
-              Chart 或者呈现外部配置文件很有用：<code
-                >{{ tpl TEMPLATE_STRING VALUES }}</code
-              >
-            </p>
-
-            <p>例子：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go"># values
-template: <span style="color:#f1fa8c">&#34;{{ .Values.name }}&#34;</span>
-name: <span style="color:#f1fa8c">&#34;Tom&#34;</span>
-
-# template
-{{ tpl .Values.template . }}
-
-# output
-Tom</code></pre>
-            </div>
-            <p>渲染外部配置文件：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go"># external configuration file conf<span style="color:#ff79c6">/</span>app.conf
-firstName={{ .Values.firstName }}
-lastName={{ .Values.lastName }}
-
-# values
-firstName: Peter
-lastName: Parker
-
-# template
-{{ <span style="color:#50fa7b">tpl</span> (.Files.Get <span style="color:#f1fa8c">&#34;conf/app.conf&#34;</span>) . }}
-
-# output
-firstName=Peter
-lastName=Parker</code></pre>
-            </div>
-            <h3 id="创建-imagepullsecret">创建 imagePullSecret</h3>
-
-            <p>
-              <code>imagePullSecret</code
-              >基本上是<code>registry、用户名和密码</code>的组合，我们在使用私有仓库的时候需要使用到，需要用<code>base64</code>对这些数据进行编码，我们可以编写一个模板来生成这个配置文件：
-            </p>
-
-            <p>首先，假设我们在<code>values.yaml</code>中定义如下：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">imageCredentials:
-  registry: quay.io
-  username: someone
-  password: sillyness</code></pre>
-            </div>
-            <p>然后我们可以这样来定义模板：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go">{{<span style="color:#ff79c6">-</span> define <span style="color:#f1fa8c">&#34;imagePullSecret&#34;</span> }}
-{{<span style="color:#ff79c6">-</span> printf <span style="color:#f1fa8c">&#34;{\&#34;auths\&#34;: {\&#34;%s\&#34;: {\&#34;auth\&#34;: \&#34;%s\&#34;}}}&#34;</span> .Values.imageCredentials.<span style="color:#50fa7b">registry</span> (printf <span style="color:#f1fa8c">&#34;%s:%s&#34;</span> .Values.imageCredentials.username .Values.imageCredentials.password | b64enc) | b64enc }}
-{{<span style="color:#ff79c6">-</span> end }}</code></pre>
-            </div>
-            <p>最后，我们在 Secret 模板中使用上面定义的模板来创建对象：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">apiVersion: v1
-kind: Secret
-metadata:
-  name: myregistrykey
-type: kubernetes.io/dockerconfigjson
-data:
-  .dockerconfigjson: {{ template <span style="color:#f1fa8c">&#34;imagePullSecret&#34;</span> . }}</code></pre>
-            </div>
-            <h3 id="configmap-或者-secret-更改时自动更新">
-              ConfigMap 或者 Secret 更改时自动更新
-            </h3>
-
-            <p>
-              ConfigMap 或者 Secret
-              通常作为配置文件注入到容器中，如果后面使用<code>helm upgrade</code
-              >来升级更新这些应用程序，则可能需要重新启动，但如果部署的资源清单数据没有改变则应用程序还会继续使用旧的配置，从而导致部署不一致。
-            </p>
-
-            <p>
-              <code>sha256sum</code>函数可用于确保在另一个文件更改时更新部署的
-              annotations 部分：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">kind: Deployment
-spec:
-  template:
-    metadata:
-      annotations:
-        checksum/config: {{ include (print $.Template.BasePath <span style="color:#f1fa8c">&#34;/configmap.yaml&#34;</span>) . | sha256sum }}
-[...]</code></pre>
-            </div>
-            <p>
-              更多的信息我们可以查看<code>helm upgrade --recreate-pods</code
-              >命令来了解这个问题的其他信息。
-              <script
-                async
-                src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-              ></script>
-              <ins
-                class="adsbygoogle"
-                style="display: block; text-align: center"
-                data-ad-layout="in-article"
-                data-ad-format="fluid"
-                data-ad-client="ca-pub-5376999672787220"
-                data-ad-slot="5684687044"
-              ></ins>
-              <script>
-                (adsbygoogle = window.adsbygoogle || []).push({});
-              </script>
-            </p>
-
-            <h3 id="告诉-tiller-不要删除资源">告诉 Tiller 不要删除资源</h3>
-
-            <p>
-              有的时候在运行<code>helm delete</code
-              >命令后有些资源不应该被删除。Chart 开发者可以在资源对象中添加一个
-              annotation 来保护资源不被删除：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">kind: Secret
-metadata:
-  annotations:
-    <span style="color:#f1fa8c">&#34;helm.sh/resource-policy&#34;</span>: keep
-[...]</code></pre>
-            </div>
-            <blockquote>
-              <p>注意引号是必须的</p>
-            </blockquote>
-
-            <p>
-              <code>&quot;helm.sh/resource-policy&quot;: keep</code>这个
-              annotation 用来指示 Tiller 在删除一个 realease
-              的时候跳过当前这个资源。但是需要注意的是，这样这个资源就变成了<code>孤儿</code>，Helm
-              将不会再管理它了，如果在已经删除但是仍然还保留了部分资源的 realese
-              上面使用<code>helm install --replace</code
-              >命令可能就会出现问题了。
-            </p>
-
-            <h3 id="使用-partials">使用<code>Partials</code></h3>
-
-            <p>
-              有时候可能你想要在 Chart
-              中创建一些可重复使用的片段，无论是一块还是模板的一部分，通常将它们保存在自己的文件中会更清晰。
-            </p>
-
-            <p>
-              在<code>templates/</code>目录下面，任何以下划线(_)开头的文件都不会被输出到
-              Kubernetes
-              资源清单文件中去，按照惯例，帮助模板一般放在<code>_helpers.tpl</code>文件中。
-            </p>
-
-            <h3 id="有需要依赖的复杂-chart">有需要依赖的复杂 Chart</h3>
-
-            <p>
-              官方的 Chart 仓库中有许多 Chart
-              都是用于创建更加高级的应用程序的“构建块”。但是 Chart
-              也可以用于创建大型应用程序。在这种情况下，单个 Chart
-              可能需要包含多个子 Chart，每个子 Chart 作为整体的一部分。
-            </p>
-
-            <p>
-              对于复杂的应用程序当前最佳的实践方式是创建一个顶级的
-              Chart，然后使用<code>charts</code>子目录嵌入每个组件。
-            </p>
-
-            <p>下面是两个复杂的项目使用案例：</p>
-
-            <p>
-              <strong>SAP的OpenStack Chart：</strong>这个 Chart 包用于在
-              Kubernetes 上安装一套完整的<code>OpenStack IaaS</code>系统，所有的
-              Charts 包都在这个 Github 仓库中：<a
-                href="https://github.com/sapcc/helm-charts"
-                >openstack-helm</a
-              >
-            </p>
-
-            <p>
-              <strong>Deis的Workflow：</strong>这个 Chart 包使用一个 Chart
-              安装整个 Deis PaaS 系统，但是它与<code>SAP Chart</code
-              >的不同之处在于，每个子 Chart 都是独立的，都在不同的 Git
-              仓库中进行托管的，查看<code>requirements.yaml</code>文件，可以了解该
-              Chart 是如何通过他的 CI/CD pipeline 构建的。仓库地址：<a
-                href="https://github.com/deis/workflow/tree/master/charts/workflow"
-                >Workflow</a
-              >
-            </p>
-
-            <p>这两个 Chart 都说明了使用 Helm 构建复杂环境是很成熟的技术。</p>
-
-            <h3 id="yaml-是-json-的超集">YAML 是 JSON 的超集</h3>
-
-            <p>
-              根据 YAML 的规范，YAML 是 JSON 的超集，这意味着任何有效的 JSON
-              结构在 YAML 中都是有效的。
-            </p>
-
-            <p>
-              所以有时候可能我们去使用 JSON
-              的语法来表达数据结构更容易，而不是去处理 YAML 的空白。
-            </p>
-
-            <p>
-              当然作为最佳实践，模板应该遵循 YAML 的语法，除非 JSON
-              语法大大降低了格式化问题的风险。
-            </p>
-
-            <h3 id="小心生成随机值">小心生成随机值</h3>
-
-            <p>
-              Helm
-              中有一些功能运行你生成随机数据，加密密钥等，但需要注意的是，在升级过程中，会重新执行模板渲染，当模板运行生成的数据与上次不一致时，会触发该资源的更新。
-            </p>
-
-            <h3 id="系统的升级版本">系统的升级版本</h3>
-
-            <p>在安装和升级版本时使用相同的命令：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">helm upgrade --install &lt;release name&gt; --values &lt;values file&gt; &lt;chart directory&gt;</code></pre>
-            </div>
-            <h3 id="相关链接">相关链接</h3>
-
-            <ul>
-              <li>
-                <a
-                  href="https://github.com/technosophos/k8s-helm/blob/master/docs/charts_tips_and_tricks.md"
-                  >https://github.com/technosophos/k8s-helm/blob/master/docs/charts_tips_and_tricks.md</a
-                >
-              </li>
-              <li>
-                <a href="https://github.com/sapcc/helm-charts"
-                  >https://github.com/sapcc/helm-charts</a
-                >
-              </li>
-              <li>
-                <a
-                  href="https://github.com/deis/workflow/tree/master/charts/workflow"
-                  >https://github.com/deis/workflow/tree/master/charts/workflow</a
-                >
-              </li>
-              <li>
-                <a href="https://godoc.org/text/template"
-                  >https://godoc.org/text/template</a
-                >
-              </li>
-              <li>
-                <a href="https://godoc.org/github.com/Masterminds/sprig"
-                  >https://godoc.org/github.com/Masterminds/sprig</a
-                >
-              </li>
-            </ul>
-
-            <p>
-              <a
-                href="https://youdianzhishi.com/web/course/1030"
-                title="从 Docker 到 Kubernetes 进阶课程"
-                ><img
-                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
-                  alt="Kubernetes进阶训练营"
-              /></a>
-            </p>
-
-            <h2>微信公众号</h2>
-            <p>
-              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
-              kubernetes 讨论群里面共同学习。
-            </p>
-            <img
-              src="https://picdn.youdianzhishi.com/images/qrcode.png"
-              alt="wechat-account-qrcode"
-            />
-
-            <div class="entry-shang text-center">
-              <p>「真诚赞赏，手留余香」</p>
-              <button class="zs show-zs btn btn-bred">赞赏</button>
-            </div>
-            <div class="zs-modal-bg"></div>
-            <div class="zs-modal-box">
-              <div class="zs-modal-head">
-                <button type="button" class="close">×</button>
-                <span class="author"
-                  ><img
-                    src="https://www.qikqiak.com/img/avatar.jpeg"
-                  />阳明</span
-                >
-                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-              </div>
-              <div class="zs-modal-body">
-                <div class="zs-modal-btns">
-                  <button class="btn btn-blink" data-num="2">2元</button>
-                  <button class="btn btn-blink" data-num="5">5元</button>
-                  <button class="btn btn-blink" data-num="10">10元</button>
-                  <button class="btn btn-blink" data-num="50">50元</button>
-                  <button class="btn btn-blink" data-num="100">100元</button>
-                  <button class="btn btn-blink" data-num="1">任意金额</button>
-                </div>
-                <div class="zs-modal-pay">
-                  <button class="btn btn-bred" id="pay-text">2元</button>
-                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-                  <img
-                    src="https://www.qikqiak.com/img/wechat-2.png"
-                    id="pay-image"
-                  />
-                </div>
-              </div>
-              <div class="zs-modal-footer">
-                <span class="zs-wechat"
-                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
-                /></span>
-              </div>
-            </div>
-
-            <div
-              class="social-share"
-              data-initialized="true"
-              style="margin-bottom: 20px; margin-top: 20px"
-            >
-              <center>
-                <a href="#" class="social-share-icon icon-weibo"></a>
-                <a href="#" class="social-share-icon icon-wechat"></a>
-                <a href="#" class="social-share-icon icon-twitter"></a>
-                <a href="#" class="social-share-icon icon-linkedin"></a>
-                <a href="#" class="social-share-icon icon-facebook"></a>
-                <a href="#" class="social-share-icon icon-qq"></a>
-                <a href="#" class="social-share-icon icon-qzone"></a>
-              </center>
-            </div>
-
-            <link
-              rel="stylesheet"
-              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
-            />
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
-          </article>
-
-          <h3>相关文章</h3>
-          <ul style="margin-bottom: 25px">
-            <li>
-              <a href="https://www.qikqiak.com/post/helm-name-template-usage/"
-                >Helm 命名模板的使用</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/install-nginx-ingress/"
-                >nginx-ingress 的安装使用</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/helm-hooks-usage/"
-                >Helm Hooks 的使用</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/kubernetes-helm-usage/"
-                >Helm 的基本使用</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/write-kubernets-golang-service-step-by-step/"
-                >手摸手教你写 Kubernetes 的 golang 服务</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/first-use-helm-on-kubernetes/"
-                >Kubernetes Helm 初体验</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/"
-                >在 Kubernetes 上安装 Gitlab</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/helm-monitor-plugin/"
-                >Helm monitor 插件(附视频)</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/harbor-quick-install/"
-                >在 Kubernetes 在快速安装 Harbor</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/multi-stage-build-for-docker/"
-                >Docker 的多阶段构建</a
-              >
-            </li>
-          </ul>
-
-          <ul class="pager blog-pager">
-            <li class="previous">
-              <a
-                href="https://www.qikqiak.com/post/promotion-51/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="Kubernetes 进阶训练营"
-                >&larr; 前一篇</a
-              >
-            </li>
-
-            <li class="next">
-              <a
-                href="https://www.qikqiak.com/post/complete-cicd-demonstrate-2/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(二)"
-                >后一篇 &rarr;</a
-              >
-            </li>
-          </ul>
-
-          <script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-          ></script>
-
-          <ins
-            class="adsbygoogle"
-            style="display: block"
-            data-ad-client="ca-pub-5376999672787220"
-            data-ad-slot="3700507799"
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          ></ins>
-          <script>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-          </script>
-
-          <div id="gitalk-container"></div>
-          <link
-            rel="stylesheet"
-            href="https://unpkg.com/gitalk/dist/gitalk.css"
-          />
-          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-          <script>
-            var gitalk = new Gitalk({
-              clientID: "bdb76dbb2e9d0786e350",
-              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
-              repo: "blog",
-              owner: "cnych",
-              admin: ["cnych"],
-              labels: ["gitment"],
-              title: "Helm Chart 模板开发技巧",
-              createIssueManually: true,
-              id: "helm-chart-tips-and-tricks",
-              distractionFreeMode: true,
-            });
-            gitalk.render("gitalk-container");
-          </script>
-        </div>
-      </div>
-    </div>
-
-    <footer>
+    
+    
+    
+    <div class="intro-header no-img">
+      
       <div class="container">
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <ul class="list-inline text-center footer-links">
-              <img
-                src="https://www.qikqiak.com/img/wechatmp.png"
-                alt="k8s技术圈"
-              />
+            <div class="post-heading">
+              <h1>Helm Chart 模板开发技巧</h1>
+                
+                
+                  <span class="post-meta">
+  发表于 April 29, 2019  
+</span>
 
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/helm/">helm</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/golang/">golang</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p><a href="https://www.qikqiak.com/tags/helm/">Helm</a> Chart 在我们使用的时候非常方便的，但是对于开发人员来说 Helm Chart 模板就并不一定显得那么友好了，本文主要介绍了 Helm Chart 模板开发人员在构建生产级的 Chart 包时的一些技巧和窍门。</p>
+<h3 id="了解你的模板功能">了解你的模板功能</h3>
+<p><a href="https://www.qikqiak.com/tags/helm/">Helm</a> 使用<a href="https://godoc.org/text/template">Go Template</a>来模板化资源文件。在 Go 提供的内置函数基础上，还添加了许多其他功能。</p>
+<p>首先，添加了<a href="https://godoc.org/github.com/Masterminds/sprig">Sprig 库</a>中的几乎所有函数，出于安全原因，删除了两个函数：<code>env</code>和<code>expandenv</code>（这会让 Chart 模板开发者访问到 Tiller 的环境）。</p>
+<!-- raw HTML omitted -->
+<p>另外还添加了两个特殊的模板函数：<code>include</code>和<code>required</code>，<code>include</code>函数允许你引入另一个模板，然后将结果传递给其他模板函数。</p>
+<p>例如，下面的模板片段中引用了一个名为<code>mytpl</code>的模板，然后将结果转成小写，并用双引号包装起来：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>value: {{ include <span style="color:#f1fa8c">&#34;mytpl&#34;</span> . | lower | quote }}
+</span></span></code></pre></div><p><code>required</code>函数允许你根据模板的需要声明特定的值，如果值为空，则默认渲染的时候会报错。下面的这个示例被声明为 .Values.who 是必须的，为空的时候会打印出一段错误提示信息：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>value: {{required <span style="color:#f1fa8c">&#34;A valid .Values.who entry required!&#34;</span> .Values.who }}
+</span></span></code></pre></div><h3 id="引用字符串不要引用整数">引用字符串，不要引用整数</h3>
+<p>当你使用字符串数据的时候，为了安全考虑应该总是使用字符串而不是直接暴露出来：露：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>name: {{ .Values.MyName | quote }}
+</span></span></code></pre></div><p>当使用整数时，不要直接引用这些值，在很多情况下，可能会导致 <a href="https://www.qikqiak.com/tags/kubernetes/">Kubernetes</a> 内部的解析错误。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>port: {{ .Values.Port }}
+</span></span></code></pre></div><h3 id="使用-include-功能">使用 include 功能</h3>
+<p>Go 提供了一种使用内置<code>template</code>指令将一个模板包含在另外一个模板中的方法。但是，内置函数不能用于 Go 模板管道。为了能够包含模板，然后对该模板的输出执行操作，Helm 提供了特殊的<code>include</code>功能：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>{{ include <span style="color:#f1fa8c">&#34;toYaml&#34;</span> $value | indent <span style="color:#bd93f9">2</span>}}
+</span></span></code></pre></div><p>上面包含一个名为<code>toYaml</code>的模板，然后将值<code>$value</code>传递给模板，最后将该模板的输出传递给<code>indent</code>函数。</p>
+<p>由于 YAML 对于缩进级别和空格的重要性，所以这是包含代码片段的一种很好的方法，但是需要在相关的上下文中处理缩进。</p>
+<h3 id="使用-tpl-函数">使用 tpl 函数</h3>
+<p><code>tpl</code>函数运行允许开发人员将字符串计算为模板内的模板，这对于将模板字符串作为值传递给 Chart 或者呈现外部配置文件很有用：<code>{{ tpl TEMPLATE_STRING VALUES }}</code></p>
+<p>例子：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span># values
+</span></span><span style="display:flex;"><span>template: <span style="color:#f1fa8c">&#34;{{ .Values.name }}&#34;</span>
+</span></span><span style="display:flex;"><span>name: <span style="color:#f1fa8c">&#34;Tom&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># template
+</span></span><span style="display:flex;"><span>{{ tpl .Values.template . }}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># output
+</span></span><span style="display:flex;"><span>Tom
+</span></span></code></pre></div><p>渲染外部配置文件：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span># external configuration file conf<span style="color:#ff79c6">/</span>app.conf
+</span></span><span style="display:flex;"><span>firstName={{ .Values.firstName }}
+</span></span><span style="display:flex;"><span>lastName={{ .Values.lastName }}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># values
+</span></span><span style="display:flex;"><span>firstName: Peter
+</span></span><span style="display:flex;"><span>lastName: Parker
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># template
+</span></span><span style="display:flex;"><span>{{ <span style="color:#50fa7b">tpl</span> (.Files.Get <span style="color:#f1fa8c">&#34;conf/app.conf&#34;</span>) . }}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># output
+</span></span><span style="display:flex;"><span>firstName=Peter
+</span></span><span style="display:flex;"><span>lastName=Parker
+</span></span></code></pre></div><h3 id="创建-imagepullsecret">创建 imagePullSecret</h3>
+<p><code>imagePullSecret</code>基本上是<code>registry、用户名和密码</code>的组合，我们在使用私有仓库的时候需要使用到，需要用<code>base64</code>对这些数据进行编码，我们可以编写一个模板来生成这个配置文件：</p>
+<p>首先，假设我们在<code>values.yaml</code>中定义如下：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">imageCredentials</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">registry</span>: quay.io
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">username</span>: someone
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">password</span>: sillyness
+</span></span></code></pre></div><p>然后我们可以这样来定义模板：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>{{<span style="color:#ff79c6">-</span> define <span style="color:#f1fa8c">&#34;imagePullSecret&#34;</span> }}
+</span></span><span style="display:flex;"><span>{{<span style="color:#ff79c6">-</span> printf <span style="color:#f1fa8c">&#34;{\&#34;auths\&#34;: {\&#34;%s\&#34;: {\&#34;auth\&#34;: \&#34;%s\&#34;}}}&#34;</span> .Values.imageCredentials.<span style="color:#50fa7b">registry</span> (printf <span style="color:#f1fa8c">&#34;%s:%s&#34;</span> .Values.imageCredentials.username .Values.imageCredentials.password | b64enc) | b64enc }}
+</span></span><span style="display:flex;"><span>{{<span style="color:#ff79c6">-</span> end }}
+</span></span></code></pre></div><p>最后，我们在 Secret 模板中使用上面定义的模板来创建对象：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Secret
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: myregistrykey
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">type</span>: kubernetes.io/dockerconfigjson
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">data</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">.dockerconfigjson</span>: { { template &#34;imagePullSecret&#34; . } }
+</span></span></code></pre></div><h3 id="configmap-或者-secret-更改时自动更新">ConfigMap 或者 Secret 更改时自动更新</h3>
+<p>ConfigMap 或者 Secret 通常作为配置文件注入到容器中，如果后面使用<code>helm upgrade</code>来升级更新这些应用程序，则可能需要重新启动，但如果部署的资源清单数据没有改变则应用程序还会继续使用旧的配置，从而导致部署不一致。</p>
+<p><code>sha256sum</code>函数可用于确保在另一个文件更改时更新部署的 annotations 部分：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Deployment
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">template</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">annotations</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">checksum/config</span>: {{ include (print $.Template.BasePath &#34;/configmap.yaml&#34;) . | sha256sum }}
+</span></span><span style="display:flex;"><span>[...]
+</span></span></code></pre></div><p>更多的信息我们可以查看<code>helm upgrade --recreate-pods</code>命令来了解这个问题的其他信息。</p>
+<!-- raw HTML omitted -->
+<h3 id="告诉-tiller-不要删除资源">告诉 Tiller 不要删除资源</h3>
+<p>有的时候在运行<code>helm delete</code>命令后有些资源不应该被删除。Chart 开发者可以在资源对象中添加一个 annotation 来保护资源不被删除：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Secret
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">annotations</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">&#34;helm.sh/resource-policy&#34;: </span>keep
+</span></span><span style="display:flex;"><span>[...]
+</span></span></code></pre></div><blockquote>
+<p>注意引号是必须的</p>
+</blockquote>
+<p><code>&quot;helm.sh/resource-policy&quot;: keep</code>这个 annotation 用来指示 Tiller 在删除一个 realease 的时候跳过当前这个资源。但是需要注意的是，这样这个资源就变成了<code>孤儿</code>，Helm 将不会再管理它了，如果在已经删除但是仍然还保留了部分资源的 realese 上面使用<code>helm install --replace</code>命令可能就会出现问题了。</p>
+<h3 id="使用partials">使用<code>Partials</code></h3>
+<p>有时候可能你想要在 Chart 中创建一些可重复使用的片段，无论是一块还是模板的一部分，通常将它们保存在自己的文件中会更清晰。</p>
+<p>在<code>templates/</code>目录下面，任何以下划线(_)开头的文件都不会被输出到 Kubernetes 资源清单文件中去，按照惯例，帮助模板一般放在<code>_helpers.tpl</code>文件中。</p>
+<h3 id="有需要依赖的复杂-chart">有需要依赖的复杂 Chart</h3>
+<p>官方的 Chart 仓库中有许多 Chart 都是用于创建更加高级的应用程序的“构建块”。但是 Chart 也可以用于创建大型应用程序。在这种情况下，单个 Chart 可能需要包含多个子 Chart，每个子 Chart 作为整体的一部分。</p>
+<p>对于复杂的应用程序当前最佳的实践方式是创建一个顶级的 Chart，然后使用<code>charts</code>子目录嵌入每个组件。</p>
+<p>下面是两个复杂的项目使用案例：</p>
+<p>**SAP 的 OpenStack Chart：**这个 Chart 包用于在 Kubernetes 上安装一套完整的<code>OpenStack IaaS</code>系统，所有的 Charts 包都在这个 Github 仓库中：<a href="https://github.com/sapcc/helm-charts">openstack-helm</a></p>
+<p>**Deis 的 Workflow：**这个 Chart 包使用一个 Chart 安装整个 Deis PaaS 系统，但是它与<code>SAP Chart</code>的不同之处在于，每个子 Chart 都是独立的，都在不同的 Git 仓库中进行托管的，查看<code>requirements.yaml</code>文件，可以了解该 Chart 是如何通过他的 CI/CD pipeline 构建的。仓库地址：<a href="https://github.com/deis/workflow/tree/master/charts/workflow">Workflow</a></p>
+<p>这两个 Chart 都说明了使用 Helm 构建复杂环境是很成熟的技术。</p>
+<h3 id="yaml-是-json-的超集">YAML 是 JSON 的超集</h3>
+<p>根据 YAML 的规范，YAML 是 JSON 的超集，这意味着任何有效的 JSON 结构在 YAML 中都是有效的。</p>
+<p>所以有时候可能我们去使用 JSON 的语法来表达数据结构更容易，而不是去处理 YAML 的空白。</p>
+<p>当然作为最佳实践，模板应该遵循 YAML 的语法，除非 JSON 语法大大降低了格式化问题的风险。</p>
+<h3 id="小心生成随机值">小心生成随机值</h3>
+<p>Helm 中有一些功能运行你生成随机数据，加密密钥等，但需要注意的是，在升级过程中，会重新执行模板渲染，当模板运行生成的数据与上次不一致时，会触发该资源的更新。</p>
+<h3 id="系统的升级版本">系统的升级版本</h3>
+<p>在安装和升级版本时使用相同的命令：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>helm upgrade --install &lt;release name&gt; --values &lt;values file&gt; &lt;chart directory&gt;
+</span></span></code></pre></div><h3 id="相关链接">相关链接</h3>
+<ul>
+<li><a href="https://github.com/technosophos/k8s-helm/blob/master/docs/charts_tips_and_tricks.md">https://github.com/technosophos/k8s-helm/blob/master/docs/charts_tips_and_tricks.md</a></li>
+<li><a href="https://github.com/sapcc/helm-charts">https://github.com/sapcc/helm-charts</a></li>
+<li><a href="https://github.com/deis/workflow/tree/master/charts/workflow">https://github.com/deis/workflow/tree/master/charts/workflow</a></li>
+<li><a href="https://godoc.org/text/template">https://godoc.org/text/template</a></li>
+<li><a href="https://godoc.org/github.com/Masterminds/sprig">https://godoc.org/github.com/Masterminds/sprig</a></li>
+</ul>
+<!-- raw HTML omitted -->
+
+          <h2>微信公众号</h2>
+<p>
+  扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+  kubernetes 讨论群里面共同学习。
+</p>
+<img
+  src="https://picdn.youdianzhishi.com/images/qrcode.png"
+  alt="wechat-account-qrcode"
+/>
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/helm-name-template-usage/">Helm 命名模板的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/install-nginx-ingress/">nginx-ingress 的安装使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/helm-hooks-usage/">Helm Hooks 的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-helm-usage/">Helm 的基本使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/write-kubernets-golang-service-step-by-step/">手摸手教你写 Kubernetes 的 golang 服务</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/first-use-helm-on-kubernetes/">Kubernetes Helm 初体验</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/">在 Kubernetes 上安装 Gitlab</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/helm-monitor-plugin/">Helm monitor 插件(附视频)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/harbor-quick-install/">在 Kubernetes 在快速安装 Harbor</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/multi-stage-build-for-docker/">Docker 的多阶段构建</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/promotion-51/" data-toggle="tooltip" data-placement="top" title="Kubernetes 进阶训练营">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/complete-cicd-demonstrate-2/" data-toggle="tooltip" data-placement="top" title="基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(二)">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: 'Helm Chart 模板开发技巧',
+        createIssueManually: true,
+        id: 'helm-chart-tips-and-tricks',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -1035,7 +602,7 @@ metadata:
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -1044,7 +611,7 @@ metadata:
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -1053,7 +620,7 @@ metadata:
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -1062,158 +629,121 @@ metadata:
                   </span>
                 </a>
               </li>
-
-              <li>
-                <a href="https://www.qikqiak.com/index.xml" title="RSS">
-                  <span class="fa-stack fa-lg">
-                    <i class="fa fa-circle fa-stack-2x"></i>
-                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
-                  </span>
-                </a>
-              </li>
-            </ul>
-            <p class="credits copyright text-muted">
-              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/">阳明的博客</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/archive/">归档</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/friend/">友链</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://beian.miit.gov.cn/" target="_blank"
-                >蜀ICP备11027319号-5</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
-                >kubernetes.io</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
-                >Kubernetes中文社区</a
-              >
-            </p>
-            <p class="text-center text-muted">
-              <script
-                async
-                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
-              ></script>
-              <span id="busuanzi_container_site_pv" style="display: none">
-                本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
               </span>
-              &nbsp;&bull;&nbsp;
-              <span id="busuanzi_container_site_uv" style="display: none">
-                访客数<span id="busuanzi_value_site_uv"></span>人次
-              </span>
-            </p>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
 
-            <p class="credits theme-by text-muted">
-              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
-              &nbsp;&bull;&nbsp; 主题
-              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
-              移植自
-              <a href="https://github.com/rootsongjc/beautifulhugo"
-                >Beautiful Hugo</a
-              >
-            </p>
-          </div>
-        </div>
+          &nbsp;&bull;&nbsp;
+          2023
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.115.4</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+          
+        </p>
       </div>
-    </footer>
+    </div>
+  </div>
+</footer>
 
-    <script
-      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
-      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
-    ></script>
 
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "UA-69668147-3");
-    </script>
-    <script>
-      (function () {
-        var bp = document.createElement("script");
-        var curProtocol = window.location.protocol.split(":")[0];
-        if (curProtocol === "https") {
-          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
-        } else {
-          bp.src = "http://push.zhanzhang.baidu.com/push.js";
-        }
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(bp, s);
-      })();
-    </script>
-    <script>
-      $(document).ready(function () {
-        var int = setInterval(fixCount, 50);
+<script src='https://www.qikqiak.com/js/bundle.min.af02a2d23b6651a566f0135a12e65fc2560faa7a969b3d1ad58d0afe0c9164ae.js' integrity='sha256-rwKi0jtmUaVm8BNaEuZfwlYPqnqWmz0a1Y0K/gyRZK4='></script>
 
-        var initPVCount = 584976;
-        var initUVCount = 153191;
-        function fixCount() {
-          if ($("#busuanzi_container_site_pv").css("display") != "none") {
-            $("#busuanzi_value_site_pv").html(
-              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
-            );
-            clearInterval(int);
-          }
-          if ($("#busuanzi_container_site_uv").css("display") != "none") {
-            $("#busuanzi_value_site_uv").html(
-              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
-            );
-            clearInterval(int);
-          }
-        }
-      });
-    </script>
-    <script>
-      (function (w, d, s, id) {
-        if (typeof w.webpushr !== "undefined") return;
-        w.webpushr =
-          w.webpushr ||
-          function () {
-            (w.webpushr.q = w.webpushr.q || []).push(arguments);
-          };
-        var js,
-          fjs = d.getElementsByTagName(s)[0];
-        js = d.createElement(s);
-        js.id = id;
-        js.src = "https://cdn.webpushr.com/app.min.js";
-        fjs.parentNode.appendChild(js);
-      })(window, document, "script", "webpushr-jssdk");
-      webpushr(
-        "init",
-        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
-      );
-    </script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
-    ></script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
-    ></script>
-    <script type="text/javascript">
-      $(".carousel").slick({
-        dots: true,
-        arrows: true,
-        autoplay: true,
-        autoplaySpeed: 4000,
-        infinite: true,
-        speed: 500,
-        fade: true,
-        cssEase: "linear",
-        centerMode: true,
-        prevArrow: '<button type="button" class="slick-prev"></button>',
-        nextArrow: '<button type="button" class="slick-next"></button>',
-      });
-    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
   </body>
 </html>
+

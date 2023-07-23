@@ -1,974 +1,647 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
-    />
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-    <title>
-      使用 Drone Pipeline 构建 Docker
-      镜像-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
-    </title>
-    <meta property="og:title" content="使用 Drone Pipeline 构建 Docker 镜像" />
-    <meta name="twitter:title" content="使用 Drone Pipeline 构建 Docker 镜像" />
 
-    <meta name="description" content="基于 Drone 的 CI/CD（二）" />
-    <meta property="og:description" content="基于 Drone 的 CI/CD（二）" />
-    <meta name="twitter:description" content="基于 Drone 的 CI/CD（二）" />
-    <meta name="author" content="" />
-    <link
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-      rel="icon"
-      type="image/x-icon"
-    />
-    <link
-      rel="apple-touch-icon"
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      property="og:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      name="twitter:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta name="twitter:card" content="summary" />
-    <meta
-      property="og:url"
-      content="https://www.qikqiak.com/post/drone-with-k8s-2/"
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="阳明的博客" />
+  <title>使用 Drone Pipeline 构建 Docker 镜像-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="使用 Drone Pipeline 构建 Docker 镜像" />
+  <meta name="twitter:title" content="使用 Drone Pipeline 构建 Docker 镜像" />
 
-    <meta name="generator" content="Hugo 0.55.6" />
-    <link
-      rel="canonical"
-      href="https://www.qikqiak.com/post/drone-with-k8s-2/"
-    />
-    <link
-      rel="alternate"
-      href="https://www.qikqiak.com/index.xml"
-      type="application/rss+xml"
-      title="阳明的博客"
-    />
+  <meta name="description" content="基于 Drone 的 CI/CD（二）">
+  <meta property="og:description" content="基于 Drone 的 CI/CD（二）">
+  <meta name="twitter:description" content="基于 Drone 的 CI/CD（二）">
+  <meta name="author" content=""/>
+  <link href="https://picdn.youdianzhishi.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://picdn.youdianzhishi.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/drone-with-k8s-2/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
 
-    <link
-      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
-      rel="stylesheet"
-    />
+  <link rel="canonical" href="https://www.qikqiak.com/post/drone-with-k8s-2/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
-    <link
-      rel="stylesheet"
-      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
-      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
-    />
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
 
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
-    />
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a6b62363fe57848ad01efa2a5d1bbb1047c2ffb71b53d8aeb42bc5ed5c77ea7c.css' integrity='sha256-prYjY/5XhIrQHvoqXRu7EEfC/7cbU9iutCvF7Vx36nw='>
 
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
     <!--[if lt IE 9]>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-      <link
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-        rel="stylesheet"
-      />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <![endif]-->
-    <meta
-      name="google-site-verification"
-      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
-    />
-    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-    <meta
-      name="keywords"
-      content="kubernetes, devops, drone, CI, CD, github, 动态, helm"
-    />
-    <script>
-      var _hmt = _hmt || [];
-      (function () {
-        var hm = document.createElement("script");
-        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(hm, s);
-      })();
-    </script>
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, devops, drone, CI, CD, github, 动态, helm">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
 
-    <script type="application/javascript">
-      var doNotTrack = false;
-      if (!doNotTrack) {
-        window.ga =
-          window.ga ||
-          function () {
-            (ga.q = ga.q || []).push(arguments);
-          };
-        ga.l = +new Date();
-        ga("create", "UA-69668147-3", "auto");
 
-        ga("send", "pageview");
-      }
-    </script>
-    <script async src="https://www.google-analytics.com/analytics.js"></script>
-  </head>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-      <div class="container">
-        <div class="navbar-header">
-          <button
-            type="button"
-            class="navbar-toggle"
-            data-toggle="collapse"
-            data-target="#main-navbar"
-          >
-            <span class="sr-only">切换导航</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a
-            class="navbar-brand"
-            href="https://www.qikqiak.com/"
-            title="阳明的博客"
-          >
-            <img
-              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
-              style="margin-top: -5px; height: 32px"
-              alt="阳明的博客"
-            />
-          </a>
-        </div>
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://picdn.youdianzhishi.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
 
-        <div class="collapse navbar-collapse" id="main-navbar">
-          <ul class="nav navbar-nav navbar-right">
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-
+          
+        
+          
             <li>
-              <a
-                title="课程"
-                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
-                >课程</a
-              >
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/archives">Archive</a>
-
-                <a href="https://www.qikqiak.com/tags">tags</a>
-
-                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-
-                <a href="https://www.qikqiak.com/tags/python">python</a>
-
-                <a href="https://www.qikqiak.com/tags/django">django</a>
-
-                <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-
-                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-
-                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-
-                <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/"
-                >关于</a
-              >
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
             </li>
-
+          
+        
+          
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
+          
+        
 
-            <li>
-              <a
-                href="#modalSearch"
-                data-toggle="modal"
-                data-target="#modalSearch"
-                style="outline: none"
-              >
-                <span
-                  id="searchGlyph"
-                  class="glyphicon glyphicon-search"
-                ></span>
-              </a>
-            </li>
-          </ul>
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
         </div>
-      </div>
-    </nav>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-    <div id="modalSearch" class="modal fade" role="dialog">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal">
-              &times;
-            </button>
-            <h4 class="modal-title">搜索</h4>
-          </div>
-          <div class="modal-body">
-            <div class="aa-input-container" id="aa-input-container">
-              <input
-                type="search"
-                id="aa-search-input"
-                class="aa-input-search"
-                placeholder="Search for titles or URIs..."
-                name="search"
-                autocomplete="off"
-              />
-              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-                <path
-                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
-                />
-              </svg>
-            </div>
-            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
 
-            <script>
-              var client = algoliasearch(
-                "1JDRAS0AZR",
-                "8804ac109158bb3bb60d74ce98fa332f"
-              );
-              var index = client.initIndex("prod_blog");
-
-              autocomplete(
-                "#aa-search-input",
-                { hint: false },
-                {
-                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
-
-                  displayKey: "name",
-
-                  templates: {
-                    suggestion: function (suggestion) {
-                      return (
-                        "<span>" +
-                        '<a href="https://www.qikqiak.com/post/' +
-                        suggestion.slug +
-                        '">' +
-                        suggestion._highlightResult.title.value +
-                        "</a></span>"
-                      );
-                    },
-                  },
-                }
-              );
-            </script>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">
-              close
-            </button>
-          </div>
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div
-      id="header-big-imgs"
-      data-num-img="1"
-      data-img-src-1="https://picdn.youdianzhishi.com/images/photo-1565010505255-cd05a670b436.jpeg"
-      data-img-desc-1="Drone Shot of a bridge over a river"
-    ></div>
+    
+  
+  
+  
 
-    <header class="header-section has-img">
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://picdn.youdianzhishi.com/images/photo-1565010505255-cd05a670b436.jpeg" data-img-desc-1="Drone Shot of a bridge over a river"></div>
+  
+
+  <header class="header-section has-img">
+    
       <div class="intro-header big-img">
+        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>使用 Drone Pipeline 构建 Docker 镜像</h1>
+                  
+                    
+                      <h2 class="post-subheading">基于 Drone 的 CI/CD（二）</h2>
+                    
+                  
+                  
+                    <span class="post-meta">
+  发表于 August 6, 2019  
+</span>
 
-                <h2 class="post-subheading">基于 Drone 的 CI/CD（二）</h2>
-
-                <span class="post-meta"> 发表于 August 6, 2019 </span>
+                  
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline"></span>
+        <span class="img-desc" style="display: inline;"></span>
       </div>
-
-      <div class="intro-header no-img">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-              <div class="post-heading">
-                <h1>使用 Drone Pipeline 构建 Docker 镜像</h1>
-
-                <h2 class="post-subheading">基于 Drone 的 CI/CD（二）</h2>
-
-                <span class="post-meta"> 发表于 August 6, 2019 </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <div class="container" role="main">
-      <div class="row">
-        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-          <div>
-            <h5 id="tags" style="margin-top: 30px">
-              标签:
-
-              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
-              &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/devops/">devops</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/drone/">drone</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/ci/">CI</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/cd/">CD</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/github/">github</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/helm/">helm</a> &nbsp;
-            </h5>
-          </div>
-
-          <article
-            role="main"
-            class="blog-post"
-            itemprop="articleBody"
-            id="content"
-          >
-            <aside class="toc">
-              <nav id="TableOfContents">
-                <ul>
-                  <li>
-                    <ul>
-                      <li><a href="#go-项目">Go 项目</a></li>
-                      <li><a href="#docker-镜像">Docker 镜像</a></li>
-                      <li><a href="#pipeline">Pipeline</a></li>
-                    </ul>
-                  </li>
-                </ul>
-              </nav>
-            </aside>
-
-            <p>
-              本文是
-              <a href="https://www.qikqiak.com/tags/drone/">Drone 系列文章</a
-              >的第二篇，在<a
-                href="https://www.qikqiak.com/post/drone-with-k8s-1/"
-                >第一篇文章中我们介绍了如何在 Kubernetes 集群中使用 Helm
-                来快速安装 Drone</a
-              >，并且用
-              <a
-                href="https://www.qikqiak.com/post/automatic-kubernetes-ingress-https-with-lets-encrypt/"
-                >cert-manager</a
-              >
-              给 Drone 应用做了自动化 HTTPS。
-            </p>
-
-            <p>
-              本文我们将创建一个简单的 Golang 应用，通过 Drone 的 Pipeline
-              来自动化构建 Docker 镜像。
-            </p>
-
-            <h2 id="go-项目">Go 项目</h2>
-
-            <p>
-              我们这里使用 Go 语言中流行的 web 框架 gin 创建一个简单的 web
-              服务，在 GitHub 上创建一个名为 drone-k8s-demo 的代码仓库，Clone
-              到本地，添加名为 main.go 的文件，内容如下：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go"><span style="color:#ff79c6">package</span> main
-
-<span style="color:#ff79c6">import</span> (
-  <span style="color:#f1fa8c">&#34;net/http&#34;</span>
-
-  <span style="color:#f1fa8c">&#34;github.com/gin-gonic/gin&#34;</span>
-  <span style="color:#f1fa8c">&#34;github.com/sirupsen/logrus&#34;</span>
-)
-
-<span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">main</span>() {
-  r <span style="color:#ff79c6">:=</span> gin.<span style="color:#50fa7b">Default</span>()
-
-  r.<span style="color:#50fa7b">GET</span>(<span style="color:#f1fa8c">&#34;/health&#34;</span>, <span style="color:#8be9fd;font-style:italic">func</span>(c <span style="color:#ff79c6">*</span>gin.Context) {
-    c.<span style="color:#50fa7b">JSON</span>(http.StatusOK, gin.H {
-      <span style="color:#f1fa8c">&#34;health&#34;</span>: <span style="color:#ff79c6">true</span>,
-    })
-  })
-
-  <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">:=</span> r.<span style="color:#50fa7b">Run</span>(<span style="color:#f1fa8c">&#34;:8080&#34;</span>); err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-    logrus.<span style="color:#50fa7b">WithError</span>(err).<span style="color:#50fa7b">Fatal</span>(<span style="color:#f1fa8c">&#34;Couldn&#39;t listen&#34;</span>)
-  }
-
-}</code></pre>
-            </div>
-            <p>
-              该服务监听在 8080
-              端口，提供了一个简单的<code>/health</code>路由，返回一个简单的
-              JSON 消息表示应用状态状态，本地我们使用的是 go1.11.4
-              版本，所以可以通过 Go Modules 来管理应用的依赖，在项目目录下面执行
-              mod init：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ go mod init dronek8s</code></pre>
-            </div>
-            <p>
-              如果你对 Go Modules 的使用还不是很熟悉，可以查看我们前面的文章<a
-                href="https://www.qikqiak.com/post/go-modules-usage/"
-                >Go Modules 基本使用</a
-              >。
-            </p>
-
-            <blockquote>
-              <p>
-                项目完整代码可以在 GitHub 上获得：<a
-                  href="https://github.com/cnych/drone-k8s-demo"
-                  >https://github.com/cnych/drone-k8s-demo</a
-                >
-              </p>
-            </blockquote>
-
-            <h2 id="docker-镜像">Docker 镜像</h2>
-
-            <p>
-              现在我们需要为项目添加用于 Docker 镜像构建的 Dockerfile
-              文件，当然我们可以使用多阶段构建来将项目的构建和打包工作放在同一个
-              Dockerfile 文件中，我们这里为了演示 Drone 的 Pipeline
-              使用就将这两个步骤分开，在项目根目录下面创建 Dockerfile
-              文件，内容如下：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">FROM alpine
-
-WORKDIR /home
-
-<span style="color:#6272a4"># 修改alpine源为阿里云</span>
-RUN sed -i <span style="color:#f1fa8c">&#39;s/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g&#39;</span> /etc/apk/repositories <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>  apk update <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>  apk upgrade <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>  apk add ca-certificates <span style="color:#ff79c6">&amp;&amp;</span> update-ca-certificates <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>  apk add --update tzdata <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>  rm -rf /var/cache/apk/*
-
-COPY demo-app /home/
-
-ENV <span style="color:#8be9fd;font-style:italic">TZ</span><span style="color:#ff79c6">=</span>Asia/Shanghai
-
-EXPOSE <span style="color:#bd93f9">8080</span>
-
-ENTRYPOINT ./demo-app</code></pre>
-            </div>
-            <p>
-              可以看到我们这里是通过将 demo-app
-              文件拷贝到镜像中去执行来构建镜像的，那么我们就得在项目中将应用构建成一个名为
-              demo-app 的应用，在根目录下面执行 go build 命令：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ <span style="color:#8be9fd;font-style:italic">CGO_ENABLED</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span> <span style="color:#8be9fd;font-style:italic">GOOS</span><span style="color:#ff79c6">=</span>linux <span style="color:#8be9fd;font-style:italic">GOARCH</span><span style="color:#ff79c6">=</span>amd64 go build -o demo-app
-$ ls
-Dockerfile README.md  demo-app   go.mod     go.sum     main.go</code></pre>
-            </div>
-            <p>这个时候我们就可以在本地来构建 Docker 镜像了：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ docker build -t cnych/drone-k8s-demo .
-...
-Successfully built 85a88c8e944a 
-$ docker images
-cnych/drone-k8s-demo    latest  85a88c8e944a    <span style="color:#bd93f9">43</span> hours ago    <span style="color:#bd93f9">31</span>.1MB</code></pre>
-            </div>
-            <p>
-              这样我们就将 Golang 项目打包成 Docker
-              镜像了，然后可以在本地运行容器来验证：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ docker run --rm --name drone-k8s-demo -p <span style="color:#bd93f9">8080</span>:8080 cnych/drone-k8s-demo
-<span style="color:#ff79c6">[</span>GIN-debug<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">[</span>WARNING<span style="color:#ff79c6">]</span> Creating an Engine instance with the Logger and Recovery middleware already attached.
-
-<span style="color:#ff79c6">[</span>GIN-debug<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">[</span>WARNING<span style="color:#ff79c6">]</span> Running in <span style="color:#f1fa8c">&#34;debug&#34;</span> mode. Switch to <span style="color:#f1fa8c">&#34;release&#34;</span> mode in production.
- - using env:	<span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">GIN_MODE</span><span style="color:#ff79c6">=</span>release
- - using code:	gin.SetMode<span style="color:#ff79c6">(</span>gin.ReleaseMode<span style="color:#ff79c6">)</span>
-
-<span style="color:#ff79c6">[</span>GIN-debug<span style="color:#ff79c6">]</span> GET    /health                   --&gt; main.main.func1 <span style="color:#ff79c6">(</span><span style="color:#bd93f9">3</span> handlers<span style="color:#ff79c6">)</span>
-<span style="color:#ff79c6">[</span>GIN-debug<span style="color:#ff79c6">]</span> Listening and serving HTTP on <span style="color:#bd93f9">127</span>.0.0.1:8080</code></pre>
-            </div>
-            <p>访问 health 接口：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ curl http://127.0.0.1:8080/health
-<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;health&#34;</span>:true<span style="color:#ff79c6">}</span></code></pre>
-            </div>
-            <p>看到这里就证明我们的 Docker 镜像构建成功了。</p>
-
-            <h2 id="pipeline">Pipeline</h2>
-
-            <p>
-              上面我们用手动的方法实现了 Golang 项目打包成 Docker
-              镜像的过程，如果到这里就结束了的话似乎就和 Drone
-              没有什么关系了，那么我们可以利用 Drone
-              来做什么呢？简单来说就是将上面我们手动的过程自动化。Drone
-              的工作方式和 Travis CI、GitLab CI
-              都比较类似，我们需要在项目根目录下面创建一个名为<code>.drone.yml</code>的文件，我们需要在该文件中来编写用于自动化打包镜像的
-              Pipeline，内容如下：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">kind: pipeline
-name: default
-
-steps:
-  - name: linter
-    image: golang:latest
-    environment:
-      GOPROXY: https://mirrors.aliyun.com/goproxy/
-    commands:
-      - go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
-      - golangci-lint run
-
-  - name: build
-    image: golang:latest
-    environment:
-      GOPROXY: https://mirrors.aliyun.com/goproxy/
-    commands:
-      - CGO_ENABLED=<span style="color:#bd93f9">0</span> go build -o demo-app
-
-  - name: docker
-    image: plugins/docker
-    settings:
-      repo: cnych/drone-k8s-demo
-      use_cache: <span style="color:#ff79c6">true</span>
-      username:
-        from_secret: docker_username
-      password:
-        from_secret: docker_password
-    tags:
-      - latest
-    when:
-      event: push
-      branch: master</code></pre>
-            </div>
-            <p>
-              我们定义了一个
-              pipeline，其中构建过程有3个步骤，linter、build、docker，当然对于一般的项目来说应该还需要有单元测试的步骤，在每一个步骤中都是通过一个镜像去进行任务构建的，比如
-              linter 和 build
-              都是在一个<code>golang:latest</code>的镜像中执行任务，在 build
-              阶段中就是执行上面我们手动的 go build 命令，然后在 docker
-              阶段是使用的是<code>plugins/docker</code>这个官方插件，在该镜像中可以指定
-              Dockerfile 的路径，镜像的 tag，以及镜像仓库的用户名和密码。
-              <script
-                async
-                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-              ></script>
-
-              <ins
-                class="adsbygoogle"
-                style="display: block"
-                data-ad-client="ca-pub-5376999672787220"
-                data-ad-slot="9165834656"
-                data-ad-format="auto"
-                data-full-width-responsive="true"
-              ></ins>
-              <script>
-                (adsbygoogle = window.adsbygoogle || []).push({});
-              </script>
-
-              我们这里的 username 和 password 并没有名为提供，而是通过 secret
-              的方式，<code>username.from_secret=docker_username，password.from_secret=docker_password</code>。这两个
-              secret 我们可以通过 drone cli 来创建，也可以直接通过 Drone
-              的网页来进行配置。
-            </p>
-
-            <p>
-              将项目推送到 GitHub，然后在 Drone
-              页面上启用项目，在项目设置项下面添加 Pipeline 中需要使用到的
-              Secret：
-            </p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/drone-add-secret.png"
-                alt="drone add secret"
-              />
-              <figcaption>drone add secret</figcaption>
-            </figure>
-
-            <p>
-              这样用于构建的 Drone Pipeline
-              就编写完成了，这个时候我们只需要将<code>.drone.yml</code>文件推送到
-              GitHub 仓库中去，正常就会触发自动构建了：
-            </p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/drone-pipeline.png"
-                alt="drone pipeline"
-              />
-              <figcaption>drone pipeline</figcaption>
-            </figure>
-
-            <p>
-              在 Drone 的页面中可以看到我们在 Pipeline
-              中定义的每一个步骤的构建日志以及时长，如果出现了错误就可以对应的去排查即可。
-            </p>
-
-            <p>
-              此外，由于我们的 Drone 是部署在 Kubernetes
-              集群中，而且我们没有启动 Agent，所以当 Drone
-              有任务需要构建的时候会自动的启动一个 Job 对象来构建：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl get job -n kube-ops
-NAME                             COMPLETIONS   DURATION   AGE
-......
-drone-job-26-lo6kxn8f4dde6t8n5   <span style="color:#bd93f9">1</span>/1           7m1s       22h
-drone-job-27-aibtb6jahfq8dg88t   <span style="color:#bd93f9">1</span>/1           6m14s      11m
-drone-job-28-lgwtvdybpxwwgxwxl   <span style="color:#bd93f9">0</span>/1           12s        12s
-$ kubectl get pods -n kube-ops
-......
-drone-job-28-lgwtvdybpxwwgxwxl-hs28f          <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">0</span>          2m3s
-drone-job-26-lo6kxn8f4dde6t8n5-bbw8t          <span style="color:#bd93f9">0</span>/1     Completed   <span style="color:#bd93f9">0</span>          22h
-drone-job-27-aibtb6jahfq8dg88t-qkmn5          <span style="color:#bd93f9">0</span>/1     Completed   <span style="color:#bd93f9">0</span>          12m</code></pre>
-            </div>
-            <p>
-              Job 在 Drone 的任务构建完成后并不会自动销毁，Pod 的状态只会变成
-              Completed 状态，所以需要我们手动的去删除这些已经构建完成的 Job
-              资源对象。
-            </p>
-
-            <blockquote>
-              <p>
-                如果想要自动删除这些完成的 Job 资源对象的话，我们可以在
-                APIServer 中启用 <code>TTLAfterFinished</code> 这个
-                <a
-                  href="https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/"
-                  >Feature Gates</a
-                >
-                也是可以的。
-              </p>
-            </blockquote>
-
-            <p>
-              到这里我们就实现了使用 Drone Pipeline 来自动将我们的项目打包成
-              Docker 镜像，并推送到了
-              DockerHub，下篇文章我们再来和大家学习如何使用 Helm 将应用部署到
-              Kubernetes 集群中去。
-            </p>
-
-            <p>
-              <a
-                href="https://youdianzhishi.com/web/course/1030"
-                title="从 Docker 到 Kubernetes 进阶课程"
-                ><img
-                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
-                  alt="Kubernetes进阶训练营"
-              /></a>
-            </p>
-
-            <h2>微信公众号</h2>
-            <p>
-              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
-              kubernetes 讨论群里面共同学习。
-            </p>
-            <img
-              src="https://picdn.youdianzhishi.com/images/qrcode.png"
-              alt="wechat-account-qrcode"
-            />
-
-            <div class="entry-shang text-center">
-              <p>「真诚赞赏，手留余香」</p>
-              <button class="zs show-zs btn btn-bred">赞赏</button>
-            </div>
-            <div class="zs-modal-bg"></div>
-            <div class="zs-modal-box">
-              <div class="zs-modal-head">
-                <button type="button" class="close">×</button>
-                <span class="author"
-                  ><img
-                    src="https://www.qikqiak.com/img/avatar.jpeg"
-                  />阳明</span
-                >
-                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-              </div>
-              <div class="zs-modal-body">
-                <div class="zs-modal-btns">
-                  <button class="btn btn-blink" data-num="2">2元</button>
-                  <button class="btn btn-blink" data-num="5">5元</button>
-                  <button class="btn btn-blink" data-num="10">10元</button>
-                  <button class="btn btn-blink" data-num="50">50元</button>
-                  <button class="btn btn-blink" data-num="100">100元</button>
-                  <button class="btn btn-blink" data-num="1">任意金额</button>
-                </div>
-                <div class="zs-modal-pay">
-                  <button class="btn btn-bred" id="pay-text">2元</button>
-                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-                  <img
-                    src="https://www.qikqiak.com/img/wechat-2.png"
-                    id="pay-image"
-                  />
-                </div>
-              </div>
-              <div class="zs-modal-footer">
-                <span class="zs-wechat"
-                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
-                /></span>
-              </div>
-            </div>
-
-            <div
-              class="social-share"
-              data-initialized="true"
-              style="margin-bottom: 20px; margin-top: 20px"
-            >
-              <center>
-                <a href="#" class="social-share-icon icon-weibo"></a>
-                <a href="#" class="social-share-icon icon-wechat"></a>
-                <a href="#" class="social-share-icon icon-twitter"></a>
-                <a href="#" class="social-share-icon icon-linkedin"></a>
-                <a href="#" class="social-share-icon icon-facebook"></a>
-                <a href="#" class="social-share-icon icon-qq"></a>
-                <a href="#" class="social-share-icon icon-qzone"></a>
-              </center>
-            </div>
-
-            <link
-              rel="stylesheet"
-              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
-            />
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
-          </article>
-
-          <h3>相关文章</h3>
-          <ul style="margin-bottom: 25px">
-            <li>
-              <a href="https://www.qikqiak.com/post/drone-with-k8s-1/"
-                >使用 Kubernetes Helm 安装 Drone</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/kubernetes-jenkins1/"
-                >基于 kubernetes 的动态 jenkins slave</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/kubernetes-jenkins3/"
-                >Jenkins Blue Ocean 的使用</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/kubernetes-jenkins2/"
-                >Jenkins Pipeline 部署 Kubernetes 应用(二)</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/"
-                >在 Kubernetes 上安装 Gitlab</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/k8s-auth-via-oidc/"
-                >通过 GitHub OAuth 和 Dex 访问 Kubernetes 集群</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/complete-cicd-demonstrate-2/"
-                >基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的
-                CI/CD(二)</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/helm-chart-tips-and-tricks/"
-                >Helm Chart 模板开发技巧</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/install-nginx-ingress/"
-                >nginx-ingress 的安装使用</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/complete-cicd-demonstrate-1/"
-                >基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的
-                CI/CD(一)</a
-              >
-            </li>
-          </ul>
-
-          <ul class="pager blog-pager">
-            <li class="previous">
-              <a
-                href="https://www.qikqiak.com/post/drone-with-k8s-1/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="使用 Kubernetes Helm 安装 Drone"
-                >&larr; 前一篇</a
-              >
-            </li>
-
-            <li class="next">
-              <a
-                href="https://www.qikqiak.com/post/drone-with-k8s-3/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="Drone 结合 Helm 部署 Kubernetes 应用"
-                >后一篇 &rarr;</a
-              >
-            </li>
-          </ul>
-
-          <script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-          ></script>
-
-          <ins
-            class="adsbygoogle"
-            style="display: block"
-            data-ad-client="ca-pub-5376999672787220"
-            data-ad-slot="3700507799"
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          ></ins>
-          <script>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-          </script>
-
-          <div id="gitalk-container"></div>
-          <link
-            rel="stylesheet"
-            href="https://unpkg.com/gitalk/dist/gitalk.css"
-          />
-          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-          <script>
-            var gitalk = new Gitalk({
-              clientID: "bdb76dbb2e9d0786e350",
-              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
-              repo: "blog",
-              owner: "cnych",
-              admin: ["cnych"],
-              labels: ["gitment"],
-              title: "使用 Drone Pipeline 构建 Docker 镜像",
-              createIssueManually: true,
-              id: "drone-with-k8s-2",
-              distractionFreeMode: true,
-            });
-            gitalk.render("gitalk-container");
-          </script>
-        </div>
-      </div>
-    </div>
-
-    <footer>
+    
+    
+    
+    <div class="intro-header no-img">
+      
       <div class="container">
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <ul class="list-inline text-center footer-links">
-              <img
-                src="https://www.qikqiak.com/img/wechatmp.png"
-                alt="k8s技术圈"
-              />
+            <div class="post-heading">
+              <h1>使用 Drone Pipeline 构建 Docker 镜像</h1>
+                
+                  
+                    <h2 class="post-subheading">基于 Drone 的 CI/CD（二）</h2>
+                  
+                
+                
+                  <span class="post-meta">
+  发表于 August 6, 2019  
+</span>
 
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/devops/">devops</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/drone/">drone</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/ci/">CI</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/cd/">CD</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/github/">github</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/helm/">helm</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#go-项目">Go 项目</a></li>
+    <li><a href="#docker-镜像">Docker 镜像</a></li>
+    <li><a href="#pipeline">Pipeline</a></li>
+  </ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>本文是 <a href="https://www.qikqiak.com/tags/drone/">Drone 系列文章</a>的第二篇，在<a href="https://www.qikqiak.com/post/drone-with-k8s-1/">第一篇文章中我们介绍了如何在 Kubernetes 集群中使用 Helm 来快速安装 Drone</a>，并且用 <a href="https://www.qikqiak.com/post/automatic-kubernetes-ingress-https-with-lets-encrypt/">cert-manager</a> 给 Drone 应用做了自动化 HTTPS。</p>
+<p>本文我们将创建一个简单的 Golang 应用，通过 Drone 的 Pipeline 来自动化构建 Docker 镜像。</p>
+<h2 id="go-项目">Go 项目</h2>
+<p>我们这里使用 Go 语言中流行的 web 框架 gin 创建一个简单的 web 服务，在 GitHub 上创建一个名为 drone-k8s-demo 的代码仓库，Clone 到本地，添加名为 main.go 的文件，内容如下：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#ff79c6">package</span> main
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">import</span> (
+</span></span><span style="display:flex;"><span>  <span style="color:#f1fa8c">&#34;net/http&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f1fa8c">&#34;github.com/gin-gonic/gin&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f1fa8c">&#34;github.com/sirupsen/logrus&#34;</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">main</span>() {
+</span></span><span style="display:flex;"><span>  r <span style="color:#ff79c6">:=</span> gin.<span style="color:#50fa7b">Default</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  r.<span style="color:#50fa7b">GET</span>(<span style="color:#f1fa8c">&#34;/health&#34;</span>, <span style="color:#8be9fd;font-style:italic">func</span>(c <span style="color:#ff79c6">*</span>gin.Context) {
+</span></span><span style="display:flex;"><span>    c.<span style="color:#50fa7b">JSON</span>(http.StatusOK, gin.H {
+</span></span><span style="display:flex;"><span>      <span style="color:#f1fa8c">&#34;health&#34;</span>: <span style="color:#ff79c6">true</span>,
+</span></span><span style="display:flex;"><span>    })
+</span></span><span style="display:flex;"><span>  })
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">:=</span> r.<span style="color:#50fa7b">Run</span>(<span style="color:#f1fa8c">&#34;:8080&#34;</span>); err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+</span></span><span style="display:flex;"><span>    logrus.<span style="color:#50fa7b">WithError</span>(err).<span style="color:#50fa7b">Fatal</span>(<span style="color:#f1fa8c">&#34;Couldn&#39;t listen&#34;</span>)
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>该服务监听在 8080 端口，提供了一个简单的<code>/health</code>路由，返回一个简单的 JSON 消息表示应用状态状态，本地我们使用的是 go1.11.4 版本，所以可以通过 Go Modules 来管理应用的依赖，在项目目录下面执行 mod init：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ go mod init dronek8s
+</span></span></code></pre></div><p>如果你对 Go Modules 的使用还不是很熟悉，可以查看我们前面的文章<a href="https://www.qikqiak.com/post/go-modules-usage/">Go Modules 基本使用</a>。</p>
+<blockquote>
+<p>项目完整代码可以在 GitHub 上获得：<a href="https://github.com/cnych/drone-k8s-demo">https://github.com/cnych/drone-k8s-demo</a></p>
+</blockquote>
+<h2 id="docker-镜像">Docker 镜像</h2>
+<p>现在我们需要为项目添加用于 Docker 镜像构建的 Dockerfile 文件，当然我们可以使用多阶段构建来将项目的构建和打包工作放在同一个 Dockerfile 文件中，我们这里为了演示 Drone 的 Pipeline 使用就将这两个步骤分开，在项目根目录下面创建 Dockerfile 文件，内容如下：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>FROM alpine
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>WORKDIR /home
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 修改alpine源为阿里云</span>
+</span></span><span style="display:flex;"><span>RUN sed -i <span style="color:#f1fa8c">&#39;s/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g&#39;</span> /etc/apk/repositories <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#f1fa8c">\
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c"></span>  apk update <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#f1fa8c">\
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c"></span>  apk upgrade <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#f1fa8c">\
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c"></span>  apk add ca-certificates <span style="color:#ff79c6">&amp;&amp;</span> update-ca-certificates <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#f1fa8c">\
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c"></span>  apk add --update tzdata <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#f1fa8c">\
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c"></span>  rm -rf /var/cache/apk/*
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>COPY demo-app /home/
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>ENV <span style="color:#8be9fd;font-style:italic">TZ</span><span style="color:#ff79c6">=</span>Asia/Shanghai
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>EXPOSE <span style="color:#bd93f9">8080</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>ENTRYPOINT ./demo-app
+</span></span></code></pre></div><p>可以看到我们这里是通过将 demo-app 文件拷贝到镜像中去执行来构建镜像的，那么我们就得在项目中将应用构建成一个名为 demo-app 的应用，在根目录下面执行 go build 命令：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ <span style="color:#8be9fd;font-style:italic">CGO_ENABLED</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span> <span style="color:#8be9fd;font-style:italic">GOOS</span><span style="color:#ff79c6">=</span>linux <span style="color:#8be9fd;font-style:italic">GOARCH</span><span style="color:#ff79c6">=</span>amd64 go build -o demo-app
+</span></span><span style="display:flex;"><span>$ ls
+</span></span><span style="display:flex;"><span>Dockerfile README.md  demo-app   go.mod     go.sum     main.go
+</span></span></code></pre></div><p>这个时候我们就可以在本地来构建 Docker 镜像了：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ docker build -t cnych/drone-k8s-demo .
+</span></span><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span>Successfully built 85a88c8e944a
+</span></span><span style="display:flex;"><span>$ docker images
+</span></span><span style="display:flex;"><span>cnych/drone-k8s-demo    latest  85a88c8e944a    <span style="color:#bd93f9">43</span> hours ago    31.1MB
+</span></span></code></pre></div><p>这样我们就将 Golang 项目打包成 Docker 镜像了，然后可以在本地运行容器来验证：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ docker run --rm --name drone-k8s-demo -p 8080:8080 cnych/drone-k8s-demo
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>GIN-debug<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">[</span>WARNING<span style="color:#ff79c6">]</span> Creating an Engine instance with the Logger and Recovery middleware already attached.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>GIN-debug<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">[</span>WARNING<span style="color:#ff79c6">]</span> Running in <span style="color:#f1fa8c">&#34;debug&#34;</span> mode. Switch to <span style="color:#f1fa8c">&#34;release&#34;</span> mode in production.
+</span></span><span style="display:flex;"><span> - using env:	<span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">GIN_MODE</span><span style="color:#ff79c6">=</span>release
+</span></span><span style="display:flex;"><span> - using code:	gin.SetMode<span style="color:#ff79c6">(</span>gin.ReleaseMode<span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>GIN-debug<span style="color:#ff79c6">]</span> GET    /health                   --&gt; main.main.func1 <span style="color:#ff79c6">(</span><span style="color:#bd93f9">3</span> handlers<span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>GIN-debug<span style="color:#ff79c6">]</span> Listening and serving HTTP on 127.0.0.1:8080
+</span></span></code></pre></div><p>访问 health 接口：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ curl http://127.0.0.1:8080/health
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;health&#34;</span>:true<span style="color:#ff79c6">}</span>
+</span></span></code></pre></div><p>看到这里就证明我们的 Docker 镜像构建成功了。</p>
+<h2 id="pipeline">Pipeline</h2>
+<p>上面我们用手动的方法实现了 Golang 项目打包成 Docker 镜像的过程，如果到这里就结束了的话似乎就和 Drone 没有什么关系了，那么我们可以利用 Drone 来做什么呢？简单来说就是将上面我们手动的过程自动化。Drone 的工作方式和 Travis CI、GitLab CI 都比较类似，我们需要在项目根目录下面创建一个名为<code>.drone.yml</code>的文件，我们需要在该文件中来编写用于自动化打包镜像的 Pipeline，内容如下：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: pipeline
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">name</span>: default
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">steps</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff79c6">name</span>: linter
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">image</span>: golang:latest
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">environment</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">GOPROXY</span>: https://mirrors.aliyun.com/goproxy/
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">commands</span>:
+</span></span><span style="display:flex;"><span>      - go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+</span></span><span style="display:flex;"><span>      - golangci-lint run
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff79c6">name</span>: build
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">image</span>: golang:latest
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">environment</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">GOPROXY</span>: https://mirrors.aliyun.com/goproxy/
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">commands</span>:
+</span></span><span style="display:flex;"><span>      - CGO_ENABLED=0 go build -o demo-app
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff79c6">name</span>: docker
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">image</span>: plugins/docker
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">settings</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">repo</span>: cnych/drone-k8s-demo
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">use_cache</span>: <span style="color:#ff79c6">true</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">username</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">from_secret</span>: docker_username
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">password</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">from_secret</span>: docker_password
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">tags</span>:
+</span></span><span style="display:flex;"><span>      - latest
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">when</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">event</span>: push
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">branch</span>: master
+</span></span></code></pre></div><p>我们定义了一个 pipeline，其中构建过程有 3 个步骤，linter、build、docker，当然对于一般的项目来说应该还需要有单元测试的步骤，在每一个步骤中都是通过一个镜像去进行任务构建的，比如 linter 和 build 都是在一个<code>golang:latest</code>的镜像中执行任务，在 build 阶段中就是执行上面我们手动的 go build 命令，然后在 docker 阶段是使用的是<code>plugins/docker</code>这个官方插件，在该镜像中可以指定 Dockerfile 的路径，镜像的 tag，以及镜像仓库的用户名和密码。</p>
+<!-- raw HTML omitted -->
+<p>我们这里的 username 和 password 并没有名为提供，而是通过 secret 的方式，<code>username.from_secret=docker_username，password.from_secret=docker_password</code>。这两个 secret 我们可以通过 drone cli 来创建，也可以直接通过 Drone 的网页来进行配置。</p>
+<p>将项目推送到 GitHub，然后在 Drone 页面上启用项目，在项目设置项下面添加 Pipeline 中需要使用到的 Secret：</p>
+<p><img src="https://picdn.youdianzhishi.com/images/drone-add-secret.png" alt="drone add secret"></p>
+<p>这样用于构建的 Drone Pipeline 就编写完成了，这个时候我们只需要将<code>.drone.yml</code>文件推送到 GitHub 仓库中去，正常就会触发自动构建了：</p>
+<p><img src="https://picdn.youdianzhishi.com/images/drone-pipeline.png" alt="drone pipeline"></p>
+<p>在 Drone 的页面中可以看到我们在 Pipeline 中定义的每一个步骤的构建日志以及时长，如果出现了错误就可以对应的去排查即可。</p>
+<p>此外，由于我们的 Drone 是部署在 Kubernetes 集群中，而且我们没有启动 Agent，所以当 Drone 有任务需要构建的时候会自动的启动一个 Job 对象来构建：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl get job -n kube-ops
+</span></span><span style="display:flex;"><span>NAME                             COMPLETIONS   DURATION   AGE
+</span></span><span style="display:flex;"><span>......
+</span></span><span style="display:flex;"><span>drone-job-26-lo6kxn8f4dde6t8n5   1/1           7m1s       22h
+</span></span><span style="display:flex;"><span>drone-job-27-aibtb6jahfq8dg88t   1/1           6m14s      11m
+</span></span><span style="display:flex;"><span>drone-job-28-lgwtvdybpxwwgxwxl   0/1           12s        12s
+</span></span><span style="display:flex;"><span>$ kubectl get pods -n kube-ops
+</span></span><span style="display:flex;"><span>......
+</span></span><span style="display:flex;"><span>drone-job-28-lgwtvdybpxwwgxwxl-hs28f          1/1     Running     <span style="color:#bd93f9">0</span>          2m3s
+</span></span><span style="display:flex;"><span>drone-job-26-lo6kxn8f4dde6t8n5-bbw8t          0/1     Completed   <span style="color:#bd93f9">0</span>          22h
+</span></span><span style="display:flex;"><span>drone-job-27-aibtb6jahfq8dg88t-qkmn5          0/1     Completed   <span style="color:#bd93f9">0</span>          12m
+</span></span></code></pre></div><p>Job 在 Drone 的任务构建完成后并不会自动销毁，Pod 的状态只会变成 Completed 状态，所以需要我们手动的去删除这些已经构建完成的 Job 资源对象。</p>
+<blockquote>
+<p>如果想要自动删除这些完成的 Job 资源对象的话，我们可以在 APIServer 中启用 <code>TTLAfterFinished</code> 这个 <a href="https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/">Feature Gates</a> 也是可以的。</p>
+</blockquote>
+<p>到这里我们就实现了使用 Drone Pipeline 来自动将我们的项目打包成 Docker 镜像，并推送到了 DockerHub，下篇文章我们再来和大家学习如何使用 Helm 将应用部署到 Kubernetes 集群中去。</p>
+<!-- raw HTML omitted -->
+
+          <h2>微信公众号</h2>
+<p>
+  扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+  kubernetes 讨论群里面共同学习。
+</p>
+<img
+  src="https://picdn.youdianzhishi.com/images/qrcode.png"
+  alt="wechat-account-qrcode"
+/>
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-1/">使用 Kubernetes Helm 安装 Drone</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-jenkins1/">基于 kubernetes 的动态 jenkins slave</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-jenkins3/">Jenkins Blue Ocean 的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-jenkins2/">Jenkins Pipeline 部署 Kubernetes 应用(二)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/">在 Kubernetes 上安装 Gitlab</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-auth-via-oidc/">通过 GitHub OAuth 和 Dex 访问 Kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/complete-cicd-demonstrate-2/">基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(二)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/helm-chart-tips-and-tricks/">Helm Chart 模板开发技巧</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/install-nginx-ingress/">nginx-ingress 的安装使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/complete-cicd-demonstrate-1/">基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(一)</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/drone-with-k8s-1/" data-toggle="tooltip" data-placement="top" title="使用 Kubernetes Helm 安装 Drone">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/drone-with-k8s-3/" data-toggle="tooltip" data-placement="top" title="Drone 结合 Helm 部署 Kubernetes 应用">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '使用 Drone Pipeline 构建 Docker 镜像',
+        createIssueManually: true,
+        id: 'drone-with-k8s-2',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -977,7 +650,7 @@ drone-job-27-aibtb6jahfq8dg88t-qkmn5          <span style="color:#bd93f9">0</spa
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -986,7 +659,7 @@ drone-job-27-aibtb6jahfq8dg88t-qkmn5          <span style="color:#bd93f9">0</spa
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -995,7 +668,7 @@ drone-job-27-aibtb6jahfq8dg88t-qkmn5          <span style="color:#bd93f9">0</spa
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -1004,158 +677,121 @@ drone-job-27-aibtb6jahfq8dg88t-qkmn5          <span style="color:#bd93f9">0</spa
                   </span>
                 </a>
               </li>
-
-              <li>
-                <a href="https://www.qikqiak.com/index.xml" title="RSS">
-                  <span class="fa-stack fa-lg">
-                    <i class="fa fa-circle fa-stack-2x"></i>
-                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
-                  </span>
-                </a>
-              </li>
-            </ul>
-            <p class="credits copyright text-muted">
-              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/">阳明的博客</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/archive/">归档</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/friend/">友链</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://beian.miit.gov.cn/" target="_blank"
-                >蜀ICP备11027319号-5</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
-                >kubernetes.io</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
-                >Kubernetes中文社区</a
-              >
-            </p>
-            <p class="text-center text-muted">
-              <script
-                async
-                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
-              ></script>
-              <span id="busuanzi_container_site_pv" style="display: none">
-                本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
               </span>
-              &nbsp;&bull;&nbsp;
-              <span id="busuanzi_container_site_uv" style="display: none">
-                访客数<span id="busuanzi_value_site_uv"></span>人次
-              </span>
-            </p>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
 
-            <p class="credits theme-by text-muted">
-              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
-              &nbsp;&bull;&nbsp; 主题
-              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
-              移植自
-              <a href="https://github.com/rootsongjc/beautifulhugo"
-                >Beautiful Hugo</a
-              >
-            </p>
-          </div>
-        </div>
+          &nbsp;&bull;&nbsp;
+          2023
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.115.4</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+          
+        </p>
       </div>
-    </footer>
+    </div>
+  </div>
+</footer>
 
-    <script
-      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
-      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
-    ></script>
 
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "UA-69668147-3");
-    </script>
-    <script>
-      (function () {
-        var bp = document.createElement("script");
-        var curProtocol = window.location.protocol.split(":")[0];
-        if (curProtocol === "https") {
-          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
-        } else {
-          bp.src = "http://push.zhanzhang.baidu.com/push.js";
-        }
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(bp, s);
-      })();
-    </script>
-    <script>
-      $(document).ready(function () {
-        var int = setInterval(fixCount, 50);
+<script src='https://www.qikqiak.com/js/bundle.min.af02a2d23b6651a566f0135a12e65fc2560faa7a969b3d1ad58d0afe0c9164ae.js' integrity='sha256-rwKi0jtmUaVm8BNaEuZfwlYPqnqWmz0a1Y0K/gyRZK4='></script>
 
-        var initPVCount = 584976;
-        var initUVCount = 153191;
-        function fixCount() {
-          if ($("#busuanzi_container_site_pv").css("display") != "none") {
-            $("#busuanzi_value_site_pv").html(
-              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
-            );
-            clearInterval(int);
-          }
-          if ($("#busuanzi_container_site_uv").css("display") != "none") {
-            $("#busuanzi_value_site_uv").html(
-              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
-            );
-            clearInterval(int);
-          }
-        }
-      });
-    </script>
-    <script>
-      (function (w, d, s, id) {
-        if (typeof w.webpushr !== "undefined") return;
-        w.webpushr =
-          w.webpushr ||
-          function () {
-            (w.webpushr.q = w.webpushr.q || []).push(arguments);
-          };
-        var js,
-          fjs = d.getElementsByTagName(s)[0];
-        js = d.createElement(s);
-        js.id = id;
-        js.src = "https://cdn.webpushr.com/app.min.js";
-        fjs.parentNode.appendChild(js);
-      })(window, document, "script", "webpushr-jssdk");
-      webpushr(
-        "init",
-        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
-      );
-    </script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
-    ></script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
-    ></script>
-    <script type="text/javascript">
-      $(".carousel").slick({
-        dots: true,
-        arrows: true,
-        autoplay: true,
-        autoplaySpeed: 4000,
-        infinite: true,
-        speed: 500,
-        fade: true,
-        cssEase: "linear",
-        centerMode: true,
-        prevArrow: '<button type="button" class="slick-prev"></button>',
-        nextArrow: '<button type="button" class="slick-next"></button>',
-      });
-    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
   </body>
 </html>
+

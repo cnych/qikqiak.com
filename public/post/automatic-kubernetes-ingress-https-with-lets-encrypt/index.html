@@ -1,1012 +1,667 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
-    />
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-    <title>
-      Kubernetes Ingress 自动化
-      HTTPS-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
-    </title>
-    <meta property="og:title" content="Kubernetes Ingress 自动化 HTTPS" />
-    <meta name="twitter:title" content="Kubernetes Ingress 自动化 HTTPS" />
 
-    <meta
-      name="description"
-      content="使用 Let&#39;s Encrypt 实现 Kubernetes Ingress 自动化 HTTPS"
-    />
-    <meta
-      property="og:description"
-      content="使用 Let&#39;s Encrypt 实现 Kubernetes Ingress 自动化 HTTPS"
-    />
-    <meta
-      name="twitter:description"
-      content="使用 Let&#39;s Encrypt 实现 Kubernetes Ingress 自动化 HTTPS"
-    />
-    <meta name="author" content="" />
-    <link
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-      rel="icon"
-      type="image/x-icon"
-    />
-    <link
-      rel="apple-touch-icon"
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      property="og:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      name="twitter:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta name="twitter:card" content="summary" />
-    <meta
-      property="og:url"
-      content="https://www.qikqiak.com/post/automatic-kubernetes-ingress-https-with-lets-encrypt/"
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="阳明的博客" />
+  <title>Kubernetes Ingress 自动化 HTTPS-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="Kubernetes Ingress 自动化 HTTPS" />
+  <meta name="twitter:title" content="Kubernetes Ingress 自动化 HTTPS" />
 
-    <meta name="generator" content="Hugo 0.55.6" />
-    <link
-      rel="canonical"
-      href="https://www.qikqiak.com/post/automatic-kubernetes-ingress-https-with-lets-encrypt/"
-    />
-    <link
-      rel="alternate"
-      href="https://www.qikqiak.com/index.xml"
-      type="application/rss+xml"
-      title="阳明的博客"
-    />
+  <meta name="description" content="使用 Let&#39;s Encrypt 实现 Kubernetes Ingress 自动化 HTTPS">
+  <meta property="og:description" content="使用 Let&#39;s Encrypt 实现 Kubernetes Ingress 自动化 HTTPS">
+  <meta name="twitter:description" content="使用 Let&#39;s Encrypt 实现 Kubernetes Ingress 自动化 HTTPS">
+  <meta name="author" content=""/>
+  <link href="https://picdn.youdianzhishi.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://picdn.youdianzhishi.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/automatic-kubernetes-ingress-https-with-lets-encrypt/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
 
-    <link
-      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
-      rel="stylesheet"
-    />
+  <link rel="canonical" href="https://www.qikqiak.com/post/automatic-kubernetes-ingress-https-with-lets-encrypt/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
-    <link
-      rel="stylesheet"
-      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
-      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
-    />
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
 
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
-    />
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a6b62363fe57848ad01efa2a5d1bbb1047c2ffb71b53d8aeb42bc5ed5c77ea7c.css' integrity='sha256-prYjY/5XhIrQHvoqXRu7EEfC/7cbU9iutCvF7Vx36nw='>
 
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
     <!--[if lt IE 9]>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-      <link
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-        rel="stylesheet"
-      />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <![endif]-->
-    <meta
-      name="google-site-verification"
-      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
-    />
-    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-    <meta name="keywords" content="kubernetes, ingress, https, traefik" />
-    <script>
-      var _hmt = _hmt || [];
-      (function () {
-        var hm = document.createElement("script");
-        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(hm, s);
-      })();
-    </script>
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, ingress, https, traefik">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
 
-    <script type="application/javascript">
-      var doNotTrack = false;
-      if (!doNotTrack) {
-        window.ga =
-          window.ga ||
-          function () {
-            (ga.q = ga.q || []).push(arguments);
-          };
-        ga.l = +new Date();
-        ga("create", "UA-69668147-3", "auto");
 
-        ga("send", "pageview");
-      }
-    </script>
-    <script async src="https://www.google-analytics.com/analytics.js"></script>
-  </head>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-      <div class="container">
-        <div class="navbar-header">
-          <button
-            type="button"
-            class="navbar-toggle"
-            data-toggle="collapse"
-            data-target="#main-navbar"
-          >
-            <span class="sr-only">切换导航</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a
-            class="navbar-brand"
-            href="https://www.qikqiak.com/"
-            title="阳明的博客"
-          >
-            <img
-              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
-              style="margin-top: -5px; height: 32px"
-              alt="阳明的博客"
-            />
-          </a>
-        </div>
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://picdn.youdianzhishi.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
 
-        <div class="collapse navbar-collapse" id="main-navbar">
-          <ul class="nav navbar-nav navbar-right">
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-
+          
+        
+          
             <li>
-              <a
-                title="课程"
-                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
-                >课程</a
-              >
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/archives">Archive</a>
-
-                <a href="https://www.qikqiak.com/tags">tags</a>
-
-                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-
-                <a href="https://www.qikqiak.com/tags/python">python</a>
-
-                <a href="https://www.qikqiak.com/tags/django">django</a>
-
-                <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-
-                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-
-                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-
-                <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/"
-                >关于</a
-              >
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
             </li>
-
+          
+        
+          
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
+          
+        
 
-            <li>
-              <a
-                href="#modalSearch"
-                data-toggle="modal"
-                data-target="#modalSearch"
-                style="outline: none"
-              >
-                <span
-                  id="searchGlyph"
-                  class="glyphicon glyphicon-search"
-                ></span>
-              </a>
-            </li>
-          </ul>
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
         </div>
-      </div>
-    </nav>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-    <div id="modalSearch" class="modal fade" role="dialog">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal">
-              &times;
-            </button>
-            <h4 class="modal-title">搜索</h4>
-          </div>
-          <div class="modal-body">
-            <div class="aa-input-container" id="aa-input-container">
-              <input
-                type="search"
-                id="aa-search-input"
-                class="aa-input-search"
-                placeholder="Search for titles or URIs..."
-                name="search"
-                autocomplete="off"
-              />
-              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-                <path
-                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
-                />
-              </svg>
-            </div>
-            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
 
-            <script>
-              var client = algoliasearch(
-                "1JDRAS0AZR",
-                "8804ac109158bb3bb60d74ce98fa332f"
-              );
-              var index = client.initIndex("prod_blog");
-
-              autocomplete(
-                "#aa-search-input",
-                { hint: false },
-                {
-                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
-
-                  displayKey: "name",
-
-                  templates: {
-                    suggestion: function (suggestion) {
-                      return (
-                        "<span>" +
-                        '<a href="https://www.qikqiak.com/post/' +
-                        suggestion.slug +
-                        '">' +
-                        suggestion._highlightResult.title.value +
-                        "</a></span>"
-                      );
-                    },
-                  },
-                }
-              );
-            </script>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">
-              close
-            </button>
-          </div>
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div
-      id="header-big-imgs"
-      data-num-img="1"
-      data-img-src-1="https://www.qikqiak.com/img/posts/photo-1543970256-c86ba45b0d9b.jpeg"
-      data-img-desc-1="You don’t have to be at the top to enjoy the view"
-    ></div>
+    
+  
+  
+  
 
-    <header class="header-section has-img">
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://www.qikqiak.com/img/posts/photo-1543970256-c86ba45b0d9b.jpeg" data-img-desc-1="You don’t have to be at the top to enjoy the view"></div>
+  
+
+  <header class="header-section has-img">
+    
       <div class="intro-header big-img">
+        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>Kubernetes Ingress 自动化 HTTPS</h1>
+                  
+                    
+                      <h2 class="post-subheading">使用 Let&#39;s Encrypt 实现 Kubernetes Ingress 自动化 HTTPS</h2>
+                    
+                  
+                  
+                    <span class="post-meta">
+  发表于 December 5, 2018  
+</span>
 
-                <h2 class="post-subheading">
-                  使用 Let&#39;s Encrypt 实现 Kubernetes Ingress 自动化 HTTPS
-                </h2>
-
-                <span class="post-meta"> 发表于 December 5, 2018 </span>
+                  
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline"></span>
+        <span class="img-desc" style="display: inline;"></span>
       </div>
-
-      <div class="intro-header no-img">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-              <div class="post-heading">
-                <h1>Kubernetes Ingress 自动化 HTTPS</h1>
-
-                <h2 class="post-subheading">
-                  使用 Let&#39;s Encrypt 实现 Kubernetes Ingress 自动化 HTTPS
-                </h2>
-
-                <span class="post-meta"> 发表于 December 5, 2018 </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <div class="container" role="main">
-      <div class="row">
-        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-          <div>
-            <h5 id="tags" style="margin-top: 30px">
-              标签:
-
-              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
-              &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/ingress/">ingress</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/traefik/">traefik</a> &nbsp;
-            </h5>
-          </div>
-
-          <article
-            role="main"
-            class="blog-post"
-            itemprop="articleBody"
-            id="content"
-          >
-            <aside class="toc">
-              <nav id="TableOfContents">
-                <ul>
-                  <li>
-                    <ul>
-                      <li><a href="#部署">部署</a></li>
-                      <li><a href="#创建证书签发服务">创建证书签发服务</a></li>
-                      <li><a href="#测试">测试</a></li>
-                    </ul>
-                  </li>
-                </ul>
-              </nav>
-            </aside>
-
-            <p>
-              我们知道<code>HTTPS</code>的服务非常安全，Google
-              现在对非<code>HTTPS</code>的服务默认是拒绝的，而且还能避免国内各种乱七八糟的劫持，所以启用<code>HTTPS</code>服务是真的非常有必要的。一些正规机构颁发的<code>CA</code>证书费用又特别高，不过比较幸运的是也有免费的午餐
-              -
-              <code>Let's Encrypt</code
-              >，虽然只有90天的证书有效期，但是我们完全可以在证书失效之前，重新生成证书替换掉。在<code>Kubernetes</code>集群中就更方便了，我们可以通过
-              Kubernetes Ingress 和 Let&rsquo;s Encrypt 实现外部服务的自动化
-              HTTPS。
-            </p>
-
-            <p>
-              在<code>Kubernetes</code>集群中使用 HTTPS
-              协议，需要一个证书管理器、一个证书自动签发服务，主要通过 Ingress
-              来发布 HTTPS 服务，因此需要<code>Ingress Controller</code
-              >并进行配置，启用 HTTPS 及其路由。
-            </p>
-
-            <figure>
-              <img
-                src="https://www.qikqiak.com/img/posts/cert-manager-structrue.jpg"
-                alt="cert-manager-structrue"
-              />
-              <figcaption>cert-manager-structrue</figcaption>
-            </figure>
-
-            <h2 id="部署">部署</h2>
-
-            <p>
-              我们这里用来管理 SSL/TLS 证书的组件是<code>Cert manager</code
-              >，它对于每一个 ingress endpoint 将会自动创建一个新的证书，当
-              certificates 过期时还能自动更新，除此之外，Cert manager
-              也可以和其它的 providers 一起工作，例如 HashiCorp
-              Vault。为了方便我们这里使用<code>Helm</code>来部署即可。
-            </p>
-
-            <blockquote>
-              <p>
-                如果你对<code>Helm</code>还不是很熟悉，可以参考前面我的<a
-                  href="https://www.qikqiak.com/k8s-book/docs/42.Helm%E5%AE%89%E8%A3%85.html"
-                  >Helm 系列文章</a
-                >
-              </p>
-            </blockquote>
-
-            <p>
-              在使用的时候我们需要配置一个缺省的<a
-                href="http://docs.cert-manager.io/en/latest/reference/clusterissuers.html"
-                >cluster issuer</a
-              >，当部署<code>Cert manager</code>的时候，用于支持<code
-                >kubernetes.io/tls-acme: &quot;true&quot;</code
-              >annotation 来自动化 TLS：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">ingressShim.defaultIssuerName<span style="color:#ff79c6">=</span>letsencrypt-prod
-ingressShim.defaultIssuerKind<span style="color:#ff79c6">=</span>ClusterIssuer</code></pre>
-            </div>
-            <p>运行下面的命令部署 Cert manager：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ helm install --name cert-manager --namespace kube-system --set ingressShim.defaultIssuerName<span style="color:#ff79c6">=</span>letsencrypt-prod --set ingressShim.defaultIssuerKind<span style="color:#ff79c6">=</span>ClusterIssuer stable/cert-manager --version v0.5.2
-NAME:   cert-manager
-LAST DEPLOYED: Wed Dec  <span style="color:#bd93f9">5</span> <span style="color:#bd93f9">18</span>:04:56 <span style="color:#bd93f9">2018</span>
-NAMESPACE: kube-system
-STATUS: DEPLOYED
-
-RESOURCES:
-<span style="color:#ff79c6">==</span>&gt; v1/ServiceAccount
-NAME          SECRETS  AGE
-cert-manager  <span style="color:#bd93f9">1</span>        <span style="color:#8be9fd;font-style:italic">0s</span>
-
-<span style="color:#ff79c6">==</span>&gt; v1beta1/CustomResourceDefinition
-NAME                               AGE
-certificates.certmanager.k8s.io    0s
-clusterissuers.certmanager.k8s.io  0s
-issuers.certmanager.k8s.io         <span style="color:#8be9fd;font-style:italic">0s</span>
-
-<span style="color:#ff79c6">==</span>&gt; v1beta1/ClusterRole
-cert-manager  <span style="color:#8be9fd;font-style:italic">0s</span>
-
-<span style="color:#ff79c6">==</span>&gt; v1beta1/ClusterRoleBinding
-NAME          AGE
-cert-manager  <span style="color:#8be9fd;font-style:italic">0s</span>
-
-<span style="color:#ff79c6">==</span>&gt; v1beta1/Deployment
-NAME          DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
-cert-manager  <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>           <span style="color:#bd93f9">0</span>          <span style="color:#8be9fd;font-style:italic">0s</span>
-
-<span style="color:#ff79c6">==</span>&gt; v1/Pod<span style="color:#ff79c6">(</span>related<span style="color:#ff79c6">)</span>
-NAME                          READY  STATUS             RESTARTS  AGE
-cert-manager-dd6856945-9ltk9  <span style="color:#bd93f9">0</span>/1    ContainerCreating  <span style="color:#bd93f9">0</span>         0s
-
-
-NOTES:
-cert-manager has been deployed successfully!
-
-In order to begin issuing certificates, you will need to <span style="color:#8be9fd;font-style:italic">set</span> up a ClusterIssuer
-or Issuer resource <span style="color:#ff79c6">(</span><span style="color:#ff79c6">for</span> example, by creating a <span style="color:#f1fa8c">&#39;letsencrypt-staging&#39;</span> issuer<span style="color:#ff79c6">)</span>.
-
-More information on the different types of issuers and how to configure them
-can be found in our documentation:
-
-https://cert-manager.readthedocs.io/en/latest/reference/issuers.html
-
-For information on how to configure cert-manager to automatically provision
-Certificates <span style="color:#ff79c6">for</span> Ingress resources, take a look at the <span style="color:#f1fa8c">`</span>ingress-shim<span style="color:#f1fa8c">`</span>
-documentation:
-
-https://cert-manager.readthedocs.io/en/latest/reference/ingress-shim.html</code></pre>
-            </div>
-            <p>安装完成后，然后查看<code>Pod</code>运行状态：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl get pod -n kube-system --selector<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>cert-manager
-NAME                                        READY     STATUS    RESTARTS   AGE
-cert-manager-cert-manager-7797579f9-m4dbc   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          1m</code></pre>
-            </div>
-            <p>
-              除此之外，安装完成后<code>Cert manager</code>还提供了一些<a
-                href="https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/"
-                >Kubernetes custom resources</a
-              >：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl get crd
-NAME                                         AGE
-certificates.certmanager.k8s.io              1m
-clusterissuers.certmanager.k8s.io            1m
-issuers.certmanager.k8s.io                   1m</code></pre>
-            </div>
-            <h2 id="创建证书签发服务">创建证书签发服务</h2>
-
-            <p>
-              <code>Cert manager</code
-              >安装后，接下来需要定义上面的<code>letsencrypt-prod</code>这个<code
-                >cluster issuer</code
-              >，这里使用上面的<code>clusterissuers.certmanager.k8s.io</code>这个<code>CRD</code>来定义：（cluster-issuer.yaml）
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">apiVersion: certmanager.k8s.io/v1alpha1
-kind: ClusterIssuer
-metadata:
-  name: letsencrypt-prod
-spec:
-  acme:
-    server: https://acme-v02.api.letsencrypt.org/directory
-    email: icnych@gmail.com
-    privateKeySecretRef:
-      name: letsencrypt-prod
-    http01: {}</code></pre>
-            </div>
-            <p>然后直接创建这个<code>ClusterIssuer</code>资源：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl create -f cluster-issuer.yaml
-clusterissuer.certmanager.k8s.io <span style="color:#f1fa8c">&#34;letsencrypt-prod&#34;</span> created
-$ kubectl get clusterissuer
-NAME               AGE
-letsencrypt-prod   16s</code></pre>
-            </div>
-            <h2 id="测试">测试</h2>
-
-            <p>
-              上面我们已经安装了<code>Cert manager</code
-              >，定义了<code>ClusterIssuer</code>，接下来我们来配置 HTTPS
-              去访问我们的 Kubernetes Dashboard 的服务，Dashboard
-              的部署我们这里就不多说了，直接添加一个 Ingress
-              资源对象即可：(dashboard-ingress.yaml)
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  name: kube-ui
-  namespace: kube-system
-  annotations:
-    kubernetes.io/ingress.class: <span style="color:#f1fa8c">&#34;traefik&#34;</span>
-    kubernetes.io/tls-acme: <span style="color:#f1fa8c">&#34;true&#34;</span>
-spec:
-  tls:
-  - hosts:
-    - k8sui.qikqiak.com
-    secretName: k8sui-tls
-  rules:
-  - host: k8sui.qikqiak.com
-    http:
-      paths:
-      - path: <span style="color:#f1fa8c">&#39;/&#39;</span>
-        backend:
-          serviceName: kubernetes-dashboard
-          servicePort: <span style="color:#bd93f9">443</span></code></pre>
-            </div>
-            <p>
-              这里需要注意的是上面我们添加的两个<code>annotations</code>非常重要，这个将告诉
-              Cert Manager 去生成证书，然后由于我们这里要使用
-              HTTPS，所以我们需要添加一个 tls
-              证书，而证书就是通过<code>k8sui-tls</code>这个 Secret
-              对象来提供的，要注意的是这个 Secret 对象并不是我们手动创建的，而是
-              Cert Manager
-              自动创建的证书对应的对应。然后直接创建这个资源对象即可：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl create -f dashboard-ingress.yaml</code></pre>
-            </div>
-            <blockquote>
-              <p>
-                当然如果需要在公网中进行访问，我们还需要将我们这里的域名解析到
-                Ingress Controller
-                所在的任意一个节点，或者在本地的<code>/etc/hosts</code>中加上映射也是可以的。
-              </p>
-            </blockquote>
-
-            <p>
-              创建完成后隔一会儿我们可以看到会多出现一个随机名称的 Ingress
-              对象，这个 Ingress 对象就是用来专门验证证书的：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl get ingress -n kube-system
-NAME                        HOSTS                   ADDRESS   PORTS     AGE
-cm-acme-http-solver-hl5sx   k8sui.qikqiak.com             <span style="color:#bd93f9">80</span>        37s
-kube-ui                     k8sui.qikqiak.com             <span style="color:#bd93f9">80</span>, <span style="color:#bd93f9">443</span>   41s</code></pre>
-            </div>
-            <p>
-              我们可以通过 Traefik 的 Dashboard
-              可以观察到这一变化，验证成功后，这个 Ingress 对象也自动删除了：
-              <img
-                src="https://www.qikqiak.com/img/posts/traefik-dashboard-acme.png"
-                alt="traefik-dashboard-acme"
-              />
-            </p>
-
-            <p>
-              这个时候我们可以去<code>describe</code>下我们的 Ingress 对象：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ Name:             kube-ui
-Namespace:        kube-system
-Address:
-Default backend:  default-http-backend:80 <span style="color:#ff79c6">(</span>&lt;none&gt;<span style="color:#ff79c6">)</span>
-TLS:
-  k8sui-tls terminates k8sui.qikqiak.com
-Rules:
-  Host               Path  Backends
-  ----               ----  --------
-  k8sui.qikqiak.com
-                     /   kubernetes-dashboard:443 <span style="color:#ff79c6">(</span><span style="color:#bd93f9">10</span>.244.0.31:8443<span style="color:#ff79c6">)</span>
-Annotations:
-  kubernetes.io/tls-acme:       <span style="color:#8be9fd;font-style:italic">true</span>
-  kubernetes.io/ingress.class:  traefik
-Events:
-  Type    Reason             Age   From          Message
-  ----    ------             ----  ----          -------
-  Normal  CreateCertificate  13m   cert-manager  Successfully created Certificate <span style="color:#f1fa8c">&#34;k8sui-tls&#34;</span></code></pre>
-            </div>
-            <p>
-              可以看到最后提示成功创建了 Certificate
-              对象，同样我们可以通过下面的命令获取：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl get certificate -n kube-system
-NAME        AGE
-k8sui-tls   15m</code></pre>
-            </div>
-            <p>
-              这个时候 Let&rsquo;s Encrypt
-              生成的证书文件就已经创建成功了，内容被添加到了上面 Ingress
-              中声明的 Secret 对象中：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl get secret -n kube-system
-k8sui-tls                                        kubernetes.io/tls                     <span style="color:#bd93f9">2</span>         32m</code></pre>
-            </div>
-            <p>同样我们可以看到 Cert manager 的 Pod 中的日志信息：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl logs -f cert-manager-dd6856945-4drmr -n kube-system
-......
- <span style="color:#bd93f9">1</span> sync.go:124<span style="color:#ff79c6">]</span> Certificate <span style="color:#f1fa8c">&#34;k8sui-tls&#34;</span> <span style="color:#ff79c6">for</span> ingress <span style="color:#f1fa8c">&#34;kube-ui&#34;</span> already exists
-I1205 <span style="color:#bd93f9">16</span>:27:21.372285       <span style="color:#bd93f9">1</span> sync.go:127<span style="color:#ff79c6">]</span> Certificate <span style="color:#f1fa8c">&#34;k8sui-tls&#34;</span> <span style="color:#ff79c6">for</span> ingress <span style="color:#f1fa8c">&#34;kube-ui&#34;</span> is up to date
-I1205 <span style="color:#bd93f9">16</span>:27:21.372362       <span style="color:#bd93f9">1</span> controller.go:166<span style="color:#ff79c6">]</span> ingress-shim controller: Finished processing work item <span style="color:#f1fa8c">&#34;kube-system/kube-ui&#34;</span>
-I1205 <span style="color:#bd93f9">16</span>:27:23.371967       <span style="color:#bd93f9">1</span> controller.go:181<span style="color:#ff79c6">]</span> certificates controller: syncing item <span style="color:#f1fa8c">&#39;kube-system/k8sui-tls&#39;</span>
-I1205 <span style="color:#bd93f9">16</span>:27:23.372682       <span style="color:#bd93f9">1</span> sync.go:174<span style="color:#ff79c6">]</span> Certificate kube-system/k8sui-tls scheduled <span style="color:#ff79c6">for</span> renewal in <span style="color:#bd93f9">1430</span> hours
-I1205 <span style="color:#bd93f9">16</span>:27:23.372769       <span style="color:#bd93f9">1</span> controller.go:195<span style="color:#ff79c6">]</span> certificates controller: Finished processing work item <span style="color:#f1fa8c">&#34;kube-system/k8sui-tls&#34;</span></code></pre>
-            </div>
-            <p>
-              这个时候我们就可以通过 HTTPS 去访问上面我们配置的 Dashboard
-              的服务了，在浏览器中输入:<code>https://k8sui.qikqiak.com</code>，就可以看到会跳转到登录界面了，更重要的是浏览器左上角出现了<code>绿色</code>的认证小图标了：
-              <img
-                src="https://www.qikqiak.com/img/posts/dashboard-https.png"
-                alt="dashboard https"
-              />
-            </p>
-
-            <blockquote>
-              <p>
-                需要注意的是 Dashboard 会使用自己自建的证书，所以我们需要在
-                Traefik 的配置中添加上配置<code>insecureSkipVerify = true</code
-                >，不去校验后端的证书服务，否则访问会有问题。如果你使用的是其他的
-                Ingress
-                Controller，这里配置基本上也是一致的，只需要做相应的修改即可。
-              </p>
-            </blockquote>
-
-            <p>
-              到这里我们就完成了使用<code>Let's Encrypt</code>实现<code
-                >Kubernetes Ingress</code
-              >自动化 HTTPS。
-            </p>
-
-            <p>
-              <a
-                href="https://youdianzhishi.com/web/course/1030"
-                title="从 Docker 到 Kubernetes 进阶课程"
-                ><img
-                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
-                  alt="Kubernetes进阶训练营"
-              /></a>
-            </p>
-
-            <h2>微信公众号</h2>
-            <p>
-              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
-              kubernetes 讨论群里面共同学习。
-            </p>
-            <img
-              src="https://picdn.youdianzhishi.com/images/qrcode.png"
-              alt="wechat-account-qrcode"
-            />
-
-            <div class="entry-shang text-center">
-              <p>「真诚赞赏，手留余香」</p>
-              <button class="zs show-zs btn btn-bred">赞赏</button>
-            </div>
-            <div class="zs-modal-bg"></div>
-            <div class="zs-modal-box">
-              <div class="zs-modal-head">
-                <button type="button" class="close">×</button>
-                <span class="author"
-                  ><img
-                    src="https://www.qikqiak.com/img/avatar.jpeg"
-                  />阳明</span
-                >
-                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-              </div>
-              <div class="zs-modal-body">
-                <div class="zs-modal-btns">
-                  <button class="btn btn-blink" data-num="2">2元</button>
-                  <button class="btn btn-blink" data-num="5">5元</button>
-                  <button class="btn btn-blink" data-num="10">10元</button>
-                  <button class="btn btn-blink" data-num="50">50元</button>
-                  <button class="btn btn-blink" data-num="100">100元</button>
-                  <button class="btn btn-blink" data-num="1">任意金额</button>
-                </div>
-                <div class="zs-modal-pay">
-                  <button class="btn btn-bred" id="pay-text">2元</button>
-                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-                  <img
-                    src="https://www.qikqiak.com/img/wechat-2.png"
-                    id="pay-image"
-                  />
-                </div>
-              </div>
-              <div class="zs-modal-footer">
-                <span class="zs-wechat"
-                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
-                /></span>
-              </div>
-            </div>
-
-            <div
-              class="social-share"
-              data-initialized="true"
-              style="margin-bottom: 20px; margin-top: 20px"
-            >
-              <center>
-                <a href="#" class="social-share-icon icon-weibo"></a>
-                <a href="#" class="social-share-icon icon-wechat"></a>
-                <a href="#" class="social-share-icon icon-twitter"></a>
-                <a href="#" class="social-share-icon icon-linkedin"></a>
-                <a href="#" class="social-share-icon icon-facebook"></a>
-                <a href="#" class="social-share-icon icon-qq"></a>
-                <a href="#" class="social-share-icon icon-qzone"></a>
-              </center>
-            </div>
-
-            <link
-              rel="stylesheet"
-              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
-            />
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
-          </article>
-
-          <h3>相关文章</h3>
-          <ul style="margin-bottom: 25px">
-            <li>
-              <a href="https://www.qikqiak.com/post/ingress-traefik2/"
-                >外部服务发现之 ingress(二)</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/ingress-traefik1/"
-                >外部服务发现之 ingress(一)</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/update-kubernetes-dashboard-more-secure/"
-                >kubernetes dashboard 升级之路</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/kubernetes-dashboard-wayne-usage/"
-                >360 开源 K8S Dashboard Wayne 的安装使用</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/grafana-usage-in-k8s/"
-                >Grafana 在 Kubernetes 中的使用</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/promethues-monitor-k8s-nodes/"
-                >监控 Kubernetes 集群节点</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/promethues-monitor-k8s-app/"
-                >Kubernetes 应用监控</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/kubernetes-affinity-scheduler/"
-                >重新理解 kubernetes 亲和性调度</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/kube-scheduler-introduction/"
-                >Kubernetes 调度器介绍</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/helm-hooks-usage/"
-                >Helm Hooks 的使用</a
-              >
-            </li>
-          </ul>
-
-          <ul class="pager blog-pager">
-            <li class="previous">
-              <a
-                href="https://www.qikqiak.com/post/kubernetes-dashboard-wayne-usage/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="360 开源 K8S Dashboard Wayne 的安装使用"
-                >&larr; 前一篇</a
-              >
-            </li>
-
-            <li class="next">
-              <a
-                href="https://www.qikqiak.com/post/k8s-api-resources-group-and-version/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="Kubernetes API 资源使用"
-                >后一篇 &rarr;</a
-              >
-            </li>
-          </ul>
-
-          <script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-          ></script>
-
-          <ins
-            class="adsbygoogle"
-            style="display: block"
-            data-ad-client="ca-pub-5376999672787220"
-            data-ad-slot="3700507799"
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          ></ins>
-          <script>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-          </script>
-
-          <div id="gitalk-container"></div>
-          <link
-            rel="stylesheet"
-            href="https://unpkg.com/gitalk/dist/gitalk.css"
-          />
-          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-          <script>
-            var gitalk = new Gitalk({
-              clientID: "bdb76dbb2e9d0786e350",
-              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
-              repo: "blog",
-              owner: "cnych",
-              admin: ["cnych"],
-              labels: ["gitment"],
-              title: "Kubernetes Ingress 自动化 HTTPS",
-              createIssueManually: true,
-              id: "automatic-kubernetes-ingress-https-with-lets-encrypt",
-              distractionFreeMode: true,
-            });
-            gitalk.render("gitalk-container");
-          </script>
-        </div>
-      </div>
-    </div>
-
-    <footer>
+    
+    
+    
+    <div class="intro-header no-img">
+      
       <div class="container">
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <ul class="list-inline text-center footer-links">
-              <img
-                src="https://www.qikqiak.com/img/wechatmp.png"
-                alt="k8s技术圈"
-              />
+            <div class="post-heading">
+              <h1>Kubernetes Ingress 自动化 HTTPS</h1>
+                
+                  
+                    <h2 class="post-subheading">使用 Let&#39;s Encrypt 实现 Kubernetes Ingress 自动化 HTTPS</h2>
+                  
+                
+                
+                  <span class="post-meta">
+  发表于 December 5, 2018  
+</span>
 
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/ingress/">ingress</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/traefik/">traefik</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#部署">部署</a></li>
+    <li><a href="#创建证书签发服务">创建证书签发服务</a></li>
+    <li><a href="#测试">测试</a></li>
+  </ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>我们知道<code>HTTPS</code>的服务非常安全，Google 现在对非<code>HTTPS</code>的服务默认是拒绝的，而且还能避免国内各种乱七八糟的劫持，所以启用<code>HTTPS</code>服务是真的非常有必要的。一些正规机构颁发的<code>CA</code>证书费用又特别高，不过比较幸运的是也有免费的午餐 - <code>Let's Encrypt</code>，虽然只有90天的证书有效期，但是我们完全可以在证书失效之前，重新生成证书替换掉。在<code>Kubernetes</code>集群中就更方便了，我们可以通过 Kubernetes Ingress 和 Let&rsquo;s Encrypt 实现外部服务的自动化 HTTPS。</p>
+<p>在<code>Kubernetes</code>集群中使用 HTTPS 协议，需要一个证书管理器、一个证书自动签发服务，主要通过 Ingress 来发布 HTTPS 服务，因此需要<code>Ingress Controller</code>并进行配置，启用 HTTPS 及其路由。</p>
+<p><img src="https://www.qikqiak.com/img/posts/cert-manager-structrue.jpg" alt="cert-manager-structrue"></p>
+<h2 id="部署">部署</h2>
+<p>我们这里用来管理 SSL/TLS 证书的组件是<code>Cert manager</code>，它对于每一个 ingress endpoint 将会自动创建一个新的证书，当 certificates 过期时还能自动更新，除此之外，Cert manager 也可以和其它的 providers 一起工作，例如 HashiCorp Vault。为了方便我们这里使用<code>Helm</code>来部署即可。</p>
+<blockquote>
+<p>如果你对<code>Helm</code>还不是很熟悉，可以参考前面我的<a href="https://www.qikqiak.com/k8s-book/docs/42.Helm%E5%AE%89%E8%A3%85.html">Helm 系列文章</a></p>
+</blockquote>
+<p>在使用的时候我们需要配置一个缺省的<a href="http://docs.cert-manager.io/en/latest/reference/clusterissuers.html">cluster issuer</a>，当部署<code>Cert manager</code>的时候，用于支持<code>kubernetes.io/tls-acme: &quot;true&quot;</code>annotation 来自动化 TLS：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>ingressShim.defaultIssuerName<span style="color:#ff79c6">=</span>letsencrypt-prod
+</span></span><span style="display:flex;"><span>ingressShim.defaultIssuerKind<span style="color:#ff79c6">=</span>ClusterIssuer
+</span></span></code></pre></div><p>运行下面的命令部署 Cert manager：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ helm install --name cert-manager --namespace kube-system --set ingressShim.defaultIssuerName<span style="color:#ff79c6">=</span>letsencrypt-prod --set ingressShim.defaultIssuerKind<span style="color:#ff79c6">=</span>ClusterIssuer stable/cert-manager --version v0.5.2
+</span></span><span style="display:flex;"><span>NAME:   cert-manager
+</span></span><span style="display:flex;"><span>LAST DEPLOYED: Wed Dec  <span style="color:#bd93f9">5</span> 18:04:56 <span style="color:#bd93f9">2018</span>
+</span></span><span style="display:flex;"><span>NAMESPACE: kube-system
+</span></span><span style="display:flex;"><span>STATUS: DEPLOYED
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>RESOURCES:
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">==</span>&gt; v1/ServiceAccount
+</span></span><span style="display:flex;"><span>NAME          SECRETS  AGE
+</span></span><span style="display:flex;"><span>cert-manager  <span style="color:#bd93f9">1</span>        <span style="color:#8be9fd;font-style:italic">0s</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">==</span>&gt; v1beta1/CustomResourceDefinition
+</span></span><span style="display:flex;"><span>NAME                               AGE
+</span></span><span style="display:flex;"><span>certificates.certmanager.k8s.io    0s
+</span></span><span style="display:flex;"><span>clusterissuers.certmanager.k8s.io  0s
+</span></span><span style="display:flex;"><span>issuers.certmanager.k8s.io         <span style="color:#8be9fd;font-style:italic">0s</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">==</span>&gt; v1beta1/ClusterRole
+</span></span><span style="display:flex;"><span>cert-manager  <span style="color:#8be9fd;font-style:italic">0s</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">==</span>&gt; v1beta1/ClusterRoleBinding
+</span></span><span style="display:flex;"><span>NAME          AGE
+</span></span><span style="display:flex;"><span>cert-manager  <span style="color:#8be9fd;font-style:italic">0s</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">==</span>&gt; v1beta1/Deployment
+</span></span><span style="display:flex;"><span>NAME          DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
+</span></span><span style="display:flex;"><span>cert-manager  <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>           <span style="color:#bd93f9">0</span>          <span style="color:#8be9fd;font-style:italic">0s</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">==</span>&gt; v1/Pod<span style="color:#ff79c6">(</span>related<span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span>NAME                          READY  STATUS             RESTARTS  AGE
+</span></span><span style="display:flex;"><span>cert-manager-dd6856945-9ltk9  0/1    ContainerCreating  <span style="color:#bd93f9">0</span>         0s
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>NOTES:
+</span></span><span style="display:flex;"><span>cert-manager has been deployed successfully!
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>In order to begin issuing certificates, you will need to <span style="color:#8be9fd;font-style:italic">set</span> up a ClusterIssuer
+</span></span><span style="display:flex;"><span>or Issuer resource <span style="color:#ff79c6">(</span><span style="color:#ff79c6">for</span> example, by creating a <span style="color:#f1fa8c">&#39;letsencrypt-staging&#39;</span> issuer<span style="color:#ff79c6">)</span>.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>More information on the different types of issuers and how to configure them
+</span></span><span style="display:flex;"><span>can be found in our documentation:
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>https://cert-manager.readthedocs.io/en/latest/reference/issuers.html
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>For information on how to configure cert-manager to automatically provision
+</span></span><span style="display:flex;"><span>Certificates <span style="color:#ff79c6">for</span> Ingress resources, take a look at the <span style="color:#f1fa8c">`</span>ingress-shim<span style="color:#f1fa8c">`</span>
+</span></span><span style="display:flex;"><span>documentation:
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>https://cert-manager.readthedocs.io/en/latest/reference/ingress-shim.html
+</span></span></code></pre></div><p>安装完成后，然后查看<code>Pod</code>运行状态：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl get pod -n kube-system --selector<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>cert-manager
+</span></span><span style="display:flex;"><span>NAME                                        READY     STATUS    RESTARTS   AGE
+</span></span><span style="display:flex;"><span>cert-manager-cert-manager-7797579f9-m4dbc   1/1       Running   <span style="color:#bd93f9">0</span>          1m
+</span></span></code></pre></div><p>除此之外，安装完成后<code>Cert manager</code>还提供了一些<a href="https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/">Kubernetes custom resources</a>：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl get crd
+</span></span><span style="display:flex;"><span>NAME                                         AGE
+</span></span><span style="display:flex;"><span>certificates.certmanager.k8s.io              1m
+</span></span><span style="display:flex;"><span>clusterissuers.certmanager.k8s.io            1m
+</span></span><span style="display:flex;"><span>issuers.certmanager.k8s.io                   1m
+</span></span></code></pre></div><h2 id="创建证书签发服务">创建证书签发服务</h2>
+<p><code>Cert manager</code>安装后，接下来需要定义上面的<code>letsencrypt-prod</code>这个<code>cluster issuer</code>，这里使用上面的<code>clusterissuers.certmanager.k8s.io</code>这个<code>CRD</code>来定义：（cluster-issuer.yaml）</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: certmanager.k8s.io/v1alpha1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: ClusterIssuer
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: letsencrypt-prod
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">acme</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">server</span>: https://acme-v02.api.letsencrypt.org/directory
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">email</span>: icnych@gmail.com
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">privateKeySecretRef</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">name</span>: letsencrypt-prod
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">http01</span>: {}
+</span></span></code></pre></div><p>然后直接创建这个<code>ClusterIssuer</code>资源：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl create -f cluster-issuer.yaml
+</span></span><span style="display:flex;"><span>clusterissuer.certmanager.k8s.io <span style="color:#f1fa8c">&#34;letsencrypt-prod&#34;</span> created
+</span></span><span style="display:flex;"><span>$ kubectl get clusterissuer
+</span></span><span style="display:flex;"><span>NAME               AGE
+</span></span><span style="display:flex;"><span>letsencrypt-prod   16s
+</span></span></code></pre></div><h2 id="测试">测试</h2>
+<p>上面我们已经安装了<code>Cert manager</code>，定义了<code>ClusterIssuer</code>，接下来我们来配置 HTTPS 去访问我们的 Kubernetes Dashboard 的服务，Dashboard 的部署我们这里就不多说了，直接添加一个 Ingress 资源对象即可：(dashboard-ingress.yaml)</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: extensions/v1beta1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Ingress
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: kube-ui
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">namespace</span>: kube-system
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">annotations</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">kubernetes.io/ingress.class</span>: <span style="color:#f1fa8c">&#34;traefik&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">kubernetes.io/tls-acme</span>: <span style="color:#f1fa8c">&#34;true&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">tls</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff79c6">hosts</span>:
+</span></span><span style="display:flex;"><span>    - k8sui.qikqiak.com
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">secretName</span>: k8sui-tls
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">rules</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff79c6">host</span>: k8sui.qikqiak.com
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">http</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">paths</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">path</span>: <span style="color:#f1fa8c">&#39;/&#39;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">backend</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">serviceName</span>: kubernetes-dashboard
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">servicePort</span>: <span style="color:#bd93f9">443</span>
+</span></span></code></pre></div><p>这里需要注意的是上面我们添加的两个<code>annotations</code>非常重要，这个将告诉 Cert Manager 去生成证书，然后由于我们这里要使用 HTTPS，所以我们需要添加一个 tls 证书，而证书就是通过<code>k8sui-tls</code>这个 Secret 对象来提供的，要注意的是这个 Secret 对象并不是我们手动创建的，而是 Cert Manager 自动创建的证书对应的对应。然后直接创建这个资源对象即可：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl create -f dashboard-ingress.yaml
+</span></span></code></pre></div><blockquote>
+<p>当然如果需要在公网中进行访问，我们还需要将我们这里的域名解析到 Ingress Controller 所在的任意一个节点，或者在本地的<code>/etc/hosts</code>中加上映射也是可以的。</p>
+</blockquote>
+<p>创建完成后隔一会儿我们可以看到会多出现一个随机名称的 Ingress 对象，这个 Ingress 对象就是用来专门验证证书的：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl get ingress -n kube-system
+</span></span><span style="display:flex;"><span>NAME                        HOSTS                   ADDRESS   PORTS     AGE
+</span></span><span style="display:flex;"><span>cm-acme-http-solver-hl5sx   k8sui.qikqiak.com             <span style="color:#bd93f9">80</span>        37s
+</span></span><span style="display:flex;"><span>kube-ui                     k8sui.qikqiak.com             80, <span style="color:#bd93f9">443</span>   41s
+</span></span></code></pre></div><p>我们可以通过 Traefik 的 Dashboard 可以观察到这一变化，验证成功后，这个 Ingress 对象也自动删除了：
+<img src="https://www.qikqiak.com/img/posts/traefik-dashboard-acme.png" alt="traefik-dashboard-acme"></p>
+<p>这个时候我们可以去<code>describe</code>下我们的 Ingress 对象：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ Name:             kube-ui
+</span></span><span style="display:flex;"><span>Namespace:        kube-system
+</span></span><span style="display:flex;"><span>Address:
+</span></span><span style="display:flex;"><span>Default backend:  default-http-backend:80 <span style="color:#ff79c6">(</span>&lt;none&gt;<span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span>TLS:
+</span></span><span style="display:flex;"><span>  k8sui-tls terminates k8sui.qikqiak.com
+</span></span><span style="display:flex;"><span>Rules:
+</span></span><span style="display:flex;"><span>  Host               Path  Backends
+</span></span><span style="display:flex;"><span>  ----               ----  --------
+</span></span><span style="display:flex;"><span>  k8sui.qikqiak.com
+</span></span><span style="display:flex;"><span>                     /   kubernetes-dashboard:443 <span style="color:#ff79c6">(</span>10.244.0.31:8443<span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span>Annotations:
+</span></span><span style="display:flex;"><span>  kubernetes.io/tls-acme:       <span style="color:#8be9fd;font-style:italic">true</span>
+</span></span><span style="display:flex;"><span>  kubernetes.io/ingress.class:  traefik
+</span></span><span style="display:flex;"><span>Events:
+</span></span><span style="display:flex;"><span>  Type    Reason             Age   From          Message
+</span></span><span style="display:flex;"><span>  ----    ------             ----  ----          -------
+</span></span><span style="display:flex;"><span>  Normal  CreateCertificate  13m   cert-manager  Successfully created Certificate <span style="color:#f1fa8c">&#34;k8sui-tls&#34;</span>
+</span></span></code></pre></div><p>可以看到最后提示成功创建了 Certificate 对象，同样我们可以通过下面的命令获取：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl get certificate -n kube-system
+</span></span><span style="display:flex;"><span>NAME        AGE
+</span></span><span style="display:flex;"><span>k8sui-tls   15m
+</span></span></code></pre></div><p>这个时候 Let&rsquo;s Encrypt 生成的证书文件就已经创建成功了，内容被添加到了上面 Ingress 中声明的 Secret 对象中：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl get secret -n kube-system
+</span></span><span style="display:flex;"><span>k8sui-tls                                        kubernetes.io/tls                     <span style="color:#bd93f9">2</span>         32m
+</span></span></code></pre></div><p>同样我们可以看到 Cert manager 的 Pod 中的日志信息：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl logs -f cert-manager-dd6856945-4drmr -n kube-system
+</span></span><span style="display:flex;"><span>......
+</span></span><span style="display:flex;"><span> <span style="color:#bd93f9">1</span> sync.go:124<span style="color:#ff79c6">]</span> Certificate <span style="color:#f1fa8c">&#34;k8sui-tls&#34;</span> <span style="color:#ff79c6">for</span> ingress <span style="color:#f1fa8c">&#34;kube-ui&#34;</span> already exists
+</span></span><span style="display:flex;"><span>I1205 16:27:21.372285       <span style="color:#bd93f9">1</span> sync.go:127<span style="color:#ff79c6">]</span> Certificate <span style="color:#f1fa8c">&#34;k8sui-tls&#34;</span> <span style="color:#ff79c6">for</span> ingress <span style="color:#f1fa8c">&#34;kube-ui&#34;</span> is up to date
+</span></span><span style="display:flex;"><span>I1205 16:27:21.372362       <span style="color:#bd93f9">1</span> controller.go:166<span style="color:#ff79c6">]</span> ingress-shim controller: Finished processing work item <span style="color:#f1fa8c">&#34;kube-system/kube-ui&#34;</span>
+</span></span><span style="display:flex;"><span>I1205 16:27:23.371967       <span style="color:#bd93f9">1</span> controller.go:181<span style="color:#ff79c6">]</span> certificates controller: syncing item <span style="color:#f1fa8c">&#39;kube-system/k8sui-tls&#39;</span>
+</span></span><span style="display:flex;"><span>I1205 16:27:23.372682       <span style="color:#bd93f9">1</span> sync.go:174<span style="color:#ff79c6">]</span> Certificate kube-system/k8sui-tls scheduled <span style="color:#ff79c6">for</span> renewal in <span style="color:#bd93f9">1430</span> hours
+</span></span><span style="display:flex;"><span>I1205 16:27:23.372769       <span style="color:#bd93f9">1</span> controller.go:195<span style="color:#ff79c6">]</span> certificates controller: Finished processing work item <span style="color:#f1fa8c">&#34;kube-system/k8sui-tls&#34;</span>
+</span></span></code></pre></div><p>这个时候我们就可以通过 HTTPS 去访问上面我们配置的 Dashboard 的服务了，在浏览器中输入:<code>https://k8sui.qikqiak.com</code>，就可以看到会跳转到登录界面了，更重要的是浏览器左上角出现了<code>绿色</code>的认证小图标了：
+<img src="https://www.qikqiak.com/img/posts/dashboard-https.png" alt="dashboard https"></p>
+<blockquote>
+<p>需要注意的是 Dashboard 会使用自己自建的证书，所以我们需要在 Traefik 的配置中添加上配置<code>insecureSkipVerify = true</code>，不去校验后端的证书服务，否则访问会有问题。如果你使用的是其他的 Ingress Controller，这里配置基本上也是一致的，只需要做相应的修改即可。</p>
+</blockquote>
+<p>到这里我们就完成了使用<code>Let's Encrypt</code>实现<code>Kubernetes Ingress</code>自动化 HTTPS。</p>
+<!-- raw HTML omitted -->
+
+          <h2>微信公众号</h2>
+<p>
+  扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+  kubernetes 讨论群里面共同学习。
+</p>
+<img
+  src="https://picdn.youdianzhishi.com/images/qrcode.png"
+  alt="wechat-account-qrcode"
+/>
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/ingress-traefik2/">外部服务发现之 ingress(二)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/ingress-traefik1/">外部服务发现之 ingress(一)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/update-kubernetes-dashboard-more-secure/">kubernetes dashboard 升级之路</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-dashboard-wayne-usage/">360 开源 K8S Dashboard Wayne 的安装使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/grafana-usage-in-k8s/">Grafana 在 Kubernetes 中的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/promethues-monitor-k8s-nodes/">监控 Kubernetes 集群节点</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/promethues-monitor-k8s-app/">Kubernetes 应用监控</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-affinity-scheduler/">重新理解 kubernetes 亲和性调度</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kube-scheduler-introduction/">Kubernetes 调度器介绍</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/helm-hooks-usage/">Helm Hooks 的使用</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/kubernetes-dashboard-wayne-usage/" data-toggle="tooltip" data-placement="top" title="360 开源 K8S Dashboard Wayne 的安装使用">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/k8s-api-resources-group-and-version/" data-toggle="tooltip" data-placement="top" title="Kubernetes API 资源使用">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: 'Kubernetes Ingress 自动化 HTTPS',
+        createIssueManually: true,
+        id: 'automatic-kubernetes-ingress-https-with-lets-encrypt',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -1015,7 +670,7 @@ I1205 <span style="color:#bd93f9">16</span>:27:23.372769       <span style="colo
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -1024,7 +679,7 @@ I1205 <span style="color:#bd93f9">16</span>:27:23.372769       <span style="colo
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -1033,7 +688,7 @@ I1205 <span style="color:#bd93f9">16</span>:27:23.372769       <span style="colo
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -1042,158 +697,121 @@ I1205 <span style="color:#bd93f9">16</span>:27:23.372769       <span style="colo
                   </span>
                 </a>
               </li>
-
-              <li>
-                <a href="https://www.qikqiak.com/index.xml" title="RSS">
-                  <span class="fa-stack fa-lg">
-                    <i class="fa fa-circle fa-stack-2x"></i>
-                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
-                  </span>
-                </a>
-              </li>
-            </ul>
-            <p class="credits copyright text-muted">
-              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/">阳明的博客</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/archive/">归档</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/friend/">友链</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://beian.miit.gov.cn/" target="_blank"
-                >蜀ICP备11027319号-5</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
-                >kubernetes.io</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
-                >Kubernetes中文社区</a
-              >
-            </p>
-            <p class="text-center text-muted">
-              <script
-                async
-                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
-              ></script>
-              <span id="busuanzi_container_site_pv" style="display: none">
-                本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
               </span>
-              &nbsp;&bull;&nbsp;
-              <span id="busuanzi_container_site_uv" style="display: none">
-                访客数<span id="busuanzi_value_site_uv"></span>人次
-              </span>
-            </p>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
 
-            <p class="credits theme-by text-muted">
-              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
-              &nbsp;&bull;&nbsp; 主题
-              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
-              移植自
-              <a href="https://github.com/rootsongjc/beautifulhugo"
-                >Beautiful Hugo</a
-              >
-            </p>
-          </div>
-        </div>
+          &nbsp;&bull;&nbsp;
+          2023
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.115.4</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+          
+        </p>
       </div>
-    </footer>
+    </div>
+  </div>
+</footer>
 
-    <script
-      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
-      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
-    ></script>
 
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "UA-69668147-3");
-    </script>
-    <script>
-      (function () {
-        var bp = document.createElement("script");
-        var curProtocol = window.location.protocol.split(":")[0];
-        if (curProtocol === "https") {
-          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
-        } else {
-          bp.src = "http://push.zhanzhang.baidu.com/push.js";
-        }
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(bp, s);
-      })();
-    </script>
-    <script>
-      $(document).ready(function () {
-        var int = setInterval(fixCount, 50);
+<script src='https://www.qikqiak.com/js/bundle.min.af02a2d23b6651a566f0135a12e65fc2560faa7a969b3d1ad58d0afe0c9164ae.js' integrity='sha256-rwKi0jtmUaVm8BNaEuZfwlYPqnqWmz0a1Y0K/gyRZK4='></script>
 
-        var initPVCount = 584976;
-        var initUVCount = 153191;
-        function fixCount() {
-          if ($("#busuanzi_container_site_pv").css("display") != "none") {
-            $("#busuanzi_value_site_pv").html(
-              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
-            );
-            clearInterval(int);
-          }
-          if ($("#busuanzi_container_site_uv").css("display") != "none") {
-            $("#busuanzi_value_site_uv").html(
-              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
-            );
-            clearInterval(int);
-          }
-        }
-      });
-    </script>
-    <script>
-      (function (w, d, s, id) {
-        if (typeof w.webpushr !== "undefined") return;
-        w.webpushr =
-          w.webpushr ||
-          function () {
-            (w.webpushr.q = w.webpushr.q || []).push(arguments);
-          };
-        var js,
-          fjs = d.getElementsByTagName(s)[0];
-        js = d.createElement(s);
-        js.id = id;
-        js.src = "https://cdn.webpushr.com/app.min.js";
-        fjs.parentNode.appendChild(js);
-      })(window, document, "script", "webpushr-jssdk");
-      webpushr(
-        "init",
-        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
-      );
-    </script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
-    ></script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
-    ></script>
-    <script type="text/javascript">
-      $(".carousel").slick({
-        dots: true,
-        arrows: true,
-        autoplay: true,
-        autoplaySpeed: 4000,
-        infinite: true,
-        speed: 500,
-        fade: true,
-        cssEase: "linear",
-        centerMode: true,
-        prevArrow: '<button type="button" class="slick-prev"></button>',
-        nextArrow: '<button type="button" class="slick-next"></button>',
-      });
-    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
   </body>
 </html>
+

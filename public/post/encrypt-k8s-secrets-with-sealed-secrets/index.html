@@ -23,7 +23,6 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="阳明的博客" />
 
-  <meta name="generator" content="Hugo 0.55.6" />
   <link rel="canonical" href="https://www.qikqiak.com/post/encrypt-k8s-secrets-with-sealed-secrets/" />
   <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
@@ -32,7 +31,7 @@
   <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
   
 
-  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a6b62363fe57848ad01efa2a5d1bbb1047c2ffb71b53d8aeb42bc5ed5c77ea7c.css' integrity='sha256-prYjY/5XhIrQHvoqXRu7EEfC/7cbU9iutCvF7Vx36nw='>
 
   <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
   
@@ -245,12 +244,8 @@ autocomplete('#aa-search-input',
                   
                   
                     <span class="post-meta">
-  
-    发表于 June 20, 2020
-  
-  
+  发表于 June 20, 2020  
 </span>
-
 
                   
               </div>
@@ -276,12 +271,8 @@ autocomplete('#aa-search-input',
                 
                 
                   <span class="post-meta">
-  
-    发表于 June 20, 2020
-  
-  
+  发表于 June 20, 2020  
 </span>
-
 
                 
             </div>
@@ -325,22 +316,20 @@ autocomplete('#aa-search-input',
             
 <aside class="toc">
   <nav id="TableOfContents">
-<ul>
-<li>
-<ul>
-<li><a href="#sealed-secrets">Sealed Secrets</a></li>
-<li><a href="#sealedsecret-作用域">SealedSecret 作用域</a></li>
-<li><a href="#sealedsecrets-使用">SealedSecrets 使用</a>
-<ul>
-<li><a href="#安装">安装</a></li>
-<li><a href="#测试">测试</a></li>
-<li><a href="#修改命名空间">修改命名空间</a></li>
-<li><a href="#修改-secret-名称">修改 Secret 名称</a></li>
-<li><a href="#创建集群范围的-sealedsecrets">创建集群范围的 SealedSecrets</a></li>
-</ul></li>
-<li><a href="#参考链接">参考链接</a></li>
-</ul></li>
-</ul>
+  <ul>
+    <li><a href="#sealed-secrets">Sealed Secrets</a></li>
+    <li><a href="#sealedsecret-作用域">SealedSecret 作用域</a></li>
+    <li><a href="#sealedsecrets-使用">SealedSecrets 使用</a>
+      <ul>
+        <li><a href="#安装">安装</a></li>
+        <li><a href="#测试">测试</a></li>
+        <li><a href="#修改命名空间">修改命名空间</a></li>
+        <li><a href="#修改-secret-名称">修改 Secret 名称</a></li>
+        <li><a href="#创建集群范围的-sealedsecrets">创建集群范围的 SealedSecrets</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考链接">参考链接</a></li>
+  </ul>
 </nav>
 </aside>
 
@@ -359,290 +348,244 @@ autocomplete('#aa-search-input',
           
 
           <p>前面我们和大家提到过 GitOps 的实践，我们知道 GitOps 是提倡通过 Git 来管理所有的配置，通过声明式代码来对环境配置和基础设施进行版本管理。</p>
-
 <p>在 Kubernetes 中我们知道可以使用资源清单文件来管理集群中的一资源对象，但是讲 Kubernetes 的 Secrets 数据存储在 Git 仓库中还是非常不妥的，毕竟也是非常不安全的。</p>
-
 <p>Kubernetes Secrets 是用来帮助我们存储敏感信息的资源对象，比如密码、密钥、证书、OAuth Token、SSH KEY 等等。管理员可以通过创建 Secrets 对象，然后开发人员就可以在资源清单文件中非常方便的引用 Secrets 对象，而不用直接将这些敏感信息硬编码。</p>
-
 <p>虽然这看上去非常方便，但是有 Secrets 的问题是它们只是简单的将这些敏感信息做了一次 base64 编码而已，任何人都可以非常容易对其进行解密获得原始的数据。所以我们说 Secrets 清单文件不能直接存储在 Git 源码仓库中，但是如果每次都去手工创建的话，这又使得我们的 GitOps 不是很流畅了。</p>
-
 <p>为此 Bitnami Labs 创建了一个名为 <a href="https://github.com/bitnami-labs/sealed-secrets">Sealed Secrets</a> 的开源工具来解决这个问题。</p>
-
 <h2 id="sealed-secrets">Sealed Secrets</h2>
-
 <p>Sealed Secrets 主要由两个组件组成：</p>
-
 <ul>
 <li>一个是集群内的 Kubernetes Operator</li>
 <li>一个是名为 kubeseal 的客户端工具</li>
 </ul>
-
 <p><code>kubeseal</code> 允许我们使用非对称加密算法来加密 Kubernetes Secrets 对象，<code>SealedSecret</code> 是包含加密 Secret 的 Kubernetes CRD 资源对象，只有控制器可以进行解密，所以即使把 SealedSecret 存储在公共的代码仓库中也是非常安全的。</p>
-
 <p>当我们在 Kubernetes 集群中创建 SealedSecret 资源对象的时候，对应的 Operator 就会读取它，然后生成对应的 Secret 对象，然后我们就可以在 Pod 中直接使用这个 Secret 对象了。下面就是一个 SealedSecret 的资源对象示例：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: bitnami.com/v1alpha1
-kind: SealedSecret
-metadata:
-  name: mysecret
-spec:
-  encryptedData:
-    secret: AgBy3i4OJSWK+PiTySYZZA9rO43cGDEq.....</code></pre></div>
-<p>当 Operator 解密上面的对象后，会生成如下所示的 Secret 对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
-data:
-  secret: VGhpcyBpcyBhIHNlY3JldCE=
-kind: Secret
-metadata:
-  creationTimestamp: <span style="color:#ff79c6">null</span>
-  name: mysecret</code></pre></div>
-<h2 id="sealedsecret-作用域">SealedSecret 作用域</h2>
-
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: bitnami.com/v1alpha1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: SealedSecret
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: mysecret
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">encryptedData</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">secret</span>: AgBy3i4OJSWK+PiTySYZZA9rO43cGDEq.....
+</span></span></code></pre></div><p>当 Operator 解密上面的对象后，会生成如下所示的 Secret 对象：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">data</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">secret</span>: VGhpcyBpcyBhIHNlY3JldCE=
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Secret
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">creationTimestamp</span>: <span style="color:#ff79c6">null</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: mysecret
+</span></span></code></pre></div><h2 id="sealedsecret-作用域">SealedSecret 作用域</h2>
 <p>只有 Operator 才可以解密 SealedSecret，一般来说，不允许用户直接去读取 Secret 是一种比较好的做法，我们可以通过创建 RBAC 规则来禁止低权限用户来读取 Secret，也可以限制用户只能从他们的命名空间中读取 Secret 对象。虽然 SealedSecret 被设计成不能直接读取它们，但是用户还是可以绕过这个过程，获得对他们不允许查看的 Secret 对象的访问权限。</p>
-
 <p>SealedSecret 资源提供了多种方式来防止这种行为，它默认是命名空间范围的，一旦将 SealedSecret 限定在一个命名空间下面，就不能在其他命名空间中使用这个对象。</p>
-
-<p>比如，在 web 这个命名空间下面创建了一个名为 foo 带有 bar 这个值的 Secret 对象，我们就不能将这个 Secret 用于其他命名空间，即使需要相同的 Secret。虽然 SealedSecret 的控制器并没有为每个命名空间使用独立的解密密码，但是它在加密的过程中会考虑到命名空间和名称，所以达到的效果就类似于每个命名空间都有自己独立的解密密钥一样。
-<p><a href="https://youdianzhishi.com/web/course/1030" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
-
-另外一种情况是我们可能在上面的 web 命名空间上有一个用户，他只能查看某些 Secrets 而不是所有的，SealedSecret 也是允许这种操作的。当我们为 web 命名空间名为 foo 的 Secret 生成一个 SealedSecret 对象时，web 命名空间上的用户如果只是对名为 bar 的 Secret 对象有读取权限，那么就不能在 SealedSecret 资源对象中将 Secret 的名称改为 bar，并用它来查看该 Secret。</p>
-
+<p>比如，在 web 这个命名空间下面创建了一个名为 foo 带有 bar 这个值的 Secret 对象，我们就不能将这个 Secret 用于其他命名空间，即使需要相同的 Secret。虽然 SealedSecret 的控制器并没有为每个命名空间使用独立的解密密码，但是它在加密的过程中会考虑到命名空间和名称，所以达到的效果就类似于每个命名空间都有自己独立的解密密钥一样。</p>
+<!-- raw HTML omitted -->
+<p>另外一种情况是我们可能在上面的 web 命名空间上有一个用户，他只能查看某些 Secrets 而不是所有的，SealedSecret 也是允许这种操作的。当我们为 web 命名空间名为 foo 的 Secret 生成一个 SealedSecret 对象时，web 命名空间上的用户如果只是对名为 bar 的 Secret 对象有读取权限，那么就不能在 SealedSecret 资源对象中将 Secret 的名称改为 bar，并用它来查看该 Secret。</p>
 <p>虽然这些方法可以帮助我们防止 Secrets 被滥用，但是管理起来还是比较麻烦。默认配置中，我们没办法定义通用的 Secret 来用于多个命名空间。而且很有可能我们的团队非常小，Kubernetes 集群只是运维人员来访问和维护，那么我们可能不需要这种 RBAC 的权限控制方式。</p>
-
 <p>如果我们想定义跨命名空间的 SealedSecrets 对象，我们可以使用作用域来实现这个功能。</p>
-
-<p>我们可以使用3个作用域来创建 SealedSecrets：</p>
-
+<p>我们可以使用 3 个作用域来创建 SealedSecrets：</p>
 <ul>
-<li>strict（默认）：这种情况下，我们需要考虑 Secret 的名称和命名空间来加密，一旦创建了对应的  SealedSecret，就不能更改它的名称和命名空间了。</li>
+<li>strict（默认）：这种情况下，我们需要考虑 Secret 的名称和命名空间来加密，一旦创建了对应的 SealedSecret，就不能更改它的名称和命名空间了。</li>
 <li>namespace-wide：这个作用域允许我们在加密的 Secret 的命名空间内重命名 SealedSecret 对象。</li>
 <li>cluster-wide：这个作用域允许我们自由地在加密 Secret 的命名空间内重命名 SealedSecret，允许我们随意地将 Secret 移动到任何一个命名空间，随意命名。</li>
 </ul>
-
 <p>我们可以在使用 kubeseal 的时候使用<code>--scope</code> 参数来指定作用域：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubeseal --scope cluster-wide --format yaml &lt;secret.yaml &gt;sealed-secret.yaml</code></pre></div>
-<p>此外也可以在 Secret 中使用 annotation，在把配置传递给 kubeseal 之前使用作用域：</p>
-
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kubeseal --scope cluster-wide --format yaml &lt;secret.yaml &gt;sealed-secret.yaml
+</span></span></code></pre></div><p>此外也可以在 Secret 中使用 annotation，在把配置传递给 kubeseal 之前使用作用域：</p>
 <ul>
-<li><code>sealedsecrets.bitnami.com/namespace-wide: &quot;true&quot;</code> 表示 <code>namespace-wide</code></li>
-<li><code>sealedsecrets.bitnami.com/cluster-wide: &quot;true&quot;</code> 表示 <code>cluster-wide</code></li>
+<li><code>sealedsecrets.bitnami.com/namespace-wide: &quot;true&quot;</code>  表示  <code>namespace-wide</code></li>
+<li><code>sealedsecrets.bitnami.com/cluster-wide: &quot;true&quot;</code>  表示  <code>cluster-wide</code></li>
 </ul>
-
 <p>如果没有指定任何注解，那么 kubeseal 默认使用 strict 这个作用域，如果设置了两个注解，那么作用域更大的优先。</p>
-
 <h2 id="sealedsecrets-使用">SealedSecrets 使用</h2>
-
 <h3 id="安装">安装</h3>
-
 <p>前面我们提到过 SealedSecrets 由客户端的 kubeseal 和集群端的 Operator 组成。我们先来安装客户端的 kubeseal 工具。</p>
-
 <p>从 <a href="https://github.com/bitnami-labs/sealed-secrets/releases">GitHub Release 页面</a>选择最新的发布版本，下载最新的二进制文件：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ wget https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.12.4/kubeseal-linux-amd64 -O kubeseal
-$ sudo install -m <span style="color:#bd93f9">755</span> kubeseal /usr/local/bin/kubeseal
-$ kubeseal --version
-kubeseal version: v0.12.4+dirty</code></pre></div>
-<p>然后安装 Kubernetes 集群端的 Operator 控制器：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.12.4/controller.yaml
-service/sealed-secrets-controller created
-rolebinding.rbac.authorization.k8s.io/sealed-secrets-service-proxier created
-rolebinding.rbac.authorization.k8s.io/sealed-secrets-controller created
-clusterrole.rbac.authorization.k8s.io/secrets-unsealer created
-serviceaccount/sealed-secrets-controller created
-customresourcedefinition.apiextensions.k8s.io/sealedsecrets.bitnami.com created
-role.rbac.authorization.k8s.io/sealed-secrets-service-proxier created
-role.rbac.authorization.k8s.io/sealed-secrets-key-admin created
-clusterrolebinding.rbac.authorization.k8s.io/sealed-secrets-controller created
-deployment.apps/sealed-secrets-controller created</code></pre></div>
-<p>控制器默认会安装在 kube-system 命名空间下面：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get pods -n kube-system -l <span style="color:#8be9fd;font-style:italic">name</span><span style="color:#ff79c6">=</span>sealed-secrets-controller
-NAME                                         READY   STATUS    RESTARTS   AGE
-sealed-secrets-controller-6bf8c44ff9-fqhgt   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          3m36s</code></pre></div>
-<p>当控制器运行成功后证明就已经安装成功了。接下来我们就可以使用 SealedSecret 来加密我们的 Secret 对象了。</p>
-
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ wget https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.12.4/kubeseal-linux-amd64 -O kubeseal
+</span></span><span style="display:flex;"><span>$ sudo install -m <span style="color:#bd93f9">755</span> kubeseal /usr/local/bin/kubeseal
+</span></span><span style="display:flex;"><span>$ kubeseal --version
+</span></span><span style="display:flex;"><span>kubeseal version: v0.12.4+dirty
+</span></span></code></pre></div><p>然后安装 Kubernetes 集群端的 Operator 控制器：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.12.4/controller.yaml
+</span></span><span style="display:flex;"><span>service/sealed-secrets-controller created
+</span></span><span style="display:flex;"><span>rolebinding.rbac.authorization.k8s.io/sealed-secrets-service-proxier created
+</span></span><span style="display:flex;"><span>rolebinding.rbac.authorization.k8s.io/sealed-secrets-controller created
+</span></span><span style="display:flex;"><span>clusterrole.rbac.authorization.k8s.io/secrets-unsealer created
+</span></span><span style="display:flex;"><span>serviceaccount/sealed-secrets-controller created
+</span></span><span style="display:flex;"><span>customresourcedefinition.apiextensions.k8s.io/sealedsecrets.bitnami.com created
+</span></span><span style="display:flex;"><span>role.rbac.authorization.k8s.io/sealed-secrets-service-proxier created
+</span></span><span style="display:flex;"><span>role.rbac.authorization.k8s.io/sealed-secrets-key-admin created
+</span></span><span style="display:flex;"><span>clusterrolebinding.rbac.authorization.k8s.io/sealed-secrets-controller created
+</span></span><span style="display:flex;"><span>deployment.apps/sealed-secrets-controller created
+</span></span></code></pre></div><p>控制器默认会安装在 kube-system 命名空间下面：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kubectl get pods -n kube-system -l <span style="color:#8be9fd;font-style:italic">name</span><span style="color:#ff79c6">=</span>sealed-secrets-controller
+</span></span><span style="display:flex;"><span>NAME                                         READY   STATUS    RESTARTS   AGE
+</span></span><span style="display:flex;"><span>sealed-secrets-controller-6bf8c44ff9-fqhgt   1/1     Running   <span style="color:#bd93f9">0</span>          3m36s
+</span></span></code></pre></div><p>当控制器运行成功后证明就已经安装成功了。接下来我们就可以使用 SealedSecret 来加密我们的 Secret 对象了。</p>
 <h3 id="测试">测试</h3>
-
 <p>为了创建 SealedSecret 对象，我们首先需要创建一个 Secret 文件：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ <span style="color:#8be9fd;font-style:italic">echo</span> -n <span style="color:#f1fa8c">&#34;This is a secret&#34;</span> | kubectl create secret generic mysecret --dry-run --from-file<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">secret</span><span style="color:#ff79c6">=</span>/dev/stdin -o yaml &gt; secret.yaml
-$ cat secret.yaml
-apiVersion: v1
-data:
-  secret: <span style="color:#8be9fd;font-style:italic">VGhpcyBpcyBhIHNlY3JldA</span><span style="color:#ff79c6">==</span>
-kind: Secret
-metadata:
-  creationTimestamp: null
-  name: mysecret</code></pre></div>
-<p>注意上面我们使用的是<code>--dry-run</code> 参数，所以并不会真正创建，不过这个 Secret 对象也只是一个 base64 编码的字符串而已，所以不适合直接放在源码仓库中。</p>
-
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ <span style="color:#8be9fd;font-style:italic">echo</span> -n <span style="color:#f1fa8c">&#34;This is a secret&#34;</span> | kubectl create secret generic mysecret --dry-run --from-file<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">secret</span><span style="color:#ff79c6">=</span>/dev/stdin -o yaml &gt; secret.yaml
+</span></span><span style="display:flex;"><span>$ cat secret.yaml
+</span></span><span style="display:flex;"><span>apiVersion: v1
+</span></span><span style="display:flex;"><span>data:
+</span></span><span style="display:flex;"><span>  secret: <span style="color:#8be9fd;font-style:italic">VGhpcyBpcyBhIHNlY3JldA</span><span style="color:#ff79c6">==</span>
+</span></span><span style="display:flex;"><span>kind: Secret
+</span></span><span style="display:flex;"><span>metadata:
+</span></span><span style="display:flex;"><span>  creationTimestamp: null
+</span></span><span style="display:flex;"><span>  name: mysecret
+</span></span></code></pre></div><p>注意上面我们使用的是<code>--dry-run</code> 参数，所以并不会真正创建，不过这个 Secret 对象也只是一个 base64 编码的字符串而已，所以不适合直接放在源码仓库中。</p>
 <p>接下来使用 kubeseal 工具加密这个对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubeseal --format yaml &lt;secret.yaml &gt;sealedsecret.yaml
-$ cat sealedsecret.yaml
-apiVersion: bitnami.com/v1alpha1
-kind: SealedSecret
-metadata:
-  creationTimestamp: null
-  name: mysecret
-  namespace: default
-spec:
-  encryptedData:
-    secret: AgActQcD5PS8BkGE9bgB0gCtJrL0HQBA7IWoKYFcQAuOBxxAL5r+i6shnJQByxyo4Wv5y62MrxXlKZkliXuHygrCaxZaKUyvuPkmAcpcgg/P5kY2KI2yQd0ENqGzgPCBiqbBiEFYATykeAUSEe3uUrYeE0EeIDWpiX758UzukaP30Z9nr5m1Ce+rvUUrIaVwQvlHH3pCENGcnb+iCOd2N1zO4YUua1GIm8TFB9IaINCyJR1Djv5zoiu9auNEeVrTWW9gqr1Wj9UaHA7uYqMpdUvupRAdUxBL5HSjZKtcesOKvVtxLNPBmIzolMf42FrxBH42WEoXHOPsRxuKw6UIdsiigVwnTEJYIZyQg/iIdcuWHfOUkm4YcxVdnAuXGxqu8mUhlVNfHjX4SR7MvC+dRPWQNoiL2+uxweHNl0rZCddbzM0ELYdtn1bktaoFLiNeq0bhYYIXhdIzIZypqruuP7ZoNg6zz7ySf7OxhsevSTAD6x1wwKCcjr2kWvNj+zSu1D3zcKT8LTNqHlk35cxbjMDaGPjZ4VdvUGS0d/fBuEtiK6js1vMCfrMdPLiQFNOibro3yKNE8ES3rASIOj3XBxD3FUVT9lGNLsCaRQDQlx/7Fqdjg4o/iAY0qVz8EET8rFWRG/GX3miZdgI9WyHTOY6oUd10VjdEvVPI6JTISI36/HUXOybP+Tc/j6B9FlGmt1CkfzANvXGojjZVjm0yzPtH
-  template:
-    metadata:
-      creationTimestamp: null
-      name: mysecret
-      namespace: default</code></pre></div>
-<p>可以看到 Secret 信息已经被加密了，现在我们就可以放心的将它存储在源码仓库中去了。</p>
-
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kubeseal --format yaml &lt;secret.yaml &gt;sealedsecret.yaml
+</span></span><span style="display:flex;"><span>$ cat sealedsecret.yaml
+</span></span><span style="display:flex;"><span>apiVersion: bitnami.com/v1alpha1
+</span></span><span style="display:flex;"><span>kind: SealedSecret
+</span></span><span style="display:flex;"><span>metadata:
+</span></span><span style="display:flex;"><span>  creationTimestamp: null
+</span></span><span style="display:flex;"><span>  name: mysecret
+</span></span><span style="display:flex;"><span>  namespace: default
+</span></span><span style="display:flex;"><span>spec:
+</span></span><span style="display:flex;"><span>  encryptedData:
+</span></span><span style="display:flex;"><span>    secret: AgActQcD5PS8BkGE9bgB0gCtJrL0HQBA7IWoKYFcQAuOBxxAL5r+i6shnJQByxyo4Wv5y62MrxXlKZkliXuHygrCaxZaKUyvuPkmAcpcgg/P5kY2KI2yQd0ENqGzgPCBiqbBiEFYATykeAUSEe3uUrYeE0EeIDWpiX758UzukaP30Z9nr5m1Ce+rvUUrIaVwQvlHH3pCENGcnb+iCOd2N1zO4YUua1GIm8TFB9IaINCyJR1Djv5zoiu9auNEeVrTWW9gqr1Wj9UaHA7uYqMpdUvupRAdUxBL5HSjZKtcesOKvVtxLNPBmIzolMf42FrxBH42WEoXHOPsRxuKw6UIdsiigVwnTEJYIZyQg/iIdcuWHfOUkm4YcxVdnAuXGxqu8mUhlVNfHjX4SR7MvC+dRPWQNoiL2+uxweHNl0rZCddbzM0ELYdtn1bktaoFLiNeq0bhYYIXhdIzIZypqruuP7ZoNg6zz7ySf7OxhsevSTAD6x1wwKCcjr2kWvNj+zSu1D3zcKT8LTNqHlk35cxbjMDaGPjZ4VdvUGS0d/fBuEtiK6js1vMCfrMdPLiQFNOibro3yKNE8ES3rASIOj3XBxD3FUVT9lGNLsCaRQDQlx/7Fqdjg4o/iAY0qVz8EET8rFWRG/GX3miZdgI9WyHTOY6oUd10VjdEvVPI6JTISI36/HUXOybP+Tc/j6B9FlGmt1CkfzANvXGojjZVjm0yzPtH
+</span></span><span style="display:flex;"><span>  template:
+</span></span><span style="display:flex;"><span>    metadata:
+</span></span><span style="display:flex;"><span>      creationTimestamp: null
+</span></span><span style="display:flex;"><span>      name: mysecret
+</span></span><span style="display:flex;"><span>      namespace: default
+</span></span></code></pre></div><p>可以看到 Secret 信息已经被加密了，现在我们就可以放心的将它存储在源码仓库中去了。</p>
 <p>接下来我们在一个示例 Pod 中来使用下这个 Secret 对象，看能否正确获取到它的数据。</p>
-
 <p>直接创建上面生成的 SealedSecret 对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl apply -f sealedsecret.yaml
-sealedsecret.bitnami.com/mysecret created</code></pre></div>
-<p>创建完成后正常我们也可以在 default 的命名空间下面找到一个名为 mysecret 的 Secret 对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get secret mysecret
-NAME       TYPE     DATA   AGE
-mysecret   Opaque   <span style="color:#bd93f9">1</span>      7s</code></pre></div>
-<p>使用如下所示的资源清单来创建一个测试的 Pod：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl apply -f - <span style="color:#f1fa8c">&lt;&lt;EOF
-</span><span style="color:#f1fa8c">apiVersion: v1
-</span><span style="color:#f1fa8c">kind: Pod
-</span><span style="color:#f1fa8c">metadata:
-</span><span style="color:#f1fa8c">  name: busybox
-</span><span style="color:#f1fa8c">  labels:
-</span><span style="color:#f1fa8c">    app: busybox
-</span><span style="color:#f1fa8c">spec:
-</span><span style="color:#f1fa8c">  containers:
-</span><span style="color:#f1fa8c">  - name: test
-</span><span style="color:#f1fa8c">    image: busybox
-</span><span style="color:#f1fa8c">    imagePullPolicy: IfNotPresent
-</span><span style="color:#f1fa8c">    command:
-</span><span style="color:#f1fa8c">      - sleep
-</span><span style="color:#f1fa8c">      - &#34;3600&#34;
-</span><span style="color:#f1fa8c">    volumeMounts:
-</span><span style="color:#f1fa8c">    - name: mysecretvol
-</span><span style="color:#f1fa8c">      mountPath: &#34;/tmp/mysecret&#34;
-</span><span style="color:#f1fa8c">      readOnly: true
-</span><span style="color:#f1fa8c">  volumes:
-</span><span style="color:#f1fa8c">  - name: mysecretvol
-</span><span style="color:#f1fa8c">    secret:
-</span><span style="color:#f1fa8c">      secretName: mysecret
-</span><span style="color:#f1fa8c">EOF</span>
-pod/busybox created
-$ kubectl get pods busybox
-NAME      READY   STATUS    RESTARTS   AGE
-busybox   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          19s</code></pre></div>
-<p>运行成功后我们可以查看容器中的密码数据来验证是否正确：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -it busybox cat /tmp/mysecret/secret
-This is a secret</code></pre></div>
-<p>可以看到正确打印出了我们定义的密码信息 <code>This is a secret</code>。
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-5376999672787220"
-     data-ad-slot="9165834656"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
-</p>
-
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kubectl apply -f sealedsecret.yaml
+</span></span><span style="display:flex;"><span>sealedsecret.bitnami.com/mysecret created
+</span></span></code></pre></div><p>创建完成后正常我们也可以在 default 的命名空间下面找到一个名为 mysecret 的 Secret 对象：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kubectl get secret mysecret
+</span></span><span style="display:flex;"><span>NAME       TYPE     DATA   AGE
+</span></span><span style="display:flex;"><span>mysecret   Opaque   <span style="color:#bd93f9">1</span>      7s
+</span></span></code></pre></div><p>使用如下所示的资源清单来创建一个测试的 Pod：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kubectl apply -f - <span style="color:#f1fa8c">&lt;&lt;EOF
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">apiVersion: v1
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">kind: Pod
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">metadata:
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">  name: busybox
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">  labels:
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">    app: busybox
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">spec:
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">  containers:
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">  - name: test
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">    image: busybox
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">    imagePullPolicy: IfNotPresent
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">    command:
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">      - sleep
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">      - &#34;3600&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">    volumeMounts:
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">    - name: mysecretvol
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">      mountPath: &#34;/tmp/mysecret&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">      readOnly: true
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">  volumes:
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">  - name: mysecretvol
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">    secret:
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">      secretName: mysecret
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">EOF</span>
+</span></span><span style="display:flex;"><span>pod/busybox created
+</span></span><span style="display:flex;"><span>$ kubectl get pods busybox
+</span></span><span style="display:flex;"><span>NAME      READY   STATUS    RESTARTS   AGE
+</span></span><span style="display:flex;"><span>busybox   1/1     Running   <span style="color:#bd93f9">0</span>          19s
+</span></span></code></pre></div><p>运行成功后我们可以查看容器中的密码数据来验证是否正确：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -it busybox cat /tmp/mysecret/secret
+</span></span><span style="display:flex;"><span>This is a secret
+</span></span></code></pre></div><p>可以看到正确打印出了我们定义的密码信息 <code>This is a secret</code>。</p>
+<!-- raw HTML omitted -->
 <h3 id="修改命名空间">修改命名空间</h3>
-
 <p>由于上面我们的 Secret 中没有指定任何作用域信息，所以这个 Secret 只能在指定的 default （默认的）命名空间下面使用。比如这里我们将上面的 SealedSecret 对象修改到名为 test 的命名空间中去：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ cp -a sealedsecret.yaml sealedsecret-test.yaml
-$ sed -i <span style="color:#f1fa8c">&#39;s/default/test/g&#39;</span> sealedsecret-test.yaml
-$ kubectl create ns <span style="color:#8be9fd;font-style:italic">test</span>
-namespace/test created
-$ kubectl apply -f sealedsecret-test.yaml
-sealedsecret.bitnami.com/mysecret created</code></pre></div>
-<p>创建完成后，我们查看下是否有生成对应的 Secret 对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get secret -n <span style="color:#8be9fd;font-style:italic">test</span>
-NAME                  TYPE                                  DATA   AGE
-default-token-4gwfx   kubernetes.io/service-account-token   <span style="color:#bd93f9">3</span>      31s</code></pre></div>
-<p>我们可以看到并没有生成对应的 Secret 对象，查看下 SealedSecret 对象是否创建成功：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get sealedsecret -n <span style="color:#8be9fd;font-style:italic">test</span>
-NAME       AGE
-mysecret   104s</code></pre></div>
-<p>可以看到 SealedSecret 对象是存在的，但是没有生成对应的 Secret，我们去查看下控制器的日志：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get pods -n kube-system -l <span style="color:#8be9fd;font-style:italic">name</span><span style="color:#ff79c6">=</span>sealed-secrets-controller
-NAME                                         READY   STATUS    RESTARTS   AGE
-sealed-secrets-controller-6bf8c44ff9-fqhgt   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          28m
-$ kubectl logs -f sealed-secrets-controller-6bf8c44ff9-fqhgt -n kube-system
-......
-<span style="color:#bd93f9">2020</span>/06/20 <span style="color:#bd93f9">02</span>:59:50 Event<span style="color:#ff79c6">(</span>v1.ObjectReference<span style="color:#ff79c6">{</span>Kind:<span style="color:#f1fa8c">&#34;SealedSecret&#34;</span>, Namespace:<span style="color:#f1fa8c">&#34;test&#34;</span>, Name:<span style="color:#f1fa8c">&#34;mysecret&#34;</span>, UID:<span style="color:#f1fa8c">&#34;78caa14b-c496-405b-91f8-652b2e4cef15&#34;</span>, APIVersion:<span style="color:#f1fa8c">&#34;bitnami.com/v1alpha1&#34;</span>, ResourceVersion:<span style="color:#f1fa8c">&#34;81242729&#34;</span>, FieldPath:<span style="color:#f1fa8c">&#34;&#34;</span><span style="color:#ff79c6">})</span>: type: <span style="color:#f1fa8c">&#39;Warning&#39;</span> reason: <span style="color:#f1fa8c">&#39;ErrUnsealFailed&#39;</span> Failed to unseal: no key could decrypt secret <span style="color:#ff79c6">(</span>secret<span style="color:#ff79c6">)</span>
-<span style="color:#bd93f9">2020</span>/06/20 <span style="color:#bd93f9">02</span>:59:50 Updating test/mysecret
-<span style="color:#bd93f9">2020</span>/06/20 <span style="color:#bd93f9">02</span>:59:50 Error updating test/mysecret, giving up: no key could decrypt secret <span style="color:#ff79c6">(</span>secret<span style="color:#ff79c6">)</span>
-E0620 <span style="color:#bd93f9">02</span>:59:50.151844       <span style="color:#bd93f9">1</span> controller.go:196<span style="color:#ff79c6">]</span> no key could decrypt secret <span style="color:#ff79c6">(</span>secret<span style="color:#ff79c6">)</span>
-<span style="color:#bd93f9">2020</span>/06/20 <span style="color:#bd93f9">02</span>:59:50 Event<span style="color:#ff79c6">(</span>v1.ObjectReference<span style="color:#ff79c6">{</span>Kind:<span style="color:#f1fa8c">&#34;SealedSecret&#34;</span>, Namespace:<span style="color:#f1fa8c">&#34;test&#34;</span>, Name:<span style="color:#f1fa8c">&#34;mysecret&#34;</span>, UID:<span style="color:#f1fa8c">&#34;78caa14b-c496-405b-91f8-652b2e4cef15&#34;</span>, APIVersion:<span style="color:#f1fa8c">&#34;bitnami.com/v1alpha1&#34;</span>, ResourceVersion:<span style="color:#f1fa8c">&#34;81242729&#34;</span>, FieldPath:<span style="color:#f1fa8c">&#34;&#34;</span><span style="color:#ff79c6">})</span>: type: <span style="color:#f1fa8c">&#39;Warning&#39;</span> reason: <span style="color:#f1fa8c">&#39;ErrUnsealFailed&#39;</span> Failed to unseal: no key could decrypt secret <span style="color:#ff79c6">(</span>secret<span style="color:#ff79c6">)</span></code></pre></div>
-<p>可以看到了出现了 <code>no key could decrypt secret (secret)</code> 这样的错误信息，这是因为我们使用的默认的 strict 作用域，所以更改 SealedSecret 的命名空间是不生效的。</p>
-
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ cp -a sealedsecret.yaml sealedsecret-test.yaml
+</span></span><span style="display:flex;"><span>$ sed -i <span style="color:#f1fa8c">&#39;s/default/test/g&#39;</span> sealedsecret-test.yaml
+</span></span><span style="display:flex;"><span>$ kubectl create ns <span style="color:#8be9fd;font-style:italic">test</span>
+</span></span><span style="display:flex;"><span>namespace/test created
+</span></span><span style="display:flex;"><span>$ kubectl apply -f sealedsecret-test.yaml
+</span></span><span style="display:flex;"><span>sealedsecret.bitnami.com/mysecret created
+</span></span></code></pre></div><p>创建完成后，我们查看下是否有生成对应的 Secret 对象：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kubectl get secret -n <span style="color:#8be9fd;font-style:italic">test</span>
+</span></span><span style="display:flex;"><span>NAME                  TYPE                                  DATA   AGE
+</span></span><span style="display:flex;"><span>default-token-4gwfx   kubernetes.io/service-account-token   <span style="color:#bd93f9">3</span>      31s
+</span></span></code></pre></div><p>我们可以看到并没有生成对应的 Secret 对象，查看下 SealedSecret 对象是否创建成功：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kubectl get sealedsecret -n <span style="color:#8be9fd;font-style:italic">test</span>
+</span></span><span style="display:flex;"><span>NAME       AGE
+</span></span><span style="display:flex;"><span>mysecret   104s
+</span></span></code></pre></div><p>可以看到 SealedSecret 对象是存在的，但是没有生成对应的 Secret，我们去查看下控制器的日志：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kubectl get pods -n kube-system -l <span style="color:#8be9fd;font-style:italic">name</span><span style="color:#ff79c6">=</span>sealed-secrets-controller
+</span></span><span style="display:flex;"><span>NAME                                         READY   STATUS    RESTARTS   AGE
+</span></span><span style="display:flex;"><span>sealed-secrets-controller-6bf8c44ff9-fqhgt   1/1     Running   <span style="color:#bd93f9">0</span>          28m
+</span></span><span style="display:flex;"><span>$ kubectl logs -f sealed-secrets-controller-6bf8c44ff9-fqhgt -n kube-system
+</span></span><span style="display:flex;"><span>......
+</span></span><span style="display:flex;"><span>2020/06/20 02:59:50 Event<span style="color:#ff79c6">(</span>v1.ObjectReference<span style="color:#ff79c6">{</span>Kind:<span style="color:#f1fa8c">&#34;SealedSecret&#34;</span>, Namespace:<span style="color:#f1fa8c">&#34;test&#34;</span>, Name:<span style="color:#f1fa8c">&#34;mysecret&#34;</span>, UID:<span style="color:#f1fa8c">&#34;78caa14b-c496-405b-91f8-652b2e4cef15&#34;</span>, APIVersion:<span style="color:#f1fa8c">&#34;bitnami.com/v1alpha1&#34;</span>, ResourceVersion:<span style="color:#f1fa8c">&#34;81242729&#34;</span>, FieldPath:<span style="color:#f1fa8c">&#34;&#34;</span><span style="color:#ff79c6">})</span>: type: <span style="color:#f1fa8c">&#39;Warning&#39;</span> reason: <span style="color:#f1fa8c">&#39;ErrUnsealFailed&#39;</span> Failed to unseal: no key could decrypt secret <span style="color:#ff79c6">(</span>secret<span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span>2020/06/20 02:59:50 Updating test/mysecret
+</span></span><span style="display:flex;"><span>2020/06/20 02:59:50 Error updating test/mysecret, giving up: no key could decrypt secret <span style="color:#ff79c6">(</span>secret<span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span>E0620 02:59:50.151844       <span style="color:#bd93f9">1</span> controller.go:196<span style="color:#ff79c6">]</span> no key could decrypt secret <span style="color:#ff79c6">(</span>secret<span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span>2020/06/20 02:59:50 Event<span style="color:#ff79c6">(</span>v1.ObjectReference<span style="color:#ff79c6">{</span>Kind:<span style="color:#f1fa8c">&#34;SealedSecret&#34;</span>, Namespace:<span style="color:#f1fa8c">&#34;test&#34;</span>, Name:<span style="color:#f1fa8c">&#34;mysecret&#34;</span>, UID:<span style="color:#f1fa8c">&#34;78caa14b-c496-405b-91f8-652b2e4cef15&#34;</span>, APIVersion:<span style="color:#f1fa8c">&#34;bitnami.com/v1alpha1&#34;</span>, ResourceVersion:<span style="color:#f1fa8c">&#34;81242729&#34;</span>, FieldPath:<span style="color:#f1fa8c">&#34;&#34;</span><span style="color:#ff79c6">})</span>: type: <span style="color:#f1fa8c">&#39;Warning&#39;</span> reason: <span style="color:#f1fa8c">&#39;ErrUnsealFailed&#39;</span> Failed to unseal: no key could decrypt secret <span style="color:#ff79c6">(</span>secret<span style="color:#ff79c6">)</span>
+</span></span></code></pre></div><p>可以看到了出现了 <code>no key could decrypt secret (secret)</code> 这样的错误信息，这是因为我们使用的默认的 strict 作用域，所以更改 SealedSecret 的命名空间是不生效的。</p>
 <h3 id="修改-secret-名称">修改 Secret 名称</h3>
-
 <p>同样我们来测试下在 Secret 的命名空间下面来修改 Secret 的名称看看会是什么效果：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ cp -a sealedsecret.yaml sealedsecret-anothersecret.yaml
-$ sed -i <span style="color:#f1fa8c">&#39;s/mysecret/anothersecret/g&#39;</span> sealedsecret-anothersecret.yaml
-$ kubectl apply -f sealedsecret-anothersecret.yaml
-sealedsecret.bitnami.com/anothersecret created</code></pre></div>
-<p>创建完成后查看 Secret 是否生成新的名称：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get secret
-NAME                                    TYPE                                  DATA   AGE
-default-token-5tsh4                     kubernetes.io/service-account-token   <span style="color:#bd93f9">3</span>      224d
-mysecret                                Opaque                                <span style="color:#bd93f9">1</span>      18m</code></pre></div>
-<p>可以看到也没有生成修改过的名为 anothersecret 的 Secret 对象，同样可以查看 Controller 的日志信息：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl logs -f sealed-secrets-controller-6bf8c44ff9-fqhgt -n kube-system
-......
-<span style="color:#bd93f9">2020</span>/06/20 <span style="color:#bd93f9">03</span>:07:52 Updating default/anothersecret
-<span style="color:#bd93f9">2020</span>/06/20 <span style="color:#bd93f9">03</span>:07:53 Error updating default/anothersecret, will retry: no key could decrypt secret <span style="color:#ff79c6">(</span>secret<span style="color:#ff79c6">)</span>
-<span style="color:#bd93f9">2020</span>/06/20 <span style="color:#bd93f9">03</span>:07:53 Event<span style="color:#ff79c6">(</span>v1.ObjectReference<span style="color:#ff79c6">{</span>Kind:<span style="color:#f1fa8c">&#34;SealedSecret&#34;</span>, Namespace:<span style="color:#f1fa8c">&#34;default&#34;</span>, Name:<span style="color:#f1fa8c">&#34;anothersecret&#34;</span>, UID:<span style="color:#f1fa8c">&#34;b3467b24-b8d3-4c49-8de4-d8399875f8d5&#34;</span>, APIVersion:<span style="color:#f1fa8c">&#34;bitnami.com/v1alpha1&#34;</span>, ResourceVersion:<span style="color:#f1fa8c">&#34;81244607&#34;</span>, FieldPath:<span style="color:#f1fa8c">&#34;&#34;</span><span style="color:#ff79c6">})</span>: type: <span style="color:#f1fa8c">&#39;Warning&#39;</span> reason: <span style="color:#f1fa8c">&#39;ErrUnsealFailed&#39;</span> Failed to unseal: no key could decrypt secret <span style="color:#ff79c6">(</span>secret<span style="color:#ff79c6">)</span></code></pre></div>
-<p>和上面修改命名空间出现的错误基本上是一致的，这也是符合我们的预期的，这是因为我们创建的是一个严格模式下的 Secret，所以不能跨命名空间也不能修改名称。我们可以来创建一个集群范围的 Secret 对象，看看是什么效果。</p>
-
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ cp -a sealedsecret.yaml sealedsecret-anothersecret.yaml
+</span></span><span style="display:flex;"><span>$ sed -i <span style="color:#f1fa8c">&#39;s/mysecret/anothersecret/g&#39;</span> sealedsecret-anothersecret.yaml
+</span></span><span style="display:flex;"><span>$ kubectl apply -f sealedsecret-anothersecret.yaml
+</span></span><span style="display:flex;"><span>sealedsecret.bitnami.com/anothersecret created
+</span></span></code></pre></div><p>创建完成后查看 Secret 是否生成新的名称：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kubectl get secret
+</span></span><span style="display:flex;"><span>NAME                                    TYPE                                  DATA   AGE
+</span></span><span style="display:flex;"><span>default-token-5tsh4                     kubernetes.io/service-account-token   <span style="color:#bd93f9">3</span>      224d
+</span></span><span style="display:flex;"><span>mysecret                                Opaque                                <span style="color:#bd93f9">1</span>      18m
+</span></span></code></pre></div><p>可以看到也没有生成修改过的名为 anothersecret 的 Secret 对象，同样可以查看 Controller 的日志信息：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kubectl logs -f sealed-secrets-controller-6bf8c44ff9-fqhgt -n kube-system
+</span></span><span style="display:flex;"><span>......
+</span></span><span style="display:flex;"><span>2020/06/20 03:07:52 Updating default/anothersecret
+</span></span><span style="display:flex;"><span>2020/06/20 03:07:53 Error updating default/anothersecret, will retry: no key could decrypt secret <span style="color:#ff79c6">(</span>secret<span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span>2020/06/20 03:07:53 Event<span style="color:#ff79c6">(</span>v1.ObjectReference<span style="color:#ff79c6">{</span>Kind:<span style="color:#f1fa8c">&#34;SealedSecret&#34;</span>, Namespace:<span style="color:#f1fa8c">&#34;default&#34;</span>, Name:<span style="color:#f1fa8c">&#34;anothersecret&#34;</span>, UID:<span style="color:#f1fa8c">&#34;b3467b24-b8d3-4c49-8de4-d8399875f8d5&#34;</span>, APIVersion:<span style="color:#f1fa8c">&#34;bitnami.com/v1alpha1&#34;</span>, ResourceVersion:<span style="color:#f1fa8c">&#34;81244607&#34;</span>, FieldPath:<span style="color:#f1fa8c">&#34;&#34;</span><span style="color:#ff79c6">})</span>: type: <span style="color:#f1fa8c">&#39;Warning&#39;</span> reason: <span style="color:#f1fa8c">&#39;ErrUnsealFailed&#39;</span> Failed to unseal: no key could decrypt secret <span style="color:#ff79c6">(</span>secret<span style="color:#ff79c6">)</span>
+</span></span></code></pre></div><p>和上面修改命名空间出现的错误基本上是一致的，这也是符合我们的预期的，这是因为我们创建的是一个严格模式下的 Secret，所以不能跨命名空间也不能修改名称。我们可以来创建一个集群范围的 Secret 对象，看看是什么效果。</p>
 <h3 id="创建集群范围的-sealedsecrets">创建集群范围的 SealedSecrets</h3>
-
 <p>使用如下所示命令生成一个 Secret 对象资源清单：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ <span style="color:#8be9fd;font-style:italic">echo</span> -n <span style="color:#f1fa8c">&#34;This is a secret&#34;</span> | kubectl create secret generic mycwsecret --dry-run --from-file<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">secret</span><span style="color:#ff79c6">=</span>/dev/stdin -o yaml &gt; secret-cw.yaml</code></pre></div>
-<p>然后使用 <code>cluster-wide</code> 作用域来加密这个 Secret 对象到 test 命名空间下面去：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubeseal --format yaml --scope cluster-wide &lt;secret-cw.yaml &gt;sealedsecret-cw.yaml
-$ kubectl apply -n <span style="color:#8be9fd;font-style:italic">test</span> -f sealedsecret-cw.yaml
-sealedsecret.bitnami.com/mycwsecret created
-$ kubectl get secret -n <span style="color:#8be9fd;font-style:italic">test</span>
-NAME                  TYPE                                  DATA   AGE
-default-token-4gwfx   kubernetes.io/service-account-token   <span style="color:#bd93f9">3</span>      16m
-mycwsecret            Opaque                                <span style="color:#bd93f9">1</span>      30s</code></pre></div>
-<p>我们可以看到对应的 Secret 对象也创建成功了。</p>
-
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ <span style="color:#8be9fd;font-style:italic">echo</span> -n <span style="color:#f1fa8c">&#34;This is a secret&#34;</span> | kubectl create secret generic mycwsecret --dry-run --from-file<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">secret</span><span style="color:#ff79c6">=</span>/dev/stdin -o yaml &gt; secret-cw.yaml
+</span></span></code></pre></div><p>然后使用 <code>cluster-wide</code> 作用域来加密这个 Secret 对象到 test 命名空间下面去：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kubeseal --format yaml --scope cluster-wide &lt;secret-cw.yaml &gt;sealedsecret-cw.yaml
+</span></span><span style="display:flex;"><span>$ kubectl apply -n <span style="color:#8be9fd;font-style:italic">test</span> -f sealedsecret-cw.yaml
+</span></span><span style="display:flex;"><span>sealedsecret.bitnami.com/mycwsecret created
+</span></span><span style="display:flex;"><span>$ kubectl get secret -n <span style="color:#8be9fd;font-style:italic">test</span>
+</span></span><span style="display:flex;"><span>NAME                  TYPE                                  DATA   AGE
+</span></span><span style="display:flex;"><span>default-token-4gwfx   kubernetes.io/service-account-token   <span style="color:#bd93f9">3</span>      16m
+</span></span><span style="display:flex;"><span>mycwsecret            Opaque                                <span style="color:#bd93f9">1</span>      30s
+</span></span></code></pre></div><p>我们可以看到对应的 Secret 对象也创建成功了。</p>
 <p>现在我们来重命名这个 Secret，重新创建后看还能否生效：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ cp -a sealedsecret-cw.yaml sealedsecret-anothercwsecret.yaml
-$ sed -i <span style="color:#f1fa8c">&#39;s/mycwsecret/anothercwsecret/g&#39;</span> sealedsecret-anothercwsecret.yaml
-$ kubectl apply -n <span style="color:#8be9fd;font-style:italic">test</span> -f sealedsecret-anothercwsecret.yaml
-sealedsecret.bitnami.com/anothercwsecret created</code></pre></div>
-<p>创建完成后我们可以看成重命名后面的 Secret 也自动生成了：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get secret anothercwsecret -n <span style="color:#8be9fd;font-style:italic">test</span>
-NAME              TYPE     DATA   AGE
-anothercwsecret   Opaque   <span style="color:#bd93f9">1</span>      36s</code></pre></div>
-<p>那么修改命名空间呢？比如我们将上面加密后的 Secret 对象创建在 default 命名空间下面：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl apply -n default -f sealedsecret-cw.yaml
-sealedsecret.bitnami.com/mycwsecret created</code></pre></div>
-<p>创建成功后，同样我们可以看到在默认的命名空间下面创建了对应的 Secret 对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get secret mycwsecret
-NAME         TYPE     DATA   AGE
-mycwsecret   Opaque   <span style="color:#bd93f9">1</span>      17s</code></pre></div>
-<p>这也是符合我们的预期的，因为我们创建的是一个 cluster-wide 作用域的 SealedSecrets，所以可以随意的修改命名空间和名称。</p>
-
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ cp -a sealedsecret-cw.yaml sealedsecret-anothercwsecret.yaml
+</span></span><span style="display:flex;"><span>$ sed -i <span style="color:#f1fa8c">&#39;s/mycwsecret/anothercwsecret/g&#39;</span> sealedsecret-anothercwsecret.yaml
+</span></span><span style="display:flex;"><span>$ kubectl apply -n <span style="color:#8be9fd;font-style:italic">test</span> -f sealedsecret-anothercwsecret.yaml
+</span></span><span style="display:flex;"><span>sealedsecret.bitnami.com/anothercwsecret created
+</span></span></code></pre></div><p>创建完成后我们可以看成重命名后面的 Secret 也自动生成了：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kubectl get secret anothercwsecret -n <span style="color:#8be9fd;font-style:italic">test</span>
+</span></span><span style="display:flex;"><span>NAME              TYPE     DATA   AGE
+</span></span><span style="display:flex;"><span>anothercwsecret   Opaque   <span style="color:#bd93f9">1</span>      36s
+</span></span></code></pre></div><p>那么修改命名空间呢？比如我们将上面加密后的 Secret 对象创建在 default 命名空间下面：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kubectl apply -n default -f sealedsecret-cw.yaml
+</span></span><span style="display:flex;"><span>sealedsecret.bitnami.com/mycwsecret created
+</span></span></code></pre></div><p>创建成功后，同样我们可以看到在默认的命名空间下面创建了对应的 Secret 对象：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kubectl get secret mycwsecret
+</span></span><span style="display:flex;"><span>NAME         TYPE     DATA   AGE
+</span></span><span style="display:flex;"><span>mycwsecret   Opaque   <span style="color:#bd93f9">1</span>      17s
+</span></span></code></pre></div><p>这也是符合我们的预期的，因为我们创建的是一个 cluster-wide 作用域的 SealedSecrets，所以可以随意的修改命名空间和名称。</p>
 <p>关于 SealedSecrets 的更多使用可以参考<a href="https://www.notion.so/cnych/Sealed-Secrets-Kubernetes-Secrets-bb45266d99ce46879d9475e72de905ed#e852a4220d2c4841a4ccc191e34ed47a">官方文档</a>了解更多信息。</p>
-
 <h2 id="参考链接">参考链接</h2>
-
 <ul>
 <li><a href="https://github.com/bitnami-labs/sealed-secrets">https://github.com/bitnami-labs/sealed-secrets</a></li>
 <li><a href="https://medium.com/better-programming/encrypting-kubernetes-secrets-with-sealed-secrets-fe363149a211">https://medium.com/better-programming/encrypting-kubernetes-secrets-with-sealed-secrets-fe363149a211</a></li>
 </ul>
-
-<p><a href="https://youdianzhishi.com/web/course/1030" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
-
+<!-- raw HTML omitted -->
 
           <h2>微信公众号</h2>
-<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
-<img src="https://picdn.youdianzhishi.com/images/qrcode.png" alt="wechat-account-qrcode">
+<p>
+  扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+  kubernetes 讨论群里面共同学习。
+</p>
+<img
+  src="https://picdn.youdianzhishi.com/images/qrcode.png"
+  alt="wechat-account-qrcode"
+/>
 
   
           
@@ -872,7 +815,7 @@ mycwsecret   Opaque   <span style="color:#bd93f9">1</span>      17s</code></pre>
         </p>
         
         <p class="credits theme-by text-muted">
-          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
+          由 <a href="http://gohugo.io">Hugo v0.115.4</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
           
         </p>
       </div>
@@ -881,7 +824,7 @@ mycwsecret   Opaque   <span style="color:#bd93f9">1</span>      17s</code></pre>
 </footer>
 
 
-<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+<script src='https://www.qikqiak.com/js/bundle.min.af02a2d23b6651a566f0135a12e65fc2560faa7a969b3d1ad58d0afe0c9164ae.js' integrity='sha256-rwKi0jtmUaVm8BNaEuZfwlYPqnqWmz0a1Y0K/gyRZK4='></script>
 
 
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>

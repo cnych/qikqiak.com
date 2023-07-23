@@ -1,954 +1,632 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
-    />
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-    <title>
-      在 Kubernetes 上运行高可用的 Kafka
-      集群-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
-    </title>
-    <meta
-      property="og:title"
-      content="在 Kubernetes 上运行高可用的 Kafka 集群"
-    />
-    <meta
-      name="twitter:title"
-      content="在 Kubernetes 上运行高可用的 Kafka 集群"
-    />
 
-    <meta
-      name="description"
-      content="Apache Kafka 是目前最流行的分布式消息发布订阅系统，虽然 Kafka 非常强大，但它同样复杂，需要一个高可用的强大平台来运行。在微服务盛行，大多数公司都采用分布式计算的今天，将 Kafka 作为核心的消息系统使用还是非常有优势的。
+  <title>在 Kubernetes 上运行高可用的 Kafka 集群-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="在 Kubernetes 上运行高可用的 Kafka 集群" />
+  <meta name="twitter:title" content="在 Kubernetes 上运行高可用的 Kafka 集群" />
 
+  <meta name="description" content="Apache Kafka 是目前最流行的分布式消息发布订阅系统，虽然 Kafka 非常强大，但它同样复杂，需要一个高可用的强大平台来运行。在微服务盛行，大多数公司都采用分布式计算的今天，将 Kafka 作为核心的消息系统使用还是非常有优势的。
 如果你在 Kubernetes 集群中运行你的微服务，那么在 Kubernetes 中运行 Kafka 集群也是很有意义的，这样可以利用其内置的弹性和高可用，我们可以使用内置的 Kubernetes 服务发现轻松地与集群内的 Kafka Pods 进行交互。
-
-下面我们将来介绍下如何在 Kubernetes 上构建分布式的 Kafka 集群，这里我们将使用 Helm Chart 和 StatefulSet 来进行部署，当然如果想要动态生成持久化数据卷，还需要提前配置一个 StorageClass 资源，比如基于 Ceph RBD 的，如果你集群中没有配置动态卷，则需要提前创建3个未绑定的 PV 用于数据持久化。
-
-当前基于 Helm 官方仓库的 chartincubator/kafka 在 Kubernetes 上部署的 Kafka，使用的镜像是 confluentinc/cp-kafka:5.0.1，即部署的是Confluent 公司提供的 Kafka 版本，Confluent Platform Kafka(简称CP Kafka)提供了一些 Apache Kafka 没有的高级特性，例如跨数据中心备份、Schema 注册中心以及集群监控工具等。"
-    />
-    <meta
-      property="og:description"
-      content="Apache Kafka 是目前最流行的分布式消息发布订阅系统，虽然 Kafka 非常强大，但它同样复杂，需要一个高可用的强大平台来运行。在微服务盛行，大多数公司都采用分布式计算的今天，将 Kafka 作为核心的消息系统使用还是非常有优势的。
-
+下面我们将来介绍下如何在 Kubernetes 上构建分布式的 Kafka 集群，这里我们将使用 Helm Chart 和 StatefulSet 来进行部署，当然如果想要动态生成持久化数据卷，还需要提前配置一个 StorageClass 资源，比如基于 Ceph RBD 的，如果你集群中没有配置动态卷，则需要提前创建 3 个未绑定的 PV 用于数据持久化。
+当前基于 Helm 官方仓库的 chartincubator/kafka 在 Kubernetes 上部署的 Kafka，使用的镜像是 confluentinc/cp-kafka:5.0.1，即部署的是 Confluent 公司提供的 Kafka 版本，Confluent Platform Kafka(简称 CP Kafka)提供了一些 Apache Kafka 没有的高级特性，例如跨数据中心备份、Schema 注册中心以及集群监控工具等。">
+  <meta property="og:description" content="Apache Kafka 是目前最流行的分布式消息发布订阅系统，虽然 Kafka 非常强大，但它同样复杂，需要一个高可用的强大平台来运行。在微服务盛行，大多数公司都采用分布式计算的今天，将 Kafka 作为核心的消息系统使用还是非常有优势的。
 如果你在 Kubernetes 集群中运行你的微服务，那么在 Kubernetes 中运行 Kafka 集群也是很有意义的，这样可以利用其内置的弹性和高可用，我们可以使用内置的 Kubernetes 服务发现轻松地与集群内的 Kafka Pods 进行交互。
+下面我们将来介绍下如何在 Kubernetes 上构建分布式的 Kafka 集群，这里我们将使用 Helm Chart 和 StatefulSet 来进行部署，当然如果想要动态生成持久化数据卷，还需要提前配置一个 StorageClass 资源，比如基于 Ceph RBD 的，如果你集群中没有配置动态卷，则需要提前创建 3 个未绑定的 PV 用于数据持久化。
+当前基于 Helm 官方仓库的 chartincubator/kafka 在 Kubernetes 上部署的 Kafka，使用的镜像是 confluentinc/cp-kafka:5.0.1，即部署的是 Confluent 公司提供的 Kafka 版本，Confluent Platform Kafka(简称 CP Kafka)提供了一些 Apache Kafka 没有的高级特性，例如跨数据中心备份、Schema 注册中心以及集群监控工具等。">
+  <meta name="twitter:description" content="Apache Kafka 是目前最流行的分布式消息发布订阅系统，虽然 Kafka 非常强大，但它同样复杂，需要一个高可用的强大平台来运行。在微服务盛行，大多数公司都采用分布式计算的今天，将 Kafka 作为核心的消息系统使用还是非常有优势的。
+如果你在 Kubernetes 集群中运行你的微服务，那么在 Kubernetes 中运行 Kafka 集群也是很有意义的，这样可以利用其内置的弹性和高可 …">
+  <meta name="author" content=""/>
+  <link href="https://picdn.youdianzhishi.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://picdn.youdianzhishi.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/deploy-kafka-ha-on-k8s/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
 
-下面我们将来介绍下如何在 Kubernetes 上构建分布式的 Kafka 集群，这里我们将使用 Helm Chart 和 StatefulSet 来进行部署，当然如果想要动态生成持久化数据卷，还需要提前配置一个 StorageClass 资源，比如基于 Ceph RBD 的，如果你集群中没有配置动态卷，则需要提前创建3个未绑定的 PV 用于数据持久化。
+  <link rel="canonical" href="https://www.qikqiak.com/post/deploy-kafka-ha-on-k8s/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
-当前基于 Helm 官方仓库的 chartincubator/kafka 在 Kubernetes 上部署的 Kafka，使用的镜像是 confluentinc/cp-kafka:5.0.1，即部署的是Confluent 公司提供的 Kafka 版本，Confluent Platform Kafka(简称CP Kafka)提供了一些 Apache Kafka 没有的高级特性，例如跨数据中心备份、Schema 注册中心以及集群监控工具等。"
-    />
-    <meta
-      name="twitter:description"
-      content="Apache Kafka 是目前最流行的分布式消息发布订阅系统，虽然 Kafka 非常强大，但它同样复杂，需要一个高可用的强大平台来运行。在微服务盛行，大多数公司都采用分布式计算的今天，将 Kafka 作为核心的消息系统使用还是非常有优势的。
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
 
-如果你在 Kubernetes 集群中运行你的微服务，那么在 Kubernetes 中运行 Kafka 集群也是很有意义的，这样可以利用其内置的弹性和高可 …"
-    />
-    <meta name="author" content="" />
-    <link
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-      rel="icon"
-      type="image/x-icon"
-    />
-    <link
-      rel="apple-touch-icon"
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      property="og:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      name="twitter:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta name="twitter:card" content="summary" />
-    <meta
-      property="og:url"
-      content="https://www.qikqiak.com/post/deploy-kafka-ha-on-k8s/"
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="阳明的博客" />
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a6b62363fe57848ad01efa2a5d1bbb1047c2ffb71b53d8aeb42bc5ed5c77ea7c.css' integrity='sha256-prYjY/5XhIrQHvoqXRu7EEfC/7cbU9iutCvF7Vx36nw='>
 
-    <meta name="generator" content="Hugo 0.55.6" />
-    <link
-      rel="canonical"
-      href="https://www.qikqiak.com/post/deploy-kafka-ha-on-k8s/"
-    />
-    <link
-      rel="alternate"
-      href="https://www.qikqiak.com/index.xml"
-      type="application/rss+xml"
-      title="阳明的博客"
-    />
-
-    <link
-      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
-      rel="stylesheet"
-    />
-
-    <link
-      rel="stylesheet"
-      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
-      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
-    />
-
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
-    />
-
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
     <!--[if lt IE 9]>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-      <link
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-        rel="stylesheet"
-      />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <![endif]-->
-    <meta
-      name="google-site-verification"
-      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
-    />
-    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-    <meta name="keywords" content="kubernetes, pod, kafka, helm, operator" />
-    <script>
-      var _hmt = _hmt || [];
-      (function () {
-        var hm = document.createElement("script");
-        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(hm, s);
-      })();
-    </script>
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, pod, kafka, helm, operator">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
 
-    <script type="application/javascript">
-      var doNotTrack = false;
-      if (!doNotTrack) {
-        window.ga =
-          window.ga ||
-          function () {
-            (ga.q = ga.q || []).push(arguments);
-          };
-        ga.l = +new Date();
-        ga("create", "UA-69668147-3", "auto");
 
-        ga("send", "pageview");
-      }
-    </script>
-    <script async src="https://www.google-analytics.com/analytics.js"></script>
-  </head>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-      <div class="container">
-        <div class="navbar-header">
-          <button
-            type="button"
-            class="navbar-toggle"
-            data-toggle="collapse"
-            data-target="#main-navbar"
-          >
-            <span class="sr-only">切换导航</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a
-            class="navbar-brand"
-            href="https://www.qikqiak.com/"
-            title="阳明的博客"
-          >
-            <img
-              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
-              style="margin-top: -5px; height: 32px"
-              alt="阳明的博客"
-            />
-          </a>
-        </div>
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://picdn.youdianzhishi.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
 
-        <div class="collapse navbar-collapse" id="main-navbar">
-          <ul class="nav navbar-nav navbar-right">
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-
+          
+        
+          
             <li>
-              <a
-                title="课程"
-                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
-                >课程</a
-              >
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/archives">Archive</a>
-
-                <a href="https://www.qikqiak.com/tags">tags</a>
-
-                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-
-                <a href="https://www.qikqiak.com/tags/python">python</a>
-
-                <a href="https://www.qikqiak.com/tags/django">django</a>
-
-                <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-
-                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-
-                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-
-                <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/"
-                >关于</a
-              >
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
             </li>
-
+          
+        
+          
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
+          
+        
 
-            <li>
-              <a
-                href="#modalSearch"
-                data-toggle="modal"
-                data-target="#modalSearch"
-                style="outline: none"
-              >
-                <span
-                  id="searchGlyph"
-                  class="glyphicon glyphicon-search"
-                ></span>
-              </a>
-            </li>
-          </ul>
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
         </div>
-      </div>
-    </nav>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-    <div id="modalSearch" class="modal fade" role="dialog">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal">
-              &times;
-            </button>
-            <h4 class="modal-title">搜索</h4>
-          </div>
-          <div class="modal-body">
-            <div class="aa-input-container" id="aa-input-container">
-              <input
-                type="search"
-                id="aa-search-input"
-                class="aa-input-search"
-                placeholder="Search for titles or URIs..."
-                name="search"
-                autocomplete="off"
-              />
-              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-                <path
-                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
-                />
-              </svg>
-            </div>
-            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
 
-            <script>
-              var client = algoliasearch(
-                "1JDRAS0AZR",
-                "8804ac109158bb3bb60d74ce98fa332f"
-              );
-              var index = client.initIndex("prod_blog");
-
-              autocomplete(
-                "#aa-search-input",
-                { hint: false },
-                {
-                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
-
-                  displayKey: "name",
-
-                  templates: {
-                    suggestion: function (suggestion) {
-                      return (
-                        "<span>" +
-                        '<a href="https://www.qikqiak.com/post/' +
-                        suggestion.slug +
-                        '">' +
-                        suggestion._highlightResult.title.value +
-                        "</a></span>"
-                      );
-                    },
-                  },
-                }
-              );
-            </script>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">
-              close
-            </button>
-          </div>
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div
-      id="header-big-imgs"
-      data-num-img="1"
-      data-img-src-1="https://www.qikqiak.com/img/posts/photo-1503863937795-62954a3c0f05.jpeg"
-      data-img-desc-1="Morning glory"
-    ></div>
+    
+  
+  
+  
 
-    <header class="header-section has-img">
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://www.qikqiak.com/img/posts/photo-1503863937795-62954a3c0f05.jpeg" data-img-desc-1="Morning glory"></div>
+  
+
+  <header class="header-section has-img">
+    
       <div class="intro-header big-img">
+        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>在 Kubernetes 上运行高可用的 Kafka 集群</h1>
+                  
+                  
+                    <span class="post-meta">
+  发表于 November 1, 2020  
+</span>
 
-                <span class="post-meta"> 发表于 November 1, 2020 </span>
+                  
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline"></span>
+        <span class="img-desc" style="display: inline;"></span>
       </div>
-
-      <div class="intro-header no-img">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-              <div class="post-heading">
-                <h1>在 Kubernetes 上运行高可用的 Kafka 集群</h1>
-
-                <span class="post-meta"> 发表于 November 1, 2020 </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <div class="container" role="main">
-      <div class="row">
-        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-          <div>
-            <h5 id="tags" style="margin-top: 30px">
-              标签:
-
-              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
-              &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/pod/">Pod</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/kafka/">Kafka</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/helm/">Helm</a> &nbsp;
-            </h5>
-          </div>
-
-          <article
-            role="main"
-            class="blog-post"
-            itemprop="articleBody"
-            id="content"
-          >
-            <aside class="toc">
-              <nav id="TableOfContents">
-                <ul>
-                  <li>
-                    <ul>
-                      <li><a href="#安装">安装</a></li>
-                      <li><a href="#客户端测试">客户端测试</a></li>
-                    </ul>
-                  </li>
-                </ul>
-              </nav>
-            </aside>
-
-            <p>
-              Apache Kafka 是目前最流行的分布式消息发布订阅系统，虽然 Kafka
-              非常强大，但它同样复杂，需要一个高可用的强大平台来运行。在微服务盛行，大多数公司都采用分布式计算的今天，将
-              Kafka 作为核心的消息系统使用还是非常有优势的。
-            </p>
-
-            <p>
-              如果你在 Kubernetes 集群中运行你的微服务，那么在 Kubernetes 中运行
-              Kafka
-              集群也是很有意义的，这样可以利用其内置的弹性和高可用，我们可以使用内置的
-              Kubernetes 服务发现轻松地与集群内的 Kafka Pods 进行交互。
-            </p>
-
-            <p>
-              下面我们将来介绍下如何在 Kubernetes 上构建分布式的 Kafka
-              集群，这里我们将使用 Helm Chart 和 StatefulSet
-              来进行部署，当然如果想要动态生成持久化数据卷，还需要提前配置一个
-              StorageClass 资源，比如基于 Ceph RBD
-              的，如果你集群中没有配置动态卷，则需要提前创建3个未绑定的 PV
-              用于数据持久化。
-            </p>
-
-            <p>
-              当前基于 Helm 官方仓库的 <code>chartincubator/kafka</code> 在
-              Kubernetes 上部署的 Kafka，使用的镜像是
-              <code>confluentinc/cp-kafka:5.0.1</code>，即部署的是Confluent
-              公司提供的 Kafka 版本，Confluent Platform Kafka(简称CP
-              Kafka)提供了一些 Apache Kafka
-              没有的高级特性，例如跨数据中心备份、Schema
-              注册中心以及集群监控工具等。
-            </p>
-
-            <h2 id="安装">安装</h2>
-
-            <p>
-              使用 Helm Chart 安装当然前提要安装 Helm，直接使用最新版本的 Helm
-              v3 版本即可：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go">&gt; wget https:<span style="color:#6272a4">//get.helm.sh/helm-v3.4.0-linux-amd64.tar.gz
-</span><span style="color:#6272a4"></span>&gt; tar <span style="color:#ff79c6">-</span>zxvf helm<span style="color:#ff79c6">-</span>v3<span style="color:#bd93f9">.4.0</span><span style="color:#ff79c6">-</span>linux<span style="color:#ff79c6">-</span>amd64.tar.gz
-&gt; sudo cp <span style="color:#ff79c6">-</span>a linux<span style="color:#ff79c6">-</span>amd64<span style="color:#ff79c6">/</span>helm <span style="color:#ff79c6">/</span>usr<span style="color:#ff79c6">/</span>local<span style="color:#ff79c6">/</span>bin<span style="color:#ff79c6">/</span>helm
-&gt; chmod <span style="color:#ff79c6">+</span>x <span style="color:#ff79c6">/</span>usr<span style="color:#ff79c6">/</span>local<span style="color:#ff79c6">/</span>bin<span style="color:#ff79c6">/</span>helm</code></pre>
-            </div>
-            <p>然后添加 Kafka 的 Chart 仓库：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go">&gt; helm repo add incubator http:<span style="color:#6272a4">//mirror.azure.cn/kubernetes/charts-incubator/
-</span><span style="color:#6272a4"></span>&gt; helm repo update
-Hang tight while we grab the latest from your chart repositories<span style="color:#ff79c6">...</span>
-<span style="color:#ff79c6">...</span>Successfully got an update from the <span style="color:#f1fa8c">&#34;incubator&#34;</span> chart repository
-<span style="color:#ff79c6">...</span>Successfully got an update from the <span style="color:#f1fa8c">&#34;stable&#34;</span> chart repository
-Update Complete. ⎈Happy Helming!⎈</code></pre>
-            </div>
-            <p>
-              接着我们就可以配置需要安装的 Values 文件了，可以直接使用默认的
-              values.yaml 文件，然后可以用它来进行定制，比如指定我们自己的
-              StorageClass：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">&gt; curl https://raw.githubusercontent.com/helm/charts/master/incubator/kafka/values.yaml &gt; kfk-values.yaml</code></pre>
-            </div>
-            <p>这里我直接使用默认的进行安装：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">&gt; helm install kafka incubator/kafka -f kfk-values.yaml
-NAME: kafka
-LAST DEPLOYED: Sun Nov  <span style="color:#bd93f9">1</span> <span style="color:#bd93f9">09</span>:36:44 <span style="color:#bd93f9">2020</span>
-NAMESPACE: default
-STATUS: deployed
-REVISION: <span style="color:#bd93f9">1</span>
-NOTES:
-<span style="color:#6272a4">### Connecting to Kafka from inside Kubernetes</span>
-
-You can connect to Kafka by running a simple pod in the K8s cluster like this with a configuration like this:
-
-  apiVersion: v1
-  kind: Pod
-  metadata:
-    name: testclient
-    namespace: default
-  spec:
-    containers:
-    - name: kafka
-      image: confluentinc/cp-kafka:5.0.1
-      command:
-        - sh
-        - -c
-        - <span style="color:#f1fa8c">&#34;exec tail -f /dev/null&#34;</span>
-
-Once you have the testclient pod above running, you can list all kafka
-topics with:
-
-  kubectl -n default <span style="color:#8be9fd;font-style:italic">exec</span> testclient -- ./bin/kafka-topics.sh --zookeeper kafka-zookeeper:2181 --list
-
-To create a new topic:
-
-  kubectl -n default <span style="color:#8be9fd;font-style:italic">exec</span> testclient -- ./bin/kafka-topics.sh --zookeeper kafka-zookeeper:2181 --topic test1 --create --partitions <span style="color:#bd93f9">1</span> --replication-factor <span style="color:#bd93f9">1</span>
-
-To listen <span style="color:#ff79c6">for</span> messages on a topic:
-
-  kubectl -n default <span style="color:#8be9fd;font-style:italic">exec</span> -ti testclient -- ./bin/kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic test1 --from-beginning
-
-To stop the listener session above press: Ctrl+C
-
-To start an interactive message producer session:
-  kubectl -n default <span style="color:#8be9fd;font-style:italic">exec</span> -ti testclient -- ./bin/kafka-console-producer.sh --broker-list kafka-headless:9092 --topic test1
-
-To create a message in the above session, simply <span style="color:#8be9fd;font-style:italic">type</span> the message and press <span style="color:#f1fa8c">&#34;enter&#34;</span>
-To end the producer session try: Ctrl+C
-
-If you specify <span style="color:#f1fa8c">&#34;zookeeper.connect&#34;</span> in configurationOverrides, please replace <span style="color:#f1fa8c">&#34;kafka-zookeeper:2181&#34;</span> with the value of <span style="color:#f1fa8c">&#34;zookeeper.connect&#34;</span>, or you will get error.</code></pre>
-            </div>
-            <p>
-              如果你没配置 StorageClass 或者可用的 PV，安装的时候 kafka 的 Pod
-              会处于 Pending 状态，所以一定要提前配置好数据卷。
-            </p>
-
-            <p>正常情况隔一会儿 Kafka 就可以安装成功了：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">&gt; kubectl get pods
-NAME                READY   STATUS    RESTARTS   AGE
-kafka-0             <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          25m
-kafka-1             <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          11m
-kafka-2             <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          2m
-kafka-zookeeper-0   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          25m
-kafka-zookeeper-1   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          22m
-kafka-zookeeper-2   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          18m</code></pre>
-            </div>
-            <p>
-              默认会安装3个 ZK Pods 和3个 Kafka
-              Pods，这样可以保证应用的高可用，也可以看下我配置的持久卷信息：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">&gt; kubectl get pvc
-NAME              STATUS   VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   AGE
-datadir-kafka-0   Bound    kfk0     1Gi        RWO                           28m
-datadir-kafka-1   Bound    kfk1     1Gi        RWO                           13m
-datadir-kafka-2   Bound    kfk2     1Gi        RWO                           4m9s
-&gt; kubectl get pv
-NAME   CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                     STORAGECLASS   REASON   AGE
-kfk0   1Gi        RWO            Retain           Bound    default/datadir-kafka-0                           23m
-kfk1   1Gi        RWO            Retain           Bound    default/datadir-kafka-1                           22m
-kfk2   1Gi        RWO            Retain           Bound    default/datadir-kafka-2                           10m</code></pre>
-            </div>
-            <p>
-              如果我们配置一个 default 的
-              StorageClass，则会动态去申请持久化卷，如果你的集群没有启用动态卷，可以修改
-              <code>values.yaml</code> 来使用静态卷。
-            </p>
-
-            <p>然后查看下对应的 Service 对象：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">&gt; kubectl get svc
-NAME                       TYPE        CLUSTER-IP       EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>                      AGE
-kafka                      ClusterIP   <span style="color:#bd93f9">10</span>.100.205.187   &lt;none&gt;        <span style="color:#bd93f9">9092</span>/TCP                     31m
-kafka-headless             ClusterIP   None             &lt;none&gt;        <span style="color:#bd93f9">9092</span>/TCP                     31m
-kafka-zookeeper            ClusterIP   <span style="color:#bd93f9">10</span>.100.230.255   &lt;none&gt;        <span style="color:#bd93f9">2181</span>/TCP                     31m
-kafka-zookeeper-headless   ClusterIP   None             &lt;none&gt;        <span style="color:#bd93f9">2181</span>/TCP,3888/TCP,2888/TCP   31m
-kubernetes                 ClusterIP   <span style="color:#bd93f9">10</span>.96.0.1        &lt;none&gt;        <span style="color:#bd93f9">443</span>/TCP                      14d</code></pre>
-            </div>
-            <p>
-              可以看到又一个叫 <code>kafka-zookeeper</code> 的 zookeeper
-              服务和一个叫 <code>kafka</code> 的 Kafka 服务，对于 Kafka
-              集群的管理，我们将与
-              <code>kafka-zookeeper</code>
-              服务进行交互，对于集群消息的收发，我们将使用
-              <code>kafka</code> 服务。
-              <script
-                async
-                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-              ></script>
-
-              <ins
-                class="adsbygoogle"
-                style="display: block"
-                data-ad-client="ca-pub-5376999672787220"
-                data-ad-slot="9165834656"
-                data-ad-format="auto"
-                data-full-width-responsive="true"
-              ></ins>
-              <script>
-                (adsbygoogle = window.adsbygoogle || []).push({});
-              </script>
-            </p>
-
-            <h2 id="客户端测试">客户端测试</h2>
-
-            <p>
-              现在 Kafka 集群已经搭建好了，接下来我们来安装一个 Kafka
-              客户端，用它来帮助我们产生和获取 topics 消息。
-            </p>
-
-            <p>直接使用下面的命令创建客户端：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">&gt; cat <span style="color:#f1fa8c">&lt;&lt;EOF | kubectl apply -f -
-</span><span style="color:#f1fa8c">apiVersion: v1
-</span><span style="color:#f1fa8c">kind: Pod
-</span><span style="color:#f1fa8c">metadata:
-</span><span style="color:#f1fa8c">  name: testclient
-</span><span style="color:#f1fa8c">  namespace: default
-</span><span style="color:#f1fa8c">spec:
-</span><span style="color:#f1fa8c">  containers:
-</span><span style="color:#f1fa8c">  - name: kafka
-</span><span style="color:#f1fa8c">    image: confluentinc/cp-kafka:5.0.1
-</span><span style="color:#f1fa8c">    command:
-</span><span style="color:#f1fa8c">      - sh
-</span><span style="color:#f1fa8c">      - -c
-</span><span style="color:#f1fa8c">      - &#34;exec tail -f /dev/null&#34;
-</span><span style="color:#f1fa8c">EOF</span>
-&gt; kubectl get pod testclient
-NAME         READY   STATUS    RESTARTS   AGE
-testclient   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          23s</code></pre>
-            </div>
-            <p>
-              客户端 Pod
-              创建成功后我们就可以开始进行一些简单的测试了。首先让我们创建一个名为
-              <code>test1</code> 的有一个分区和复制因子<code>'1'</code>的
-              topic：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">&gt; kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -it testclient -- /usr/bin/kafka-topics --zookeeper kafka-zookeeper:2181 --topic test1 --create --partitions <span style="color:#bd93f9">1</span> --replication-factor <span style="color:#bd93f9">1</span>
-Created topic <span style="color:#f1fa8c">&#34;test1&#34;</span>.</code></pre>
-            </div>
-            <p>然后创建一个生产者，将消息发布到这个 topic 主题上：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">&gt; kubectl  <span style="color:#8be9fd;font-style:italic">exec</span> -ti testclient -- /usr/bin/kafka-console-producer --broker-list kafka:9092 --topic test1
-&gt;</code></pre>
-            </div>
-            <p>
-              然后重新打一个终端页面，让我们打开一个消费者会话，这样我们就可以看到我们发送的消息了。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">&gt; kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -ti testclient -- /usr/bin/kafka-console-consumer --bootstrap-server kafka:9092 --topic test1</code></pre>
-            </div>
-            <p>
-              现在我们在生产者的窗口发送消息，在上面的消费者会话窗口中就可以看到对应的消息了：
-            </p>
-
-            <p>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20201101102425.png"
-                alt=""
-              />
-            </p>
-
-            <p>
-              到这里证明 Kafka 集群就正常工作了。比如需要注意 zk
-              集群我们并没有做持久化，如果是生产环境一定记得做下数据持久化，在
-              values.yaml
-              文件中根据需求进行定制即可，当然对于生产环境还是推荐使用 Operator
-              来搭建 Kafka 集群，比如 <code>strimzi-kafka-operator</code>。
-            </p>
-
-            <p>
-              <a
-                href="https://youdianzhishi.com/web/course/1030"
-                title="从 Docker 到 Kubernetes 进阶课程"
-                ><img
-                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
-                  alt="Kubernetes进阶训练营"
-              /></a>
-            </p>
-
-            <h2>微信公众号</h2>
-            <p>
-              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
-              kubernetes 讨论群里面共同学习。
-            </p>
-            <img
-              src="https://picdn.youdianzhishi.com/images/qrcode.png"
-              alt="wechat-account-qrcode"
-            />
-
-            <div class="entry-shang text-center">
-              <p>「真诚赞赏，手留余香」</p>
-              <button class="zs show-zs btn btn-bred">赞赏</button>
-            </div>
-            <div class="zs-modal-bg"></div>
-            <div class="zs-modal-box">
-              <div class="zs-modal-head">
-                <button type="button" class="close">×</button>
-                <span class="author"
-                  ><img
-                    src="https://www.qikqiak.com/img/avatar.jpeg"
-                  />阳明</span
-                >
-                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-              </div>
-              <div class="zs-modal-body">
-                <div class="zs-modal-btns">
-                  <button class="btn btn-blink" data-num="2">2元</button>
-                  <button class="btn btn-blink" data-num="5">5元</button>
-                  <button class="btn btn-blink" data-num="10">10元</button>
-                  <button class="btn btn-blink" data-num="50">50元</button>
-                  <button class="btn btn-blink" data-num="100">100元</button>
-                  <button class="btn btn-blink" data-num="1">任意金额</button>
-                </div>
-                <div class="zs-modal-pay">
-                  <button class="btn btn-bred" id="pay-text">2元</button>
-                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-                  <img
-                    src="https://www.qikqiak.com/img/wechat-2.png"
-                    id="pay-image"
-                  />
-                </div>
-              </div>
-              <div class="zs-modal-footer">
-                <span class="zs-wechat"
-                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
-                /></span>
-              </div>
-            </div>
-
-            <div
-              class="social-share"
-              data-initialized="true"
-              style="margin-bottom: 20px; margin-top: 20px"
-            >
-              <center>
-                <a href="#" class="social-share-icon icon-weibo"></a>
-                <a href="#" class="social-share-icon icon-wechat"></a>
-                <a href="#" class="social-share-icon icon-twitter"></a>
-                <a href="#" class="social-share-icon icon-linkedin"></a>
-                <a href="#" class="social-share-icon icon-facebook"></a>
-                <a href="#" class="social-share-icon icon-qq"></a>
-                <a href="#" class="social-share-icon icon-qzone"></a>
-              </center>
-            </div>
-
-            <link
-              rel="stylesheet"
-              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
-            />
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
-          </article>
-
-          <h3>相关文章</h3>
-          <ul style="margin-bottom: 25px">
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/install-kafka-in-kubernetes/"
-                >在 Kubernetes 集群上部署 Kafka</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/use-service-in-k8s/"
-                >Service 的使用</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/use-job-cronjob/"
-                >Job和CronJob 的使用方法</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/use-rc-rs-manage-pod/"
-                >RC、RS 使用方法</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/gitops-devops-on-k8s/"
-                >GitOps - 在 Kubernetes 中进行 DevOps 的方式</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/use-cdk8s-define-k8s-apps/"
-                >使用编程语言描述 Kubernetes 应用 - cdk8s</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/use-crd-create-grafana-dashboard/"
-                >用 Kubernetes 资源对象创建 Grafana Dashboard</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/deploy-vault-on-k8s/"
-                >在 Kubernetes 上部署 Vault</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/deploy-spinnaker-on-k8s/"
-                >在 Kubernetes 上部署 Spinnaker</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/migrate-helm-to-v3/"
-                >Helm V2 迁移到 V3 版本</a
-              >
-            </li>
-          </ul>
-
-          <ul class="pager blog-pager">
-            <li class="previous">
-              <a
-                href="https://www.qikqiak.com/post/accelerate-ci-cd-pipelines-with-kind/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="使用 KinD 加速 CI/CD 流水线"
-                >&larr; 前一篇</a
-              >
-            </li>
-
-            <li class="next">
-              <a
-                href="https://www.qikqiak.com/post/visually-explained-k8s-service/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="图解 Kubernetes Service"
-                >后一篇 &rarr;</a
-              >
-            </li>
-          </ul>
-
-          <script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-          ></script>
-
-          <ins
-            class="adsbygoogle"
-            style="display: block"
-            data-ad-client="ca-pub-5376999672787220"
-            data-ad-slot="3700507799"
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          ></ins>
-          <script>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-          </script>
-
-          <div id="gitalk-container"></div>
-          <link
-            rel="stylesheet"
-            href="https://unpkg.com/gitalk/dist/gitalk.css"
-          />
-          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-          <script>
-            var gitalk = new Gitalk({
-              clientID: "bdb76dbb2e9d0786e350",
-              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
-              repo: "blog",
-              owner: "cnych",
-              admin: ["cnych"],
-              labels: ["gitment"],
-              title: "在 Kubernetes 上运行高可用的 Kafka 集群",
-              createIssueManually: true,
-              id: "deploy-kafka-ha-on-k8s",
-              distractionFreeMode: true,
-            });
-            gitalk.render("gitalk-container");
-          </script>
-        </div>
-      </div>
-    </div>
-
-    <footer>
+    
+    
+    
+    <div class="intro-header no-img">
+      
       <div class="container">
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <ul class="list-inline text-center footer-links">
-              <img
-                src="https://www.qikqiak.com/img/wechatmp.png"
-                alt="k8s技术圈"
-              />
+            <div class="post-heading">
+              <h1>在 Kubernetes 上运行高可用的 Kafka 集群</h1>
+                
+                
+                  <span class="post-meta">
+  发表于 November 1, 2020  
+</span>
 
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/pod/">Pod</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/kafka/">Kafka</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/helm/">Helm</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#安装">安装</a></li>
+    <li><a href="#客户端测试">客户端测试</a></li>
+  </ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>Apache Kafka 是目前最流行的分布式消息发布订阅系统，虽然 Kafka 非常强大，但它同样复杂，需要一个高可用的强大平台来运行。在微服务盛行，大多数公司都采用分布式计算的今天，将 Kafka 作为核心的消息系统使用还是非常有优势的。</p>
+<p>如果你在 Kubernetes 集群中运行你的微服务，那么在 Kubernetes 中运行 Kafka 集群也是很有意义的，这样可以利用其内置的弹性和高可用，我们可以使用内置的 Kubernetes 服务发现轻松地与集群内的 Kafka Pods 进行交互。</p>
+<p>下面我们将来介绍下如何在 Kubernetes 上构建分布式的 Kafka 集群，这里我们将使用 Helm Chart 和 StatefulSet 来进行部署，当然如果想要动态生成持久化数据卷，还需要提前配置一个 StorageClass 资源，比如基于 Ceph RBD 的，如果你集群中没有配置动态卷，则需要提前创建 3 个未绑定的 PV 用于数据持久化。</p>
+<p>当前基于 Helm 官方仓库的 <code>chartincubator/kafka</code> 在 Kubernetes 上部署的 Kafka，使用的镜像是 <code>confluentinc/cp-kafka:5.0.1</code>，即部署的是 Confluent 公司提供的 Kafka 版本，Confluent Platform Kafka(简称 CP Kafka)提供了一些 Apache Kafka 没有的高级特性，例如跨数据中心备份、Schema 注册中心以及集群监控工具等。</p>
+<h2 id="安装">安装</h2>
+<p>使用 Helm Chart 安装当然前提要安装 Helm，直接使用最新版本的 Helm v3 版本即可：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>&gt; wget https:<span style="color:#6272a4">//get.helm.sh/helm-v3.4.0-linux-amd64.tar.gz
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4"></span>&gt; tar <span style="color:#ff79c6">-</span>zxvf helm<span style="color:#ff79c6">-</span>v3<span style="color:#bd93f9">.4.0</span><span style="color:#ff79c6">-</span>linux<span style="color:#ff79c6">-</span>amd64.tar.gz
+</span></span><span style="display:flex;"><span>&gt; sudo cp <span style="color:#ff79c6">-</span>a linux<span style="color:#ff79c6">-</span>amd64<span style="color:#ff79c6">/</span>helm <span style="color:#ff79c6">/</span>usr<span style="color:#ff79c6">/</span>local<span style="color:#ff79c6">/</span>bin<span style="color:#ff79c6">/</span>helm
+</span></span><span style="display:flex;"><span>&gt; chmod <span style="color:#ff79c6">+</span>x <span style="color:#ff79c6">/</span>usr<span style="color:#ff79c6">/</span>local<span style="color:#ff79c6">/</span>bin<span style="color:#ff79c6">/</span>helm
+</span></span></code></pre></div><p>然后添加 Kafka 的 Chart 仓库：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>&gt; helm repo add incubator http:<span style="color:#6272a4">//mirror.azure.cn/kubernetes/charts-incubator/
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4"></span>&gt; helm repo update
+</span></span><span style="display:flex;"><span>Hang tight while we grab the latest from your chart repositories<span style="color:#ff79c6">...</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">...</span>Successfully got an update from the <span style="color:#f1fa8c">&#34;incubator&#34;</span> chart repository
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">...</span>Successfully got an update from the <span style="color:#f1fa8c">&#34;stable&#34;</span> chart repository
+</span></span><span style="display:flex;"><span>Update Complete. ⎈Happy Helming!⎈
+</span></span></code></pre></div><p>接着我们就可以配置需要安装的 Values 文件了，可以直接使用默认的 values.yaml 文件，然后可以用它来进行定制，比如指定我们自己的 StorageClass：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>&gt; curl https://raw.githubusercontent.com/helm/charts/master/incubator/kafka/values.yaml &gt; kfk-values.yaml
+</span></span></code></pre></div><p>这里我直接使用默认的进行安装：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>&gt; helm install kafka incubator/kafka -f kfk-values.yaml
+</span></span><span style="display:flex;"><span>NAME: kafka
+</span></span><span style="display:flex;"><span>LAST DEPLOYED: Sun Nov  <span style="color:#bd93f9">1</span> 09:36:44 <span style="color:#bd93f9">2020</span>
+</span></span><span style="display:flex;"><span>NAMESPACE: default
+</span></span><span style="display:flex;"><span>STATUS: deployed
+</span></span><span style="display:flex;"><span>REVISION: <span style="color:#bd93f9">1</span>
+</span></span><span style="display:flex;"><span>NOTES:
+</span></span><span style="display:flex;"><span><span style="color:#6272a4">### Connecting to Kafka from inside Kubernetes</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>You can connect to Kafka by running a simple pod in the K8s cluster like this with a configuration like this:
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  apiVersion: v1
+</span></span><span style="display:flex;"><span>  kind: Pod
+</span></span><span style="display:flex;"><span>  metadata:
+</span></span><span style="display:flex;"><span>    name: testclient
+</span></span><span style="display:flex;"><span>    namespace: default
+</span></span><span style="display:flex;"><span>  spec:
+</span></span><span style="display:flex;"><span>    containers:
+</span></span><span style="display:flex;"><span>    - name: kafka
+</span></span><span style="display:flex;"><span>      image: confluentinc/cp-kafka:5.0.1
+</span></span><span style="display:flex;"><span>      command:
+</span></span><span style="display:flex;"><span>        - sh
+</span></span><span style="display:flex;"><span>        - -c
+</span></span><span style="display:flex;"><span>        - <span style="color:#f1fa8c">&#34;exec tail -f /dev/null&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Once you have the testclient pod above running, you can list all kafka
+</span></span><span style="display:flex;"><span>topics with:
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  kubectl -n default <span style="color:#8be9fd;font-style:italic">exec</span> testclient -- ./bin/kafka-topics.sh --zookeeper kafka-zookeeper:2181 --list
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>To create a new topic:
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  kubectl -n default <span style="color:#8be9fd;font-style:italic">exec</span> testclient -- ./bin/kafka-topics.sh --zookeeper kafka-zookeeper:2181 --topic test1 --create --partitions <span style="color:#bd93f9">1</span> --replication-factor <span style="color:#bd93f9">1</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>To listen <span style="color:#ff79c6">for</span> messages on a topic:
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  kubectl -n default <span style="color:#8be9fd;font-style:italic">exec</span> -ti testclient -- ./bin/kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic test1 --from-beginning
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>To stop the listener session above press: Ctrl+C
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>To start an interactive message producer session:
+</span></span><span style="display:flex;"><span>  kubectl -n default <span style="color:#8be9fd;font-style:italic">exec</span> -ti testclient -- ./bin/kafka-console-producer.sh --broker-list kafka-headless:9092 --topic test1
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>To create a message in the above session, simply <span style="color:#8be9fd;font-style:italic">type</span> the message and press <span style="color:#f1fa8c">&#34;enter&#34;</span>
+</span></span><span style="display:flex;"><span>To end the producer session try: Ctrl+C
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>If you specify <span style="color:#f1fa8c">&#34;zookeeper.connect&#34;</span> in configurationOverrides, please replace <span style="color:#f1fa8c">&#34;kafka-zookeeper:2181&#34;</span> with the value of <span style="color:#f1fa8c">&#34;zookeeper.connect&#34;</span>, or you will get error.
+</span></span></code></pre></div><p>如果你没配置 StorageClass 或者可用的 PV，安装的时候 kafka 的 Pod 会处于 Pending 状态，所以一定要提前配置好数据卷。</p>
+<p>正常情况隔一会儿 Kafka 就可以安装成功了：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>&gt; kubectl get pods
+</span></span><span style="display:flex;"><span>NAME                READY   STATUS    RESTARTS   AGE
+</span></span><span style="display:flex;"><span>kafka-0             1/1     Running   <span style="color:#bd93f9">0</span>          25m
+</span></span><span style="display:flex;"><span>kafka-1             1/1     Running   <span style="color:#bd93f9">0</span>          11m
+</span></span><span style="display:flex;"><span>kafka-2             1/1     Running   <span style="color:#bd93f9">0</span>          2m
+</span></span><span style="display:flex;"><span>kafka-zookeeper-0   1/1     Running   <span style="color:#bd93f9">0</span>          25m
+</span></span><span style="display:flex;"><span>kafka-zookeeper-1   1/1     Running   <span style="color:#bd93f9">0</span>          22m
+</span></span><span style="display:flex;"><span>kafka-zookeeper-2   1/1     Running   <span style="color:#bd93f9">0</span>          18m
+</span></span></code></pre></div><p>默认会安装 3 个 ZK Pods 和 3 个 Kafka Pods，这样可以保证应用的高可用，也可以看下我配置的持久卷信息：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>&gt; kubectl get pvc
+</span></span><span style="display:flex;"><span>NAME              STATUS   VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+</span></span><span style="display:flex;"><span>datadir-kafka-0   Bound    kfk0     1Gi        RWO                           28m
+</span></span><span style="display:flex;"><span>datadir-kafka-1   Bound    kfk1     1Gi        RWO                           13m
+</span></span><span style="display:flex;"><span>datadir-kafka-2   Bound    kfk2     1Gi        RWO                           4m9s
+</span></span><span style="display:flex;"><span>&gt; kubectl get pv
+</span></span><span style="display:flex;"><span>NAME   CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                     STORAGECLASS   REASON   AGE
+</span></span><span style="display:flex;"><span>kfk0   1Gi        RWO            Retain           Bound    default/datadir-kafka-0                           23m
+</span></span><span style="display:flex;"><span>kfk1   1Gi        RWO            Retain           Bound    default/datadir-kafka-1                           22m
+</span></span><span style="display:flex;"><span>kfk2   1Gi        RWO            Retain           Bound    default/datadir-kafka-2                           10m
+</span></span></code></pre></div><p>如果我们配置一个 default 的 StorageClass，则会动态去申请持久化卷，如果你的集群没有启用动态卷，可以修改 <code>values.yaml</code> 来使用静态卷。</p>
+<p>然后查看下对应的 Service 对象：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>&gt; kubectl get svc
+</span></span><span style="display:flex;"><span>NAME                       TYPE        CLUSTER-IP       EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>                      AGE
+</span></span><span style="display:flex;"><span>kafka                      ClusterIP   10.100.205.187   &lt;none&gt;        9092/TCP                     31m
+</span></span><span style="display:flex;"><span>kafka-headless             ClusterIP   None             &lt;none&gt;        9092/TCP                     31m
+</span></span><span style="display:flex;"><span>kafka-zookeeper            ClusterIP   10.100.230.255   &lt;none&gt;        2181/TCP                     31m
+</span></span><span style="display:flex;"><span>kafka-zookeeper-headless   ClusterIP   None             &lt;none&gt;        2181/TCP,3888/TCP,2888/TCP   31m
+</span></span><span style="display:flex;"><span>kubernetes                 ClusterIP   10.96.0.1        &lt;none&gt;        443/TCP                      14d
+</span></span></code></pre></div><p>可以看到又一个叫 <code>kafka-zookeeper</code> 的 zookeeper 服务和一个叫 <code>kafka</code> 的 Kafka 服务，对于 Kafka 集群的管理，我们将与 <code>kafka-zookeeper</code> 服务进行交互，对于集群消息的收发，我们将使用 <code>kafka</code> 服务。</p>
+<!-- raw HTML omitted -->
+<h2 id="客户端测试">客户端测试</h2>
+<p>现在 Kafka 集群已经搭建好了，接下来我们来安装一个 Kafka 客户端，用它来帮助我们产生和获取 topics 消息。</p>
+<p>直接使用下面的命令创建客户端：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>&gt; cat <span style="color:#f1fa8c">&lt;&lt;EOF | kubectl apply -f -
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">apiVersion: v1
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">kind: Pod
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">metadata:
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">  name: testclient
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">  namespace: default
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">spec:
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">  containers:
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">  - name: kafka
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">    image: confluentinc/cp-kafka:5.0.1
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">    command:
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">      - sh
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">      - -c
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">      - &#34;exec tail -f /dev/null&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">EOF</span>
+</span></span><span style="display:flex;"><span>&gt; kubectl get pod testclient
+</span></span><span style="display:flex;"><span>NAME         READY   STATUS    RESTARTS   AGE
+</span></span><span style="display:flex;"><span>testclient   1/1     Running   <span style="color:#bd93f9">0</span>          23s
+</span></span></code></pre></div><p>客户端 Pod 创建成功后我们就可以开始进行一些简单的测试了。首先让我们创建一个名为 <code>test1</code> 的有一个分区和复制因子<code>'1'</code>的 topic：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>&gt; kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -it testclient -- /usr/bin/kafka-topics --zookeeper kafka-zookeeper:2181 --topic test1 --create --partitions <span style="color:#bd93f9">1</span> --replication-factor <span style="color:#bd93f9">1</span>
+</span></span><span style="display:flex;"><span>Created topic <span style="color:#f1fa8c">&#34;test1&#34;</span>.
+</span></span></code></pre></div><p>然后创建一个生产者，将消息发布到这个 topic 主题上：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>&gt; kubectl  <span style="color:#8be9fd;font-style:italic">exec</span> -ti testclient -- /usr/bin/kafka-console-producer --broker-list kafka:9092 --topic test1
+</span></span><span style="display:flex;"><span>&gt;
+</span></span></code></pre></div><p>然后重新打一个终端页面，让我们打开一个消费者会话，这样我们就可以看到我们发送的消息了。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>&gt; kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -ti testclient -- /usr/bin/kafka-console-consumer --bootstrap-server kafka:9092 --topic test1
+</span></span></code></pre></div><p>现在我们在生产者的窗口发送消息，在上面的消费者会话窗口中就可以看到对应的消息了：</p>
+<p><img src="https://picdn.youdianzhishi.com/images/20201101102425.png" alt=""></p>
+<p>到这里证明 Kafka 集群就正常工作了。比如需要注意 zk 集群我们并没有做持久化，如果是生产环境一定记得做下数据持久化，在 values.yaml 文件中根据需求进行定制即可，当然对于生产环境还是推荐使用 Operator 来搭建 Kafka 集群，比如 <code>strimzi-kafka-operator</code>。</p>
+<!-- raw HTML omitted -->
+
+          <h2>微信公众号</h2>
+<p>
+  扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+  kubernetes 讨论群里面共同学习。
+</p>
+<img
+  src="https://picdn.youdianzhishi.com/images/qrcode.png"
+  alt="wechat-account-qrcode"
+/>
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/install-kafka-in-kubernetes/">在 Kubernetes 集群上部署 Kafka</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-service-in-k8s/">Service 的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-job-cronjob/">Job和CronJob 的使用方法</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-rc-rs-manage-pod/">RC、RS 使用方法</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/gitops-devops-on-k8s/">GitOps - 在 Kubernetes 中进行 DevOps 的方式</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-cdk8s-define-k8s-apps/">使用编程语言描述 Kubernetes 应用 - cdk8s</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-crd-create-grafana-dashboard/">用 Kubernetes 资源对象创建 Grafana Dashboard</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/deploy-vault-on-k8s/">在 Kubernetes 上部署 Vault</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/deploy-spinnaker-on-k8s/">在 Kubernetes 上部署 Spinnaker</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/migrate-helm-to-v3/">Helm V2 迁移到 V3 版本</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/accelerate-ci-cd-pipelines-with-kind/" data-toggle="tooltip" data-placement="top" title="使用 KinD 加速 CI/CD 流水线">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/visually-explained-k8s-service/" data-toggle="tooltip" data-placement="top" title="图解 Kubernetes Service">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '在 Kubernetes 上运行高可用的 Kafka 集群',
+        createIssueManually: true,
+        id: 'deploy-kafka-ha-on-k8s',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -957,7 +635,7 @@ Created topic <span style="color:#f1fa8c">&#34;test1&#34;</span>.</code></pre>
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -966,7 +644,7 @@ Created topic <span style="color:#f1fa8c">&#34;test1&#34;</span>.</code></pre>
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -975,7 +653,7 @@ Created topic <span style="color:#f1fa8c">&#34;test1&#34;</span>.</code></pre>
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -984,158 +662,121 @@ Created topic <span style="color:#f1fa8c">&#34;test1&#34;</span>.</code></pre>
                   </span>
                 </a>
               </li>
-
-              <li>
-                <a href="https://www.qikqiak.com/index.xml" title="RSS">
-                  <span class="fa-stack fa-lg">
-                    <i class="fa fa-circle fa-stack-2x"></i>
-                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
-                  </span>
-                </a>
-              </li>
-            </ul>
-            <p class="credits copyright text-muted">
-              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/">阳明的博客</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/archive/">归档</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/friend/">友链</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://beian.miit.gov.cn/" target="_blank"
-                >蜀ICP备11027319号-5</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
-                >kubernetes.io</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
-                >Kubernetes中文社区</a
-              >
-            </p>
-            <p class="text-center text-muted">
-              <script
-                async
-                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
-              ></script>
-              <span id="busuanzi_container_site_pv" style="display: none">
-                本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
               </span>
-              &nbsp;&bull;&nbsp;
-              <span id="busuanzi_container_site_uv" style="display: none">
-                访客数<span id="busuanzi_value_site_uv"></span>人次
-              </span>
-            </p>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
 
-            <p class="credits theme-by text-muted">
-              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
-              &nbsp;&bull;&nbsp; 主题
-              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
-              移植自
-              <a href="https://github.com/rootsongjc/beautifulhugo"
-                >Beautiful Hugo</a
-              >
-            </p>
-          </div>
-        </div>
+          &nbsp;&bull;&nbsp;
+          2023
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.115.4</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+          
+        </p>
       </div>
-    </footer>
+    </div>
+  </div>
+</footer>
 
-    <script
-      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
-      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
-    ></script>
 
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "UA-69668147-3");
-    </script>
-    <script>
-      (function () {
-        var bp = document.createElement("script");
-        var curProtocol = window.location.protocol.split(":")[0];
-        if (curProtocol === "https") {
-          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
-        } else {
-          bp.src = "http://push.zhanzhang.baidu.com/push.js";
-        }
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(bp, s);
-      })();
-    </script>
-    <script>
-      $(document).ready(function () {
-        var int = setInterval(fixCount, 50);
+<script src='https://www.qikqiak.com/js/bundle.min.af02a2d23b6651a566f0135a12e65fc2560faa7a969b3d1ad58d0afe0c9164ae.js' integrity='sha256-rwKi0jtmUaVm8BNaEuZfwlYPqnqWmz0a1Y0K/gyRZK4='></script>
 
-        var initPVCount = 584976;
-        var initUVCount = 153191;
-        function fixCount() {
-          if ($("#busuanzi_container_site_pv").css("display") != "none") {
-            $("#busuanzi_value_site_pv").html(
-              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
-            );
-            clearInterval(int);
-          }
-          if ($("#busuanzi_container_site_uv").css("display") != "none") {
-            $("#busuanzi_value_site_uv").html(
-              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
-            );
-            clearInterval(int);
-          }
-        }
-      });
-    </script>
-    <script>
-      (function (w, d, s, id) {
-        if (typeof w.webpushr !== "undefined") return;
-        w.webpushr =
-          w.webpushr ||
-          function () {
-            (w.webpushr.q = w.webpushr.q || []).push(arguments);
-          };
-        var js,
-          fjs = d.getElementsByTagName(s)[0];
-        js = d.createElement(s);
-        js.id = id;
-        js.src = "https://cdn.webpushr.com/app.min.js";
-        fjs.parentNode.appendChild(js);
-      })(window, document, "script", "webpushr-jssdk");
-      webpushr(
-        "init",
-        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
-      );
-    </script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
-    ></script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
-    ></script>
-    <script type="text/javascript">
-      $(".carousel").slick({
-        dots: true,
-        arrows: true,
-        autoplay: true,
-        autoplaySpeed: 4000,
-        infinite: true,
-        speed: 500,
-        fade: true,
-        cssEase: "linear",
-        centerMode: true,
-        prevArrow: '<button type="button" class="slick-prev"></button>',
-        nextArrow: '<button type="button" class="slick-next"></button>',
-      });
-    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
   </body>
 </html>
+

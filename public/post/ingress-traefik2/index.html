@@ -1,1085 +1,780 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
-    />
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-    <title>
-      外部服务发现之
-      ingress(二)-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
-    </title>
-    <meta property="og:title" content="外部服务发现之 ingress(二)" />
-    <meta name="twitter:title" content="外部服务发现之 ingress(二)" />
 
-    <meta name="description" content="Ingress TLS 和 PATH 的使用" />
-    <meta property="og:description" content="Ingress TLS 和 PATH 的使用" />
-    <meta name="twitter:description" content="Ingress TLS 和 PATH 的使用" />
-    <meta name="author" content="" />
-    <link
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-      rel="icon"
-      type="image/x-icon"
-    />
-    <link
-      rel="apple-touch-icon"
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      property="og:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      name="twitter:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta name="twitter:card" content="summary" />
-    <meta
-      property="og:url"
-      content="https://www.qikqiak.com/post/ingress-traefik2/"
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="阳明的博客" />
+  <title>外部服务发现之 ingress(二)-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="外部服务发现之 ingress(二)" />
+  <meta name="twitter:title" content="外部服务发现之 ingress(二)" />
 
-    <meta name="generator" content="Hugo 0.55.6" />
-    <link
-      rel="canonical"
-      href="https://www.qikqiak.com/post/ingress-traefik2/"
-    />
-    <link
-      rel="alternate"
-      href="https://www.qikqiak.com/index.xml"
-      type="application/rss+xml"
-      title="阳明的博客"
-    />
+  <meta name="description" content="Ingress TLS 和 PATH 的使用">
+  <meta property="og:description" content="Ingress TLS 和 PATH 的使用">
+  <meta name="twitter:description" content="Ingress TLS 和 PATH 的使用">
+  <meta name="author" content=""/>
+  <link href="https://picdn.youdianzhishi.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://picdn.youdianzhishi.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/ingress-traefik2/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
 
-    <link
-      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
-      rel="stylesheet"
-    />
+  <link rel="canonical" href="https://www.qikqiak.com/post/ingress-traefik2/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
-    <link
-      rel="stylesheet"
-      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
-      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
-    />
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
 
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
-    />
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a6b62363fe57848ad01efa2a5d1bbb1047c2ffb71b53d8aeb42bc5ed5c77ea7c.css' integrity='sha256-prYjY/5XhIrQHvoqXRu7EEfC/7cbU9iutCvF7Vx36nw='>
 
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
     <!--[if lt IE 9]>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-      <link
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-        rel="stylesheet"
-      />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <![endif]-->
-    <meta
-      name="google-site-verification"
-      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
-    />
-    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-    <meta
-      name="keywords"
-      content="kubernetes, ingress, openssl, traefik, https, nginx"
-    />
-    <script>
-      var _hmt = _hmt || [];
-      (function () {
-        var hm = document.createElement("script");
-        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(hm, s);
-      })();
-    </script>
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, ingress, openssl, traefik, https, nginx">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
 
-    <script type="application/javascript">
-      var doNotTrack = false;
-      if (!doNotTrack) {
-        window.ga =
-          window.ga ||
-          function () {
-            (ga.q = ga.q || []).push(arguments);
-          };
-        ga.l = +new Date();
-        ga("create", "UA-69668147-3", "auto");
 
-        ga("send", "pageview");
-      }
-    </script>
-    <script async src="https://www.google-analytics.com/analytics.js"></script>
-  </head>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-      <div class="container">
-        <div class="navbar-header">
-          <button
-            type="button"
-            class="navbar-toggle"
-            data-toggle="collapse"
-            data-target="#main-navbar"
-          >
-            <span class="sr-only">切换导航</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a
-            class="navbar-brand"
-            href="https://www.qikqiak.com/"
-            title="阳明的博客"
-          >
-            <img
-              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
-              style="margin-top: -5px; height: 32px"
-              alt="阳明的博客"
-            />
-          </a>
-        </div>
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://picdn.youdianzhishi.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
 
-        <div class="collapse navbar-collapse" id="main-navbar">
-          <ul class="nav navbar-nav navbar-right">
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-
+          
+        
+          
             <li>
-              <a
-                title="课程"
-                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
-                >课程</a
-              >
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/archives">Archive</a>
-
-                <a href="https://www.qikqiak.com/tags">tags</a>
-
-                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-
-                <a href="https://www.qikqiak.com/tags/python">python</a>
-
-                <a href="https://www.qikqiak.com/tags/django">django</a>
-
-                <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-
-                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-
-                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-
-                <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/"
-                >关于</a
-              >
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
             </li>
-
+          
+        
+          
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
+          
+        
 
-            <li>
-              <a
-                href="#modalSearch"
-                data-toggle="modal"
-                data-target="#modalSearch"
-                style="outline: none"
-              >
-                <span
-                  id="searchGlyph"
-                  class="glyphicon glyphicon-search"
-                ></span>
-              </a>
-            </li>
-          </ul>
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
         </div>
-      </div>
-    </nav>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-    <div id="modalSearch" class="modal fade" role="dialog">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal">
-              &times;
-            </button>
-            <h4 class="modal-title">搜索</h4>
-          </div>
-          <div class="modal-body">
-            <div class="aa-input-container" id="aa-input-container">
-              <input
-                type="search"
-                id="aa-search-input"
-                class="aa-input-search"
-                placeholder="Search for titles or URIs..."
-                name="search"
-                autocomplete="off"
-              />
-              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-                <path
-                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
-                />
-              </svg>
-            </div>
-            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
 
-            <script>
-              var client = algoliasearch(
-                "1JDRAS0AZR",
-                "8804ac109158bb3bb60d74ce98fa332f"
-              );
-              var index = client.initIndex("prod_blog");
-
-              autocomplete(
-                "#aa-search-input",
-                { hint: false },
-                {
-                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
-
-                  displayKey: "name",
-
-                  templates: {
-                    suggestion: function (suggestion) {
-                      return (
-                        "<span>" +
-                        '<a href="https://www.qikqiak.com/post/' +
-                        suggestion.slug +
-                        '">' +
-                        suggestion._highlightResult.title.value +
-                        "</a></span>"
-                      );
-                    },
-                  },
-                }
-              );
-            </script>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">
-              close
-            </button>
-          </div>
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div
-      id="header-big-imgs"
-      data-num-img="1"
-      data-img-src-1="https://www.qikqiak.com/img/posts/photo-1535565454739-863432ea3c0e.jpeg"
-      data-img-desc-1="Thunderstorm over Paris"
-    ></div>
+    
+  
+  
+  
 
-    <header class="header-section has-img">
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://www.qikqiak.com/img/posts/photo-1535565454739-863432ea3c0e.jpeg" data-img-desc-1="Thunderstorm over Paris"></div>
+  
+
+  <header class="header-section has-img">
+    
       <div class="intro-header big-img">
+        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>外部服务发现之 ingress(二)</h1>
+                  
+                    
+                      <h2 class="post-subheading">Ingress TLS 和 PATH 的使用</h2>
+                    
+                  
+                  
+                    <span class="post-meta">
+  发表于 August 31, 2018  
+</span>
 
-                <h2 class="post-subheading">Ingress TLS 和 PATH 的使用</h2>
-
-                <span class="post-meta"> 发表于 August 31, 2018 </span>
+                  
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline"></span>
+        <span class="img-desc" style="display: inline;"></span>
       </div>
-
-      <div class="intro-header no-img">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-              <div class="post-heading">
-                <h1>外部服务发现之 ingress(二)</h1>
-
-                <h2 class="post-subheading">Ingress TLS 和 PATH 的使用</h2>
-
-                <span class="post-meta"> 发表于 August 31, 2018 </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <div class="container" role="main">
-      <div class="row">
-        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-          <div>
-            <h5 id="tags" style="margin-top: 30px">
-              标签:
-
-              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
-              &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/ingress/">ingress</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/traefik/">traefik</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/nginx/">nginx</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/https/">https</a> &nbsp;
-            </h5>
-          </div>
-
-          <article
-            role="main"
-            class="blog-post"
-            itemprop="articleBody"
-            id="content"
-          >
-            <aside class="toc">
-              <nav id="TableOfContents">
-                <ul>
-                  <li>
-                    <ul>
-                      <li>
-                        <a href="#tls-认证">TLS 认证</a>
-                        <ul>
-                          <li><a href="#配置-traefik">配置 Traefik</a></li>
-                          <li><a href="#配置-ingress">配置 ingress</a></li>
-                        </ul>
-                      </li>
-                    </ul>
-                  </li>
-                </ul>
-              </nav>
-            </aside>
-
-            <p>
-              上节课给大家展示了<code>traefik</code>的安装使用以及简单的<code>ingress</code>的配置方法，这节课我们来学习一下
-              ingress tls 以及 path 路径在 ingress 对象中的使用方法。
-            </p>
-
-            <h2 id="tls-认证">TLS 认证</h2>
-
-            <p>
-              在现在大部分场景下面我们都会使用 https
-              来访问我们的服务，这节课我们将使用一个自签名的证书，当然你有在一些正规机构购买的
-              CA
-              证书是最好的，这样任何人访问你的服务的时候都是受浏览器信任的证书。使用下面的<code>openssl</code>命令生成
-              CA 证书：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ openssl req -newkey rsa:2048 -nodes -keyout tls.key -x509 -days <span style="color:#bd93f9">365</span> -out tls.crt</code></pre>
-            </div>
-            <p>
-              现在我们有了证书，我们可以使用 kubectl 创建一个 secret
-              对象来存储上面的证书：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl create secret generic traefik-cert --from-file<span style="color:#ff79c6">=</span>tls.crt --from-file<span style="color:#ff79c6">=</span>tls.key -n kube-system</code></pre>
-            </div>
-            <h3 id="配置-traefik">配置 Traefik</h3>
-
-            <p>
-              前面我们使用的是 Traefik 的默认配置，现在我们来配置
-              Traefik，让其支持 https：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-toml" data-lang="toml">defaultEntryPoints = [<span style="color:#f1fa8c">&#34;http&#34;</span>, <span style="color:#f1fa8c">&#34;https&#34;</span>]
-
-[entryPoints]
-  [entryPoints.http]
-  address = <span style="color:#f1fa8c">&#34;:80&#34;</span>
-    [entryPoints.http.redirect]
-      entryPoint = <span style="color:#f1fa8c">&#34;https
-</span><span style="color:#f1fa8c">  [entryPoints.https]
-</span><span style="color:#f1fa8c">  address = &#34;</span>:<span style="color:#bd93f9">443</span><span style="color:#f1fa8c">&#34;
-</span><span style="color:#f1fa8c">    [entryPoints.https.tls]
-</span><span style="color:#f1fa8c">      [[entryPoints.https.tls.certificates]]
-</span><span style="color:#f1fa8c">      CertFile = &#34;</span>/ssl/tls.crt<span style="color:#f1fa8c">&#34;
-</span><span style="color:#f1fa8c">      KeyFile = &#34;</span>/ssl/tls.key&#34;</code></pre>
-            </div>
-            <p>
-              上面的配置文件中我们配置了 http 和 https 两个入口，并且配置了将
-              http 服务强制跳转到 https 服务，这样我们所有通过 traefik
-              进来的服务都是 https 的，要访问 https
-              服务，当然就得配置对应的证书了，可以看到我们指定了 CertFile 和
-              KeyFile 两个文件，由于 traefik pod
-              中并没有这两个证书，所以我们要想办法将上面生成的证书挂载到 Pod
-              中去，是不是前面我们讲解过 secret 对象可以通过 volume 形式挂载到
-              Pod 中？至于上面的 traefik.toml 这个文件我们要怎么让 traefik pod
-              能够访问到呢？还记得我们前面讲过的 ConfigMap
-              吗？我们是不是可以将上面的 traefik.toml 配置文件通过一个 ConfigMap
-              对象挂载到 traefik pod 中去：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl create configmap traefik-conf --from-file<span style="color:#ff79c6">=</span>traefik.toml -n kube-system</code></pre>
-            </div>
-            <p>现在就可以更改下上节课的 traefik pod 的 yaml 文件了：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">kind: Deployment
-apiVersion: extensions/v1beta1
-metadata:
-  name: traefik-ingress-controller
-  namespace: kube-system
-  labels:
-    k8s-app: traefik-ingress-lb
-spec:
-  replicas: <span style="color:#bd93f9">1</span>
-  selector:
-    matchLabels:
-      k8s-app: traefik-ingress-lb
-  template:
-    metadata:
-      labels:
-        k8s-app: traefik-ingress-lb
-        name: traefik-ingress-lb
-    spec:
-      serviceAccountName: traefik-ingress-controller
-      terminationGracePeriodSeconds: <span style="color:#bd93f9">60</span>
-      volumes:
-      - name: ssl
-        secret:
-          secretName: traefik-cert
-      - name: config
-        configMap:
-          name: traefik-conf
-      tolerations:
-      - operator: <span style="color:#f1fa8c">&#34;Exists&#34;</span>
-      nodeSelector:
-        kubernetes.io/hostname: master
-      containers:
-      - image: traefik
-        name: traefik-ingress-lb
-        volumeMounts:
-        - mountPath: <span style="color:#f1fa8c">&#34;/ssl&#34;</span>
-          name: <span style="color:#f1fa8c">&#34;ssl&#34;</span>
-        - mountPath: <span style="color:#f1fa8c">&#34;/config&#34;</span>
-          name: <span style="color:#f1fa8c">&#34;config&#34;</span>
-        ports:
-        - name: http
-          containerPort: <span style="color:#bd93f9">80</span>
-          hostPort: <span style="color:#bd93f9">80</span>
-        - name: https
-          containerPort: <span style="color:#bd93f9">443</span>
-          hostPort: <span style="color:#bd93f9">443</span>
-        - name: admin
-          containerPort: <span style="color:#bd93f9">8080</span>
-        args:
-        - --configfile=/config/traefik.toml
-        - --api
-        - --kubernetes
-        - --logLevel=INFO</code></pre>
-            </div>
-            <p>
-              和之前的比较，我们增加了 443 的端口配置，以及启动参数中通过
-              configfile 指定了 traefik.toml 配置文件，这个配置文件是通过 volume
-              挂载进来的。然后更新下 traefik pod:
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl apply -f traefik.yaml
-$ kubectl logs -f traefik-ingress-controller-7dcfd9c6df-v58k7 -n kube-system
-<span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;2018-08-26T11:26:44Z&#34;</span> <span style="color:#8be9fd;font-style:italic">level</span><span style="color:#ff79c6">=</span>info <span style="color:#8be9fd;font-style:italic">msg</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;Server configuration reloaded on :80&#34;</span>
-<span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;2018-08-26T11:26:44Z&#34;</span> <span style="color:#8be9fd;font-style:italic">level</span><span style="color:#ff79c6">=</span>info <span style="color:#8be9fd;font-style:italic">msg</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;Server configuration reloaded on :443&#34;</span>
-<span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;2018-08-26T11:26:44Z&#34;</span> <span style="color:#8be9fd;font-style:italic">level</span><span style="color:#ff79c6">=</span>info <span style="color:#8be9fd;font-style:italic">msg</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;Server configuration reloaded on :8080&#34;</span></code></pre>
-            </div>
-            <p>
-              更新完成后我们查看 traefik pod
-              的日志，如果出现类似于上面的一些日志信息，证明更新成功了。现在我们去访问
-              traefik 的 dashboard 会跳转到 https
-              的地址，并会提示证书相关的报警信息，这是因为我们的证书是我们自建的，并不受浏览器信任，如果你是正规机构购买的证书并不会出现改报警信息，你应该可以看到我们常见的绿色标志：
-              <img
-                src="https://www.qikqiak.com/img/posts/traefik-tls.png"
-                alt="traefik tls warning"
-              />
-            </p>
-
-            <p>
-              点击下面的高级，我们可以强制让其跳转，这样我们就可以正常访问
-              traefik 的 dashboard 了。
-            </p>
-
-            <h3 id="配置-ingress">配置 ingress</h3>
-
-            <p>
-              其实上面的 TLS 认证方式已经成功了，接下来我们通过一个实例来说明下
-              ingress 中 path 的用法，这里我们部署了3个简单的 web
-              服务，通过一个环境变量来标识当前运行的是哪个服务：（backend.yaml）
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">kind: Deployment
-apiVersion: extensions/v1beta1
-metadata:
-  name: svc1
-spec:
-  replicas: <span style="color:#bd93f9">1</span>
-  template:
-    metadata:
-      labels:
-        app: svc1
-    spec:
-      containers:
-      - name: svc1
-        image: cnych/example-web-service
-        env:
-        - name: APP_SVC
-          value: svc1
-        ports:
-        - containerPort: <span style="color:#bd93f9">8080</span>
-          protocol: TCP
-
----
-kind: Deployment
-apiVersion: extensions/v1beta1
-metadata:
-  name: svc2
-spec:
-  replicas: <span style="color:#bd93f9">1</span>
-  template:
-    metadata:
-      labels:
-        app: svc2
-    spec:
-      containers:
-      - name: svc2
-        image: cnych/example-web-service
-        env:
-        - name: APP_SVC
-          value: svc2
-        ports:
-        - containerPort: <span style="color:#bd93f9">8080</span>
-          protocol: TCP
-
----
-kind: Deployment
-apiVersion: extensions/v1beta1
-metadata:
-  name: svc3
-spec:
-  replicas: <span style="color:#bd93f9">1</span>
-  template:
-    metadata:
-      labels:
-        app: svc3
-    spec:
-      containers:
-      - name: svc3
-        image: cnych/example-web-service
-        env:
-        - name: APP_SVC
-          value: svc3
-        ports:
-        - containerPort: <span style="color:#bd93f9">8080</span>
-          protocol: TCP
-
----
-kind: Service
-apiVersion: v1
-metadata:
-  labels:
-    app: svc1
-  name: svc1
-spec:
-  type: ClusterIP
-  ports:
-  - port: <span style="color:#bd93f9">8080</span>
-    name: http
-  selector:
-    app: svc1
-
----
-kind: Service
-apiVersion: v1
-metadata:
-  labels:
-    app: svc2
-  name: svc2
-spec:
-  type: ClusterIP
-  ports:
-  - port: <span style="color:#bd93f9">8080</span>
-    name: http
-  selector:
-    app: svc2
-
----
-kind: Service
-apiVersion: v1
-metadata:
-  labels:
-    app: svc3
-  name: svc3
-spec:
-  type: ClusterIP
-  ports:
-  - port: <span style="color:#bd93f9">8080</span>
-    name: http
-  selector:
-    app: svc3</code></pre>
-            </div>
-            <p>可以看到上面我们定义了3个 Deployment，分别对应3个 Service：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl create -f backend.yaml
-deployment.extensions <span style="color:#f1fa8c">&#34;svc1&#34;</span> created
-deployment.extensions <span style="color:#f1fa8c">&#34;svc2&#34;</span> created
-deployment.extensions <span style="color:#f1fa8c">&#34;svc3&#34;</span> created
-service <span style="color:#f1fa8c">&#34;svc1&#34;</span> created
-service <span style="color:#f1fa8c">&#34;svc2&#34;</span> created
-service <span style="color:#f1fa8c">&#34;svc3&#34;</span> created</code></pre>
-            </div>
-            <p>
-              然后我们创建一个 ingress
-              对象来访问上面的3个服务：（example-ingress.yaml）
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  name: example-web-app
-  annotations:
-    kubernetes.io/ingress.class: <span style="color:#f1fa8c">&#34;traefik&#34;</span>
-spec:
-  rules:
-  - host: example.haimaxy.com
-    http:
-      paths:
-      - path: /s1
-        backend:
-          serviceName: svc1
-          servicePort: <span style="color:#bd93f9">8080</span>
-      - path: /s2
-        backend:
-          serviceName: svc2
-          servicePort: <span style="color:#bd93f9">8080</span>
-      - path: /
-        backend:
-          serviceName: svc3
-          servicePort: <span style="color:#bd93f9">8080</span></code></pre>
-            </div>
-            <p>
-              注意我们这里定义的 ingress 对象和之前有一个不同的地方是我们增加了
-              path 路径的定义，不指定的话默认是 &lsquo;/&lsquo;，创建该 ingress
-              对象：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl create -f test-ingress.yaml
-ingress.extensions <span style="color:#f1fa8c">&#34;example-web-app&#34;</span> created
-$ kubectl get ingress
-NAME              HOSTS                 ADDRESS   PORTS     AGE
-example-web-app   example.haimaxy.com             <span style="color:#bd93f9">80</span>        1m
-$ kubectl describe ingress example-web-app
-Name:             example-web-app
-Namespace:        default
-Address:
-Default backend:  default-http-backend:80 <span style="color:#ff79c6">(</span>&lt;none&gt;<span style="color:#ff79c6">)</span>
-Rules:
-  Host                 Path  Backends
-  ----                 ----  --------
-  example.haimaxy.com
-                       /s1   svc1:8080 <span style="color:#ff79c6">(</span>&lt;none&gt;<span style="color:#ff79c6">)</span>
-                       /s2   svc2:8080 <span style="color:#ff79c6">(</span>&lt;none&gt;<span style="color:#ff79c6">)</span>
-                       /     svc3:8080 <span style="color:#ff79c6">(</span>&lt;none&gt;<span style="color:#ff79c6">)</span>
-Annotations:
-  kubernetes.io/ingress.class:  traefik
-Events:                         &lt;none&gt;</code></pre>
-            </div>
-            <p>
-              现在我们可以在本地 hosts 里面给域名 example.haimaxy.com 添加对应的
-              hosts 解析，然后就可以在浏览器中访问，可以看到默认也会跳转到 https
-              的页面：
-              <img
-                src="https://www.qikqiak.com/img/posts/traefik-tls-demo1.png"
-                alt="demo1"
-              />
-            </p>
-
-            <p>
-              我们可以看到访问上面的域名得到的结果是 svc3
-              service！这是因为上面在 ingress 中我们为域名的跟路径匹配的是 svc3
-              这个 service，同样的，我们访问<a
-                href="http://example.haimaxy.com/s1"
-                >http://example.haimaxy.com/s1</a
-              >
-              得到的应该就是 svc1 这个 service 了：
-              <img
-                src="https://www.qikqiak.com/img/posts/traefik-tls-demo2.png"
-                alt="demo2"
-              />
-            </p>
-
-            <p>
-              访问<a href="http://example.haimaxy.com/s2"
-                >http://example.haimaxy.com/s2</a
-              >
-              得到的应该就是 svc2 这个 service 了：
-              <img
-                src="https://www.qikqiak.com/img/posts/traefik-tls-demo3.png"
-                alt="demo3"
-              />
-            </p>
-
-            <blockquote>
-              <p>
-                这里我们需要注意的是根路径<code>/</code>必须在 ingress
-                对象中声明的时候必须放在最后面，不然就都被<code>/</code>匹配到拦截到了，大家可以尝试下把<code>/</code>这个
-                path 放在最上面，然后访问下 s1 和 s2 这两个
-                path，看看得到的结果是怎样的？
-              </p>
-            </blockquote>
-
-            <p>
-              有的同学可能有这样的需求，就是不同的 ingress
-              对象是供不同的域名进行使用的，然后不同的域名的证书还不相同，这样我们想使用上面
-              traefik 给大家提供的统一的 https
-              证书就不行了，这个时候我们就可以单独为当前的服务提供单独的证书就可以，同样用证书文件创建一个
-              secret 对象，然后在 ingress 对象中声明一个 tls
-              对象即可，比如上面的 example.haimaxy.com
-              我们可以单独指定一个证书文件：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  name: example-web-app
-  annotations:
-    kubernetes.io/ingress.class: <span style="color:#f1fa8c">&#34;traefik&#34;</span>
-spec:
-  tls:
-    - secretName: traefik-cert
-  rules:
-  - host:
-...</code></pre>
-            </div>
-            <p>
-              <a
-                href="https://youdianzhishi.com/web/course/1030"
-                title="从 Docker 到 Kubernetes 进阶课程"
-                ><img
-                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
-                  alt="Kubernetes进阶训练营"
-              /></a>
-            </p>
-
-            <h2>微信公众号</h2>
-            <p>
-              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
-              kubernetes 讨论群里面共同学习。
-            </p>
-            <img
-              src="https://picdn.youdianzhishi.com/images/qrcode.png"
-              alt="wechat-account-qrcode"
-            />
-
-            <div class="entry-shang text-center">
-              <p>「真诚赞赏，手留余香」</p>
-              <button class="zs show-zs btn btn-bred">赞赏</button>
-            </div>
-            <div class="zs-modal-bg"></div>
-            <div class="zs-modal-box">
-              <div class="zs-modal-head">
-                <button type="button" class="close">×</button>
-                <span class="author"
-                  ><img
-                    src="https://www.qikqiak.com/img/avatar.jpeg"
-                  />阳明</span
-                >
-                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-              </div>
-              <div class="zs-modal-body">
-                <div class="zs-modal-btns">
-                  <button class="btn btn-blink" data-num="2">2元</button>
-                  <button class="btn btn-blink" data-num="5">5元</button>
-                  <button class="btn btn-blink" data-num="10">10元</button>
-                  <button class="btn btn-blink" data-num="50">50元</button>
-                  <button class="btn btn-blink" data-num="100">100元</button>
-                  <button class="btn btn-blink" data-num="1">任意金额</button>
-                </div>
-                <div class="zs-modal-pay">
-                  <button class="btn btn-bred" id="pay-text">2元</button>
-                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-                  <img
-                    src="https://www.qikqiak.com/img/wechat-2.png"
-                    id="pay-image"
-                  />
-                </div>
-              </div>
-              <div class="zs-modal-footer">
-                <span class="zs-wechat"
-                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
-                /></span>
-              </div>
-            </div>
-
-            <div
-              class="social-share"
-              data-initialized="true"
-              style="margin-bottom: 20px; margin-top: 20px"
-            >
-              <center>
-                <a href="#" class="social-share-icon icon-weibo"></a>
-                <a href="#" class="social-share-icon icon-wechat"></a>
-                <a href="#" class="social-share-icon icon-twitter"></a>
-                <a href="#" class="social-share-icon icon-linkedin"></a>
-                <a href="#" class="social-share-icon icon-facebook"></a>
-                <a href="#" class="social-share-icon icon-qq"></a>
-                <a href="#" class="social-share-icon icon-qzone"></a>
-              </center>
-            </div>
-
-            <link
-              rel="stylesheet"
-              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
-            />
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
-          </article>
-
-          <h3>相关文章</h3>
-          <ul style="margin-bottom: 25px">
-            <li>
-              <a href="https://www.qikqiak.com/post/ingress-traefik1/"
-                >外部服务发现之 ingress(一)</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/pod-mount-single-file/"
-                >Pod 中挂载单个文件的方法</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/update-kubernetes-dashboard-more-secure/"
-                >kubernetes dashboard 升级之路</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/huawei-cloudnativelives-k8s-course/"
-                >华为 CloudNativeLives K8S 系列课程</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/how-to-learn-kubernetes/"
-                >如何学习Kubernetes？</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/how-to-use-ipvs-in-kubernetes/"
-                >ipvs 基本介绍</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/kubernetes-how-to-pronunciation/"
-                >kubernetes 如何发音？</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/service-found-dns/"
-                >集群内部服务发现之 DNS</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/kubernetes-jenkins3/"
-                >Jenkins Blue Ocean 的使用</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/kubernetes-jenkins2/"
-                >Jenkins Pipeline 部署 Kubernetes 应用(二)</a
-              >
-            </li>
-          </ul>
-
-          <ul class="pager blog-pager">
-            <li class="previous">
-              <a
-                href="https://www.qikqiak.com/post/how-to-learn-kubernetes/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="如何学习Kubernetes？"
-                >&larr; 前一篇</a
-              >
-            </li>
-
-            <li class="next">
-              <a
-                href="https://www.qikqiak.com/post/huawei-cloudnativelives-k8s-course/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="华为 CloudNativeLives K8S 系列课程"
-                >后一篇 &rarr;</a
-              >
-            </li>
-          </ul>
-
-          <script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-          ></script>
-
-          <ins
-            class="adsbygoogle"
-            style="display: block"
-            data-ad-client="ca-pub-5376999672787220"
-            data-ad-slot="3700507799"
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          ></ins>
-          <script>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-          </script>
-
-          <div id="gitalk-container"></div>
-          <link
-            rel="stylesheet"
-            href="https://unpkg.com/gitalk/dist/gitalk.css"
-          />
-          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-          <script>
-            var gitalk = new Gitalk({
-              clientID: "bdb76dbb2e9d0786e350",
-              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
-              repo: "blog",
-              owner: "cnych",
-              admin: ["cnych"],
-              labels: ["gitment"],
-              title: "外部服务发现之 ingress(二)",
-              createIssueManually: true,
-              id: "ingress-traefik2",
-              distractionFreeMode: true,
-            });
-            gitalk.render("gitalk-container");
-          </script>
-        </div>
-      </div>
-    </div>
-
-    <footer>
+    
+    
+    
+    <div class="intro-header no-img">
+      
       <div class="container">
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <ul class="list-inline text-center footer-links">
-              <img
-                src="https://www.qikqiak.com/img/wechatmp.png"
-                alt="k8s技术圈"
-              />
+            <div class="post-heading">
+              <h1>外部服务发现之 ingress(二)</h1>
+                
+                  
+                    <h2 class="post-subheading">Ingress TLS 和 PATH 的使用</h2>
+                  
+                
+                
+                  <span class="post-meta">
+  发表于 August 31, 2018  
+</span>
 
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/ingress/">ingress</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/traefik/">traefik</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/nginx/">nginx</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/https/">https</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#tls-认证">TLS 认证</a>
+      <ul>
+        <li><a href="#配置-traefik">配置 Traefik</a></li>
+        <li><a href="#配置-ingress">配置 ingress</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>上节课给大家展示了<code>traefik</code>的安装使用以及简单的<code>ingress</code>的配置方法，这节课我们来学习一下 ingress tls 以及 path 路径在 ingress 对象中的使用方法。</p>
+<h2 id="tls-认证">TLS 认证</h2>
+<p>在现在大部分场景下面我们都会使用 https 来访问我们的服务，这节课我们将使用一个自签名的证书，当然你有在一些正规机构购买的 CA 证书是最好的，这样任何人访问你的服务的时候都是受浏览器信任的证书。使用下面的<code>openssl</code>命令生成 CA 证书：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ openssl req -newkey rsa:2048 -nodes -keyout tls.key -x509 -days <span style="color:#bd93f9">365</span> -out tls.crt
+</span></span></code></pre></div><p>现在我们有了证书，我们可以使用 kubectl 创建一个 secret 对象来存储上面的证书：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl create secret generic traefik-cert --from-file<span style="color:#ff79c6">=</span>tls.crt --from-file<span style="color:#ff79c6">=</span>tls.key -n kube-system
+</span></span></code></pre></div><h3 id="配置-traefik">配置 Traefik</h3>
+<p>前面我们使用的是 Traefik 的默认配置，现在我们来配置 Traefik，让其支持 https：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-toml" data-lang="toml"><span style="display:flex;"><span>defaultEntryPoints = [<span style="color:#f1fa8c">&#34;http&#34;</span>, <span style="color:#f1fa8c">&#34;https&#34;</span>]
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>[entryPoints]
+</span></span><span style="display:flex;"><span>  [entryPoints.http]
+</span></span><span style="display:flex;"><span>  address = <span style="color:#f1fa8c">&#34;:80&#34;</span>
+</span></span><span style="display:flex;"><span>    [entryPoints.http.redirect]
+</span></span><span style="display:flex;"><span>      entryPoint = <span style="color:#f1fa8c">&#34;https
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">  [entryPoints.https]
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">  address = &#34;</span>:<span style="color:#bd93f9">443</span><span style="color:#f1fa8c">&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">    [entryPoints.https.tls]
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">      [[entryPoints.https.tls.certificates]]
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">      CertFile = &#34;</span>/ssl/tls.crt<span style="color:#f1fa8c">&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">      KeyFile = &#34;</span>/ssl/tls.key&#34;
+</span></span></code></pre></div><p>上面的配置文件中我们配置了 http 和 https 两个入口，并且配置了将 http 服务强制跳转到 https 服务，这样我们所有通过 traefik 进来的服务都是 https 的，要访问 https 服务，当然就得配置对应的证书了，可以看到我们指定了 CertFile 和 KeyFile 两个文件，由于 traefik pod 中并没有这两个证书，所以我们要想办法将上面生成的证书挂载到 Pod 中去，是不是前面我们讲解过 secret 对象可以通过 volume 形式挂载到 Pod 中？至于上面的 traefik.toml 这个文件我们要怎么让 traefik pod 能够访问到呢？还记得我们前面讲过的 ConfigMap 吗？我们是不是可以将上面的 traefik.toml 配置文件通过一个 ConfigMap 对象挂载到 traefik pod 中去：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl create configmap traefik-conf --from-file<span style="color:#ff79c6">=</span>traefik.toml -n kube-system
+</span></span></code></pre></div><p>现在就可以更改下上节课的 traefik pod 的 yaml 文件了：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Deployment
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: extensions/v1beta1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: traefik-ingress-controller
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">namespace</span>: kube-system
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">labels</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">k8s-app</span>: traefik-ingress-lb
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">replicas</span>: <span style="color:#bd93f9">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">selector</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">matchLabels</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">k8s-app</span>: traefik-ingress-lb
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">template</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">labels</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">k8s-app</span>: traefik-ingress-lb
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">name</span>: traefik-ingress-lb
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">serviceAccountName</span>: traefik-ingress-controller
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">terminationGracePeriodSeconds</span>: <span style="color:#bd93f9">60</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">volumes</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">name</span>: ssl
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">secret</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">secretName</span>: traefik-cert
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">name</span>: config
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">configMap</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">name</span>: traefik-conf
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">tolerations</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">operator</span>: <span style="color:#f1fa8c">&#34;Exists&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">nodeSelector</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">kubernetes.io/hostname</span>: master
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">containers</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">image</span>: traefik
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">name</span>: traefik-ingress-lb
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">volumeMounts</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">mountPath</span>: <span style="color:#f1fa8c">&#34;/ssl&#34;</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">name</span>: <span style="color:#f1fa8c">&#34;ssl&#34;</span>
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">mountPath</span>: <span style="color:#f1fa8c">&#34;/config&#34;</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">name</span>: <span style="color:#f1fa8c">&#34;config&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">ports</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">name</span>: http
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">containerPort</span>: <span style="color:#bd93f9">80</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">hostPort</span>: <span style="color:#bd93f9">80</span>
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">name</span>: https
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">containerPort</span>: <span style="color:#bd93f9">443</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">hostPort</span>: <span style="color:#bd93f9">443</span>
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">name</span>: admin
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">containerPort</span>: <span style="color:#bd93f9">8080</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">args</span>:
+</span></span><span style="display:flex;"><span>        - --configfile=/config/traefik.toml
+</span></span><span style="display:flex;"><span>        - --api
+</span></span><span style="display:flex;"><span>        - --kubernetes
+</span></span><span style="display:flex;"><span>        - --logLevel=INFO
+</span></span></code></pre></div><p>和之前的比较，我们增加了 443 的端口配置，以及启动参数中通过 configfile 指定了 traefik.toml 配置文件，这个配置文件是通过 volume 挂载进来的。然后更新下 traefik pod:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl apply -f traefik.yaml
+</span></span><span style="display:flex;"><span>$ kubectl logs -f traefik-ingress-controller-7dcfd9c6df-v58k7 -n kube-system
+</span></span><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;2018-08-26T11:26:44Z&#34;</span> <span style="color:#8be9fd;font-style:italic">level</span><span style="color:#ff79c6">=</span>info <span style="color:#8be9fd;font-style:italic">msg</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;Server configuration reloaded on :80&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;2018-08-26T11:26:44Z&#34;</span> <span style="color:#8be9fd;font-style:italic">level</span><span style="color:#ff79c6">=</span>info <span style="color:#8be9fd;font-style:italic">msg</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;Server configuration reloaded on :443&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;2018-08-26T11:26:44Z&#34;</span> <span style="color:#8be9fd;font-style:italic">level</span><span style="color:#ff79c6">=</span>info <span style="color:#8be9fd;font-style:italic">msg</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;Server configuration reloaded on :8080&#34;</span>
+</span></span></code></pre></div><p>更新完成后我们查看 traefik pod 的日志，如果出现类似于上面的一些日志信息，证明更新成功了。现在我们去访问 traefik 的 dashboard 会跳转到 https 的地址，并会提示证书相关的报警信息，这是因为我们的证书是我们自建的，并不受浏览器信任，如果你是正规机构购买的证书并不会出现改报警信息，你应该可以看到我们常见的绿色标志：
+<img src="https://www.qikqiak.com/img/posts/traefik-tls.png" alt="traefik tls warning"></p>
+<p>点击下面的高级，我们可以强制让其跳转，这样我们就可以正常访问 traefik 的 dashboard 了。</p>
+<h3 id="配置-ingress">配置 ingress</h3>
+<p>其实上面的 TLS 认证方式已经成功了，接下来我们通过一个实例来说明下 ingress 中 path 的用法，这里我们部署了3个简单的 web 服务，通过一个环境变量来标识当前运行的是哪个服务：（backend.yaml）</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Deployment
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: extensions/v1beta1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: svc1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">replicas</span>: <span style="color:#bd93f9">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">template</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">labels</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">app</span>: svc1
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">containers</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">name</span>: svc1
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">image</span>: cnych/example-web-service
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">env</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">name</span>: APP_SVC
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">value</span>: svc1
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">ports</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">containerPort</span>: <span style="color:#bd93f9">8080</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">protocol</span>: TCP
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Deployment
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: extensions/v1beta1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: svc2
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">replicas</span>: <span style="color:#bd93f9">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">template</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">labels</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">app</span>: svc2
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">containers</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">name</span>: svc2
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">image</span>: cnych/example-web-service
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">env</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">name</span>: APP_SVC
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">value</span>: svc2
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">ports</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">containerPort</span>: <span style="color:#bd93f9">8080</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">protocol</span>: TCP
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Deployment
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: extensions/v1beta1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: svc3
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">replicas</span>: <span style="color:#bd93f9">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">template</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">labels</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">app</span>: svc3
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">containers</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">name</span>: svc3
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">image</span>: cnych/example-web-service
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">env</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">name</span>: APP_SVC
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">value</span>: svc3
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">ports</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">containerPort</span>: <span style="color:#bd93f9">8080</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">protocol</span>: TCP
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Service
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">labels</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">app</span>: svc1
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: svc1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">type</span>: ClusterIP
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">ports</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">8080</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">name</span>: http
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">selector</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">app</span>: svc1
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Service
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">labels</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">app</span>: svc2
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: svc2
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">type</span>: ClusterIP
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">ports</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">8080</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">name</span>: http
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">selector</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">app</span>: svc2
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Service
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">labels</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">app</span>: svc3
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: svc3
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">type</span>: ClusterIP
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">ports</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">8080</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">name</span>: http
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">selector</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">app</span>: svc3
+</span></span></code></pre></div><p>可以看到上面我们定义了3个 Deployment，分别对应3个 Service：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl create -f backend.yaml
+</span></span><span style="display:flex;"><span>deployment.extensions <span style="color:#f1fa8c">&#34;svc1&#34;</span> created
+</span></span><span style="display:flex;"><span>deployment.extensions <span style="color:#f1fa8c">&#34;svc2&#34;</span> created
+</span></span><span style="display:flex;"><span>deployment.extensions <span style="color:#f1fa8c">&#34;svc3&#34;</span> created
+</span></span><span style="display:flex;"><span>service <span style="color:#f1fa8c">&#34;svc1&#34;</span> created
+</span></span><span style="display:flex;"><span>service <span style="color:#f1fa8c">&#34;svc2&#34;</span> created
+</span></span><span style="display:flex;"><span>service <span style="color:#f1fa8c">&#34;svc3&#34;</span> created
+</span></span></code></pre></div><p>然后我们创建一个 ingress 对象来访问上面的3个服务：（example-ingress.yaml）</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: extensions/v1beta1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Ingress
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: example-web-app
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">annotations</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">kubernetes.io/ingress.class</span>: <span style="color:#f1fa8c">&#34;traefik&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">rules</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff79c6">host</span>: example.haimaxy.com
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">http</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">paths</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">path</span>: /s1
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">backend</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">serviceName</span>: svc1
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">servicePort</span>: <span style="color:#bd93f9">8080</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">path</span>: /s2
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">backend</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">serviceName</span>: svc2
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">servicePort</span>: <span style="color:#bd93f9">8080</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">path</span>: /
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">backend</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">serviceName</span>: svc3
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">servicePort</span>: <span style="color:#bd93f9">8080</span>
+</span></span></code></pre></div><p>注意我们这里定义的 ingress 对象和之前有一个不同的地方是我们增加了 path 路径的定义，不指定的话默认是 &lsquo;/&rsquo;，创建该 ingress 对象：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl create -f test-ingress.yaml
+</span></span><span style="display:flex;"><span>ingress.extensions <span style="color:#f1fa8c">&#34;example-web-app&#34;</span> created
+</span></span><span style="display:flex;"><span>$ kubectl get ingress
+</span></span><span style="display:flex;"><span>NAME              HOSTS                 ADDRESS   PORTS     AGE
+</span></span><span style="display:flex;"><span>example-web-app   example.haimaxy.com             <span style="color:#bd93f9">80</span>        1m
+</span></span><span style="display:flex;"><span>$ kubectl describe ingress example-web-app
+</span></span><span style="display:flex;"><span>Name:             example-web-app
+</span></span><span style="display:flex;"><span>Namespace:        default
+</span></span><span style="display:flex;"><span>Address:
+</span></span><span style="display:flex;"><span>Default backend:  default-http-backend:80 <span style="color:#ff79c6">(</span>&lt;none&gt;<span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span>Rules:
+</span></span><span style="display:flex;"><span>  Host                 Path  Backends
+</span></span><span style="display:flex;"><span>  ----                 ----  --------
+</span></span><span style="display:flex;"><span>  example.haimaxy.com
+</span></span><span style="display:flex;"><span>                       /s1   svc1:8080 <span style="color:#ff79c6">(</span>&lt;none&gt;<span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span>                       /s2   svc2:8080 <span style="color:#ff79c6">(</span>&lt;none&gt;<span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span>                       /     svc3:8080 <span style="color:#ff79c6">(</span>&lt;none&gt;<span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span>Annotations:
+</span></span><span style="display:flex;"><span>  kubernetes.io/ingress.class:  traefik
+</span></span><span style="display:flex;"><span>Events:                         &lt;none&gt;
+</span></span></code></pre></div><p>现在我们可以在本地 hosts 里面给域名 example.haimaxy.com 添加对应的 hosts 解析，然后就可以在浏览器中访问，可以看到默认也会跳转到 https 的页面：
+<img src="https://www.qikqiak.com/img/posts/traefik-tls-demo1.png" alt="demo1"></p>
+<p>我们可以看到访问上面的域名得到的结果是 svc3 service！这是因为上面在 ingress 中我们为域名的跟路径匹配的是 svc3 这个 service，同样的，我们访问http://example.haimaxy.com/s1 得到的应该就是 svc1 这个 service 了：
+<img src="https://www.qikqiak.com/img/posts/traefik-tls-demo2.png" alt="demo2"></p>
+<p>访问http://example.haimaxy.com/s2 得到的应该就是 svc2 这个 service 了：
+<img src="https://www.qikqiak.com/img/posts/traefik-tls-demo3.png" alt="demo3"></p>
+<blockquote>
+<p>这里我们需要注意的是根路径<code>/</code>必须在 ingress 对象中声明的时候必须放在最后面，不然就都被<code>/</code>匹配到拦截到了，大家可以尝试下把<code>/</code>这个 path 放在最上面，然后访问下 s1 和 s2 这两个 path，看看得到的结果是怎样的？</p>
+</blockquote>
+<p>有的同学可能有这样的需求，就是不同的 ingress 对象是供不同的域名进行使用的，然后不同的域名的证书还不相同，这样我们想使用上面 traefik 给大家提供的统一的 https 证书就不行了，这个时候我们就可以单独为当前的服务提供单独的证书就可以，同样用证书文件创建一个 secret 对象，然后在 ingress 对象中声明一个 tls 对象即可，比如上面的 example.haimaxy.com 我们可以单独指定一个证书文件：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: extensions/v1beta1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Ingress
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: example-web-app
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">annotations</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">kubernetes.io/ingress.class</span>: <span style="color:#f1fa8c">&#34;traefik&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">tls</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#ff79c6">secretName</span>: traefik-cert
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">rules</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff79c6">host</span>:
+</span></span><span style="display:flex;"><span>...
+</span></span></code></pre></div><!-- raw HTML omitted -->
+
+          <h2>微信公众号</h2>
+<p>
+  扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+  kubernetes 讨论群里面共同学习。
+</p>
+<img
+  src="https://picdn.youdianzhishi.com/images/qrcode.png"
+  alt="wechat-account-qrcode"
+/>
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/ingress-traefik1/">外部服务发现之 ingress(一)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/pod-mount-single-file/">Pod 中挂载单个文件的方法</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/update-kubernetes-dashboard-more-secure/">kubernetes dashboard 升级之路</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/huawei-cloudnativelives-k8s-course/">华为 CloudNativeLives K8S 系列课程</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/how-to-learn-kubernetes/">如何学习Kubernetes？</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/how-to-use-ipvs-in-kubernetes/">ipvs 基本介绍</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-how-to-pronunciation/">kubernetes 如何发音？</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/service-found-dns/">集群内部服务发现之 DNS</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-jenkins3/">Jenkins Blue Ocean 的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-jenkins2/">Jenkins Pipeline 部署 Kubernetes 应用(二)</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/how-to-learn-kubernetes/" data-toggle="tooltip" data-placement="top" title="如何学习Kubernetes？">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/huawei-cloudnativelives-k8s-course/" data-toggle="tooltip" data-placement="top" title="华为 CloudNativeLives K8S 系列课程">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '外部服务发现之 ingress(二)',
+        createIssueManually: true,
+        id: 'ingress-traefik2',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -1088,7 +783,7 @@ spec:
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -1097,7 +792,7 @@ spec:
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -1106,7 +801,7 @@ spec:
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -1115,158 +810,121 @@ spec:
                   </span>
                 </a>
               </li>
-
-              <li>
-                <a href="https://www.qikqiak.com/index.xml" title="RSS">
-                  <span class="fa-stack fa-lg">
-                    <i class="fa fa-circle fa-stack-2x"></i>
-                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
-                  </span>
-                </a>
-              </li>
-            </ul>
-            <p class="credits copyright text-muted">
-              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/">阳明的博客</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/archive/">归档</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/friend/">友链</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://beian.miit.gov.cn/" target="_blank"
-                >蜀ICP备11027319号-5</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
-                >kubernetes.io</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
-                >Kubernetes中文社区</a
-              >
-            </p>
-            <p class="text-center text-muted">
-              <script
-                async
-                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
-              ></script>
-              <span id="busuanzi_container_site_pv" style="display: none">
-                本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
               </span>
-              &nbsp;&bull;&nbsp;
-              <span id="busuanzi_container_site_uv" style="display: none">
-                访客数<span id="busuanzi_value_site_uv"></span>人次
-              </span>
-            </p>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
 
-            <p class="credits theme-by text-muted">
-              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
-              &nbsp;&bull;&nbsp; 主题
-              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
-              移植自
-              <a href="https://github.com/rootsongjc/beautifulhugo"
-                >Beautiful Hugo</a
-              >
-            </p>
-          </div>
-        </div>
+          &nbsp;&bull;&nbsp;
+          2023
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.115.4</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+          
+        </p>
       </div>
-    </footer>
+    </div>
+  </div>
+</footer>
 
-    <script
-      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
-      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
-    ></script>
 
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "UA-69668147-3");
-    </script>
-    <script>
-      (function () {
-        var bp = document.createElement("script");
-        var curProtocol = window.location.protocol.split(":")[0];
-        if (curProtocol === "https") {
-          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
-        } else {
-          bp.src = "http://push.zhanzhang.baidu.com/push.js";
-        }
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(bp, s);
-      })();
-    </script>
-    <script>
-      $(document).ready(function () {
-        var int = setInterval(fixCount, 50);
+<script src='https://www.qikqiak.com/js/bundle.min.af02a2d23b6651a566f0135a12e65fc2560faa7a969b3d1ad58d0afe0c9164ae.js' integrity='sha256-rwKi0jtmUaVm8BNaEuZfwlYPqnqWmz0a1Y0K/gyRZK4='></script>
 
-        var initPVCount = 584976;
-        var initUVCount = 153191;
-        function fixCount() {
-          if ($("#busuanzi_container_site_pv").css("display") != "none") {
-            $("#busuanzi_value_site_pv").html(
-              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
-            );
-            clearInterval(int);
-          }
-          if ($("#busuanzi_container_site_uv").css("display") != "none") {
-            $("#busuanzi_value_site_uv").html(
-              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
-            );
-            clearInterval(int);
-          }
-        }
-      });
-    </script>
-    <script>
-      (function (w, d, s, id) {
-        if (typeof w.webpushr !== "undefined") return;
-        w.webpushr =
-          w.webpushr ||
-          function () {
-            (w.webpushr.q = w.webpushr.q || []).push(arguments);
-          };
-        var js,
-          fjs = d.getElementsByTagName(s)[0];
-        js = d.createElement(s);
-        js.id = id;
-        js.src = "https://cdn.webpushr.com/app.min.js";
-        fjs.parentNode.appendChild(js);
-      })(window, document, "script", "webpushr-jssdk");
-      webpushr(
-        "init",
-        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
-      );
-    </script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
-    ></script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
-    ></script>
-    <script type="text/javascript">
-      $(".carousel").slick({
-        dots: true,
-        arrows: true,
-        autoplay: true,
-        autoplaySpeed: 4000,
-        infinite: true,
-        speed: 500,
-        fade: true,
-        cssEase: "linear",
-        centerMode: true,
-        prevArrow: '<button type="button" class="slick-prev"></button>',
-        nextArrow: '<button type="button" class="slick-next"></button>',
-      });
-    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
   </body>
 </html>
+

@@ -23,7 +23,6 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="阳明的博客" />
 
-  <meta name="generator" content="Hugo 0.55.6" />
   <link rel="canonical" href="https://www.qikqiak.com/post/use-service-in-k8s/" />
   <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
@@ -32,7 +31,7 @@
   <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
   
 
-  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a6b62363fe57848ad01efa2a5d1bbb1047c2ffb71b53d8aeb42bc5ed5c77ea7c.css' integrity='sha256-prYjY/5XhIrQHvoqXRu7EEfC/7cbU9iutCvF7Vx36nw='>
 
   <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
   
@@ -245,12 +244,8 @@ autocomplete('#aa-search-input',
                   
                   
                     <span class="post-meta">
-  
-    发表于 June 13, 2018
-  
-  
+  发表于 June 13, 2018  
 </span>
-
 
                   
               </div>
@@ -276,12 +271,8 @@ autocomplete('#aa-search-input',
                 
                 
                   <span class="post-meta">
-  
-    发表于 June 13, 2018
-  
-  
+  发表于 June 13, 2018  
 </span>
-
 
                 
             </div>
@@ -334,142 +325,116 @@ autocomplete('#aa-search-input',
           
 
           <p>我们前面的课程中学习了<code>Pod</code>的基本用法，我们也了解到<code>Pod</code>的生命是有限的，死亡过后不会复活了。我们后面学习到的<code>RC</code>和<code>Deployment</code>可以用来动态的创建和销毁<code>Pod</code>。尽管每个<code>Pod</code>都有自己的<code>IP</code>地址，但是如果<code>Pod</code>重新启动了的话那么他的<code>IP</code>很有可能也就变化了。这就会带来一个问题：比如我们有一些后端的<code>Pod</code>的集合为集群中的其他前端的<code>Pod</code>集合提供<code>API</code>服务，如果我们在前端的<code>Pod</code>中把所有的这些后端的<code>Pod</code>的地址都写死，然后去某种方式去访问其中一个<code>Pod</code>的服务，这样看上去是可以工作的，对吧？但是如果这个<code>Pod</code>挂掉了，然后重新启动起来了，是不是<code>IP</code>地址非常有可能就变了，这个时候前端就极大可能访问不到后端的服务了。</p>
-
 <p>遇到这样的问题该怎么解决呢？在没有使用<code>Kubernetes</code>之前，我相信可能很多同学都遇到过这样的问题，不一定是<code>IP</code>变化的问题，比如我们在部署一个<code>WEB</code>服务的时候，前端一般部署一个<code>Nginx</code>作为服务的入口，然后<code>Nginx</code>后面肯定就是挂载的这个服务的大量后端，很早以前我们可能是去手动更改<code>Nginx</code>配置中的<code>upstream</code>选项，来动态改变提供服务的数量，到后面出现了一些<code>服务发现</code>的工具，比如<code>Consul</code>、<code>ZooKeeper</code>还有我们熟悉的<code>etcd</code>等工具，有了这些工具过后我们就可以只需要把我们的服务注册到这些服务发现中心去就可以，然后让这些工具动态的去更新<code>Nginx</code>的配置就可以了，我们完全不用去手工的操作了，是不是非常方便。
-<img src="https://www.qikqiak.com/img/posts/nginx-consul.png" alt="nginx" /></p>
-
+<img src="https://www.qikqiak.com/img/posts/nginx-consul.png" alt="nginx"></p>
 <p>同样的，要解决我们上面遇到的问题是不是实现一个服务发现的工具也可以解决啊？没错的，当我们<code>Pod</code>被销毁或者新建过后，我们可以把这个<code>Pod</code>的地址注册到这个服务发现中心去就可以，但是这样的话我们的前端的<code>Pod</code>结合就不能直接去连接后台的<code>Pod</code>集合了是吧，应该连接到一个能够做服务发现的中间件上面，对吧？</p>
-
 <p>没错，<code>Kubernetes</code>集群就为我们提供了这样的一个对象 - <code>Service</code>，<code>Service</code>是一种抽象的对象，它定义了一组<code>Pod</code>的逻辑集合和一个用于访问它们的策略，其实这个概念和微服务非常类似。一个<code>Serivce</code>下面包含的<code>Pod</code>集合一般是由<code>Label Selector</code>来决定的。</p>
-
 <p>比如我们上面的例子，假如我们后端运行了3个副本，这些副本都是可以替代的，因为前端并不关心它们使用的是哪一个后端服务。尽管由于各种原因后端的<code>Pod</code>集合会发送变化，但是前端却不需要知道这些变化，也不需要自己用一个列表来记录这些后端的服务，<code>Service</code>的这种抽象就可以帮我们达到这种解耦的目的。</p>
-
 <h3 id="三种ip">三种IP</h3>
-
 <p>在继续往下学习<code>Service</code>之前，我们需要先弄明白<code>Kubernetes</code>系统中的三种IP这个问题，因为经常有同学混乱。</p>
-
 <ul>
 <li>Node IP：<code>Node</code>节点的<code>IP</code>地址</li>
 <li>Pod IP: <code>Pod</code>的IP地址</li>
 <li>Cluster IP: <code>Service</code>的<code>IP</code>地址</li>
 </ul>
-
 <p>首先，<code>Node IP</code>是<code>Kubernetes</code>集群中节点的物理网卡<code>IP</code>地址(一般为内网)，所有属于这个网络的服务器之间都可以直接通信，所以<code>Kubernetes</code>集群外要想访问<code>Kubernetes</code>集群内部的某个节点或者服务，肯定得通过<code>Node IP</code>进行通信（这个时候一般是通过外网<code>IP</code>了）</p>
-
 <p>然后<code>Pod IP</code>是每个<code>Pod</code>的<code>IP</code>地址，它是<code>Docker Engine</code>根据<code>docker0</code>网桥的<code>IP</code>地址段进行分配的（我们这里使用的是<code>flannel</code>这种网络插件保证所有节点的<code>Pod IP</code>不会冲突）</p>
-
 <p>最后<code>Cluster IP</code>是一个虚拟的<code>IP</code>，仅仅作用于<code>Kubernetes Service</code>这个对象，由<code>Kubernetes</code>自己来进行管理和分配地址，当然我们也无法<code>ping</code>这个地址，他没有一个真正的实体对象来响应，他只能结合<code>Service Port</code>来组成一个可以通信的服务。</p>
-
-<h3 id="定义-service">定义Service</h3>
-
+<h3 id="定义service">定义Service</h3>
 <p>定义<code>Service</code>的方式和我们前面定义的各种资源对象的方式类型，例如，假定我们有一组<code>Pod</code>服务，它们对外暴露了 8080 端口，同时都被打上了<code>app=myapp</code>这样的标签，那么我们就可以像下面这样来定义一个<code>Service</code>对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
-kind: Service
-metadata:
-  name: myservice
-spec:
-  selector:
-    app: myapp
-  ports:
-  - protocol: TCP
-    port: <span style="color:#bd93f9">80</span>
-    targetPort: <span style="color:#bd93f9">8080</span>
-    name: myapp-http</code></pre></div>
-<p>然后通过的使用<code>kubectl create -f myservice.yaml</code>就可以创建一个名为<code>myservice</code>的<code>Service</code>对象，它会将请求代理到使用 TCP 端口为 8080，具有标签<code>app=myapp</code>的<code>Pod</code>上，这个<code>Service</code>会被系统分配一个我们上面说的<code>Cluster IP</code>，该<code>Service</code>还会持续的监听<code>selector</code>下面的<code>Pod</code>，会把这些<code>Pod</code>信息更新到一个名为<code>myservice</code>的<code>Endpoints</code>对象上去，这个对象就类似于我们上面说的<code>Pod</code>集合了。</p>
-
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Service
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: myservice
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">selector</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">app</span>: myapp
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">ports</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff79c6">protocol</span>: TCP
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">80</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">targetPort</span>: <span style="color:#bd93f9">8080</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">name</span>: myapp-http
+</span></span></code></pre></div><p>然后通过的使用<code>kubectl create -f myservice.yaml</code>就可以创建一个名为<code>myservice</code>的<code>Service</code>对象，它会将请求代理到使用 TCP 端口为 8080，具有标签<code>app=myapp</code>的<code>Pod</code>上，这个<code>Service</code>会被系统分配一个我们上面说的<code>Cluster IP</code>，该<code>Service</code>还会持续的监听<code>selector</code>下面的<code>Pod</code>，会把这些<code>Pod</code>信息更新到一个名为<code>myservice</code>的<code>Endpoints</code>对象上去，这个对象就类似于我们上面说的<code>Pod</code>集合了。</p>
 <p>需要注意的是，<code>Service</code>能够将一个接收端口映射到任意的<code>targetPort</code>。 默认情况下，<code>targetPort</code>将被设置为与<code>port</code>字段相同的值。 可能更有趣的是，targetPort 可以是一个字符串，引用了 backend Pod 的一个端口的名称。 因实际指派给该端口名称的端口号，在每个 backend Pod 中可能并不相同，所以对于部署和设计 Service ，这种方式会提供更大的灵活性。</p>
-
 <p>另外<code>Service</code>能够支持 TCP 和 UDP 协议，默认是 TCP 协议。</p>
-
 <h3 id="kube-proxy">kube-proxy</h3>
-
 <p>前面我们讲到过，在<code>Kubernetes</code>集群中，每个<code>Node</code>会运行一个<code>kube-proxy</code>进程, 负责为<code>Service</code>实现一种 VIP（虚拟 IP，就是我们上面说的<code>clusterIP</code>）的代理形式，现在的<code>Kubernetes</code>中默认是使用的<code>iptables</code>这种模式来代理。这种模式，<code>kube-proxy</code>会监视<code>Kubernetes master</code>对 Service 对象和 Endpoints 对象的添加和移除。 对每个 Service，它会添加上 iptables 规则，从而捕获到达该 Service 的 clusterIP（虚拟 IP）和端口的请求，进而将请求重定向到 Service 的一组 backend 中的某一个个上面。 对于每个 Endpoints 对象，它也会安装 iptables 规则，这个规则会选择一个 backend Pod。</p>
-
 <p>默认的策略是，随机选择一个 backend。 我们也可以实现基于客户端 IP 的会话亲和性，可以将 <code>service.spec.sessionAffinity</code> 的值设置为 &ldquo;ClientIP&rdquo; （默认值为 &ldquo;None&rdquo;）。</p>
-
 <p>另外需要了解的是如果最开始选择的 Pod 没有响应，iptables 代理能够自动地重试另一个 Pod，所以它需要依赖 readiness probes。</p>
-
-<figure><img src="https://www.qikqiak.com/img/posts/services-iptables-overview.svg" alt="service iptables overview"><figcaption>service iptables overview</figcaption></figure>
-
+<p><img src="https://www.qikqiak.com/img/posts/services-iptables-overview.svg" alt="service iptables overview"></p>
 <h3 id="service-类型">Service 类型</h3>
-
 <p>我们在定义<code>Service</code>的时候可以指定一个自己需要的类型的<code>Service</code>，如果不指定的话默认是<code>ClusterIP</code>类型。</p>
-
 <p>我们可以使用的服务类型如下：</p>
-
 <ul>
 <li>ClusterIP：通过集群的内部 IP 暴露服务，选择该值，服务只能够在集群内部可以访问，这也是默认的ServiceType。</li>
-<li>NodePort：通过每个 Node 节点上的 IP 和静态端口（NodePort）暴露服务。NodePort 服务会路由到 ClusterIP 服务，这个 ClusterIP 服务会自动创建。通过请求 <NodeIP>:<NodePort>，可以从集群的外部访问一个 NodePort 服务。</li>
+<li>NodePort：通过每个 Node 节点上的 IP 和静态端口（NodePort）暴露服务。NodePort 服务会路由到 ClusterIP 服务，这个 ClusterIP 服务会自动创建。通过请求 <!-- raw HTML omitted -->:<!-- raw HTML omitted -->，可以从集群的外部访问一个 NodePort 服务。</li>
 <li>LoadBalancer：使用云提供商的负载局衡器，可以向外部暴露服务。外部的负载均衡器可以路由到 NodePort 服务和 ClusterIP 服务，这个需要结合具体的云厂商进行操作。</li>
 <li>ExternalName：通过返回 CNAME 和它的值，可以将服务映射到 externalName 字段的内容（例如， foo.bar.example.com）。没有任何类型代理被创建，这只有 Kubernetes 1.7 或更高版本的 kube-dns 才支持。</li>
 </ul>
-
 <h4 id="nodeport-类型">NodePort 类型</h4>
-
 <p>如果设置 type 的值为 <code>NodePort</code>，Kubernetes master 将从给定的配置范围内（默认：30000-32767）分配端口，每个 Node 将从该端口（每个 Node 上的同一端口）代理到<code>Service</code>。该端口将通过 Service 的 <code>spec.ports[*].nodePort</code>  字段被指定，如果不指定的话会自动生成一个端口。</p>
-
-<p>需要注意的是，Service 将能够通过 <NodeIP>:spec.ports[<em>].nodePort 和 spec.clusterIp:spec.ports[</em>].port 而对外可见。</p>
-
+<p>需要注意的是，Service 将能够通过 <!-- raw HTML omitted -->:spec.ports[<em>].nodePort 和 spec.clusterIp:spec.ports[</em>].port 而对外可见。</p>
 <p>接下来我们来给大家创建一个<code>NodePort</code>的服务来访问我们前面的<code>Nginx</code>服务：(保存为 service-demo.yaml)</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
-kind: Service
-metadata:
-  name: myservice
-spec:
-  selector:
-    app: myapp
-  type: NodePort
-  ports:
-  - protocol: TCP
-    port: <span style="color:#bd93f9">80</span>
-    targetPort: <span style="color:#bd93f9">80</span>
-    name: myapp-http</code></pre></div>
-<p>创建该<code>Service</code>:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">$ kubectl create -f service-demo.yaml</pre></div>
-<p>然后我们可以查看<code>Service</code>对象信息：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">$ kubectl get svc
-NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
-kubernetes   ClusterIP   10.96.0.1       &lt;none&gt;        443/TCP        27d
-myservice    NodePort    10.104.57.198   &lt;none&gt;        80:32560/TCP   14h</pre></div>
-<p>我们可以看到<code>myservice</code>的 TYPE 类型已经变成了<code>NodePort</code>，后面的<code>PORT(S)</code>部分也多了一个 32560 的映射端口。</p>
-
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Service
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: myservice
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">selector</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">app</span>: myapp
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">type</span>: NodePort
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">ports</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff79c6">protocol</span>: TCP
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">80</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">targetPort</span>: <span style="color:#bd93f9">80</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">name</span>: myapp-http
+</span></span></code></pre></div><p>创建该<code>Service</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>$ kubectl create -f service-demo.yaml
+</span></span></code></pre></div><p>然后我们可以查看<code>Service</code>对象信息：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>$ kubectl get svc
+</span></span><span style="display:flex;"><span>NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+</span></span><span style="display:flex;"><span>kubernetes   ClusterIP   10.96.0.1       &lt;none&gt;        443/TCP        27d
+</span></span><span style="display:flex;"><span>myservice    NodePort    10.104.57.198   &lt;none&gt;        80:32560/TCP   14h
+</span></span></code></pre></div><p>我们可以看到<code>myservice</code>的 TYPE 类型已经变成了<code>NodePort</code>，后面的<code>PORT(S)</code>部分也多了一个 32560 的映射端口。</p>
 <p>同样的我们可以使用<code>describe</code>命令查看 Service 的详细信息：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">$ kubectl describe svc myservice
-Name:                     myservice
-Namespace:                default
-Labels:                   &lt;none&gt;
-Annotations:              &lt;none&gt;
-Selector:                 app=nginx
-Type:                     NodePort
-IP:                       10.104.57.198
-Port:                     mynginx-http  80/TCP
-TargetPort:               80/TCP
-NodePort:                 mynginx-http  32560/TCP
-Endpoints:                10.244.1.55:80,10.244.2.189:80,10.244.2.190:80 + 1 more...
-Session Affinity:         None
-External Traffic Policy:  Cluster
-Events:                   &lt;none&gt;</pre></div>
-<h4 id="externalname">ExternalName</h4>
-
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>$ kubectl describe svc myservice
+</span></span><span style="display:flex;"><span>Name:                     myservice
+</span></span><span style="display:flex;"><span>Namespace:                default
+</span></span><span style="display:flex;"><span>Labels:                   &lt;none&gt;
+</span></span><span style="display:flex;"><span>Annotations:              &lt;none&gt;
+</span></span><span style="display:flex;"><span>Selector:                 app=nginx
+</span></span><span style="display:flex;"><span>Type:                     NodePort
+</span></span><span style="display:flex;"><span>IP:                       10.104.57.198
+</span></span><span style="display:flex;"><span>Port:                     mynginx-http  80/TCP
+</span></span><span style="display:flex;"><span>TargetPort:               80/TCP
+</span></span><span style="display:flex;"><span>NodePort:                 mynginx-http  32560/TCP
+</span></span><span style="display:flex;"><span>Endpoints:                10.244.1.55:80,10.244.2.189:80,10.244.2.190:80 + 1 more...
+</span></span><span style="display:flex;"><span>Session Affinity:         None
+</span></span><span style="display:flex;"><span>External Traffic Policy:  Cluster
+</span></span><span style="display:flex;"><span>Events:                   &lt;none&gt;
+</span></span></code></pre></div><h4 id="externalname">ExternalName</h4>
 <p><code>ExternalName</code> 是 Service 的特例，它没有<code>selector</code>，也没有定义任何的端口和 Endpoint。 对于运行在集群外部的服务，它通过返回该外部服务的别名这种方式来提供服务。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">kind: Service
-apiVersion: v1
-metadata:
-  name: my-service
-  namespace: prod
-spec:
-  type: ExternalName
-  externalName: my.database.example.com</code></pre></div>
-<p>当查询主机 my-service.prod.svc.cluster.local （后面服务发现的时候我们会再深入讲解）时，集群的 <code>DNS</code> 服务将返回一个值为 my.database.example.com 的 <code>CNAME</code> 记录。 访问这个服务的工作方式与其它的相同，唯一不同的是重定向发生在 <code>DNS</code> 层，而且不会进行代理或转发。</p>
-
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Service
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: my-service
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">namespace</span>: prod
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">type</span>: ExternalName
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">externalName</span>: my.database.example.com
+</span></span></code></pre></div><p>当查询主机 my-service.prod.svc.cluster.local （后面服务发现的时候我们会再深入讲解）时，集群的 <code>DNS</code> 服务将返回一个值为 my.database.example.com 的 <code>CNAME</code> 记录。 访问这个服务的工作方式与其它的相同，唯一不同的是重定向发生在 <code>DNS</code> 层，而且不会进行代理或转发。</p>
 <p>如果后续决定要将数据库迁移到 <code>Kubernetes</code> 集群中，可以启动对应的 <code>Pod</code>，增加合适的 Selector 或 Endpoint，修改 <code>Service</code> 的 type，完全不需要修改调用的代码，这样就完全解耦了。</p>
-
-<p><a href="https://youdianzhishi.com/web/course/1030" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
-
+<!-- raw HTML omitted -->
 
           <h2>微信公众号</h2>
-<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
-<img src="https://picdn.youdianzhishi.com/images/qrcode.png" alt="wechat-account-qrcode">
+<p>
+  扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+  kubernetes 讨论群里面共同学习。
+</p>
+<img
+  src="https://picdn.youdianzhishi.com/images/qrcode.png"
+  alt="wechat-account-qrcode"
+/>
 
   
           
@@ -699,7 +664,7 @@ spec:
         </p>
         
         <p class="credits theme-by text-muted">
-          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
+          由 <a href="http://gohugo.io">Hugo v0.115.4</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
           
         </p>
       </div>
@@ -708,7 +673,7 @@ spec:
 </footer>
 
 
-<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+<script src='https://www.qikqiak.com/js/bundle.min.af02a2d23b6651a566f0135a12e65fc2560faa7a969b3d1ad58d0afe0c9164ae.js' integrity='sha256-rwKi0jtmUaVm8BNaEuZfwlYPqnqWmz0a1Y0K/gyRZK4='></script>
 
 
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>

@@ -1,1319 +1,766 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
-    />
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-    <title>
-      在 Kubernetes 上部署
-      Vault-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
-    </title>
-    <meta property="og:title" content="在 Kubernetes 上部署 Vault" />
-    <meta name="twitter:title" content="在 Kubernetes 上部署 Vault" />
 
-    <meta
-      name="description"
-      content="很多时候我们可能都是直接将应用程序的密码或者 API Token 之类的私密信息直接暴露在源代码中的，显然直接暴露这些私密信息不是一个好的方式。在 Kubernetes 系统中提供了一个 Secret 对象来存储私密的数据，但是也只是简单的做了一次 Base64 编码而已，虽然比直接暴露要好点了，但是如果是一些安全性要求非常高的应用直接用 Secret 显然也还是不够的。本文就将来介绍如何使用 HashiCorp Vault 在 Kubernetes 集群中进行秘钥管理。"
-    />
-    <meta
-      property="og:description"
-      content="很多时候我们可能都是直接将应用程序的密码或者 API Token 之类的私密信息直接暴露在源代码中的，显然直接暴露这些私密信息不是一个好的方式。在 Kubernetes 系统中提供了一个 Secret 对象来存储私密的数据，但是也只是简单的做了一次 Base64 编码而已，虽然比直接暴露要好点了，但是如果是一些安全性要求非常高的应用直接用 Secret 显然也还是不够的。本文就将来介绍如何使用 HashiCorp Vault 在 Kubernetes 集群中进行秘钥管理。"
-    />
-    <meta
-      name="twitter:description"
-      content="很多时候我们可能都是直接将应用程序的密码或者 API Token 之类的私密信息直接暴露在源代码中的，显然直接暴露这些私密信息不是一个好的方式。在 Kubernetes 系统中提供了一个 Secret 对象来存储私密的数据，但是也只是简单的做了一次 Base64 编码而已，虽然比直接暴露要好点了，但是如果是一些安全性要求非常高的应用直接用 Secret 显然也还是不够的。 …"
-    />
-    <meta name="author" content="" />
-    <link
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-      rel="icon"
-      type="image/x-icon"
-    />
-    <link
-      rel="apple-touch-icon"
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      property="og:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      name="twitter:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta name="twitter:card" content="summary" />
-    <meta
-      property="og:url"
-      content="https://www.qikqiak.com/post/deploy-vault-on-k8s/"
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="阳明的博客" />
+  <title>在 Kubernetes 上部署 Vault-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="在 Kubernetes 上部署 Vault" />
+  <meta name="twitter:title" content="在 Kubernetes 上部署 Vault" />
 
-    <meta name="generator" content="Hugo 0.55.6" />
-    <link
-      rel="canonical"
-      href="https://www.qikqiak.com/post/deploy-vault-on-k8s/"
-    />
-    <link
-      rel="alternate"
-      href="https://www.qikqiak.com/index.xml"
-      type="application/rss+xml"
-      title="阳明的博客"
-    />
+  <meta name="description" content="很多时候我们可能都是直接将应用程序的密码或者 API Token 之类的私密信息直接暴露在源代码中的，显然直接暴露这些私密信息不是一个好的方式。在 Kubernetes 系统中提供了一个 Secret 对象来存储私密的数据，但是也只是简单的做了一次 Base64 编码而已，虽然比直接暴露要好点了，但是如果是一些安全性要求非常高的应用直接用 Secret 显然也还是不够的。本文就将来介绍如何使用 HashiCorp Vault 在 Kubernetes 集群中进行秘钥管理。">
+  <meta property="og:description" content="很多时候我们可能都是直接将应用程序的密码或者 API Token 之类的私密信息直接暴露在源代码中的，显然直接暴露这些私密信息不是一个好的方式。在 Kubernetes 系统中提供了一个 Secret 对象来存储私密的数据，但是也只是简单的做了一次 Base64 编码而已，虽然比直接暴露要好点了，但是如果是一些安全性要求非常高的应用直接用 Secret 显然也还是不够的。本文就将来介绍如何使用 HashiCorp Vault 在 Kubernetes 集群中进行秘钥管理。">
+  <meta name="twitter:description" content="很多时候我们可能都是直接将应用程序的密码或者 API Token 之类的私密信息直接暴露在源代码中的，显然直接暴露这些私密信息不是一个好的方式。在 Kubernetes 系统中提供了一个 Secret 对象来存储私密的数据，但是也只是简单的做了一次 Base64 编码而已，虽然比直接暴露要好点了，但是如果是一些安全性要求非常高的应用直接用 Secret 显然也还是不够的。 …">
+  <meta name="author" content=""/>
+  <link href="https://picdn.youdianzhishi.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://picdn.youdianzhishi.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/deploy-vault-on-k8s/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
 
-    <link
-      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
-      rel="stylesheet"
-    />
+  <link rel="canonical" href="https://www.qikqiak.com/post/deploy-vault-on-k8s/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
-    <link
-      rel="stylesheet"
-      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
-      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
-    />
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
 
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
-    />
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a6b62363fe57848ad01efa2a5d1bbb1047c2ffb71b53d8aeb42bc5ed5c77ea7c.css' integrity='sha256-prYjY/5XhIrQHvoqXRu7EEfC/7cbU9iutCvF7Vx36nw='>
 
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
     <!--[if lt IE 9]>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-      <link
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-        rel="stylesheet"
-      />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <![endif]-->
-    <meta
-      name="google-site-verification"
-      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
-    />
-    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-    <meta
-      name="keywords"
-      content="kubernetes, vault, consul, secret, helm, 安装"
-    />
-    <script>
-      var _hmt = _hmt || [];
-      (function () {
-        var hm = document.createElement("script");
-        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(hm, s);
-      })();
-    </script>
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, vault, consul, secret, helm, 安装">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
 
-    <script type="application/javascript">
-      var doNotTrack = false;
-      if (!doNotTrack) {
-        window.ga =
-          window.ga ||
-          function () {
-            (ga.q = ga.q || []).push(arguments);
-          };
-        ga.l = +new Date();
-        ga("create", "UA-69668147-3", "auto");
 
-        ga("send", "pageview");
-      }
-    </script>
-    <script async src="https://www.google-analytics.com/analytics.js"></script>
-  </head>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-      <div class="container">
-        <div class="navbar-header">
-          <button
-            type="button"
-            class="navbar-toggle"
-            data-toggle="collapse"
-            data-target="#main-navbar"
-          >
-            <span class="sr-only">切换导航</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a
-            class="navbar-brand"
-            href="https://www.qikqiak.com/"
-            title="阳明的博客"
-          >
-            <img
-              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
-              style="margin-top: -5px; height: 32px"
-              alt="阳明的博客"
-            />
-          </a>
-        </div>
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://picdn.youdianzhishi.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
 
-        <div class="collapse navbar-collapse" id="main-navbar">
-          <ul class="nav navbar-nav navbar-right">
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-
+          
+        
+          
             <li>
-              <a
-                title="课程"
-                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
-                >课程</a
-              >
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/archives">Archive</a>
-
-                <a href="https://www.qikqiak.com/tags">tags</a>
-
-                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-
-                <a href="https://www.qikqiak.com/tags/python">python</a>
-
-                <a href="https://www.qikqiak.com/tags/django">django</a>
-
-                <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-
-                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-
-                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-
-                <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/"
-                >关于</a
-              >
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
             </li>
-
+          
+        
+          
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
+          
+        
 
-            <li>
-              <a
-                href="#modalSearch"
-                data-toggle="modal"
-                data-target="#modalSearch"
-                style="outline: none"
-              >
-                <span
-                  id="searchGlyph"
-                  class="glyphicon glyphicon-search"
-                ></span>
-              </a>
-            </li>
-          </ul>
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
         </div>
-      </div>
-    </nav>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-    <div id="modalSearch" class="modal fade" role="dialog">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal">
-              &times;
-            </button>
-            <h4 class="modal-title">搜索</h4>
-          </div>
-          <div class="modal-body">
-            <div class="aa-input-container" id="aa-input-container">
-              <input
-                type="search"
-                id="aa-search-input"
-                class="aa-input-search"
-                placeholder="Search for titles or URIs..."
-                name="search"
-                autocomplete="off"
-              />
-              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-                <path
-                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
-                />
-              </svg>
-            </div>
-            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
 
-            <script>
-              var client = algoliasearch(
-                "1JDRAS0AZR",
-                "8804ac109158bb3bb60d74ce98fa332f"
-              );
-              var index = client.initIndex("prod_blog");
-
-              autocomplete(
-                "#aa-search-input",
-                { hint: false },
-                {
-                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
-
-                  displayKey: "name",
-
-                  templates: {
-                    suggestion: function (suggestion) {
-                      return (
-                        "<span>" +
-                        '<a href="https://www.qikqiak.com/post/' +
-                        suggestion.slug +
-                        '">' +
-                        suggestion._highlightResult.title.value +
-                        "</a></span>"
-                      );
-                    },
-                  },
-                }
-              );
-            </script>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">
-              close
-            </button>
-          </div>
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div
-      id="header-big-imgs"
-      data-num-img="1"
-      data-img-src-1="https://picdn.youdianzhishi.com/images/20200219141007.png"
-      data-img-desc-1="https://unsplash.com/photos/1w4ptVjagA8"
-    ></div>
+    
+  
+  
+  
 
-    <header class="header-section has-img">
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://picdn.youdianzhishi.com/images/20200219141007.png" data-img-desc-1="https://unsplash.com/photos/1w4ptVjagA8"></div>
+  
+
+  <header class="header-section has-img">
+    
       <div class="intro-header big-img">
+        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>在 Kubernetes 上部署 Vault</h1>
+                  
+                  
+                    <span class="post-meta">
+  发表于 February 19, 2020  
+</span>
 
-                <span class="post-meta"> 发表于 February 19, 2020 </span>
+                  
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline"></span>
+        <span class="img-desc" style="display: inline;"></span>
       </div>
-
-      <div class="intro-header no-img">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-              <div class="post-heading">
-                <h1>在 Kubernetes 上部署 Vault</h1>
-
-                <span class="post-meta"> 发表于 February 19, 2020 </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <div class="container" role="main">
-      <div class="row">
-        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-          <div>
-            <h5 id="tags" style="margin-top: 30px">
-              标签:
-
-              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
-              &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/vault/">vault</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/consul/">consul</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/helm/">helm</a> &nbsp;
-            </h5>
-          </div>
-
-          <article
-            role="main"
-            class="blog-post"
-            itemprop="articleBody"
-            id="content"
-          >
-            <aside class="toc">
-              <nav id="TableOfContents">
-                <ul>
-                  <li>
-                    <ul>
-                      <li><a href="#vault-介绍">Vault 介绍</a></li>
-                      <li><a href="#安装">安装</a></li>
-                      <li><a href="#使用">使用</a></li>
-                      <li><a href="#参考资料">参考资料</a></li>
-                    </ul>
-                  </li>
-                </ul>
-              </nav>
-            </aside>
-
-            <p>
-              很多时候我们可能都是直接将应用程序的密码或者 API Token
-              之类的私密信息直接暴露在源代码中的，显然直接暴露这些私密信息不是一个好的方式。在
-              Kubernetes 系统中提供了一个 Secret
-              对象来存储私密的数据，但是也只是简单的做了一次 Base64
-              编码而已，虽然比直接暴露要好点了，但是如果是一些安全性要求非常高的应用直接用
-              Secret 显然也还是不够的。本文就将来介绍如何使用
-              <a href="https://www.vaultproject.io/">HashiCorp Vault</a> 在
-              Kubernetes 集群中进行秘钥管理。
-            </p>
-
-            <h2 id="vault-介绍">Vault 介绍</h2>
-
-            <p>
-              <a href="https://www.vaultproject.io/">Vault</a>
-              是用于处理和加密整个基础架构秘钥的中心管理服务。Vault 通过 secret
-              引擎管理所有的秘钥，Vault 有一套 secret
-              引擎可以使用，一般情况为了使用简单，我们会使用 kv（键值）secret
-              引擎来进行管理。
-            </p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20200219140030.png"
-                alt="vault"
-              />
-              <figcaption>vault</figcaption>
-            </figure>
-
-            <p>使用 Vault 有很多的优点：</p>
-
-            <ul>
-              <li>
-                秘钥管理服务简单的说，可以看做后端领域的
-                1Password。首先它会保证秘钥存储安全，不管谁拿到秘钥管理服务的落地数据文件，在没有秘钥的情况下还是不能解密的。
-              </li>
-              <li>
-                从 Vault 获取之前配置的密码、秘钥等关键数据，会需要由管理员分配
-                Token，对这些分配的
-                Token，管理员可以制定包括过期、撤销、更新和权限管理等等各种安全策略
-              </li>
-              <li>
-                Vault
-                的安全级别可以提供面向公网开放的服务，所以可以为开发环境提供一个开发人员的
-                Vault ，在家或者异地开发也可以很方便
-              </li>
-              <li>
-                管理员可以随时通过 Vault
-                更新各个数据服务的安全密码或密钥，也可以随时收回或修改特定 Token
-                的权限。这在 Rolling out 更新时很有用
-              </li>
-              <li>
-                使用 Vault 会强制代码通过 Vault
-                接口来获取各种数据连接密码或秘钥。避免开发人员无意获得和在代码中使用秘钥密码。而且因为
-                Vault
-                的管理方式允许，虽然代码只有一份，我们还是可以将不同开发阶段的
-                Vault 分别管理。甚至可以做到生产环境中只有 1 人有 Vault
-                管理权限，也不会觉得维护起来很吃力
-              </li>
-              <li>
-                所有秘钥存取和修改都有日志记录。可以作为事后证据成为被入侵的线索
-              </li>
-              <li>数据库和 API 秘钥不再散落在代码各处</li>
-            </ul>
-
-            <h2 id="安装">安装</h2>
-
-            <p>
-              同样为了方便我们这里还是使用 Helm3 在 Kubernetes 集群上安装
-              Vault，对应的环境版本如下所示：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ helm version
-version.BuildInfo<span style="color:#ff79c6">{</span>Version:<span style="color:#f1fa8c">&#34;v3.0.1&#34;</span>, GitCommit:<span style="color:#f1fa8c">&#34;7c22ef9ce89e0ebeb7125ba2ebf7d421f3e82ffa&#34;</span>, GitTreeState:<span style="color:#f1fa8c">&#34;clean&#34;</span>, GoVersion:<span style="color:#f1fa8c">&#34;go1.13.4&#34;</span><span style="color:#ff79c6">}</span>
-$ kubectl version                          
-Client Version: version.Info<span style="color:#ff79c6">{</span>Major:<span style="color:#f1fa8c">&#34;1&#34;</span>, Minor:<span style="color:#f1fa8c">&#34;14&#34;</span>, GitVersion:<span style="color:#f1fa8c">&#34;v1.14.2&#34;</span>, GitCommit:<span style="color:#f1fa8c">&#34;66049e3b21efe110454d67df4fa62b08ea79a19b&#34;</span>, GitTreeState:<span style="color:#f1fa8c">&#34;clean&#34;</span>, BuildDate:<span style="color:#f1fa8c">&#34;2019-05-16T18:55:03Z&#34;</span>, GoVersion:<span style="color:#f1fa8c">&#34;go1.12.5&#34;</span>, Compiler:<span style="color:#f1fa8c">&#34;gc&#34;</span>, Platform:<span style="color:#f1fa8c">&#34;darwin/amd64&#34;</span><span style="color:#ff79c6">}</span>
-Server Version: version.Info<span style="color:#ff79c6">{</span>Major:<span style="color:#f1fa8c">&#34;1&#34;</span>, Minor:<span style="color:#f1fa8c">&#34;16&#34;</span>, GitVersion:<span style="color:#f1fa8c">&#34;v1.16.2&#34;</span>, GitCommit:<span style="color:#f1fa8c">&#34;c97fe5036ef3df2967d086711e6c0c405941e14b&#34;</span>, GitTreeState:<span style="color:#f1fa8c">&#34;clean&#34;</span>, BuildDate:<span style="color:#f1fa8c">&#34;2019-10-15T19:09:08Z&#34;</span>, GoVersion:<span style="color:#f1fa8c">&#34;go1.12.10&#34;</span>, Compiler:<span style="color:#f1fa8c">&#34;gc&#34;</span>, Platform:<span style="color:#f1fa8c">&#34;linux/amd64&#34;</span><span style="color:#ff79c6">}</span></code></pre>
-            </div>
-            <p>
-              这里直接使用 Vault 官方提供的 chart 包安装即可：<a
-                href="https://github.com/hashicorp/vault-helm"
-                >https://github.com/hashicorp/vault-helm</a
-              >，改包没有上传到 chart 仓库中，所以我们可以直接 clone 代码到
-              Helm3 所在的客户端直接安装，当然也可以直接通过指定 Release
-              的压缩包也可以，使用如下命令安装：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ helm install vault --namespace kube-system <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>    --set <span style="color:#f1fa8c">&#34;server.dev.enabled=true&#34;</span> <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>    https://github.com/hashicorp/vault-helm/archive/v0.3.3.tar.gz
-NAME: vault
-LAST DEPLOYED: Wed Feb <span style="color:#bd93f9">19</span> <span style="color:#bd93f9">10</span>:50:42 <span style="color:#bd93f9">2020</span>
-NAMESPACE: kube-system
-STATUS: deployed
-REVISION: <span style="color:#bd93f9">1</span>
-TEST SUITE: None
-NOTES:
-Thank you <span style="color:#ff79c6">for</span> installing HashiCorp Vault!
-
-Now that you have deployed Vault, you should look over the docs on using
-Vault with Kubernetes available here:
-
-https://www.vaultproject.io/docs/
-
-
-Your release is named vault. To learn more about the release, try:
-
-  $ helm status vault
-  $ helm get vault</code></pre>
-            </div>
-            <p>
-              上面的命令就会在 kube-system 命名空间下面安装一个名为 vault 的
-              Helm release：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ helm ls -n kube-system
-NAME 	NAMESPACE  	REVISION	UPDATED                             	STATUS  	CHART      	APP VERSION
-vault	kube-system	<span style="color:#bd93f9">1</span>       	<span style="color:#bd93f9">2020</span>-02-19 <span style="color:#bd93f9">10</span>:50:42.449755 +0800 CST	deployed	vault-0.3.3
-$ $ kubectl get pods -n kube-system
-NAME                                    READY   STATUS    RESTARTS   AGE
-......
-vault-0                                 <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          6m26s
-vault-agent-injector-584db8849f-x6wsv   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          6m27s</code></pre>
-            </div>
-            <p>
-              看到上面的两个 Vault 相关的 Pod
-              运行成功则证明已经安装成功了，所以安装是很方便的，接下来重点看下如何使用。
-            </p>
-
-            <h2 id="使用">使用</h2>
-
-            <p>
-              假如现在我们有一个需求是希望 Vault
-              将数据库的用户名和密码存储在应用的
-              <code>internal/database/config</code> 路径下面，首先要创建 secret
-              需要线开启 kv secret 引擎，并将用户名和密码放在指定的路径中。
-            </p>
-
-            <p>进入 <code>vault-0</code> 容器的命令行交互终端：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -it vault-0 /bin/sh -n kube-system
-/ $ </code></pre>
-            </div>
-            <p>
-              在 <code>internal</code> 路径下面开启 <code>kv-v2</code> secrets
-              引擎：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">/ $ vault secrets <span style="color:#8be9fd;font-style:italic">enable</span> -path<span style="color:#ff79c6">=</span>internal kv-v2
-Success! Enabled the kv-v2 secrets engine at: internal/</code></pre>
-            </div>
-            <p>
-              然后在
-              <code>internal/exampleapp/config</code>
-              路径下面添加一个用户名和密码的秘钥：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">/ $ vault kv put internal/database/config <span style="color:#8be9fd;font-style:italic">username</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;db-readonly-username&#34;</span> <span style="color:#8be9fd;font-style:italic">password</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;db-secret-password&#34;</span>
-Key              Value
----              -----
-created_time     <span style="color:#bd93f9">2020</span>-02-19T02:58:54.06574878Z
-deletion_time    n/a
-destroyed        <span style="color:#8be9fd;font-style:italic">false</span>
-version          <span style="color:#bd93f9">1</span></code></pre>
-            </div>
-            <p>创建完成后可以通过如下命令校验上面创建的 secret：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">/ $ vault kv get internal/database/config
-<span style="color:#ff79c6">======</span> <span style="color:#8be9fd;font-style:italic">Metadata</span> <span style="color:#ff79c6">======</span>
-Key              Value
----              -----
-created_time     <span style="color:#bd93f9">2020</span>-02-19T02:58:54.06574878Z
-deletion_time    n/a
-destroyed        <span style="color:#8be9fd;font-style:italic">false</span>
-version          <span style="color:#8be9fd;font-style:italic">1</span>
-
-<span style="color:#ff79c6">======</span> <span style="color:#8be9fd;font-style:italic">Data</span> <span style="color:#ff79c6">======</span>
-Key         Value
----         -----
-password    db-secret-password
-username    db-readonly-username</code></pre>
-            </div>
-            <p>
-              这样我们就将用户名和密码信息存储在了 Vault 中，Vault 提供了一个
-              <a href="https://www.vaultproject.io/docs/auth/kubernetes.html"
-                >Kubernetes 认证</a
-              >的方法可以让客户端通过使用 Kubernetes ServiceAccount
-              进行身份认证。
-            </p>
-
-            <p>开启 Kubernetes 认证方式：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">/ $ vault auth <span style="color:#8be9fd;font-style:italic">enable</span> kubernetes
-Success! Enabled kubernetes auth method at: kubernetes/</code></pre>
-            </div>
-            <p>
-              Vault 会接受来自于 Kubernetes 集群中的任何客户端的服务
-              Token。在身份验证的时候，Vault 通过配置的 Kubernetes 地址来验证
-              ServiceAccount 的 Token 信息。通过 ServiceAccount 的
-              Token、Kubernetes 地址和 CA 证书信息配置 Kubernetes 认证方式：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">/ $ vault write auth/kubernetes/config <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>&gt;         <span style="color:#8be9fd;font-style:italic">token_reviewer_jwt</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#ff79c6">$(</span>cat /var/run/secrets/kubernetes.io/serviceaccount/token<span style="color:#ff79c6">)</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>&gt;         <span style="color:#8be9fd;font-style:italic">kubernetes_host</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;https://</span><span style="color:#8be9fd;font-style:italic">$KUBERNETES_PORT_443_TCP_ADDR</span><span style="color:#f1fa8c">:443&#34;</span> <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>&gt;         <span style="color:#8be9fd;font-style:italic">kubernetes_ca_cert</span><span style="color:#ff79c6">=</span>@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-Success! Data written to: auth/kubernetes/config</code></pre>
-            </div>
-            <p>
-              其中 <code>token_reviewer_jwt</code> 和
-              <code>kubernetes_ca_cert</code> 都是 Kubernetes 默认注入到 Pod
-              中的，而环境变量
-              <code>KUBERNETES_PORT_443_TCP_ADDR</code> 也是内置的表示
-              Kubernetes APIServer 的内网地址。为了让客户端读取上一步定义在
-              <code>internal/database/config</code> 路径下面的 secret
-              数据，还需要为该路径授予 <code>read</code> 的权限。
-            </p>
-
-            <p>
-              这里我们创建一个名为
-              <code>internal-app</code> 的策略名称，该策略会启用对路径
-              <code>internal/database/config</code> 中的 secret 的读取权限：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">/ $ vault policy write internal-app - <span style="color:#f1fa8c">&lt;&lt;EOH
-</span><span style="color:#f1fa8c">&gt; path &#34;internal/data/database/config&#34; {
-</span><span style="color:#f1fa8c">&gt;   capabilities = [&#34;read&#34;]
-</span><span style="color:#f1fa8c">&gt; }
-</span><span style="color:#f1fa8c">&gt; EOH</span>
-Success! Uploaded policy: internal-app</code></pre>
-            </div>
-            <p>
-              然后创建一个名为 <code>internal-app</code> 的 Kubernetes
-              认证角色：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ / $ vault write auth/kubernetes/role/internal-app <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>&gt;         <span style="color:#8be9fd;font-style:italic">bound_service_account_names</span><span style="color:#ff79c6">=</span>internal-app <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>&gt;         <span style="color:#8be9fd;font-style:italic">bound_service_account_namespaces</span><span style="color:#ff79c6">=</span>default <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>&gt;         <span style="color:#8be9fd;font-style:italic">policies</span><span style="color:#ff79c6">=</span>internal-app <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>&gt;         <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span>24h
-Success! Data written to: auth/kubernetes/role/internal-app</code></pre>
-            </div>
-            <p>
-              该角色将 Kubernetes default 命名空间下面的名为
-              <code>internal-app</code> 的 ServiceAccount 与 Vault 的
-              <code>internal-app</code> 策略连接在了一起，认证后返回的 Token
-              有24小时的有效期。最后直接退出 <code>vault-0</code>：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">/ $ <span style="color:#8be9fd;font-style:italic">exit</span>
-$</code></pre>
-            </div>
-            <p>
-              到这里 Vault 相关的准备工作已经完成了，接下来就是如何在 Kubernetes
-              中来读取上面我们的 Secret 数据。上面我们在 default
-              命名空间下面定义了一个名为 <code>internal-app</code> 的
-              ServiceAccount，该对象还不存在，首先先创建：(vault-sa.yaml)
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: internal-app  <span style="color:#6272a4"># 需要和上面的 bound_service_account_names 一致</span>
-  namespace: default  <span style="color:#6272a4"># 需要和上面的 bound_service_account_namespaces 一致</span></code></pre>
-            </div>
-            <script
-              async
-              src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-            ></script>
-
-            <ins
-              class="adsbygoogle"
-              style="display: block"
-              data-ad-client="ca-pub-5376999672787220"
-              data-ad-slot="9165834656"
-              data-ad-format="auto"
-              data-full-width-responsive="true"
-            ></ins>
-            <script>
-              (adsbygoogle = window.adsbygoogle || []).push({});
-            </script>
-
-            <p>直接创建即可：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl apply -f vault-sa.yaml
-serviceaccount/internal-app created
-$ kubectl get sa
-NAME                     SECRETS   AGE
-internal-app             <span style="color:#bd93f9">1</span>         91m
-......</code></pre>
-            </div>
-            <p>然后在我们的应用中使用上面创建的 sa 对象：(vault-demo.yaml)</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: vault-demo
-  labels:
-    app: vault-demo
-spec:
-  selector:
-    matchLabels:
-      app: vault-demo
-  template:
-    metadata:
-      labels:
-        app: vault-demo
-    spec:
-      serviceAccountName: internal-app  <span style="color:#6272a4"># 使用上面创建的 serviceaccount 对象</span>
-      containers:
-        - name: vault
-          image: cnych/vault-demo:<span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">1</span></code></pre>
-            </div>
-            <p>
-              其中比较重要的就是
-              <code>spec.template.spec.serviceAccountName</code>
-              字段需要使用上面我们创建的名为 <code>internal-app</code> 的这个
-              ServiceAccount 资源对象，同样也是直接创建即可：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl apply -f vault-demo.yaml
-deployment.apps/vault-demo created
-$ kubectl get pods
-NAME                                      READY   STATUS    RESTARTS   AGE
-vault-demo-7fb8449d7b-x8bft               <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          10m
-......
-$ kubectl get pods -n kube-system
-NAME                                    READY   STATUS    RESTARTS   AGE
-vault-0                                 <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          112m
-vault-agent-injector-584db8849f-x6wsv   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          112m
-......</code></pre>
-            </div>
-            <p>
-              正常的情况是我们部署的 Vault 中的
-              <code>vault-agent-injector</code> 这个程序会去查找 Kubernetes
-              集群中部署应用的 <code>annotations</code> 属性进行处理，我们当前的
-              Deployment 中没有配置相关的信息，所以我们这里的
-              <code>vault-demo-7fb8449d7b-x8bft</code> 这个 Pod 中是获取不到任何
-              secret 数据的，可以通过如下所示的命令进行验证：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -it vault-demo-7fb8449d7b-x8bft -- ls /vault/secrets
-ls: /vault/secrets: No such file or directory
-<span style="color:#8be9fd;font-style:italic">command</span> terminated with <span style="color:#8be9fd;font-style:italic">exit</span> code <span style="color:#bd93f9">1</span></code></pre>
-            </div>
-            <p>
-              可以看到在容器中现在没有对应的 secret 数据。这个时候我们就需要通过
-              <code>annotations</code> 来添加一些获取 secret
-              数据的一些说明：(vault-inject.yaml)
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">spec:
-  template:
-    metadata:
-      annotations:
-        vault.hashicorp.com/agent-inject: <span style="color:#f1fa8c">&#34;true&#34;</span>
-        vault.hashicorp.com/role: <span style="color:#f1fa8c">&#34;internal-app&#34;</span>
-        vault.hashicorp.com/agent-inject-secret-database-config.txt: <span style="color:#f1fa8c">&#34;internal/data/database/config&#34;</span></code></pre>
-            </div>
-            <p>
-              上面的
-              <a
-                href="https://www.vaultproject.io/docs/platform/k8s/injector/index.html#annotations"
-                >annotations</a
-              >
-              定义了部分 vault 相关的信息，都是以
-              <code>vault.hashicorp.com</code> 为前缀开头的信息：
-            </p>
-
-            <ul>
-              <li>
-                <code>agent-inject</code> 用于标识启用 Vault Agent 注入服务
-              </li>
-              <li><code>role</code> 表示 Vault Kubernetes 身份验证的角色</li>
-              <li>
-                <code>agent-inject-secret-FILEPATH</code> 为写入
-                <code>/vault/secrets</code> 的文件
-                <code>database-config.txt</code> 的路径上加上前缀，对应的值是
-                Vault 中定义的 secret 数据存储路径。
-              </li>
-            </ul>
-
-            <p>
-              直接使用上面定义的 annotations 来给上面的 Deployment 打一个补丁：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl patch deployment vault-demo --patch <span style="color:#f1fa8c">&#34;</span><span style="color:#ff79c6">$(</span>cat vault-inject.yaml<span style="color:#ff79c6">)</span><span style="color:#f1fa8c">&#34;</span>
-deployment.apps/vault-demo patched
-$ kubectl get pods
-NAME                                      READY   STATUS    RESTARTS   AGE
-vault-demo-574d67ff98-2dsqh               <span style="color:#bd93f9">2</span>/2     Running   <span style="color:#bd93f9">0</span>          3m14s</code></pre>
-            </div>
-            <p>
-              现在新的 Pod 中会包含两个容器，一个是我们定义的 vault-demo
-              容器，另一个是名为 <code>vault-agent</code> 的 Vault Agent
-              容器。在 Pod 中自动添加一个 <code>vault-agent</code> 的 Sidecar
-              容器其实也是利用了 Mutating Admission Webhook 来实现的，和 Istio
-              实现的机制是一样的：
-            </p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20200219140552.png"
-                alt="vault agent inject Mutating Admission Webhook"
-              />
-              <figcaption>
-                vault agent inject Mutating Admission Webhook
-              </figcaption>
-            </figure>
-
-            <p>现在我们可以查看 <code>vault-agent</code> 容器的日志：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl logs -f vault-demo-574d67ff98-2dsqh vault-agent
-<span style="color:#bd93f9">2020</span>-02-19T11:24:26.127+0800 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span>  sink.file: creating file sink
-<span style="color:#bd93f9">2020</span>-02-19T11:24:26.128+0800 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span>  sink.file: file sink configured: <span style="color:#8be9fd;font-style:italic">path</span><span style="color:#ff79c6">=</span>/home/vault/.token <span style="color:#8be9fd;font-style:italic">mode</span><span style="color:#ff79c6">=</span>-rw-r-----
-<span style="color:#bd93f9">2020</span>-02-19T11:24:26.129+0800 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span>  auth.handler: starting auth handler
-<span style="color:#bd93f9">2020</span>-02-19T11:24:26.129+0800 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span>  auth.handler: authenticating
-<span style="color:#bd93f9">2020</span>-02-19T11:24:26.129+0800 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span>  template.server: starting template server
-<span style="color:#bd93f9">2020</span>/02/19 <span style="color:#bd93f9">03</span>:24:26.129648 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">(</span>runner<span style="color:#ff79c6">)</span> creating new runner <span style="color:#ff79c6">(</span>dry: false, once: <span style="color:#8be9fd;font-style:italic">false</span><span style="color:#ff79c6">)</span>
-<span style="color:#bd93f9">2020</span>/02/19 <span style="color:#bd93f9">03</span>:24:26.130647 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">(</span>runner<span style="color:#ff79c6">)</span> creating watcher
-<span style="color:#bd93f9">2020</span>-02-19T11:24:26.130+0800 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span>  sink.server: starting sink <span style="color:#8be9fd;font-style:italic">server</span>
-<span style="color:#ff79c6">==</span>&gt; Vault server started! Log data will stream in below:
-
-<span style="color:#ff79c6">==</span>&gt; Vault agent configuration:
-
-                     Cgo: disabled
-               Log Level: info
-                 Version: Vault v1.3.1
-
-<span style="color:#bd93f9">2020</span>-02-19T11:24:26.155+0800 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span>  auth.handler: authentication successful, sending token to sinks
-<span style="color:#bd93f9">2020</span>-02-19T11:24:26.155+0800 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span>  auth.handler: starting renewal process
-<span style="color:#bd93f9">2020</span>-02-19T11:24:26.155+0800 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span>  sink.file: token written: <span style="color:#8be9fd;font-style:italic">path</span><span style="color:#ff79c6">=</span>/home/vault/.token
-<span style="color:#bd93f9">2020</span>-02-19T11:24:26.155+0800 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span>  template.server: template server received new token
-<span style="color:#bd93f9">2020</span>/02/19 <span style="color:#bd93f9">03</span>:24:26.155649 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">(</span>runner<span style="color:#ff79c6">)</span> stopping
-<span style="color:#bd93f9">2020</span>/02/19 <span style="color:#bd93f9">03</span>:24:26.155649 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">(</span>runner<span style="color:#ff79c6">)</span> creating new runner <span style="color:#ff79c6">(</span>dry: false, once: <span style="color:#8be9fd;font-style:italic">false</span><span style="color:#ff79c6">)</span>
-<span style="color:#bd93f9">2020</span>-02-19T11:24:26.166+0800 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span>  auth.handler: renewed auth token
-<span style="color:#bd93f9">2020</span>/02/19 <span style="color:#bd93f9">03</span>:24:26.176648 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">(</span>runner<span style="color:#ff79c6">)</span> creating watcher
-<span style="color:#bd93f9">2020</span>/02/19 <span style="color:#bd93f9">03</span>:24:26.176648 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">(</span>runner<span style="color:#ff79c6">)</span> starting</code></pre>
-            </div>
-            <p>
-              <code>vault-agent</code> 容器会管理 Token 的整个生命周期和 secret
-              数据检索，我们定义的 secret 数据会被添加到应用容器的
-              <code>/vault/secrets/database-config.txt</code> 路径下面：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -it vault-demo-574d67ff98-2dsqh -c vault -- cat /vault/secrets/database-config.txt
-data: map<span style="color:#ff79c6">[</span>password:db-secret-password username:db-readonly-username<span style="color:#ff79c6">]</span>
-metadata: map<span style="color:#ff79c6">[</span>created_time:2020-02-19T02:58:54.06574878Z deletion_time: destroyed:false version:1<span style="color:#ff79c6">]</span></code></pre>
-            </div>
-            <p>
-              到这里 secret
-              数据就成功的存储在了我们的应用容器中，当然对于实际的应用我们完全可以直接通过
-              Vault 提供的 SDK 直接去读取对应的 secret
-              数据。比如下面就是一段通过 Vault SDK 读取动态认证数据的示例：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go"><span style="color:#ff79c6">package</span> main
-
-<span style="color:#ff79c6">import</span> (
-	<span style="color:#f1fa8c">&#34;fmt&#34;</span>
-	<span style="color:#f1fa8c">&#34;io/ioutil&#34;</span>
-
-	vaultApi <span style="color:#f1fa8c">&#34;github.com/hashicorp/vault/api&#34;</span>
-)
-
-<span style="color:#8be9fd;font-style:italic">var</span> (
-	vaultHost           <span style="color:#8be9fd">string</span>
-	vaultCAPath         <span style="color:#8be9fd">string</span>
-	vaultServiceAccount <span style="color:#8be9fd">string</span>
-	vaultJWTPath        <span style="color:#8be9fd">string</span>
-)
-
-<span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">main</span>() {
-	vaultJWTPath = <span style="color:#f1fa8c">&#34;/var/run/secrets/kubernetes.io/serviceaccount/token&#34;</span>
-	vaultServiceAccount = <span style="color:#f1fa8c">&#34;internal-app&#34;</span>
-
-	tlsConfig <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">&amp;</span>vaultApi.TLSConfig{
-		CACert:   vaultCAPath,
-		Insecure: <span style="color:#ff79c6">false</span>,
-	}
-
-    config <span style="color:#ff79c6">:=</span> vaultApi.<span style="color:#50fa7b">DefaultConfig</span>()
-    <span style="color:#6272a4">// todo，配置 vault 地址
-</span><span style="color:#6272a4"></span>	config.Address = fmt.<span style="color:#50fa7b">Sprintf</span>(<span style="color:#f1fa8c">&#34;https://%s&#34;</span>, vaultHost)
-	config.<span style="color:#50fa7b">ConfigureTLS</span>(tlsConfig)
-
-	client, _ <span style="color:#ff79c6">:=</span> vaultApi.<span style="color:#50fa7b">NewClient</span>(config)
-	buf, _ <span style="color:#ff79c6">:=</span> ioutil.<span style="color:#50fa7b">ReadFile</span>(vaultJWTPath)
-	jwt <span style="color:#ff79c6">:=</span> <span style="color:#8be9fd;font-style:italic">string</span>(buf)
-
-	options <span style="color:#ff79c6">:=</span> <span style="color:#8be9fd;font-style:italic">map</span>[<span style="color:#8be9fd">string</span>]<span style="color:#8be9fd;font-style:italic">interface</span>{}{
-		<span style="color:#f1fa8c">&#34;jwt&#34;</span>:  jwt,
-		<span style="color:#f1fa8c">&#34;role&#34;</span>: vaultServiceAccount,
-	}
-	loginSecret, _ <span style="color:#ff79c6">:=</span> client.<span style="color:#50fa7b">Logical</span>().<span style="color:#50fa7b">Write</span>(<span style="color:#f1fa8c">&#34;auth/kubernetes/login&#34;</span>, options)
-	client.<span style="color:#50fa7b">SetToken</span>(loginSecret.Auth.ClientToken)
-
-	secret, _ <span style="color:#ff79c6">:=</span> client.<span style="color:#50fa7b">Logical</span>().<span style="color:#50fa7b">Read</span>(<span style="color:#f1fa8c">&#34;internal/data/database/config&#34;</span>)
-	fmt.<span style="color:#50fa7b">Println</span>(secret)
-}</code></pre>
-            </div>
-            <p>
-              另外需要注意的是上面我们定义的认证角色只有24小时，是有过期时间的，在到期前可以执行
-              renew 操作，如果 token 所属的 policy 有
-              <code>/auth/token/renew-self</code>
-              相应的权限，那么也可以直接在代码中自己 renew 自己。
-            </p>
-
-            <p>
-              更多的关于 Vault 和 Kubernetes 的结合使用可以查看官方文档
-              <a
-                href="https://learn.hashicorp.com/vault/getting-started-k8s/k8s-intro"
-                >https://learn.hashicorp.com/vault/getting-started-k8s/k8s-intro</a
-              >
-              了解更多。
-            </p>
-
-            <h2 id="参考资料">参考资料</h2>
-
-            <ul>
-              <li>
-                <a href="https://deepsource.io/blog/setup-vault-kubernetes/"
-                  >How to setup Vault with Kubernetes</a
-                >
-              </li>
-              <li>
-                <a
-                  href="https://www.sagittarius.ai/blog/2018/10/21/vault-k8s-best-practice"
-                  >Vault+K8S 最佳实践</a
-                >
-              </li>
-              <li>
-                <a
-                  href="https://medium.com/getamis/vault-kubernetes-integration-63ce46d47550"
-                  >Vault 與 Kubernetes 的深度整合</a
-                >
-              </li>
-              <li>
-                <a
-                  href="https://itnext.io/dynamic-vault-secrets-agent-sidecar-on-kubernetes-cc0ce3e54a94"
-                  >Dynamic Vault Secrets — Agent Sidecar on Kubernetes</a
-                >
-              </li>
-            </ul>
-
-            <p>
-              <a
-                href="https://youdianzhishi.com/web/course/1030"
-                title="从 Docker 到 Kubernetes 进阶课程"
-                ><img
-                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
-                  alt="Kubernetes进阶训练营"
-              /></a>
-            </p>
-
-            <h2>微信公众号</h2>
-            <p>
-              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
-              kubernetes 讨论群里面共同学习。
-            </p>
-            <img
-              src="https://picdn.youdianzhishi.com/images/qrcode.png"
-              alt="wechat-account-qrcode"
-            />
-
-            <div class="entry-shang text-center">
-              <p>「真诚赞赏，手留余香」</p>
-              <button class="zs show-zs btn btn-bred">赞赏</button>
-            </div>
-            <div class="zs-modal-bg"></div>
-            <div class="zs-modal-box">
-              <div class="zs-modal-head">
-                <button type="button" class="close">×</button>
-                <span class="author"
-                  ><img
-                    src="https://www.qikqiak.com/img/avatar.jpeg"
-                  />阳明</span
-                >
-                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-              </div>
-              <div class="zs-modal-body">
-                <div class="zs-modal-btns">
-                  <button class="btn btn-blink" data-num="2">2元</button>
-                  <button class="btn btn-blink" data-num="5">5元</button>
-                  <button class="btn btn-blink" data-num="10">10元</button>
-                  <button class="btn btn-blink" data-num="50">50元</button>
-                  <button class="btn btn-blink" data-num="100">100元</button>
-                  <button class="btn btn-blink" data-num="1">任意金额</button>
-                </div>
-                <div class="zs-modal-pay">
-                  <button class="btn btn-bred" id="pay-text">2元</button>
-                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-                  <img
-                    src="https://www.qikqiak.com/img/wechat-2.png"
-                    id="pay-image"
-                  />
-                </div>
-              </div>
-              <div class="zs-modal-footer">
-                <span class="zs-wechat"
-                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
-                /></span>
-              </div>
-            </div>
-
-            <div
-              class="social-share"
-              data-initialized="true"
-              style="margin-bottom: 20px; margin-top: 20px"
-            >
-              <center>
-                <a href="#" class="social-share-icon icon-weibo"></a>
-                <a href="#" class="social-share-icon icon-wechat"></a>
-                <a href="#" class="social-share-icon icon-twitter"></a>
-                <a href="#" class="social-share-icon icon-linkedin"></a>
-                <a href="#" class="social-share-icon icon-facebook"></a>
-                <a href="#" class="social-share-icon icon-qq"></a>
-                <a href="#" class="social-share-icon icon-qzone"></a>
-              </center>
-            </div>
-
-            <link
-              rel="stylesheet"
-              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
-            />
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
-          </article>
-
-          <h3>相关文章</h3>
-          <ul style="margin-bottom: 25px">
-            <li>
-              <a href="https://www.qikqiak.com/post/deploy-spinnaker-on-k8s/"
-                >在 Kubernetes 上部署 Spinnaker</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/install-metrics-server/"
-                >Metrics Server 安装</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/"
-                >在 Kubernetes 上安装 Gitlab</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/migrate-helm-to-v3/"
-                >Helm V2 迁移到 V3 版本</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/kustomize-101/"
-                >使用 Kustomize 配置 Kubernetes 应用</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/drone-with-k8s-3/"
-                >Drone 结合 Helm 部署 Kubernetes 应用</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/drone-with-k8s-2/"
-                >使用 Drone Pipeline 构建 Docker 镜像</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/drone-with-k8s-1/"
-                >使用 Kubernetes Helm 安装 Drone</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/helm-chart-tips-and-tricks/"
-                >Helm Chart 模板开发技巧</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/install-nginx-ingress/"
-                >nginx-ingress 的安装使用</a
-              >
-            </li>
-          </ul>
-
-          <ul class="pager blog-pager">
-            <li class="previous">
-              <a
-                href="https://www.qikqiak.com/post/deploy-spinnaker-on-k8s/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="在 Kubernetes 上部署 Spinnaker"
-                >&larr; 前一篇</a
-              >
-            </li>
-
-            <li class="next">
-              <a
-                href="https://www.qikqiak.com/post/get-client-realip/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="获取客户端访问真实 IP"
-                >后一篇 &rarr;</a
-              >
-            </li>
-          </ul>
-
-          <script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-          ></script>
-
-          <ins
-            class="adsbygoogle"
-            style="display: block"
-            data-ad-client="ca-pub-5376999672787220"
-            data-ad-slot="3700507799"
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          ></ins>
-          <script>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-          </script>
-
-          <div id="gitalk-container"></div>
-          <link
-            rel="stylesheet"
-            href="https://unpkg.com/gitalk/dist/gitalk.css"
-          />
-          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-          <script>
-            var gitalk = new Gitalk({
-              clientID: "bdb76dbb2e9d0786e350",
-              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
-              repo: "blog",
-              owner: "cnych",
-              admin: ["cnych"],
-              labels: ["gitment"],
-              title: "在 Kubernetes 上部署 Vault",
-              createIssueManually: true,
-              id: "deploy-vault-on-k8s",
-              distractionFreeMode: true,
-            });
-            gitalk.render("gitalk-container");
-          </script>
-        </div>
-      </div>
-    </div>
-
-    <footer>
+    
+    
+    
+    <div class="intro-header no-img">
+      
       <div class="container">
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <ul class="list-inline text-center footer-links">
-              <img
-                src="https://www.qikqiak.com/img/wechatmp.png"
-                alt="k8s技术圈"
-              />
+            <div class="post-heading">
+              <h1>在 Kubernetes 上部署 Vault</h1>
+                
+                
+                  <span class="post-meta">
+  发表于 February 19, 2020  
+</span>
 
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/vault/">vault</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/consul/">consul</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/helm/">helm</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#vault-介绍">Vault 介绍</a></li>
+    <li><a href="#安装">安装</a></li>
+    <li><a href="#使用">使用</a></li>
+    <li><a href="#参考资料">参考资料</a></li>
+  </ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>很多时候我们可能都是直接将应用程序的密码或者 API Token 之类的私密信息直接暴露在源代码中的，显然直接暴露这些私密信息不是一个好的方式。在 Kubernetes 系统中提供了一个 Secret 对象来存储私密的数据，但是也只是简单的做了一次 Base64 编码而已，虽然比直接暴露要好点了，但是如果是一些安全性要求非常高的应用直接用 Secret 显然也还是不够的。本文就将来介绍如何使用 <a href="https://www.vaultproject.io/">HashiCorp Vault</a> 在 Kubernetes 集群中进行秘钥管理。</p>
+<h2 id="vault-介绍">Vault 介绍</h2>
+<p><a href="https://www.vaultproject.io/">Vault</a> 是用于处理和加密整个基础架构秘钥的中心管理服务。Vault 通过 secret 引擎管理所有的秘钥，Vault 有一套 secret 引擎可以使用，一般情况为了使用简单，我们会使用 kv（键值）secret 引擎来进行管理。</p>
+<p><img src="https://picdn.youdianzhishi.com/images/20200219140030.png" alt="vault"></p>
+<p>使用 Vault 有很多的优点：</p>
+<ul>
+<li>秘钥管理服务简单的说，可以看做后端领域的 1Password。首先它会保证秘钥存储安全，不管谁拿到秘钥管理服务的落地数据文件，在没有秘钥的情况下还是不能解密的。</li>
+<li>从 Vault 获取之前配置的密码、秘钥等关键数据，会需要由管理员分配 Token，对这些分配的 Token，管理员可以制定包括过期、撤销、更新和权限管理等等各种安全策略</li>
+<li>Vault 的安全级别可以提供面向公网开放的服务，所以可以为开发环境提供一个开发人员的 Vault ，在家或者异地开发也可以很方便</li>
+<li>管理员可以随时通过 Vault 更新各个数据服务的安全密码或密钥，也可以随时收回或修改特定 Token 的权限。这在 Rolling out 更新时很有用</li>
+<li>使用 Vault 会强制代码通过 Vault 接口来获取各种数据连接密码或秘钥。避免开发人员无意获得和在代码中使用秘钥密码。而且因为 Vault 的管理方式允许，虽然代码只有一份，我们还是可以将不同开发阶段的 Vault 分别管理。甚至可以做到生产环境中只有 1 人有 Vault 管理权限，也不会觉得维护起来很吃力</li>
+<li>所有秘钥存取和修改都有日志记录。可以作为事后证据成为被入侵的线索</li>
+<li>数据库和 API 秘钥不再散落在代码各处</li>
+</ul>
+<h2 id="安装">安装</h2>
+<p>同样为了方便我们这里还是使用 Helm3 在 Kubernetes 集群上安装 Vault，对应的环境版本如下所示：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ helm version
+</span></span><span style="display:flex;"><span>version.BuildInfo<span style="color:#ff79c6">{</span>Version:<span style="color:#f1fa8c">&#34;v3.0.1&#34;</span>, GitCommit:<span style="color:#f1fa8c">&#34;7c22ef9ce89e0ebeb7125ba2ebf7d421f3e82ffa&#34;</span>, GitTreeState:<span style="color:#f1fa8c">&#34;clean&#34;</span>, GoVersion:<span style="color:#f1fa8c">&#34;go1.13.4&#34;</span><span style="color:#ff79c6">}</span>
+</span></span><span style="display:flex;"><span>$ kubectl version
+</span></span><span style="display:flex;"><span>Client Version: version.Info<span style="color:#ff79c6">{</span>Major:<span style="color:#f1fa8c">&#34;1&#34;</span>, Minor:<span style="color:#f1fa8c">&#34;14&#34;</span>, GitVersion:<span style="color:#f1fa8c">&#34;v1.14.2&#34;</span>, GitCommit:<span style="color:#f1fa8c">&#34;66049e3b21efe110454d67df4fa62b08ea79a19b&#34;</span>, GitTreeState:<span style="color:#f1fa8c">&#34;clean&#34;</span>, BuildDate:<span style="color:#f1fa8c">&#34;2019-05-16T18:55:03Z&#34;</span>, GoVersion:<span style="color:#f1fa8c">&#34;go1.12.5&#34;</span>, Compiler:<span style="color:#f1fa8c">&#34;gc&#34;</span>, Platform:<span style="color:#f1fa8c">&#34;darwin/amd64&#34;</span><span style="color:#ff79c6">}</span>
+</span></span><span style="display:flex;"><span>Server Version: version.Info<span style="color:#ff79c6">{</span>Major:<span style="color:#f1fa8c">&#34;1&#34;</span>, Minor:<span style="color:#f1fa8c">&#34;16&#34;</span>, GitVersion:<span style="color:#f1fa8c">&#34;v1.16.2&#34;</span>, GitCommit:<span style="color:#f1fa8c">&#34;c97fe5036ef3df2967d086711e6c0c405941e14b&#34;</span>, GitTreeState:<span style="color:#f1fa8c">&#34;clean&#34;</span>, BuildDate:<span style="color:#f1fa8c">&#34;2019-10-15T19:09:08Z&#34;</span>, GoVersion:<span style="color:#f1fa8c">&#34;go1.12.10&#34;</span>, Compiler:<span style="color:#f1fa8c">&#34;gc&#34;</span>, Platform:<span style="color:#f1fa8c">&#34;linux/amd64&#34;</span><span style="color:#ff79c6">}</span>
+</span></span></code></pre></div><p>这里直接使用 Vault 官方提供的 chart 包安装即可：<a href="https://github.com/hashicorp/vault-helm">https://github.com/hashicorp/vault-helm</a>，改包没有上传到 chart 仓库中，所以我们可以直接 clone 代码到 Helm3 所在的客户端直接安装，当然也可以直接通过指定 Release 的压缩包也可以，使用如下命令安装：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ helm install vault --namespace kube-system <span style="color:#f1fa8c">\
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c"></span>    --set <span style="color:#f1fa8c">&#34;server.dev.enabled=true&#34;</span> <span style="color:#f1fa8c">\
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c"></span>    https://github.com/hashicorp/vault-helm/archive/v0.3.3.tar.gz
+</span></span><span style="display:flex;"><span>NAME: vault
+</span></span><span style="display:flex;"><span>LAST DEPLOYED: Wed Feb <span style="color:#bd93f9">19</span> 10:50:42 <span style="color:#bd93f9">2020</span>
+</span></span><span style="display:flex;"><span>NAMESPACE: kube-system
+</span></span><span style="display:flex;"><span>STATUS: deployed
+</span></span><span style="display:flex;"><span>REVISION: <span style="color:#bd93f9">1</span>
+</span></span><span style="display:flex;"><span>TEST SUITE: None
+</span></span><span style="display:flex;"><span>NOTES:
+</span></span><span style="display:flex;"><span>Thank you <span style="color:#ff79c6">for</span> installing HashiCorp Vault!
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Now that you have deployed Vault, you should look over the docs on using
+</span></span><span style="display:flex;"><span>Vault with Kubernetes available here:
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>https://www.vaultproject.io/docs/
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Your release is named vault. To learn more about the release, try:
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  $ helm status vault
+</span></span><span style="display:flex;"><span>  $ helm get vault
+</span></span></code></pre></div><p>上面的命令就会在 kube-system 命名空间下面安装一个名为 vault 的 Helm release：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ helm ls -n kube-system
+</span></span><span style="display:flex;"><span>NAME 	NAMESPACE  	REVISION	UPDATED                             	STATUS  	CHART      	APP VERSION
+</span></span><span style="display:flex;"><span>vault	kube-system	<span style="color:#bd93f9">1</span>       	2020-02-19 10:50:42.449755 +0800 CST	deployed	vault-0.3.3
+</span></span><span style="display:flex;"><span>$ $ kubectl get pods -n kube-system
+</span></span><span style="display:flex;"><span>NAME                                    READY   STATUS    RESTARTS   AGE
+</span></span><span style="display:flex;"><span>......
+</span></span><span style="display:flex;"><span>vault-0                                 1/1     Running   <span style="color:#bd93f9">0</span>          6m26s
+</span></span><span style="display:flex;"><span>vault-agent-injector-584db8849f-x6wsv   1/1     Running   <span style="color:#bd93f9">0</span>          6m27s
+</span></span></code></pre></div><p>看到上面的两个 Vault 相关的 Pod 运行成功则证明已经安装成功了，所以安装是很方便的，接下来重点看下如何使用。</p>
+<h2 id="使用">使用</h2>
+<p>假如现在我们有一个需求是希望 Vault 将数据库的用户名和密码存储在应用的 <code>internal/database/config</code> 路径下面，首先要创建 secret 需要线开启 kv secret 引擎，并将用户名和密码放在指定的路径中。</p>
+<p>进入 <code>vault-0</code> 容器的命令行交互终端：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -it vault-0 /bin/sh -n kube-system
+</span></span><span style="display:flex;"><span>/ $
+</span></span></code></pre></div><p>在 <code>internal</code> 路径下面开启 <code>kv-v2</code> secrets 引擎：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>/ $ vault secrets <span style="color:#8be9fd;font-style:italic">enable</span> -path<span style="color:#ff79c6">=</span>internal kv-v2
+</span></span><span style="display:flex;"><span>Success! Enabled the kv-v2 secrets engine at: internal/
+</span></span></code></pre></div><p>然后在 <code>internal/exampleapp/config</code> 路径下面添加一个用户名和密码的秘钥：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>/ $ vault kv put internal/database/config <span style="color:#8be9fd;font-style:italic">username</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;db-readonly-username&#34;</span> <span style="color:#8be9fd;font-style:italic">password</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;db-secret-password&#34;</span>
+</span></span><span style="display:flex;"><span>Key              Value
+</span></span><span style="display:flex;"><span>---              -----
+</span></span><span style="display:flex;"><span>created_time     2020-02-19T02:58:54.06574878Z
+</span></span><span style="display:flex;"><span>deletion_time    n/a
+</span></span><span style="display:flex;"><span>destroyed        <span style="color:#8be9fd;font-style:italic">false</span>
+</span></span><span style="display:flex;"><span>version          <span style="color:#bd93f9">1</span>
+</span></span></code></pre></div><p>创建完成后可以通过如下命令校验上面创建的 secret：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>/ $ vault kv get internal/database/config
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">======</span> <span style="color:#8be9fd;font-style:italic">Metadata</span> <span style="color:#ff79c6">======</span>
+</span></span><span style="display:flex;"><span>Key              Value
+</span></span><span style="display:flex;"><span>---              -----
+</span></span><span style="display:flex;"><span>created_time     2020-02-19T02:58:54.06574878Z
+</span></span><span style="display:flex;"><span>deletion_time    n/a
+</span></span><span style="display:flex;"><span>destroyed        <span style="color:#8be9fd;font-style:italic">false</span>
+</span></span><span style="display:flex;"><span>version          <span style="color:#8be9fd;font-style:italic">1</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">======</span> <span style="color:#8be9fd;font-style:italic">Data</span> <span style="color:#ff79c6">======</span>
+</span></span><span style="display:flex;"><span>Key         Value
+</span></span><span style="display:flex;"><span>---         -----
+</span></span><span style="display:flex;"><span>password    db-secret-password
+</span></span><span style="display:flex;"><span>username    db-readonly-username
+</span></span></code></pre></div><p>这样我们就将用户名和密码信息存储在了 Vault 中，Vault 提供了一个 <a href="https://www.vaultproject.io/docs/auth/kubernetes.html">Kubernetes 认证</a>的方法可以让客户端通过使用 Kubernetes ServiceAccount 进行身份认证。</p>
+<p>开启 Kubernetes 认证方式：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>/ $ vault auth <span style="color:#8be9fd;font-style:italic">enable</span> kubernetes
+</span></span><span style="display:flex;"><span>Success! Enabled kubernetes auth method at: kubernetes/
+</span></span></code></pre></div><p>Vault 会接受来自于 Kubernetes 集群中的任何客户端的服务 Token。在身份验证的时候，Vault 通过配置的 Kubernetes 地址来验证 ServiceAccount 的 Token 信息。通过 ServiceAccount 的 Token、Kubernetes 地址和 CA 证书信息配置 Kubernetes 认证方式：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>/ $ vault write auth/kubernetes/config <span style="color:#f1fa8c">\
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c"></span>&gt;         <span style="color:#8be9fd;font-style:italic">token_reviewer_jwt</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#ff79c6">$(</span>cat /var/run/secrets/kubernetes.io/serviceaccount/token<span style="color:#ff79c6">)</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#f1fa8c">\
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c"></span>&gt;         <span style="color:#8be9fd;font-style:italic">kubernetes_host</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;https://</span><span style="color:#8be9fd;font-style:italic">$KUBERNETES_PORT_443_TCP_ADDR</span><span style="color:#f1fa8c">:443&#34;</span> <span style="color:#f1fa8c">\
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c"></span>&gt;         <span style="color:#8be9fd;font-style:italic">kubernetes_ca_cert</span><span style="color:#ff79c6">=</span>@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+</span></span><span style="display:flex;"><span>Success! Data written to: auth/kubernetes/config
+</span></span></code></pre></div><p>其中 <code>token_reviewer_jwt</code> 和 <code>kubernetes_ca_cert</code> 都是 Kubernetes 默认注入到 Pod 中的，而环境变量 <code>KUBERNETES_PORT_443_TCP_ADDR</code> 也是内置的表示 Kubernetes APIServer 的内网地址。为了让客户端读取上一步定义在 <code>internal/database/config</code> 路径下面的 secret 数据，还需要为该路径授予 <code>read</code> 的权限。</p>
+<p>这里我们创建一个名为 <code>internal-app</code> 的策略名称，该策略会启用对路径 <code>internal/database/config</code> 中的 secret 的读取权限：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>/ $ vault policy write internal-app - <span style="color:#f1fa8c">&lt;&lt;EOH
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">&gt; path &#34;internal/data/database/config&#34; {
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">&gt;   capabilities = [&#34;read&#34;]
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">&gt; }
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">&gt; EOH</span>
+</span></span><span style="display:flex;"><span>Success! Uploaded policy: internal-app
+</span></span></code></pre></div><p>然后创建一个名为 <code>internal-app</code> 的 Kubernetes 认证角色：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ / $ vault write auth/kubernetes/role/internal-app <span style="color:#f1fa8c">\
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c"></span>&gt;         <span style="color:#8be9fd;font-style:italic">bound_service_account_names</span><span style="color:#ff79c6">=</span>internal-app <span style="color:#f1fa8c">\
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c"></span>&gt;         <span style="color:#8be9fd;font-style:italic">bound_service_account_namespaces</span><span style="color:#ff79c6">=</span>default <span style="color:#f1fa8c">\
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c"></span>&gt;         <span style="color:#8be9fd;font-style:italic">policies</span><span style="color:#ff79c6">=</span>internal-app <span style="color:#f1fa8c">\
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c"></span>&gt;         <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span>24h
+</span></span><span style="display:flex;"><span>Success! Data written to: auth/kubernetes/role/internal-app
+</span></span></code></pre></div><p>该角色将 Kubernetes default 命名空间下面的名为 <code>internal-app</code> 的 ServiceAccount 与 Vault 的 <code>internal-app</code> 策略连接在了一起，认证后返回的 Token 有 24 小时的有效期。最后直接退出 <code>vault-0</code>：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>/ $ <span style="color:#8be9fd;font-style:italic">exit</span>
+</span></span><span style="display:flex;"><span>$
+</span></span></code></pre></div><p>到这里 Vault 相关的准备工作已经完成了，接下来就是如何在 Kubernetes 中来读取上面我们的 Secret 数据。上面我们在 default 命名空间下面定义了一个名为 <code>internal-app</code> 的 ServiceAccount，该对象还不存在，首先先创建：(vault-sa.yaml)</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: ServiceAccount
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: internal-app <span style="color:#6272a4"># 需要和上面的 bound_service_account_names 一致</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">namespace</span>: default <span style="color:#6272a4"># 需要和上面的 bound_service_account_namespaces 一致</span>
+</span></span></code></pre></div><!-- raw HTML omitted -->
+<p>直接创建即可：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl apply -f vault-sa.yaml
+</span></span><span style="display:flex;"><span>serviceaccount/internal-app created
+</span></span><span style="display:flex;"><span>$ kubectl get sa
+</span></span><span style="display:flex;"><span>NAME                     SECRETS   AGE
+</span></span><span style="display:flex;"><span>internal-app             <span style="color:#bd93f9">1</span>         91m
+</span></span><span style="display:flex;"><span>......
+</span></span></code></pre></div><p>然后在我们的应用中使用上面创建的 sa 对象：(vault-demo.yaml)</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: apps/v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Deployment
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: vault-demo
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">labels</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">app</span>: vault-demo
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">selector</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">matchLabels</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">app</span>: vault-demo
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">template</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">labels</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">app</span>: vault-demo
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">serviceAccountName</span>: internal-app <span style="color:#6272a4"># 使用上面创建的 serviceaccount 对象</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">containers</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">name</span>: vault
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">image</span>: cnych/vault-demo:0.0.1
+</span></span></code></pre></div><p>其中比较重要的就是 <code>spec.template.spec.serviceAccountName</code> 字段需要使用上面我们创建的名为 <code>internal-app</code> 的这个 ServiceAccount 资源对象，同样也是直接创建即可：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl apply -f vault-demo.yaml
+</span></span><span style="display:flex;"><span>deployment.apps/vault-demo created
+</span></span><span style="display:flex;"><span>$ kubectl get pods
+</span></span><span style="display:flex;"><span>NAME                                      READY   STATUS    RESTARTS   AGE
+</span></span><span style="display:flex;"><span>vault-demo-7fb8449d7b-x8bft               1/1     Running   <span style="color:#bd93f9">0</span>          10m
+</span></span><span style="display:flex;"><span>......
+</span></span><span style="display:flex;"><span>$ kubectl get pods -n kube-system
+</span></span><span style="display:flex;"><span>NAME                                    READY   STATUS    RESTARTS   AGE
+</span></span><span style="display:flex;"><span>vault-0                                 1/1     Running   <span style="color:#bd93f9">0</span>          112m
+</span></span><span style="display:flex;"><span>vault-agent-injector-584db8849f-x6wsv   1/1     Running   <span style="color:#bd93f9">0</span>          112m
+</span></span><span style="display:flex;"><span>......
+</span></span></code></pre></div><p>正常的情况是我们部署的 Vault 中的 <code>vault-agent-injector</code> 这个程序会去查找 Kubernetes 集群中部署应用的 <code>annotations</code> 属性进行处理，我们当前的 Deployment 中没有配置相关的信息，所以我们这里的 <code>vault-demo-7fb8449d7b-x8bft</code> 这个 Pod 中是获取不到任何 secret 数据的，可以通过如下所示的命令进行验证：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -it vault-demo-7fb8449d7b-x8bft -- ls /vault/secrets
+</span></span><span style="display:flex;"><span>ls: /vault/secrets: No such file or directory
+</span></span><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">command</span> terminated with <span style="color:#8be9fd;font-style:italic">exit</span> code <span style="color:#bd93f9">1</span>
+</span></span></code></pre></div><p>可以看到在容器中现在没有对应的 secret 数据。这个时候我们就需要通过 <code>annotations</code> 来添加一些获取 secret 数据的一些说明：(vault-inject.yaml)</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">template</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">annotations</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">vault.hashicorp.com/agent-inject</span>: <span style="color:#f1fa8c">&#34;true&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">vault.hashicorp.com/role</span>: <span style="color:#f1fa8c">&#34;internal-app&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">vault.hashicorp.com/agent-inject-secret-database-config.txt</span>: <span style="color:#f1fa8c">&#34;internal/data/database/config&#34;</span>
+</span></span></code></pre></div><p>上面的 <a href="https://www.vaultproject.io/docs/platform/k8s/injector/index.html#annotations">annotations</a> 定义了部分 vault 相关的信息，都是以 <code>vault.hashicorp.com</code> 为前缀开头的信息：</p>
+<ul>
+<li><code>agent-inject</code> 用于标识启用 Vault Agent 注入服务</li>
+<li><code>role</code> 表示 Vault Kubernetes 身份验证的角色</li>
+<li><code>agent-inject-secret-FILEPATH</code> 为写入 <code>/vault/secrets</code> 的文件 <code>database-config.txt</code> 的路径上加上前缀，对应的值是 Vault 中定义的 secret 数据存储路径。</li>
+</ul>
+<p>直接使用上面定义的 annotations 来给上面的 Deployment 打一个补丁：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl patch deployment vault-demo --patch <span style="color:#f1fa8c">&#34;</span><span style="color:#ff79c6">$(</span>cat vault-inject.yaml<span style="color:#ff79c6">)</span><span style="color:#f1fa8c">&#34;</span>
+</span></span><span style="display:flex;"><span>deployment.apps/vault-demo patched
+</span></span><span style="display:flex;"><span>$ kubectl get pods
+</span></span><span style="display:flex;"><span>NAME                                      READY   STATUS    RESTARTS   AGE
+</span></span><span style="display:flex;"><span>vault-demo-574d67ff98-2dsqh               2/2     Running   <span style="color:#bd93f9">0</span>          3m14s
+</span></span></code></pre></div><p>现在新的 Pod 中会包含两个容器，一个是我们定义的 vault-demo 容器，另一个是名为 <code>vault-agent</code> 的 Vault Agent 容器。在 Pod 中自动添加一个 <code>vault-agent</code> 的 Sidecar 容器其实也是利用了 Mutating Admission Webhook 来实现的，和 Istio 实现的机制是一样的：</p>
+<p><img src="https://picdn.youdianzhishi.com/images/20200219140552.png" alt="vault agent inject Mutating Admission Webhook"></p>
+<p>现在我们可以查看 <code>vault-agent</code> 容器的日志：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl logs -f vault-demo-574d67ff98-2dsqh vault-agent
+</span></span><span style="display:flex;"><span>2020-02-19T11:24:26.127+0800 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span>  sink.file: creating file sink
+</span></span><span style="display:flex;"><span>2020-02-19T11:24:26.128+0800 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span>  sink.file: file sink configured: <span style="color:#8be9fd;font-style:italic">path</span><span style="color:#ff79c6">=</span>/home/vault/.token <span style="color:#8be9fd;font-style:italic">mode</span><span style="color:#ff79c6">=</span>-rw-r-----
+</span></span><span style="display:flex;"><span>2020-02-19T11:24:26.129+0800 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span>  auth.handler: starting auth handler
+</span></span><span style="display:flex;"><span>2020-02-19T11:24:26.129+0800 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span>  auth.handler: authenticating
+</span></span><span style="display:flex;"><span>2020-02-19T11:24:26.129+0800 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span>  template.server: starting template server
+</span></span><span style="display:flex;"><span>2020/02/19 03:24:26.129648 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">(</span>runner<span style="color:#ff79c6">)</span> creating new runner <span style="color:#ff79c6">(</span>dry: false, once: <span style="color:#8be9fd;font-style:italic">false</span><span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span>2020/02/19 03:24:26.130647 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">(</span>runner<span style="color:#ff79c6">)</span> creating watcher
+</span></span><span style="display:flex;"><span>2020-02-19T11:24:26.130+0800 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span>  sink.server: starting sink <span style="color:#8be9fd;font-style:italic">server</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">==</span>&gt; Vault server started! Log data will stream in below:
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">==</span>&gt; Vault agent configuration:
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                     Cgo: disabled
+</span></span><span style="display:flex;"><span>               Log Level: info
+</span></span><span style="display:flex;"><span>                 Version: Vault v1.3.1
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>2020-02-19T11:24:26.155+0800 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span>  auth.handler: authentication successful, sending token to sinks
+</span></span><span style="display:flex;"><span>2020-02-19T11:24:26.155+0800 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span>  auth.handler: starting renewal process
+</span></span><span style="display:flex;"><span>2020-02-19T11:24:26.155+0800 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span>  sink.file: token written: <span style="color:#8be9fd;font-style:italic">path</span><span style="color:#ff79c6">=</span>/home/vault/.token
+</span></span><span style="display:flex;"><span>2020-02-19T11:24:26.155+0800 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span>  template.server: template server received new token
+</span></span><span style="display:flex;"><span>2020/02/19 03:24:26.155649 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">(</span>runner<span style="color:#ff79c6">)</span> stopping
+</span></span><span style="display:flex;"><span>2020/02/19 03:24:26.155649 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">(</span>runner<span style="color:#ff79c6">)</span> creating new runner <span style="color:#ff79c6">(</span>dry: false, once: <span style="color:#8be9fd;font-style:italic">false</span><span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span>2020-02-19T11:24:26.166+0800 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span>  auth.handler: renewed auth token
+</span></span><span style="display:flex;"><span>2020/02/19 03:24:26.176648 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">(</span>runner<span style="color:#ff79c6">)</span> creating watcher
+</span></span><span style="display:flex;"><span>2020/02/19 03:24:26.176648 <span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">(</span>runner<span style="color:#ff79c6">)</span> starting
+</span></span></code></pre></div><p><code>vault-agent</code> 容器会管理 Token 的整个生命周期和 secret 数据检索，我们定义的 secret 数据会被添加到应用容器的 <code>/vault/secrets/database-config.txt</code> 路径下面：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -it vault-demo-574d67ff98-2dsqh -c vault -- cat /vault/secrets/database-config.txt
+</span></span><span style="display:flex;"><span>data: map<span style="color:#ff79c6">[</span>password:db-secret-password username:db-readonly-username<span style="color:#ff79c6">]</span>
+</span></span><span style="display:flex;"><span>metadata: map<span style="color:#ff79c6">[</span>created_time:2020-02-19T02:58:54.06574878Z deletion_time: destroyed:false version:1<span style="color:#ff79c6">]</span>
+</span></span></code></pre></div><p>到这里 secret 数据就成功的存储在了我们的应用容器中，当然对于实际的应用我们完全可以直接通过 Vault 提供的 SDK 直接去读取对应的 secret 数据。比如下面就是一段通过 Vault SDK 读取动态认证数据的示例：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#ff79c6">package</span> main
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">import</span> (
+</span></span><span style="display:flex;"><span>	<span style="color:#f1fa8c">&#34;fmt&#34;</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#f1fa8c">&#34;io/ioutil&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	vaultApi <span style="color:#f1fa8c">&#34;github.com/hashicorp/vault/api&#34;</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">var</span> (
+</span></span><span style="display:flex;"><span>	vaultHost           <span style="color:#8be9fd">string</span>
+</span></span><span style="display:flex;"><span>	vaultCAPath         <span style="color:#8be9fd">string</span>
+</span></span><span style="display:flex;"><span>	vaultServiceAccount <span style="color:#8be9fd">string</span>
+</span></span><span style="display:flex;"><span>	vaultJWTPath        <span style="color:#8be9fd">string</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">main</span>() {
+</span></span><span style="display:flex;"><span>	vaultJWTPath = <span style="color:#f1fa8c">&#34;/var/run/secrets/kubernetes.io/serviceaccount/token&#34;</span>
+</span></span><span style="display:flex;"><span>	vaultServiceAccount = <span style="color:#f1fa8c">&#34;internal-app&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	tlsConfig <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">&amp;</span>vaultApi.TLSConfig{
+</span></span><span style="display:flex;"><span>		CACert:   vaultCAPath,
+</span></span><span style="display:flex;"><span>		Insecure: <span style="color:#ff79c6">false</span>,
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    config <span style="color:#ff79c6">:=</span> vaultApi.<span style="color:#50fa7b">DefaultConfig</span>()
+</span></span><span style="display:flex;"><span>    <span style="color:#6272a4">// todo，配置 vault 地址
+</span></span></span><span style="display:flex;"><span><span style="color:#6272a4"></span>	config.Address = fmt.<span style="color:#50fa7b">Sprintf</span>(<span style="color:#f1fa8c">&#34;https://%s&#34;</span>, vaultHost)
+</span></span><span style="display:flex;"><span>	config.<span style="color:#50fa7b">ConfigureTLS</span>(tlsConfig)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	client, _ <span style="color:#ff79c6">:=</span> vaultApi.<span style="color:#50fa7b">NewClient</span>(config)
+</span></span><span style="display:flex;"><span>	buf, _ <span style="color:#ff79c6">:=</span> ioutil.<span style="color:#50fa7b">ReadFile</span>(vaultJWTPath)
+</span></span><span style="display:flex;"><span>	jwt <span style="color:#ff79c6">:=</span> <span style="color:#8be9fd;font-style:italic">string</span>(buf)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	options <span style="color:#ff79c6">:=</span> <span style="color:#8be9fd;font-style:italic">map</span>[<span style="color:#8be9fd">string</span>]<span style="color:#8be9fd;font-style:italic">interface</span>{}{
+</span></span><span style="display:flex;"><span>		<span style="color:#f1fa8c">&#34;jwt&#34;</span>:  jwt,
+</span></span><span style="display:flex;"><span>		<span style="color:#f1fa8c">&#34;role&#34;</span>: vaultServiceAccount,
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	loginSecret, _ <span style="color:#ff79c6">:=</span> client.<span style="color:#50fa7b">Logical</span>().<span style="color:#50fa7b">Write</span>(<span style="color:#f1fa8c">&#34;auth/kubernetes/login&#34;</span>, options)
+</span></span><span style="display:flex;"><span>	client.<span style="color:#50fa7b">SetToken</span>(loginSecret.Auth.ClientToken)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	secret, _ <span style="color:#ff79c6">:=</span> client.<span style="color:#50fa7b">Logical</span>().<span style="color:#50fa7b">Read</span>(<span style="color:#f1fa8c">&#34;internal/data/database/config&#34;</span>)
+</span></span><span style="display:flex;"><span>	fmt.<span style="color:#50fa7b">Println</span>(secret)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>另外需要注意的是上面我们定义的认证角色只有 24 小时，是有过期时间的，在到期前可以执行 renew 操作，如果 token 所属的 policy 有 <code>/auth/token/renew-self</code> 相应的权限，那么也可以直接在代码中自己 renew 自己。</p>
+<p>更多的关于 Vault 和 Kubernetes 的结合使用可以查看官方文档 <a href="https://learn.hashicorp.com/vault/getting-started-k8s/k8s-intro">https://learn.hashicorp.com/vault/getting-started-k8s/k8s-intro</a> 了解更多。</p>
+<h2 id="参考资料">参考资料</h2>
+<ul>
+<li><a href="https://deepsource.io/blog/setup-vault-kubernetes/">How to setup Vault with Kubernetes</a></li>
+<li><a href="https://www.sagittarius.ai/blog/2018/10/21/vault-k8s-best-practice">Vault+K8S 最佳实践</a></li>
+<li><a href="https://medium.com/getamis/vault-kubernetes-integration-63ce46d47550">Vault 與 Kubernetes 的深度整合</a></li>
+<li><a href="https://itnext.io/dynamic-vault-secrets-agent-sidecar-on-kubernetes-cc0ce3e54a94">Dynamic Vault Secrets — Agent Sidecar on Kubernetes</a></li>
+</ul>
+<!-- raw HTML omitted -->
+
+          <h2>微信公众号</h2>
+<p>
+  扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+  kubernetes 讨论群里面共同学习。
+</p>
+<img
+  src="https://picdn.youdianzhishi.com/images/qrcode.png"
+  alt="wechat-account-qrcode"
+/>
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/deploy-spinnaker-on-k8s/">在 Kubernetes 上部署 Spinnaker</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/install-metrics-server/">Metrics Server 安装</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/">在 Kubernetes 上安装 Gitlab</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/migrate-helm-to-v3/">Helm V2 迁移到 V3 版本</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kustomize-101/">使用 Kustomize 配置 Kubernetes 应用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-3/">Drone 结合 Helm 部署 Kubernetes 应用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-2/">使用 Drone Pipeline 构建 Docker 镜像</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-1/">使用 Kubernetes Helm 安装 Drone</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/helm-chart-tips-and-tricks/">Helm Chart 模板开发技巧</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/install-nginx-ingress/">nginx-ingress 的安装使用</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/deploy-spinnaker-on-k8s/" data-toggle="tooltip" data-placement="top" title="在 Kubernetes 上部署 Spinnaker">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/get-client-realip/" data-toggle="tooltip" data-placement="top" title="获取客户端访问真实 IP">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '在 Kubernetes 上部署 Vault',
+        createIssueManually: true,
+        id: 'deploy-vault-on-k8s',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -1322,7 +769,7 @@ metadata: map<span style="color:#ff79c6">[</span>created_time:2020-02-19T02:58:5
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -1331,7 +778,7 @@ metadata: map<span style="color:#ff79c6">[</span>created_time:2020-02-19T02:58:5
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -1340,7 +787,7 @@ metadata: map<span style="color:#ff79c6">[</span>created_time:2020-02-19T02:58:5
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -1349,158 +796,121 @@ metadata: map<span style="color:#ff79c6">[</span>created_time:2020-02-19T02:58:5
                   </span>
                 </a>
               </li>
-
-              <li>
-                <a href="https://www.qikqiak.com/index.xml" title="RSS">
-                  <span class="fa-stack fa-lg">
-                    <i class="fa fa-circle fa-stack-2x"></i>
-                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
-                  </span>
-                </a>
-              </li>
-            </ul>
-            <p class="credits copyright text-muted">
-              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/">阳明的博客</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/archive/">归档</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/friend/">友链</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://beian.miit.gov.cn/" target="_blank"
-                >蜀ICP备11027319号-5</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
-                >kubernetes.io</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
-                >Kubernetes中文社区</a
-              >
-            </p>
-            <p class="text-center text-muted">
-              <script
-                async
-                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
-              ></script>
-              <span id="busuanzi_container_site_pv" style="display: none">
-                本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
               </span>
-              &nbsp;&bull;&nbsp;
-              <span id="busuanzi_container_site_uv" style="display: none">
-                访客数<span id="busuanzi_value_site_uv"></span>人次
-              </span>
-            </p>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
 
-            <p class="credits theme-by text-muted">
-              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
-              &nbsp;&bull;&nbsp; 主题
-              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
-              移植自
-              <a href="https://github.com/rootsongjc/beautifulhugo"
-                >Beautiful Hugo</a
-              >
-            </p>
-          </div>
-        </div>
+          &nbsp;&bull;&nbsp;
+          2023
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.115.4</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+          
+        </p>
       </div>
-    </footer>
+    </div>
+  </div>
+</footer>
 
-    <script
-      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
-      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
-    ></script>
 
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "UA-69668147-3");
-    </script>
-    <script>
-      (function () {
-        var bp = document.createElement("script");
-        var curProtocol = window.location.protocol.split(":")[0];
-        if (curProtocol === "https") {
-          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
-        } else {
-          bp.src = "http://push.zhanzhang.baidu.com/push.js";
-        }
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(bp, s);
-      })();
-    </script>
-    <script>
-      $(document).ready(function () {
-        var int = setInterval(fixCount, 50);
+<script src='https://www.qikqiak.com/js/bundle.min.af02a2d23b6651a566f0135a12e65fc2560faa7a969b3d1ad58d0afe0c9164ae.js' integrity='sha256-rwKi0jtmUaVm8BNaEuZfwlYPqnqWmz0a1Y0K/gyRZK4='></script>
 
-        var initPVCount = 584976;
-        var initUVCount = 153191;
-        function fixCount() {
-          if ($("#busuanzi_container_site_pv").css("display") != "none") {
-            $("#busuanzi_value_site_pv").html(
-              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
-            );
-            clearInterval(int);
-          }
-          if ($("#busuanzi_container_site_uv").css("display") != "none") {
-            $("#busuanzi_value_site_uv").html(
-              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
-            );
-            clearInterval(int);
-          }
-        }
-      });
-    </script>
-    <script>
-      (function (w, d, s, id) {
-        if (typeof w.webpushr !== "undefined") return;
-        w.webpushr =
-          w.webpushr ||
-          function () {
-            (w.webpushr.q = w.webpushr.q || []).push(arguments);
-          };
-        var js,
-          fjs = d.getElementsByTagName(s)[0];
-        js = d.createElement(s);
-        js.id = id;
-        js.src = "https://cdn.webpushr.com/app.min.js";
-        fjs.parentNode.appendChild(js);
-      })(window, document, "script", "webpushr-jssdk");
-      webpushr(
-        "init",
-        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
-      );
-    </script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
-    ></script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
-    ></script>
-    <script type="text/javascript">
-      $(".carousel").slick({
-        dots: true,
-        arrows: true,
-        autoplay: true,
-        autoplaySpeed: 4000,
-        infinite: true,
-        speed: 500,
-        fade: true,
-        cssEase: "linear",
-        centerMode: true,
-        prevArrow: '<button type="button" class="slick-prev"></button>',
-        nextArrow: '<button type="button" class="slick-next"></button>',
-      });
-    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
   </body>
 </html>
+

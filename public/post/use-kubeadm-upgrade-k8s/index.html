@@ -1,1071 +1,728 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
-    />
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-    <title>
-      使用 kubeadm 更新 kubernetes
-      集群-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
-    </title>
-    <meta property="og:title" content="使用 kubeadm 更新 kubernetes 集群" />
-    <meta name="twitter:title" content="使用 kubeadm 更新 kubernetes 集群" />
 
-    <meta
-      name="description"
-      content="由于课程中的集群版本是 v1.10.0，这个版本相对有点旧了，最新版本都已经 v1.14.x 了，为了尽量保证课程内容的更新度，所以我们需要将集群版本更新。我们的集群是使用的 kubeadm 搭建的，我们知道使用 kubeadm 搭建的集群来更新是非常方便的，但是由于我们这里版本跨度太大，不能直接从 1.10.x 更新到 1.14.x，kubeadm 的更新是不支持跨多个主版本的，所以我们现在是 1.10，只能更新到 1.11 版本了，然后再重 1.11 更新到 1.12&hellip;&hellip; 不过版本更新的方式方法基本上都是一样的，所以后面要更新的话也挺简单了，下面我们就先将集群更新到 v1.11.0 版本。"
-    />
-    <meta
-      property="og:description"
-      content="由于课程中的集群版本是 v1.10.0，这个版本相对有点旧了，最新版本都已经 v1.14.x 了，为了尽量保证课程内容的更新度，所以我们需要将集群版本更新。我们的集群是使用的 kubeadm 搭建的，我们知道使用 kubeadm 搭建的集群来更新是非常方便的，但是由于我们这里版本跨度太大，不能直接从 1.10.x 更新到 1.14.x，kubeadm 的更新是不支持跨多个主版本的，所以我们现在是 1.10，只能更新到 1.11 版本了，然后再重 1.11 更新到 1.12&hellip;&hellip; 不过版本更新的方式方法基本上都是一样的，所以后面要更新的话也挺简单了，下面我们就先将集群更新到 v1.11.0 版本。"
-    />
-    <meta
-      name="twitter:description"
-      content="由于课程中的集群版本是 v1.10.0，这个版本相对有点旧了，最新版本都已经 v1.14.x 了，为了尽量保证课程内容的更新度，所以我们需要将集群版本更新。我们的集群是使用的 kubeadm 搭建的，我们知道使用 kubeadm 搭建的集群来更新是非常方便的，但是由于我们这里版本跨度太大，不能直接从 1.10.x 更新到 1.14.x，kubeadm 的更新是不支持跨多个主版本的， …"
-    />
-    <meta name="author" content="" />
-    <link
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-      rel="icon"
-      type="image/x-icon"
-    />
-    <link
-      rel="apple-touch-icon"
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      property="og:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      name="twitter:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta name="twitter:card" content="summary" />
-    <meta
-      property="og:url"
-      content="https://www.qikqiak.com/post/use-kubeadm-upgrade-k8s/"
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="阳明的博客" />
+  <title>使用 kubeadm 更新 kubernetes 集群-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="使用 kubeadm 更新 kubernetes 集群" />
+  <meta name="twitter:title" content="使用 kubeadm 更新 kubernetes 集群" />
 
-    <meta name="generator" content="Hugo 0.55.6" />
-    <link
-      rel="canonical"
-      href="https://www.qikqiak.com/post/use-kubeadm-upgrade-k8s/"
-    />
-    <link
-      rel="alternate"
-      href="https://www.qikqiak.com/index.xml"
-      type="application/rss+xml"
-      title="阳明的博客"
-    />
+  <meta name="description" content="由于课程中的集群版本是 v1.10.0，这个版本相对有点旧了，最新版本都已经 v1.14.x 了，为了尽量保证课程内容的更新度，所以我们需要将集群版本更新。我们的集群是使用的 kubeadm 搭建的，我们知道使用 kubeadm 搭建的集群来更新是非常方便的，但是由于我们这里版本跨度太大，不能直接从 1.10.x 更新到 1.14.x，kubeadm 的更新是不支持跨多个主版本的，所以我们现在是 1.10，只能更新到 1.11 版本了，然后再重 1.11 更新到 1.12&hellip;&hellip; 不过版本更新的方式方法基本上都是一样的，所以后面要更新的话也挺简单了，下面我们就先将集群更新到 v1.11.0 版本。">
+  <meta property="og:description" content="由于课程中的集群版本是 v1.10.0，这个版本相对有点旧了，最新版本都已经 v1.14.x 了，为了尽量保证课程内容的更新度，所以我们需要将集群版本更新。我们的集群是使用的 kubeadm 搭建的，我们知道使用 kubeadm 搭建的集群来更新是非常方便的，但是由于我们这里版本跨度太大，不能直接从 1.10.x 更新到 1.14.x，kubeadm 的更新是不支持跨多个主版本的，所以我们现在是 1.10，只能更新到 1.11 版本了，然后再重 1.11 更新到 1.12&hellip;&hellip; 不过版本更新的方式方法基本上都是一样的，所以后面要更新的话也挺简单了，下面我们就先将集群更新到 v1.11.0 版本。">
+  <meta name="twitter:description" content="由于课程中的集群版本是 v1.10.0，这个版本相对有点旧了，最新版本都已经 v1.14.x 了，为了尽量保证课程内容的更新度，所以我们需要将集群版本更新。我们的集群是使用的 kubeadm 搭建的，我们知道使用 kubeadm 搭建的集群来更新是非常方便的，但是由于我们这里版本跨度太大，不能直接从 1.10.x 更新到 1.14.x，kubeadm 的更新是不支持跨多个主版本的， …">
+  <meta name="author" content=""/>
+  <link href="https://picdn.youdianzhishi.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://picdn.youdianzhishi.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/use-kubeadm-upgrade-k8s/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
 
-    <link
-      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
-      rel="stylesheet"
-    />
+  <link rel="canonical" href="https://www.qikqiak.com/post/use-kubeadm-upgrade-k8s/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
-    <link
-      rel="stylesheet"
-      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
-      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
-    />
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
 
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
-    />
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a6b62363fe57848ad01efa2a5d1bbb1047c2ffb71b53d8aeb42bc5ed5c77ea7c.css' integrity='sha256-prYjY/5XhIrQHvoqXRu7EEfC/7cbU9iutCvF7Vx36nw='>
 
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
     <!--[if lt IE 9]>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-      <link
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-        rel="stylesheet"
-      />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <![endif]-->
-    <meta
-      name="google-site-verification"
-      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
-    />
-    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-    <meta
-      name="keywords"
-      content="kubernetes, kubelet, kubeadm, 更新, kubectl, docker"
-    />
-    <script>
-      var _hmt = _hmt || [];
-      (function () {
-        var hm = document.createElement("script");
-        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(hm, s);
-      })();
-    </script>
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, kubelet, kubeadm, 更新, kubectl, docker">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
 
-    <script type="application/javascript">
-      var doNotTrack = false;
-      if (!doNotTrack) {
-        window.ga =
-          window.ga ||
-          function () {
-            (ga.q = ga.q || []).push(arguments);
-          };
-        ga.l = +new Date();
-        ga("create", "UA-69668147-3", "auto");
 
-        ga("send", "pageview");
-      }
-    </script>
-    <script async src="https://www.google-analytics.com/analytics.js"></script>
-  </head>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-      <div class="container">
-        <div class="navbar-header">
-          <button
-            type="button"
-            class="navbar-toggle"
-            data-toggle="collapse"
-            data-target="#main-navbar"
-          >
-            <span class="sr-only">切换导航</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a
-            class="navbar-brand"
-            href="https://www.qikqiak.com/"
-            title="阳明的博客"
-          >
-            <img
-              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
-              style="margin-top: -5px; height: 32px"
-              alt="阳明的博客"
-            />
-          </a>
-        </div>
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://picdn.youdianzhishi.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
 
-        <div class="collapse navbar-collapse" id="main-navbar">
-          <ul class="nav navbar-nav navbar-right">
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-
+          
+        
+          
             <li>
-              <a
-                title="课程"
-                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
-                >课程</a
-              >
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/archives">Archive</a>
-
-                <a href="https://www.qikqiak.com/tags">tags</a>
-
-                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-
-                <a href="https://www.qikqiak.com/tags/python">python</a>
-
-                <a href="https://www.qikqiak.com/tags/django">django</a>
-
-                <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-
-                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-
-                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-
-                <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/"
-                >关于</a
-              >
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
             </li>
-
+          
+        
+          
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
+          
+        
 
-            <li>
-              <a
-                href="#modalSearch"
-                data-toggle="modal"
-                data-target="#modalSearch"
-                style="outline: none"
-              >
-                <span
-                  id="searchGlyph"
-                  class="glyphicon glyphicon-search"
-                ></span>
-              </a>
-            </li>
-          </ul>
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
         </div>
-      </div>
-    </nav>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-    <div id="modalSearch" class="modal fade" role="dialog">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal">
-              &times;
-            </button>
-            <h4 class="modal-title">搜索</h4>
-          </div>
-          <div class="modal-body">
-            <div class="aa-input-container" id="aa-input-container">
-              <input
-                type="search"
-                id="aa-search-input"
-                class="aa-input-search"
-                placeholder="Search for titles or URIs..."
-                name="search"
-                autocomplete="off"
-              />
-              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-                <path
-                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
-                />
-              </svg>
-            </div>
-            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
 
-            <script>
-              var client = algoliasearch(
-                "1JDRAS0AZR",
-                "8804ac109158bb3bb60d74ce98fa332f"
-              );
-              var index = client.initIndex("prod_blog");
-
-              autocomplete(
-                "#aa-search-input",
-                { hint: false },
-                {
-                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
-
-                  displayKey: "name",
-
-                  templates: {
-                    suggestion: function (suggestion) {
-                      return (
-                        "<span>" +
-                        '<a href="https://www.qikqiak.com/post/' +
-                        suggestion.slug +
-                        '">' +
-                        suggestion._highlightResult.title.value +
-                        "</a></span>"
-                      );
-                    },
-                  },
-                }
-              );
-            </script>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">
-              close
-            </button>
-          </div>
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div
-      id="header-big-imgs"
-      data-num-img="1"
-      data-img-src-1="https://picdn.youdianzhishi.com/images/20190518122741.png"
-      data-img-desc-1="https://unsplash.com/photos/NuYKNgI3ZW0"
-    ></div>
+    
+  
+  
+  
 
-    <header class="header-section has-img">
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://picdn.youdianzhishi.com/images/20190518122741.png" data-img-desc-1="https://unsplash.com/photos/NuYKNgI3ZW0"></div>
+  
+
+  <header class="header-section has-img">
+    
       <div class="intro-header big-img">
+        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>使用 kubeadm 更新 kubernetes 集群</h1>
+                  
+                  
+                    <span class="post-meta">
+  发表于 May 18, 2019  
+</span>
 
-                <span class="post-meta"> 发表于 May 18, 2019 </span>
+                  
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline"></span>
+        <span class="img-desc" style="display: inline;"></span>
       </div>
-
-      <div class="intro-header no-img">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-              <div class="post-heading">
-                <h1>使用 kubeadm 更新 kubernetes 集群</h1>
-
-                <span class="post-meta"> 发表于 May 18, 2019 </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <div class="container" role="main">
-      <div class="row">
-        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-          <div>
-            <h5 id="tags" style="margin-top: 30px">
-              标签:
-
-              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
-              &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/kubelet/">kubelet</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/kubeadm/">kubeadm</a> &nbsp;
-            </h5>
-          </div>
-
-          <article
-            role="main"
-            class="blog-post"
-            itemprop="articleBody"
-            id="content"
-          >
-            <aside class="toc">
-              <nav id="TableOfContents">
-                <ul>
-                  <li>
-                    <ul>
-                      <li><a href="#更新集群">更新集群</a></li>
-                      <li><a href="#更新-kubelet">更新 kubelet</a></li>
-                    </ul>
-                  </li>
-                </ul>
-              </nav>
-            </aside>
-
-            <p>
-              由于课程中的集群版本是
-              v1.10.0，这个版本相对有点旧了，最新版本都已经 v1.14.x
-              了，为了尽量保证课程内容的更新度，所以我们需要将集群版本更新。我们的集群是使用的
-              kubeadm 搭建的，我们知道使用 kubeadm
-              搭建的集群来更新是非常方便的，但是由于我们这里版本跨度太大，不能直接从
-              1.10.x 更新到 1.14.x，kubeadm
-              的更新是不支持跨多个主版本的，所以我们现在是 1.10，只能更新到 1.11
-              版本了，然后再重 1.11 更新到 1.12&hellip;&hellip;
-              不过版本更新的方式方法基本上都是一样的，所以后面要更新的话也挺简单了，下面我们就先将集群更新到
-              v1.11.0 版本。
-            </p>
-
-            <h2 id="更新集群">更新集群</h2>
-
-            <p>首先我们保留 kubeadm config 文件：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubeadm config view
-api:
-  advertiseAddress: <span style="color:#bd93f9">10</span>.151.30.11
-  bindPort: <span style="color:#bd93f9">6443</span>
-  controlPlaneEndpoint: <span style="color:#f1fa8c">&#34;&#34;</span>
-auditPolicy:
-  logDir: /var/log/kubernetes/audit
-  logMaxAge: <span style="color:#bd93f9">2</span>
-  path: <span style="color:#f1fa8c">&#34;&#34;</span>
-authorizationModes:
-- Node
-- RBAC
-certificatesDir: /etc/kubernetes/pki
-cloudProvider: <span style="color:#f1fa8c">&#34;&#34;</span>
-criSocket: /var/run/dockershim.sock
-etcd:
-  caFile: <span style="color:#f1fa8c">&#34;&#34;</span>
-  certFile: <span style="color:#f1fa8c">&#34;&#34;</span>
-  dataDir: /var/lib/etcd
-  endpoints: null
-  image: <span style="color:#f1fa8c">&#34;&#34;</span>
-  keyFile: <span style="color:#f1fa8c">&#34;&#34;</span>
-imageRepository: k8s.gcr.io
-kubeProxy:
-  config:
-    bindAddress: <span style="color:#bd93f9">0</span>.0.0.0
-    clientConnection:
-      acceptContentTypes: <span style="color:#f1fa8c">&#34;&#34;</span>
-      burst: <span style="color:#bd93f9">10</span>
-      contentType: application/vnd.kubernetes.protobuf
-      kubeconfig: /var/lib/kube-proxy/kubeconfig.conf
-      qps: <span style="color:#bd93f9">5</span>
-    clusterCIDR: <span style="color:#bd93f9">10</span>.244.0.0/16
-    configSyncPeriod: 15m0s
-    conntrack:
-      max: null
-      maxPerCore: <span style="color:#bd93f9">32768</span>
-      min: <span style="color:#bd93f9">131072</span>
-      tcpCloseWaitTimeout: 1h0m0s
-      tcpEstablishedTimeout: 24h0m0s
-    enableProfiling: <span style="color:#8be9fd;font-style:italic">false</span>
-    healthzBindAddress: <span style="color:#bd93f9">0</span>.0.0.0:10256
-    hostnameOverride: <span style="color:#f1fa8c">&#34;&#34;</span>
-    iptables:
-      masqueradeAll: <span style="color:#8be9fd;font-style:italic">false</span>
-      masqueradeBit: <span style="color:#bd93f9">14</span>
-      minSyncPeriod: 0s
-      syncPeriod: 30s
-    ipvs:
-      minSyncPeriod: 0s
-      scheduler: <span style="color:#f1fa8c">&#34;&#34;</span>
-      syncPeriod: 30s
-    metricsBindAddress: <span style="color:#bd93f9">127</span>.0.0.1:10249
-    mode: <span style="color:#f1fa8c">&#34;&#34;</span>
-    nodePortAddresses: null
-    oomScoreAdj: -999
-    portRange: <span style="color:#f1fa8c">&#34;&#34;</span>
-    resourceContainer: /kube-proxy
-    udpIdleTimeout: 250ms
-kubeletConfiguration: <span style="color:#ff79c6">{}</span>
-kubernetesVersion: v1.10.0
-networking:
-  dnsDomain: cluster.local
-  podSubnet: <span style="color:#bd93f9">10</span>.244.0.0/16
-  serviceSubnet: <span style="color:#bd93f9">10</span>.96.0.0/12
-nodeName: ydzs-master
-privilegedPods: <span style="color:#8be9fd;font-style:italic">false</span>
-token: <span style="color:#f1fa8c">&#34;&#34;</span>
-tokenGroups:
-- system:bootstrappers:kubeadm:default-node-token
-tokenTTL: 24h0m0s
-tokenUsages:
-- signing
-- authentication
-unifiedControlPlaneImage: <span style="color:#f1fa8c">&#34;&#34;</span></code></pre>
-            </div>
-            <p>
-              将上面的imageRepository值更改为：gcr.azk8s.cn/google_containers，然后保存内容到文件
-              kubeadm-config.yaml 中（当然如果你的集群可以获取到 grc.io
-              的镜像可以不用更改）。
-            </p>
-
-            <p>然后更新 kubeadm:</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ yum makecache fast <span style="color:#ff79c6">&amp;&amp;</span> yum install -y kubeadm-1.11.0-0 kubectl-1.11.0-0
-$ kubeadm version
-kubeadm version: &amp;version.Info<span style="color:#ff79c6">{</span>Major:<span style="color:#f1fa8c">&#34;1&#34;</span>, Minor:<span style="color:#f1fa8c">&#34;11&#34;</span>, GitVersion:<span style="color:#f1fa8c">&#34;v1.11.0&#34;</span>, GitCommit:<span style="color:#f1fa8c">&#34;91e7b4fd31fcd3d5f436da26c980becec37ceefe&#34;</span>, GitTreeState:<span style="color:#f1fa8c">&#34;clean&#34;</span>, BuildDate:<span style="color:#f1fa8c">&#34;2018-06-27T20:14:41Z&#34;</span>, GoVersion:<span style="color:#f1fa8c">&#34;go1.10.2&#34;</span>, Compiler:<span style="color:#f1fa8c">&#34;gc&#34;</span>, Platform:<span style="color:#f1fa8c">&#34;linux/amd64&#34;</span><span style="color:#ff79c6">}</span></code></pre>
-            </div>
-            <blockquote>
-              <p>
-                因为 kubeadm upgrade plan 命令执行过程中会去 dl.k8s.io
-                获取版本信息，这个地址是需要科学方法才能访问的，所以我们可以先将
-                kubeadm
-                更新到目标版本，然后就可以查看到目标版本升级的一些信息了。
-              </p>
-            </blockquote>
-
-            <p>执行 upgrade plan 命令查看是否可以升级：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubeadm upgrade plan
-<span style="color:#ff79c6">[</span>preflight<span style="color:#ff79c6">]</span> Running pre-flight checks.
-<span style="color:#ff79c6">[</span>upgrade<span style="color:#ff79c6">]</span> Making sure the cluster is healthy:
-<span style="color:#ff79c6">[</span>upgrade/config<span style="color:#ff79c6">]</span> Making sure the configuration is correct:
-<span style="color:#ff79c6">[</span>upgrade/config<span style="color:#ff79c6">]</span> Reading configuration from the cluster...
-<span style="color:#ff79c6">[</span>upgrade/config<span style="color:#ff79c6">]</span> FYI: You can look at this config file with <span style="color:#f1fa8c">&#39;kubectl -n kube-system get cm kubeadm-config -oyaml&#39;</span>
-I0518 <span style="color:#bd93f9">18</span>:50:12.844665    <span style="color:#bd93f9">9676</span> feature_gate.go:230<span style="color:#ff79c6">]</span> feature gates: &amp;<span style="color:#ff79c6">{</span>map<span style="color:#ff79c6">[]}</span>
-<span style="color:#ff79c6">[</span>upgrade<span style="color:#ff79c6">]</span> Fetching available versions to upgrade to
-<span style="color:#ff79c6">[</span>upgrade/versions<span style="color:#ff79c6">]</span> Cluster version: v1.10.0
-<span style="color:#ff79c6">[</span>upgrade/versions<span style="color:#ff79c6">]</span> kubeadm version: v1.11.0
-<span style="color:#ff79c6">[</span>upgrade/versions<span style="color:#ff79c6">]</span> WARNING: Couldn<span style="color:#f1fa8c">&#39;t fetch latest stable version from the internet: unable to get URL &#34;https://dl.k8s.io/release/stable.txt&#34;: Get https://dl.k8s.io/release/stable.txt: dial tcp 35.201.71.162:443: i/o timeout
-</span><span style="color:#f1fa8c">[upgrade/versions] WARNING: Falling back to current kubeadm version as latest stable version
-</span><span style="color:#f1fa8c">[upgrade/versions] WARNING: Couldn&#39;</span>t fetch latest version in the v1.10 series from the internet: unable to get URL <span style="color:#f1fa8c">&#34;https://dl.k8s.io/release/stable-1.10.txt&#34;</span>: Get https://dl.k8s.io/release/stable-1.10.txt: dial tcp <span style="color:#bd93f9">35</span>.201.71.162:443: i/o timeout
-
-Components that must be upgraded manually after you have upgraded the control plane with <span style="color:#f1fa8c">&#39;kubeadm upgrade apply&#39;</span>:
-COMPONENT   CURRENT       AVAILABLE
-Kubelet     <span style="color:#bd93f9">3</span> x v1.10.0   v1.11.0
-
-Upgrade to the latest stable version:
-
-COMPONENT            CURRENT   AVAILABLE
-API Server           v1.10.0   v1.11.0
-Controller Manager   v1.10.0   v1.11.0
-Scheduler            v1.10.0   v1.11.0
-Kube Proxy           v1.10.0   v1.11.0
-CoreDNS                        <span style="color:#bd93f9">1</span>.1.3
-Kube DNS             <span style="color:#bd93f9">1</span>.14.8
-Etcd                 <span style="color:#bd93f9">3</span>.1.12    <span style="color:#bd93f9">3</span>.2.18
-
-You can now apply the upgrade by executing the following command:
-
-	kubeadm upgrade apply v1.11.0
-
-_____________________________________________________________________</code></pre>
-            </div>
-            <p>我们可以先使用 dry-run 命令查看升级信息：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubeadm upgrade apply v1.11.0 --config kubeadm-config.yaml --dry-run</code></pre>
-            </div>
-            <blockquote>
-              <p>
-                注意要通过<code>--config</code>指定上面保存的配置文件，该配置文件信息包含了上一个版本的集群信息以及修改搞得镜像地址。
-              </p>
-            </blockquote>
-
-            <p>查看了上面的升级信息确认无误后就可以执行升级操作了：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubeadm upgrade apply v1.11.0 --config kubeadm-config.yaml
-kubeadm upgrade apply v1.11.0 --config kubeadm-config.yaml
-<span style="color:#ff79c6">[</span>preflight<span style="color:#ff79c6">]</span> Running pre-flight checks.
-I0518 <span style="color:#bd93f9">18</span>:57:29.134722   <span style="color:#bd93f9">12284</span> feature_gate.go:230<span style="color:#ff79c6">]</span> feature gates: &amp;<span style="color:#ff79c6">{</span>map<span style="color:#ff79c6">[]}</span>
-<span style="color:#ff79c6">[</span>upgrade<span style="color:#ff79c6">]</span> Making sure the cluster is healthy:
-<span style="color:#ff79c6">[</span>upgrade/config<span style="color:#ff79c6">]</span> Making sure the configuration is correct:
-<span style="color:#ff79c6">[</span>upgrade/config<span style="color:#ff79c6">]</span> Reading configuration options from a file: kubeadm-config.yaml
-I0518 <span style="color:#bd93f9">18</span>:57:29.179231   <span style="color:#bd93f9">12284</span> feature_gate.go:230<span style="color:#ff79c6">]</span> feature gates: &amp;<span style="color:#ff79c6">{</span>map<span style="color:#ff79c6">[]}</span>
-<span style="color:#ff79c6">[</span>upgrade/apply<span style="color:#ff79c6">]</span> Respecting the --cri-socket flag that is <span style="color:#8be9fd;font-style:italic">set</span> with higher priority than the config file.
-<span style="color:#ff79c6">[</span>upgrade/version<span style="color:#ff79c6">]</span> You have chosen to change the cluster version to <span style="color:#f1fa8c">&#34;v1.11.0&#34;</span>
-<span style="color:#ff79c6">[</span>upgrade/versions<span style="color:#ff79c6">]</span> Cluster version: v1.10.0
-<span style="color:#ff79c6">[</span>upgrade/versions<span style="color:#ff79c6">]</span> kubeadm version: v1.11.0
-<span style="color:#ff79c6">[</span>upgrade/confirm<span style="color:#ff79c6">]</span> Are you sure you want to proceed with the upgrade? <span style="color:#ff79c6">[</span>y/N<span style="color:#ff79c6">]</span>: y
-<span style="color:#ff79c6">[</span>upgrade/prepull<span style="color:#ff79c6">]</span> Will prepull images <span style="color:#ff79c6">for</span> components <span style="color:#ff79c6">[</span>kube-apiserver kube-controller-manager kube-scheduler etcd<span style="color:#ff79c6">]</span>
-<span style="color:#ff79c6">[</span>upgrade/apply<span style="color:#ff79c6">]</span> Upgrading your Static Pod-hosted control plane to version <span style="color:#f1fa8c">&#34;v1.11.0&#34;</span>...
-Static pod: kube-apiserver-ydzs-master hash: 3abd7df4382a9b60f60819f84de40e11
-Static pod: kube-controller-manager-ydzs-master hash: 1a0f3ccde96238d31012390b61109573
-Static pod: kube-scheduler-ydzs-master hash: 2acb197d598c4730e3f5b159b241a81b</code></pre>
-            </div>
-            <p>隔一段时间看到如下信息就证明集群升级成功了：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">......
-<span style="color:#ff79c6">[</span>bootstraptoken<span style="color:#ff79c6">]</span> configured RBAC rules to allow the csrapprover controller automatically approve CSRs from a Node Bootstrap Token
-<span style="color:#ff79c6">[</span>bootstraptoken<span style="color:#ff79c6">]</span> configured RBAC rules to allow certificate rotation <span style="color:#ff79c6">for</span> all node client certificates in the cluster
-<span style="color:#ff79c6">[</span>addons<span style="color:#ff79c6">]</span> Applied essential addon: CoreDNS
-
-
-<span style="color:#ff79c6">[</span>addons<span style="color:#ff79c6">]</span> Applied essential addon: kube-proxy
-
-<span style="color:#ff79c6">[</span>upgrade/successful<span style="color:#ff79c6">]</span> SUCCESS! Your cluster was upgraded to <span style="color:#f1fa8c">&#34;v1.11.0&#34;</span>. Enjoy!
-
-<span style="color:#ff79c6">[</span>upgrade/kubelet<span style="color:#ff79c6">]</span> Now that your control plane is upgraded, please proceed with upgrading your kubelets <span style="color:#ff79c6">if</span> you haven&#39;t already <span style="color:#ff79c6">done</span> so.</code></pre>
-            </div>
-            <p>
-              由于上面我们已经更新过 kubectl 了，现在我们用 kubectl
-              来查看下版本信息：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl version
-Client Version: version.Info<span style="color:#ff79c6">{</span>Major:<span style="color:#f1fa8c">&#34;1&#34;</span>, Minor:<span style="color:#f1fa8c">&#34;11&#34;</span>, GitVersion:<span style="color:#f1fa8c">&#34;v1.11.0&#34;</span>, GitCommit:<span style="color:#f1fa8c">&#34;91e7b4fd31fcd3d5f436da26c980becec37ceefe&#34;</span>, GitTreeState:<span style="color:#f1fa8c">&#34;clean&#34;</span>, BuildDate:<span style="color:#f1fa8c">&#34;2018-06-27T20:17:28Z&#34;</span>, GoVersion:<span style="color:#f1fa8c">&#34;go1.10.2&#34;</span>, Compiler:<span style="color:#f1fa8c">&#34;gc&#34;</span>, Platform:<span style="color:#f1fa8c">&#34;linux/amd64&#34;</span><span style="color:#ff79c6">}</span>
-Server Version: version.Info<span style="color:#ff79c6">{</span>Major:<span style="color:#f1fa8c">&#34;1&#34;</span>, Minor:<span style="color:#f1fa8c">&#34;11&#34;</span>, GitVersion:<span style="color:#f1fa8c">&#34;v1.11.0&#34;</span>, GitCommit:<span style="color:#f1fa8c">&#34;91e7b4fd31fcd3d5f436da26c980becec37ceefe&#34;</span>, GitTreeState:<span style="color:#f1fa8c">&#34;clean&#34;</span>, BuildDate:<span style="color:#f1fa8c">&#34;2018-06-27T20:08:34Z&#34;</span>, GoVersion:<span style="color:#f1fa8c">&#34;go1.10.2&#34;</span>, Compiler:<span style="color:#f1fa8c">&#34;gc&#34;</span>, Platform:<span style="color:#f1fa8c">&#34;linux/amd64&#34;</span><span style="color:#ff79c6">}</span></code></pre>
-            </div>
-            <p>
-              可以看到现在 Server 端和 Client 端都已经是 v1.11.0
-              版本了，然后查看下 Pod 信息：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-system
-NAME                                             READY     STATUS    RESTARTS   AGE
-authproxy-oauth2-proxy-798cff85fc-pc8x5          <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          34d
-cert-manager-796fb45d79-wcrfp                    <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">2</span>          34d
-coredns-7f6746b7f-2cs2x                          <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          5m
-coredns-7f6746b7f-clphf                          <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          5m
-etcd-ydzs-master                                 <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          10m
-kube-apiserver-ydzs-master                       <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          7m
-kube-controller-manager-ydzs-master              <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          7m
-kube-flannel-ds-amd64-jxzq9                      <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">8</span>          64d
-kube-flannel-ds-amd64-r56r9                      <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">3</span>          64d
-kube-flannel-ds-amd64-xw9fx                      <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">2</span>          64d
-kube-proxy-gqvdg                                 <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          3m
-kube-proxy-sn7xb                                 <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          3m
-kube-proxy-vbrr7                                 <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          2m
-kube-scheduler-ydzs-master                       <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          6m
-nginx-ingress-controller-587b4c68bf-vsqgm        <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">2</span>          34d
-nginx-ingress-default-backend-64fd9fd685-lmxhw   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">1</span>          34d
-tiller-deploy-847cfb9744-5cvh8                   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          4d</code></pre>
-            </div>
-            <h2 id="更新-kubelet">更新 kubelet</h2>
-
-            <p>
-              可以看到我们之前的 kube-dns 服务已经被 coredns 取代了，这是因为在
-              v1.11.0 版本后就默认使用 coredns
-              了，我们也可以访问下集群中的服务看是否有影响，然后查看下集群的
-              Node 信息：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl get nodes
-NAME          STATUS    ROLES     AGE       VERSION
-ydzs-master   Ready     master    64d       v1.10.0
-ydzs-node1    Ready     &lt;none&gt;    64d       v1.10.0
-ydzs-node2    Ready     &lt;none&gt;    64d       v1.10.0</code></pre>
-            </div>
-            <p>
-              可以看到版本并没有更新，这是因为节点上的 kubelet
-              还没有更新的，我们可以通过 kubelet 查看下版本：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubelet --version
-Kubernetes v1.10.0</code></pre>
-            </div>
-            <p>这个时候我们去手动更新下 kubelet：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ yum install -y kubelet-1.11.0-0
-<span style="color:#6272a4"># 安装完成后查看下版本</span>
-$ kubelet --version
-Kubernetes v1.11.0
-<span style="color:#6272a4"># 然后重启 kubelet 服务</span>
-$ systemctl daemon-reload
-$ systemctl restart kubelet
-$ kubectl get nodes
-NAME          STATUS     ROLES     AGE       VERSION
-ydzs-master   Ready   master    64d       v1.11.0
-ydzs-node1    Ready      &lt;none&gt;    64d       v1.10.0
-ydzs-node2    Ready      &lt;none&gt;    64d       v1.10.0</code></pre>
-            </div>
-            <p>注意事项：</p>
-
-            <ul>
-              <li>
-                如果节点上 swap 没有关掉重启 kubelet 服务会报错，所以最好是关掉
-                swap，执行命令：<code>swapoff -a</code> 即可。
-              </li>
-              <li>
-                1.11.0 版本的 kubelet
-                默认使用的<code>pod-infra-container-image</code>镜像名称为：<code>k8s.gcr.io/pause:3.1</code>，所以最好先提前查看下集群节点上是否有这个镜像，因为我们之前
-                1.10.0
-                版本的集群默认的名字为<code>k8s.gcr.io/pause-amd64:3.1</code>，所以如果节点上还是之前的
-                pause 镜像的话，需要先重新打下镜像 tag：
-              </li>
-            </ul>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ docker tag k8s.gcr.io/pause-amd64:3.1 k8s.gcr.io/pause:3.1</code></pre>
-            </div>
-            <p>
-              没有的话可以提前下载到节点上也可以通过配置参数进行指定，在文件<code>/var/lib/kubelet/kubeadm-flags.env</code>中添加如下参数信息：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell"><span style="color:#8be9fd;font-style:italic">KUBELET_KUBEADM_ARGS</span><span style="color:#ff79c6">=</span>--cgroup-driver<span style="color:#ff79c6">=</span>cgroupfs --cni-bin-dir<span style="color:#ff79c6">=</span>/opt/cni/bin --cni-conf-dir<span style="color:#ff79c6">=</span>/etc/cni/net.d --network-plugin<span style="color:#ff79c6">=</span>cni --pod-infra-container-image<span style="color:#ff79c6">=</span>cnych/pause-amd64:3.1</code></pre>
-            </div>
-            <p>
-              可以看到我们更新了 kubelet
-              的节点版本信息已经更新了，同样的方式去把另外两个节点 kubelet
-              更新即可。
-            </p>
-
-            <blockquote>
-              <p>
-                另外需要注意的是最好在节点上的 kubelet
-                更新之前将节点设置为不可调度，更新完成后再设置回来，可以避免不必要的错误。
-              </p>
-            </blockquote>
-
-            <p>最后看下升级后的集群：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl get nodes
-NAME          STATUS    ROLES     AGE       VERSION
-ydzs-master   Ready     master    64d       v1.11.0
-ydzs-node1    Ready     &lt;none&gt;    64d       v1.11.0
-ydzs-node2    Ready     &lt;none&gt;    64d       v1.11.0</code></pre>
-            </div>
-            <p>
-              到这里我们的集群就升级成功了，我们可以用同样的方法将集群升级到
-              v1.12.x、v1.13.x、v1.14.x
-              版本，而且升级过程中是不会影响到现有业务的。
-            </p>
-
-            <p>
-              更新集群后遇到一个问题是，其中一个节点上的 Pod 的 IP 没有使用 cni0
-              网桥的网段，而是使用的 docker0 的网段，比较奇怪，我们使用的 CNI
-              模式，而且查看了 Flannel
-              的相关配置参数都没有问题的，重新将虚拟网络设备重置了，然后重启该节点的
-              Pod 后:
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ ifconfig cni0 down
-$ ip link delete cni0
-$ ifconfig flannel.1 down
-$ ip link delete flannel.1
-$ rm -rf /var/lib/cni/</code></pre>
-            </div>
-            <p>
-              更奇怪的是 cni0 网桥死活创建不出来了，最后是重新使用 kubeadm reset
-              了，重新加入集群才解决这个问题：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubeadm reset
-<span style="color:#6272a4"># 使用下面命令获取加入节点的命令</span>
-$ kubeadm token create --print-join-command
-I0523 <span style="color:#bd93f9">23</span>:28:11.496418   <span style="color:#bd93f9">18560</span> feature_gate.go:230<span style="color:#ff79c6">]</span> feature gates: &amp;<span style="color:#ff79c6">{</span>map<span style="color:#ff79c6">[]}</span>
-kubeadm join <span style="color:#bd93f9">10</span>.151.30.11:6443 --token r7ilky.ppyy90a4ernkq7pj --discovery-token-ca-cert-hash sha256:e605d6877e7cfaebef38c8f3d4649204e189d0d02b23f997e4e65f17bebe3fa7</code></pre>
-            </div>
-            <p>重新执行上面的 join 命令，重新加入节点后恢复正常。</p>
-
-            <p>
-              <a
-                href="https://youdianzhishi.com/web/course/1030"
-                title="从 Docker 到 Kubernetes 进阶课程"
-                ><img
-                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
-                  alt="Kubernetes进阶训练营"
-              /></a>
-            </p>
-
-            <h2>微信公众号</h2>
-            <p>
-              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
-              kubernetes 讨论群里面共同学习。
-            </p>
-            <img
-              src="https://picdn.youdianzhishi.com/images/qrcode.png"
-              alt="wechat-account-qrcode"
-            />
-
-            <div class="entry-shang text-center">
-              <p>「真诚赞赏，手留余香」</p>
-              <button class="zs show-zs btn btn-bred">赞赏</button>
-            </div>
-            <div class="zs-modal-bg"></div>
-            <div class="zs-modal-box">
-              <div class="zs-modal-head">
-                <button type="button" class="close">×</button>
-                <span class="author"
-                  ><img
-                    src="https://www.qikqiak.com/img/avatar.jpeg"
-                  />阳明</span
-                >
-                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-              </div>
-              <div class="zs-modal-body">
-                <div class="zs-modal-btns">
-                  <button class="btn btn-blink" data-num="2">2元</button>
-                  <button class="btn btn-blink" data-num="5">5元</button>
-                  <button class="btn btn-blink" data-num="10">10元</button>
-                  <button class="btn btn-blink" data-num="50">50元</button>
-                  <button class="btn btn-blink" data-num="100">100元</button>
-                  <button class="btn btn-blink" data-num="1">任意金额</button>
-                </div>
-                <div class="zs-modal-pay">
-                  <button class="btn btn-bred" id="pay-text">2元</button>
-                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-                  <img
-                    src="https://www.qikqiak.com/img/wechat-2.png"
-                    id="pay-image"
-                  />
-                </div>
-              </div>
-              <div class="zs-modal-footer">
-                <span class="zs-wechat"
-                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
-                /></span>
-              </div>
-            </div>
-
-            <div
-              class="social-share"
-              data-initialized="true"
-              style="margin-bottom: 20px; margin-top: 20px"
-            >
-              <center>
-                <a href="#" class="social-share-icon icon-weibo"></a>
-                <a href="#" class="social-share-icon icon-wechat"></a>
-                <a href="#" class="social-share-icon icon-twitter"></a>
-                <a href="#" class="social-share-icon icon-linkedin"></a>
-                <a href="#" class="social-share-icon icon-facebook"></a>
-                <a href="#" class="social-share-icon icon-qq"></a>
-                <a href="#" class="social-share-icon icon-qzone"></a>
-              </center>
-            </div>
-
-            <link
-              rel="stylesheet"
-              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
-            />
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
-          </article>
-
-          <h3>相关文章</h3>
-          <ul style="margin-bottom: 25px">
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/manual-install-high-available-kubernetes-cluster/"
-                >手动搭建高可用的kubernetes 集群</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/kubelet-sync-node-status/"
-                >Kubelet 状态更新机制</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/use-kubeadm-install-kubernetes-1.10/"
-                >使用kubeadm搭建kubernetes1.10集群</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/"
-                >在 Kubernetes 上安装 Gitlab</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/harbor-quick-install/"
-                >在 Kubernetes 在快速安装 Harbor</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/harbor-code-analysis/"
-                >Harbor 源码浅析</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/dockerfile-best-practice/"
-                >Dockerfile 最佳实践</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/pod-init-container/"
-                >初始化容器</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/write-kubernets-golang-service-step-by-step/"
-                >手摸手教你写 Kubernetes 的 golang 服务</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/install-docker-registry-harbor-in-kubernetes/"
-                >在kubernetes 集群上搭建docker 私有仓库Harbor</a
-              >
-            </li>
-          </ul>
-
-          <ul class="pager blog-pager">
-            <li class="previous">
-              <a
-                href="https://www.qikqiak.com/post/kubelet-sync-node-status/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="Kubelet 状态更新机制"
-                >&larr; 前一篇</a
-              >
-            </li>
-
-            <li class="next">
-              <a
-                href="https://www.qikqiak.com/post/install-metrics-server/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="Metrics Server 安装"
-                >后一篇 &rarr;</a
-              >
-            </li>
-          </ul>
-
-          <script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-          ></script>
-
-          <ins
-            class="adsbygoogle"
-            style="display: block"
-            data-ad-client="ca-pub-5376999672787220"
-            data-ad-slot="3700507799"
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          ></ins>
-          <script>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-          </script>
-
-          <div id="gitalk-container"></div>
-          <link
-            rel="stylesheet"
-            href="https://unpkg.com/gitalk/dist/gitalk.css"
-          />
-          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-          <script>
-            var gitalk = new Gitalk({
-              clientID: "bdb76dbb2e9d0786e350",
-              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
-              repo: "blog",
-              owner: "cnych",
-              admin: ["cnych"],
-              labels: ["gitment"],
-              title: "使用 kubeadm 更新 kubernetes 集群",
-              createIssueManually: true,
-              id: "use-kubeadm-upgrade-k8s",
-              distractionFreeMode: true,
-            });
-            gitalk.render("gitalk-container");
-          </script>
-        </div>
-      </div>
-    </div>
-
-    <footer>
+    
+    
+    
+    <div class="intro-header no-img">
+      
       <div class="container">
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <ul class="list-inline text-center footer-links">
-              <img
-                src="https://www.qikqiak.com/img/wechatmp.png"
-                alt="k8s技术圈"
-              />
+            <div class="post-heading">
+              <h1>使用 kubeadm 更新 kubernetes 集群</h1>
+                
+                
+                  <span class="post-meta">
+  发表于 May 18, 2019  
+</span>
 
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/kubelet/">kubelet</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/kubeadm/">kubeadm</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#更新集群">更新集群</a></li>
+    <li><a href="#更新-kubelet">更新 kubelet</a></li>
+  </ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>由于课程中的集群版本是 v1.10.0，这个版本相对有点旧了，最新版本都已经 v1.14.x 了，为了尽量保证课程内容的更新度，所以我们需要将集群版本更新。我们的集群是使用的 kubeadm 搭建的，我们知道使用 kubeadm 搭建的集群来更新是非常方便的，但是由于我们这里版本跨度太大，不能直接从 1.10.x 更新到 1.14.x，kubeadm 的更新是不支持跨多个主版本的，所以我们现在是 1.10，只能更新到 1.11 版本了，然后再重 1.11 更新到 1.12&hellip;&hellip; 不过版本更新的方式方法基本上都是一样的，所以后面要更新的话也挺简单了，下面我们就先将集群更新到 v1.11.0 版本。</p>
+<h2 id="更新集群">更新集群</h2>
+<p>首先我们保留 kubeadm config 文件：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubeadm config view
+</span></span><span style="display:flex;"><span>api:
+</span></span><span style="display:flex;"><span>  advertiseAddress: 10.151.30.11
+</span></span><span style="display:flex;"><span>  bindPort: <span style="color:#bd93f9">6443</span>
+</span></span><span style="display:flex;"><span>  controlPlaneEndpoint: <span style="color:#f1fa8c">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>auditPolicy:
+</span></span><span style="display:flex;"><span>  logDir: /var/log/kubernetes/audit
+</span></span><span style="display:flex;"><span>  logMaxAge: <span style="color:#bd93f9">2</span>
+</span></span><span style="display:flex;"><span>  path: <span style="color:#f1fa8c">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>authorizationModes:
+</span></span><span style="display:flex;"><span>- Node
+</span></span><span style="display:flex;"><span>- RBAC
+</span></span><span style="display:flex;"><span>certificatesDir: /etc/kubernetes/pki
+</span></span><span style="display:flex;"><span>cloudProvider: <span style="color:#f1fa8c">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>criSocket: /var/run/dockershim.sock
+</span></span><span style="display:flex;"><span>etcd:
+</span></span><span style="display:flex;"><span>  caFile: <span style="color:#f1fa8c">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>  certFile: <span style="color:#f1fa8c">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>  dataDir: /var/lib/etcd
+</span></span><span style="display:flex;"><span>  endpoints: null
+</span></span><span style="display:flex;"><span>  image: <span style="color:#f1fa8c">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>  keyFile: <span style="color:#f1fa8c">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>imageRepository: k8s.gcr.io
+</span></span><span style="display:flex;"><span>kubeProxy:
+</span></span><span style="display:flex;"><span>  config:
+</span></span><span style="display:flex;"><span>    bindAddress: 0.0.0.0
+</span></span><span style="display:flex;"><span>    clientConnection:
+</span></span><span style="display:flex;"><span>      acceptContentTypes: <span style="color:#f1fa8c">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>      burst: <span style="color:#bd93f9">10</span>
+</span></span><span style="display:flex;"><span>      contentType: application/vnd.kubernetes.protobuf
+</span></span><span style="display:flex;"><span>      kubeconfig: /var/lib/kube-proxy/kubeconfig.conf
+</span></span><span style="display:flex;"><span>      qps: <span style="color:#bd93f9">5</span>
+</span></span><span style="display:flex;"><span>    clusterCIDR: 10.244.0.0/16
+</span></span><span style="display:flex;"><span>    configSyncPeriod: 15m0s
+</span></span><span style="display:flex;"><span>    conntrack:
+</span></span><span style="display:flex;"><span>      max: null
+</span></span><span style="display:flex;"><span>      maxPerCore: <span style="color:#bd93f9">32768</span>
+</span></span><span style="display:flex;"><span>      min: <span style="color:#bd93f9">131072</span>
+</span></span><span style="display:flex;"><span>      tcpCloseWaitTimeout: 1h0m0s
+</span></span><span style="display:flex;"><span>      tcpEstablishedTimeout: 24h0m0s
+</span></span><span style="display:flex;"><span>    enableProfiling: <span style="color:#8be9fd;font-style:italic">false</span>
+</span></span><span style="display:flex;"><span>    healthzBindAddress: 0.0.0.0:10256
+</span></span><span style="display:flex;"><span>    hostnameOverride: <span style="color:#f1fa8c">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>    iptables:
+</span></span><span style="display:flex;"><span>      masqueradeAll: <span style="color:#8be9fd;font-style:italic">false</span>
+</span></span><span style="display:flex;"><span>      masqueradeBit: <span style="color:#bd93f9">14</span>
+</span></span><span style="display:flex;"><span>      minSyncPeriod: 0s
+</span></span><span style="display:flex;"><span>      syncPeriod: 30s
+</span></span><span style="display:flex;"><span>    ipvs:
+</span></span><span style="display:flex;"><span>      minSyncPeriod: 0s
+</span></span><span style="display:flex;"><span>      scheduler: <span style="color:#f1fa8c">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>      syncPeriod: 30s
+</span></span><span style="display:flex;"><span>    metricsBindAddress: 127.0.0.1:10249
+</span></span><span style="display:flex;"><span>    mode: <span style="color:#f1fa8c">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>    nodePortAddresses: null
+</span></span><span style="display:flex;"><span>    oomScoreAdj: -999
+</span></span><span style="display:flex;"><span>    portRange: <span style="color:#f1fa8c">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>    resourceContainer: /kube-proxy
+</span></span><span style="display:flex;"><span>    udpIdleTimeout: 250ms
+</span></span><span style="display:flex;"><span>kubeletConfiguration: <span style="color:#ff79c6">{}</span>
+</span></span><span style="display:flex;"><span>kubernetesVersion: v1.10.0
+</span></span><span style="display:flex;"><span>networking:
+</span></span><span style="display:flex;"><span>  dnsDomain: cluster.local
+</span></span><span style="display:flex;"><span>  podSubnet: 10.244.0.0/16
+</span></span><span style="display:flex;"><span>  serviceSubnet: 10.96.0.0/12
+</span></span><span style="display:flex;"><span>nodeName: ydzs-master
+</span></span><span style="display:flex;"><span>privilegedPods: <span style="color:#8be9fd;font-style:italic">false</span>
+</span></span><span style="display:flex;"><span>token: <span style="color:#f1fa8c">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>tokenGroups:
+</span></span><span style="display:flex;"><span>- system:bootstrappers:kubeadm:default-node-token
+</span></span><span style="display:flex;"><span>tokenTTL: 24h0m0s
+</span></span><span style="display:flex;"><span>tokenUsages:
+</span></span><span style="display:flex;"><span>- signing
+</span></span><span style="display:flex;"><span>- authentication
+</span></span><span style="display:flex;"><span>unifiedControlPlaneImage: <span style="color:#f1fa8c">&#34;&#34;</span>
+</span></span></code></pre></div><p>将上面的 imageRepository 值更改为：gcr.azk8s.cn/google_containers，然后保存内容到文件 kubeadm-config.yaml 中（当然如果你的集群可以获取到 grc.io 的镜像可以不用更改）。</p>
+<p>然后更新 kubeadm:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ yum makecache fast <span style="color:#ff79c6">&amp;&amp;</span> yum install -y kubeadm-1.11.0-0 kubectl-1.11.0-0
+</span></span><span style="display:flex;"><span>$ kubeadm version
+</span></span><span style="display:flex;"><span>kubeadm version: &amp;version.Info<span style="color:#ff79c6">{</span>Major:<span style="color:#f1fa8c">&#34;1&#34;</span>, Minor:<span style="color:#f1fa8c">&#34;11&#34;</span>, GitVersion:<span style="color:#f1fa8c">&#34;v1.11.0&#34;</span>, GitCommit:<span style="color:#f1fa8c">&#34;91e7b4fd31fcd3d5f436da26c980becec37ceefe&#34;</span>, GitTreeState:<span style="color:#f1fa8c">&#34;clean&#34;</span>, BuildDate:<span style="color:#f1fa8c">&#34;2018-06-27T20:14:41Z&#34;</span>, GoVersion:<span style="color:#f1fa8c">&#34;go1.10.2&#34;</span>, Compiler:<span style="color:#f1fa8c">&#34;gc&#34;</span>, Platform:<span style="color:#f1fa8c">&#34;linux/amd64&#34;</span><span style="color:#ff79c6">}</span>
+</span></span></code></pre></div><blockquote>
+<p>因为 kubeadm upgrade plan 命令执行过程中会去 dl.k8s.io 获取版本信息，这个地址是需要科学方法才能访问的，所以我们可以先将 kubeadm 更新到目标版本，然后就可以查看到目标版本升级的一些信息了。</p>
+</blockquote>
+<p>执行 upgrade plan 命令查看是否可以升级：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubeadm upgrade plan
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>preflight<span style="color:#ff79c6">]</span> Running pre-flight checks.
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>upgrade<span style="color:#ff79c6">]</span> Making sure the cluster is healthy:
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>upgrade/config<span style="color:#ff79c6">]</span> Making sure the configuration is correct:
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>upgrade/config<span style="color:#ff79c6">]</span> Reading configuration from the cluster...
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>upgrade/config<span style="color:#ff79c6">]</span> FYI: You can look at this config file with <span style="color:#f1fa8c">&#39;kubectl -n kube-system get cm kubeadm-config -oyaml&#39;</span>
+</span></span><span style="display:flex;"><span>I0518 18:50:12.844665    <span style="color:#bd93f9">9676</span> feature_gate.go:230<span style="color:#ff79c6">]</span> feature gates: &amp;<span style="color:#ff79c6">{</span>map<span style="color:#ff79c6">[]}</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>upgrade<span style="color:#ff79c6">]</span> Fetching available versions to upgrade to
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>upgrade/versions<span style="color:#ff79c6">]</span> Cluster version: v1.10.0
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>upgrade/versions<span style="color:#ff79c6">]</span> kubeadm version: v1.11.0
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>upgrade/versions<span style="color:#ff79c6">]</span> WARNING: Couldn<span style="color:#f1fa8c">&#39;t fetch latest stable version from the internet: unable to get URL &#34;https://dl.k8s.io/release/stable.txt&#34;: Get https://dl.k8s.io/release/stable.txt: dial tcp 35.201.71.162:443: i/o timeout
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">[upgrade/versions] WARNING: Falling back to current kubeadm version as latest stable version
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">[upgrade/versions] WARNING: Couldn&#39;</span>t fetch latest version in the v1.10 series from the internet: unable to get URL <span style="color:#f1fa8c">&#34;https://dl.k8s.io/release/stable-1.10.txt&#34;</span>: Get https://dl.k8s.io/release/stable-1.10.txt: dial tcp 35.201.71.162:443: i/o timeout
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Components that must be upgraded manually after you have upgraded the control plane with <span style="color:#f1fa8c">&#39;kubeadm upgrade apply&#39;</span>:
+</span></span><span style="display:flex;"><span>COMPONENT   CURRENT       AVAILABLE
+</span></span><span style="display:flex;"><span>Kubelet     <span style="color:#bd93f9">3</span> x v1.10.0   v1.11.0
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Upgrade to the latest stable version:
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>COMPONENT            CURRENT   AVAILABLE
+</span></span><span style="display:flex;"><span>API Server           v1.10.0   v1.11.0
+</span></span><span style="display:flex;"><span>Controller Manager   v1.10.0   v1.11.0
+</span></span><span style="display:flex;"><span>Scheduler            v1.10.0   v1.11.0
+</span></span><span style="display:flex;"><span>Kube Proxy           v1.10.0   v1.11.0
+</span></span><span style="display:flex;"><span>CoreDNS                        1.1.3
+</span></span><span style="display:flex;"><span>Kube DNS             1.14.8
+</span></span><span style="display:flex;"><span>Etcd                 3.1.12    3.2.18
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>You can now apply the upgrade by executing the following command:
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	kubeadm upgrade apply v1.11.0
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>_____________________________________________________________________
+</span></span></code></pre></div><p>我们可以先使用 dry-run 命令查看升级信息：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubeadm upgrade apply v1.11.0 --config kubeadm-config.yaml --dry-run
+</span></span></code></pre></div><blockquote>
+<p>注意要通过<code>--config</code>指定上面保存的配置文件，该配置文件信息包含了上一个版本的集群信息以及修改搞得镜像地址。</p>
+</blockquote>
+<p>查看了上面的升级信息确认无误后就可以执行升级操作了：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubeadm upgrade apply v1.11.0 --config kubeadm-config.yaml
+</span></span><span style="display:flex;"><span>kubeadm upgrade apply v1.11.0 --config kubeadm-config.yaml
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>preflight<span style="color:#ff79c6">]</span> Running pre-flight checks.
+</span></span><span style="display:flex;"><span>I0518 18:57:29.134722   <span style="color:#bd93f9">12284</span> feature_gate.go:230<span style="color:#ff79c6">]</span> feature gates: &amp;<span style="color:#ff79c6">{</span>map<span style="color:#ff79c6">[]}</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>upgrade<span style="color:#ff79c6">]</span> Making sure the cluster is healthy:
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>upgrade/config<span style="color:#ff79c6">]</span> Making sure the configuration is correct:
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>upgrade/config<span style="color:#ff79c6">]</span> Reading configuration options from a file: kubeadm-config.yaml
+</span></span><span style="display:flex;"><span>I0518 18:57:29.179231   <span style="color:#bd93f9">12284</span> feature_gate.go:230<span style="color:#ff79c6">]</span> feature gates: &amp;<span style="color:#ff79c6">{</span>map<span style="color:#ff79c6">[]}</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>upgrade/apply<span style="color:#ff79c6">]</span> Respecting the --cri-socket flag that is <span style="color:#8be9fd;font-style:italic">set</span> with higher priority than the config file.
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>upgrade/version<span style="color:#ff79c6">]</span> You have chosen to change the cluster version to <span style="color:#f1fa8c">&#34;v1.11.0&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>upgrade/versions<span style="color:#ff79c6">]</span> Cluster version: v1.10.0
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>upgrade/versions<span style="color:#ff79c6">]</span> kubeadm version: v1.11.0
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>upgrade/confirm<span style="color:#ff79c6">]</span> Are you sure you want to proceed with the upgrade? <span style="color:#ff79c6">[</span>y/N<span style="color:#ff79c6">]</span>: y
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>upgrade/prepull<span style="color:#ff79c6">]</span> Will prepull images <span style="color:#ff79c6">for</span> components <span style="color:#ff79c6">[</span>kube-apiserver kube-controller-manager kube-scheduler etcd<span style="color:#ff79c6">]</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>upgrade/apply<span style="color:#ff79c6">]</span> Upgrading your Static Pod-hosted control plane to version <span style="color:#f1fa8c">&#34;v1.11.0&#34;</span>...
+</span></span><span style="display:flex;"><span>Static pod: kube-apiserver-ydzs-master hash: 3abd7df4382a9b60f60819f84de40e11
+</span></span><span style="display:flex;"><span>Static pod: kube-controller-manager-ydzs-master hash: 1a0f3ccde96238d31012390b61109573
+</span></span><span style="display:flex;"><span>Static pod: kube-scheduler-ydzs-master hash: 2acb197d598c4730e3f5b159b241a81b
+</span></span></code></pre></div><p>隔一段时间看到如下信息就证明集群升级成功了：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>......
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>bootstraptoken<span style="color:#ff79c6">]</span> configured RBAC rules to allow the csrapprover controller automatically approve CSRs from a Node Bootstrap Token
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>bootstraptoken<span style="color:#ff79c6">]</span> configured RBAC rules to allow certificate rotation <span style="color:#ff79c6">for</span> all node client certificates in the cluster
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>addons<span style="color:#ff79c6">]</span> Applied essential addon: CoreDNS
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>addons<span style="color:#ff79c6">]</span> Applied essential addon: kube-proxy
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>upgrade/successful<span style="color:#ff79c6">]</span> SUCCESS! Your cluster was upgraded to <span style="color:#f1fa8c">&#34;v1.11.0&#34;</span>. Enjoy!
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>upgrade/kubelet<span style="color:#ff79c6">]</span> Now that your control plane is upgraded, please proceed with upgrading your kubelets <span style="color:#ff79c6">if</span> you haven&#39;t already <span style="color:#ff79c6">done</span> so.
+</span></span></code></pre></div><p>由于上面我们已经更新过 kubectl 了，现在我们用 kubectl 来查看下版本信息：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl version
+</span></span><span style="display:flex;"><span>Client Version: version.Info<span style="color:#ff79c6">{</span>Major:<span style="color:#f1fa8c">&#34;1&#34;</span>, Minor:<span style="color:#f1fa8c">&#34;11&#34;</span>, GitVersion:<span style="color:#f1fa8c">&#34;v1.11.0&#34;</span>, GitCommit:<span style="color:#f1fa8c">&#34;91e7b4fd31fcd3d5f436da26c980becec37ceefe&#34;</span>, GitTreeState:<span style="color:#f1fa8c">&#34;clean&#34;</span>, BuildDate:<span style="color:#f1fa8c">&#34;2018-06-27T20:17:28Z&#34;</span>, GoVersion:<span style="color:#f1fa8c">&#34;go1.10.2&#34;</span>, Compiler:<span style="color:#f1fa8c">&#34;gc&#34;</span>, Platform:<span style="color:#f1fa8c">&#34;linux/amd64&#34;</span><span style="color:#ff79c6">}</span>
+</span></span><span style="display:flex;"><span>Server Version: version.Info<span style="color:#ff79c6">{</span>Major:<span style="color:#f1fa8c">&#34;1&#34;</span>, Minor:<span style="color:#f1fa8c">&#34;11&#34;</span>, GitVersion:<span style="color:#f1fa8c">&#34;v1.11.0&#34;</span>, GitCommit:<span style="color:#f1fa8c">&#34;91e7b4fd31fcd3d5f436da26c980becec37ceefe&#34;</span>, GitTreeState:<span style="color:#f1fa8c">&#34;clean&#34;</span>, BuildDate:<span style="color:#f1fa8c">&#34;2018-06-27T20:08:34Z&#34;</span>, GoVersion:<span style="color:#f1fa8c">&#34;go1.10.2&#34;</span>, Compiler:<span style="color:#f1fa8c">&#34;gc&#34;</span>, Platform:<span style="color:#f1fa8c">&#34;linux/amd64&#34;</span><span style="color:#ff79c6">}</span>
+</span></span></code></pre></div><p>可以看到现在 Server 端和 Client 端都已经是 v1.11.0 版本了，然后查看下 Pod 信息：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl get pods -n kube-system
+</span></span><span style="display:flex;"><span>NAME                                             READY     STATUS    RESTARTS   AGE
+</span></span><span style="display:flex;"><span>authproxy-oauth2-proxy-798cff85fc-pc8x5          1/1       Running   <span style="color:#bd93f9">0</span>          34d
+</span></span><span style="display:flex;"><span>cert-manager-796fb45d79-wcrfp                    1/1       Running   <span style="color:#bd93f9">2</span>          34d
+</span></span><span style="display:flex;"><span>coredns-7f6746b7f-2cs2x                          1/1       Running   <span style="color:#bd93f9">0</span>          5m
+</span></span><span style="display:flex;"><span>coredns-7f6746b7f-clphf                          1/1       Running   <span style="color:#bd93f9">0</span>          5m
+</span></span><span style="display:flex;"><span>etcd-ydzs-master                                 1/1       Running   <span style="color:#bd93f9">0</span>          10m
+</span></span><span style="display:flex;"><span>kube-apiserver-ydzs-master                       1/1       Running   <span style="color:#bd93f9">0</span>          7m
+</span></span><span style="display:flex;"><span>kube-controller-manager-ydzs-master              1/1       Running   <span style="color:#bd93f9">0</span>          7m
+</span></span><span style="display:flex;"><span>kube-flannel-ds-amd64-jxzq9                      1/1       Running   <span style="color:#bd93f9">8</span>          64d
+</span></span><span style="display:flex;"><span>kube-flannel-ds-amd64-r56r9                      1/1       Running   <span style="color:#bd93f9">3</span>          64d
+</span></span><span style="display:flex;"><span>kube-flannel-ds-amd64-xw9fx                      1/1       Running   <span style="color:#bd93f9">2</span>          64d
+</span></span><span style="display:flex;"><span>kube-proxy-gqvdg                                 1/1       Running   <span style="color:#bd93f9">0</span>          3m
+</span></span><span style="display:flex;"><span>kube-proxy-sn7xb                                 1/1       Running   <span style="color:#bd93f9">0</span>          3m
+</span></span><span style="display:flex;"><span>kube-proxy-vbrr7                                 1/1       Running   <span style="color:#bd93f9">0</span>          2m
+</span></span><span style="display:flex;"><span>kube-scheduler-ydzs-master                       1/1       Running   <span style="color:#bd93f9">0</span>          6m
+</span></span><span style="display:flex;"><span>nginx-ingress-controller-587b4c68bf-vsqgm        1/1       Running   <span style="color:#bd93f9">2</span>          34d
+</span></span><span style="display:flex;"><span>nginx-ingress-default-backend-64fd9fd685-lmxhw   1/1       Running   <span style="color:#bd93f9">1</span>          34d
+</span></span><span style="display:flex;"><span>tiller-deploy-847cfb9744-5cvh8                   1/1       Running   <span style="color:#bd93f9">0</span>          4d
+</span></span></code></pre></div><h2 id="更新-kubelet">更新 kubelet</h2>
+<p>可以看到我们之前的 kube-dns 服务已经被 coredns 取代了，这是因为在 v1.11.0 版本后就默认使用 coredns 了，我们也可以访问下集群中的服务看是否有影响，然后查看下集群的 Node 信息：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl get nodes
+</span></span><span style="display:flex;"><span>NAME          STATUS    ROLES     AGE       VERSION
+</span></span><span style="display:flex;"><span>ydzs-master   Ready     master    64d       v1.10.0
+</span></span><span style="display:flex;"><span>ydzs-node1    Ready     &lt;none&gt;    64d       v1.10.0
+</span></span><span style="display:flex;"><span>ydzs-node2    Ready     &lt;none&gt;    64d       v1.10.0
+</span></span></code></pre></div><p>可以看到版本并没有更新，这是因为节点上的 kubelet 还没有更新的，我们可以通过 kubelet 查看下版本：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubelet --version
+</span></span><span style="display:flex;"><span>Kubernetes v1.10.0
+</span></span></code></pre></div><p>这个时候我们去手动更新下 kubelet：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ yum install -y kubelet-1.11.0-0
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 安装完成后查看下版本</span>
+</span></span><span style="display:flex;"><span>$ kubelet --version
+</span></span><span style="display:flex;"><span>Kubernetes v1.11.0
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 然后重启 kubelet 服务</span>
+</span></span><span style="display:flex;"><span>$ systemctl daemon-reload
+</span></span><span style="display:flex;"><span>$ systemctl restart kubelet
+</span></span><span style="display:flex;"><span>$ kubectl get nodes
+</span></span><span style="display:flex;"><span>NAME          STATUS     ROLES     AGE       VERSION
+</span></span><span style="display:flex;"><span>ydzs-master   Ready   master    64d       v1.11.0
+</span></span><span style="display:flex;"><span>ydzs-node1    Ready      &lt;none&gt;    64d       v1.10.0
+</span></span><span style="display:flex;"><span>ydzs-node2    Ready      &lt;none&gt;    64d       v1.10.0
+</span></span></code></pre></div><p>注意事项：</p>
+<ul>
+<li>如果节点上 swap 没有关掉重启 kubelet 服务会报错，所以最好是关掉 swap，执行命令：<code>swapoff -a</code> 即可。</li>
+<li>1.11.0 版本的 kubelet 默认使用的<code>pod-infra-container-image</code>镜像名称为：<code>k8s.gcr.io/pause:3.1</code>，所以最好先提前查看下集群节点上是否有这个镜像，因为我们之前 1.10.0 版本的集群默认的名字为<code>k8s.gcr.io/pause-amd64:3.1</code>，所以如果节点上还是之前的 pause 镜像的话，需要先重新打下镜像 tag：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ docker tag k8s.gcr.io/pause-amd64:3.1 k8s.gcr.io/pause:3.1
+</span></span></code></pre></div><p>没有的话可以提前下载到节点上也可以通过配置参数进行指定，在文件<code>/var/lib/kubelet/kubeadm-flags.env</code>中添加如下参数信息：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">KUBELET_KUBEADM_ARGS</span><span style="color:#ff79c6">=</span>--cgroup-driver<span style="color:#ff79c6">=</span>cgroupfs --cni-bin-dir<span style="color:#ff79c6">=</span>/opt/cni/bin --cni-conf-dir<span style="color:#ff79c6">=</span>/etc/cni/net.d --network-plugin<span style="color:#ff79c6">=</span>cni --pod-infra-container-image<span style="color:#ff79c6">=</span>cnych/pause-amd64:3.1
+</span></span></code></pre></div><p>可以看到我们更新了 kubelet 的节点版本信息已经更新了，同样的方式去把另外两个节点 kubelet 更新即可。</p>
+<blockquote>
+<p>另外需要注意的是最好在节点上的 kubelet 更新之前将节点设置为不可调度，更新完成后再设置回来，可以避免不必要的错误。</p>
+</blockquote>
+<p>最后看下升级后的集群：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl get nodes
+</span></span><span style="display:flex;"><span>NAME          STATUS    ROLES     AGE       VERSION
+</span></span><span style="display:flex;"><span>ydzs-master   Ready     master    64d       v1.11.0
+</span></span><span style="display:flex;"><span>ydzs-node1    Ready     &lt;none&gt;    64d       v1.11.0
+</span></span><span style="display:flex;"><span>ydzs-node2    Ready     &lt;none&gt;    64d       v1.11.0
+</span></span></code></pre></div><p>到这里我们的集群就升级成功了，我们可以用同样的方法将集群升级到 v1.12.x、v1.13.x、v1.14.x 版本，而且升级过程中是不会影响到现有业务的。</p>
+<p>更新集群后遇到一个问题是，其中一个节点上的 Pod 的 IP 没有使用 cni0 网桥的网段，而是使用的 docker0 的网段，比较奇怪，我们使用的 CNI 模式，而且查看了 Flannel 的相关配置参数都没有问题的，重新将虚拟网络设备重置了，然后重启该节点的 Pod 后:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ ifconfig cni0 down
+</span></span><span style="display:flex;"><span>$ ip link delete cni0
+</span></span><span style="display:flex;"><span>$ ifconfig flannel.1 down
+</span></span><span style="display:flex;"><span>$ ip link delete flannel.1
+</span></span><span style="display:flex;"><span>$ rm -rf /var/lib/cni/
+</span></span></code></pre></div><p>更奇怪的是 cni0 网桥死活创建不出来了，最后是重新使用 kubeadm reset 了，重新加入集群才解决这个问题：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubeadm reset
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 使用下面命令获取加入节点的命令</span>
+</span></span><span style="display:flex;"><span>$ kubeadm token create --print-join-command
+</span></span><span style="display:flex;"><span>I0523 23:28:11.496418   <span style="color:#bd93f9">18560</span> feature_gate.go:230<span style="color:#ff79c6">]</span> feature gates: &amp;<span style="color:#ff79c6">{</span>map<span style="color:#ff79c6">[]}</span>
+</span></span><span style="display:flex;"><span>kubeadm join 10.151.30.11:6443 --token r7ilky.ppyy90a4ernkq7pj --discovery-token-ca-cert-hash sha256:e605d6877e7cfaebef38c8f3d4649204e189d0d02b23f997e4e65f17bebe3fa7
+</span></span></code></pre></div><p>重新执行上面的 join 命令，重新加入节点后恢复正常。</p>
+<!-- raw HTML omitted -->
+
+          <h2>微信公众号</h2>
+<p>
+  扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+  kubernetes 讨论群里面共同学习。
+</p>
+<img
+  src="https://picdn.youdianzhishi.com/images/qrcode.png"
+  alt="wechat-account-qrcode"
+/>
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/manual-install-high-available-kubernetes-cluster/">手动搭建高可用的kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kubelet-sync-node-status/">Kubelet 状态更新机制</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-kubeadm-install-kubernetes-1.10/">使用kubeadm搭建kubernetes1.10集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/">在 Kubernetes 上安装 Gitlab</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/harbor-quick-install/">在 Kubernetes 在快速安装 Harbor</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/harbor-code-analysis/">Harbor 源码浅析</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/dockerfile-best-practice/">Dockerfile 最佳实践</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/pod-init-container/">初始化容器</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/write-kubernets-golang-service-step-by-step/">手摸手教你写 Kubernetes 的 golang 服务</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/install-docker-registry-harbor-in-kubernetes/">在kubernetes 集群上搭建docker 私有仓库Harbor</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/kubelet-sync-node-status/" data-toggle="tooltip" data-placement="top" title="Kubelet 状态更新机制">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/install-metrics-server/" data-toggle="tooltip" data-placement="top" title="Metrics Server 安装">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '使用 kubeadm 更新 kubernetes 集群',
+        createIssueManually: true,
+        id: 'use-kubeadm-upgrade-k8s',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -1074,7 +731,7 @@ kubeadm join <span style="color:#bd93f9">10</span>.151.30.11:6443 --token r7ilky
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -1083,7 +740,7 @@ kubeadm join <span style="color:#bd93f9">10</span>.151.30.11:6443 --token r7ilky
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -1092,7 +749,7 @@ kubeadm join <span style="color:#bd93f9">10</span>.151.30.11:6443 --token r7ilky
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -1101,158 +758,121 @@ kubeadm join <span style="color:#bd93f9">10</span>.151.30.11:6443 --token r7ilky
                   </span>
                 </a>
               </li>
-
-              <li>
-                <a href="https://www.qikqiak.com/index.xml" title="RSS">
-                  <span class="fa-stack fa-lg">
-                    <i class="fa fa-circle fa-stack-2x"></i>
-                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
-                  </span>
-                </a>
-              </li>
-            </ul>
-            <p class="credits copyright text-muted">
-              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/">阳明的博客</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/archive/">归档</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/friend/">友链</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://beian.miit.gov.cn/" target="_blank"
-                >蜀ICP备11027319号-5</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
-                >kubernetes.io</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
-                >Kubernetes中文社区</a
-              >
-            </p>
-            <p class="text-center text-muted">
-              <script
-                async
-                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
-              ></script>
-              <span id="busuanzi_container_site_pv" style="display: none">
-                本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
               </span>
-              &nbsp;&bull;&nbsp;
-              <span id="busuanzi_container_site_uv" style="display: none">
-                访客数<span id="busuanzi_value_site_uv"></span>人次
-              </span>
-            </p>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
 
-            <p class="credits theme-by text-muted">
-              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
-              &nbsp;&bull;&nbsp; 主题
-              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
-              移植自
-              <a href="https://github.com/rootsongjc/beautifulhugo"
-                >Beautiful Hugo</a
-              >
-            </p>
-          </div>
-        </div>
+          &nbsp;&bull;&nbsp;
+          2023
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.115.4</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+          
+        </p>
       </div>
-    </footer>
+    </div>
+  </div>
+</footer>
 
-    <script
-      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
-      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
-    ></script>
 
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "UA-69668147-3");
-    </script>
-    <script>
-      (function () {
-        var bp = document.createElement("script");
-        var curProtocol = window.location.protocol.split(":")[0];
-        if (curProtocol === "https") {
-          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
-        } else {
-          bp.src = "http://push.zhanzhang.baidu.com/push.js";
-        }
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(bp, s);
-      })();
-    </script>
-    <script>
-      $(document).ready(function () {
-        var int = setInterval(fixCount, 50);
+<script src='https://www.qikqiak.com/js/bundle.min.af02a2d23b6651a566f0135a12e65fc2560faa7a969b3d1ad58d0afe0c9164ae.js' integrity='sha256-rwKi0jtmUaVm8BNaEuZfwlYPqnqWmz0a1Y0K/gyRZK4='></script>
 
-        var initPVCount = 584976;
-        var initUVCount = 153191;
-        function fixCount() {
-          if ($("#busuanzi_container_site_pv").css("display") != "none") {
-            $("#busuanzi_value_site_pv").html(
-              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
-            );
-            clearInterval(int);
-          }
-          if ($("#busuanzi_container_site_uv").css("display") != "none") {
-            $("#busuanzi_value_site_uv").html(
-              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
-            );
-            clearInterval(int);
-          }
-        }
-      });
-    </script>
-    <script>
-      (function (w, d, s, id) {
-        if (typeof w.webpushr !== "undefined") return;
-        w.webpushr =
-          w.webpushr ||
-          function () {
-            (w.webpushr.q = w.webpushr.q || []).push(arguments);
-          };
-        var js,
-          fjs = d.getElementsByTagName(s)[0];
-        js = d.createElement(s);
-        js.id = id;
-        js.src = "https://cdn.webpushr.com/app.min.js";
-        fjs.parentNode.appendChild(js);
-      })(window, document, "script", "webpushr-jssdk");
-      webpushr(
-        "init",
-        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
-      );
-    </script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
-    ></script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
-    ></script>
-    <script type="text/javascript">
-      $(".carousel").slick({
-        dots: true,
-        arrows: true,
-        autoplay: true,
-        autoplaySpeed: 4000,
-        infinite: true,
-        speed: 500,
-        fade: true,
-        cssEase: "linear",
-        centerMode: true,
-        prevArrow: '<button type="button" class="slick-prev"></button>',
-        nextArrow: '<button type="button" class="slick-next"></button>',
-      });
-    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
   </body>
 </html>
+

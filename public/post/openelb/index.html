@@ -1,1116 +1,689 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
-    />
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-    <title>
-      本地集群使用 OpenELB 实现 Load Balancer
-      负载均衡-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
-    </title>
-    <meta
-      property="og:title"
-      content="本地集群使用 OpenELB 实现 Load Balancer 负载均衡"
-    />
-    <meta
-      name="twitter:title"
-      content="本地集群使用 OpenELB 实现 Load Balancer 负载均衡"
-    />
 
-    <meta
-      name="description"
-      content="为了方便测试，准备为 Ingress 控制器配置一个 LoadBalaner 类型的 Service，由于我这是本地私有环境，所以需要部署一个支持该服务类型的负载均衡器，在社区中目前最流行的应该是 MetalLB 这个项目，现在也属于 CNCF 沙箱项目，该项目在 2017 年底发起，经过 4 年的发展已经在社区被广泛采用，但是我这边在测试使用过程中一直表现不稳定，经常需要重启控制器才能生效。所以将目光转向了最近国内青云开源的另外一个负载均衡器 OpenELB。"
-    />
-    <meta
-      property="og:description"
-      content="为了方便测试，准备为 Ingress 控制器配置一个 LoadBalaner 类型的 Service，由于我这是本地私有环境，所以需要部署一个支持该服务类型的负载均衡器，在社区中目前最流行的应该是 MetalLB 这个项目，现在也属于 CNCF 沙箱项目，该项目在 2017 年底发起，经过 4 年的发展已经在社区被广泛采用，但是我这边在测试使用过程中一直表现不稳定，经常需要重启控制器才能生效。所以将目光转向了最近国内青云开源的另外一个负载均衡器 OpenELB。"
-    />
-    <meta
-      name="twitter:description"
-      content="为了方便测试，准备为 Ingress 控制器配置一个 LoadBalaner 类型的 Service，由于我这是本地私有环境，所以需要部署一个支持该服务类型的负载均衡器，在社区中目前最流行的应该是 MetalLB 这个项目，现在也属于 CNCF 沙箱项目，该项目在 2017 年底发起，经过 4 年的发展已经在社区被广泛采用，但是我这边在测试使用过程中一直表现不稳定，经常需要重启控制器才能生效。所以 …"
-    />
-    <meta name="author" content="" />
-    <link
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-      rel="icon"
-      type="image/x-icon"
-    />
-    <link
-      rel="apple-touch-icon"
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      property="og:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      name="twitter:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta name="twitter:card" content="summary" />
-    <meta property="og:url" content="https://www.qikqiak.com/post/openelb/" />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="阳明的博客" />
+  <title>本地集群使用 OpenELB 实现 Load Balancer 负载均衡-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="本地集群使用 OpenELB 实现 Load Balancer 负载均衡" />
+  <meta name="twitter:title" content="本地集群使用 OpenELB 实现 Load Balancer 负载均衡" />
 
-    <meta name="generator" content="Hugo 0.55.6" />
-    <link rel="canonical" href="https://www.qikqiak.com/post/openelb/" />
-    <link
-      rel="alternate"
-      href="https://www.qikqiak.com/index.xml"
-      type="application/rss+xml"
-      title="阳明的博客"
-    />
+  <meta name="description" content="为了方便测试，准备为 Ingress 控制器配置一个 LoadBalaner 类型的 Service，由于我这是本地私有环境，所以需要部署一个支持该服务类型的负载均衡器，在社区中目前最流行的应该是 MetalLB 这个项目，现在也属于 CNCF 沙箱项目，该项目在 2017 年底发起，经过 4 年的发展已经在社区被广泛采用，但是我这边在测试使用过程中一直表现不稳定，经常需要重启控制器才能生效。所以将目光转向了最近国内青云开源的另外一个负载均衡器 OpenELB。">
+  <meta property="og:description" content="为了方便测试，准备为 Ingress 控制器配置一个 LoadBalaner 类型的 Service，由于我这是本地私有环境，所以需要部署一个支持该服务类型的负载均衡器，在社区中目前最流行的应该是 MetalLB 这个项目，现在也属于 CNCF 沙箱项目，该项目在 2017 年底发起，经过 4 年的发展已经在社区被广泛采用，但是我这边在测试使用过程中一直表现不稳定，经常需要重启控制器才能生效。所以将目光转向了最近国内青云开源的另外一个负载均衡器 OpenELB。">
+  <meta name="twitter:description" content="为了方便测试，准备为 Ingress 控制器配置一个 LoadBalaner 类型的 Service，由于我这是本地私有环境，所以需要部署一个支持该服务类型的负载均衡器，在社区中目前最流行的应该是 MetalLB 这个项目，现在也属于 CNCF 沙箱项目，该项目在 2017 年底发起，经过 4 年的发展已经在社区被广泛采用，但是我这边在测试使用过程中一直表现不稳定，经常需要重启控制器才能生效。所以 …">
+  <meta name="author" content=""/>
+  <link href="https://picdn.youdianzhishi.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://picdn.youdianzhishi.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/openelb/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
 
-    <link
-      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
-      rel="stylesheet"
-    />
+  <link rel="canonical" href="https://www.qikqiak.com/post/openelb/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
-    <link
-      rel="stylesheet"
-      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
-      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
-    />
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
 
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
-    />
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a6b62363fe57848ad01efa2a5d1bbb1047c2ffb71b53d8aeb42bc5ed5c77ea7c.css' integrity='sha256-prYjY/5XhIrQHvoqXRu7EEfC/7cbU9iutCvF7Vx36nw='>
 
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
     <!--[if lt IE 9]>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-      <link
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-        rel="stylesheet"
-      />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <![endif]-->
-    <meta
-      name="google-site-verification"
-      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
-    />
-    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-    <meta
-      name="keywords"
-      content="kubernetes, metalb, openelb, LoadBalancer, 负载均衡"
-    />
-    <script>
-      var _hmt = _hmt || [];
-      (function () {
-        var hm = document.createElement("script");
-        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(hm, s);
-      })();
-    </script>
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, metalb, openelb, LoadBalancer, 负载均衡">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
 
-    <script type="application/javascript">
-      var doNotTrack = false;
-      if (!doNotTrack) {
-        window.ga =
-          window.ga ||
-          function () {
-            (ga.q = ga.q || []).push(arguments);
-          };
-        ga.l = +new Date();
-        ga("create", "UA-69668147-3", "auto");
 
-        ga("send", "pageview");
-      }
-    </script>
-    <script async src="https://www.google-analytics.com/analytics.js"></script>
-  </head>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-      <div class="container">
-        <div class="navbar-header">
-          <button
-            type="button"
-            class="navbar-toggle"
-            data-toggle="collapse"
-            data-target="#main-navbar"
-          >
-            <span class="sr-only">切换导航</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a
-            class="navbar-brand"
-            href="https://www.qikqiak.com/"
-            title="阳明的博客"
-          >
-            <img
-              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
-              style="margin-top: -5px; height: 32px"
-              alt="阳明的博客"
-            />
-          </a>
-        </div>
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://picdn.youdianzhishi.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
 
-        <div class="collapse navbar-collapse" id="main-navbar">
-          <ul class="nav navbar-nav navbar-right">
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-
+          
+        
+          
             <li>
-              <a
-                title="课程"
-                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
-                >课程</a
-              >
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/archives">Archive</a>
-
-                <a href="https://www.qikqiak.com/tags">tags</a>
-
-                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-
-                <a href="https://www.qikqiak.com/tags/python">python</a>
-
-                <a href="https://www.qikqiak.com/tags/django">django</a>
-
-                <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-
-                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-
-                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-
-                <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/"
-                >关于</a
-              >
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
             </li>
-
+          
+        
+          
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
+          
+        
 
-            <li>
-              <a
-                href="#modalSearch"
-                data-toggle="modal"
-                data-target="#modalSearch"
-                style="outline: none"
-              >
-                <span
-                  id="searchGlyph"
-                  class="glyphicon glyphicon-search"
-                ></span>
-              </a>
-            </li>
-          </ul>
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
         </div>
-      </div>
-    </nav>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-    <div id="modalSearch" class="modal fade" role="dialog">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal">
-              &times;
-            </button>
-            <h4 class="modal-title">搜索</h4>
-          </div>
-          <div class="modal-body">
-            <div class="aa-input-container" id="aa-input-container">
-              <input
-                type="search"
-                id="aa-search-input"
-                class="aa-input-search"
-                placeholder="Search for titles or URIs..."
-                name="search"
-                autocomplete="off"
-              />
-              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-                <path
-                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
-                />
-              </svg>
-            </div>
-            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
 
-            <script>
-              var client = algoliasearch(
-                "1JDRAS0AZR",
-                "8804ac109158bb3bb60d74ce98fa332f"
-              );
-              var index = client.initIndex("prod_blog");
-
-              autocomplete(
-                "#aa-search-input",
-                { hint: false },
-                {
-                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
-
-                  displayKey: "name",
-
-                  templates: {
-                    suggestion: function (suggestion) {
-                      return (
-                        "<span>" +
-                        '<a href="https://www.qikqiak.com/post/' +
-                        suggestion.slug +
-                        '">' +
-                        suggestion._highlightResult.title.value +
-                        "</a></span>"
-                      );
-                    },
-                  },
-                }
-              );
-            </script>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">
-              close
-            </button>
-          </div>
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div
-      id="header-big-imgs"
-      data-num-img="1"
-      data-img-src-1="https://picdn.youdianzhishi.com/images/20220410201040.png"
-      data-img-desc-1="OpenELB &amp; CNCF"
-    ></div>
+    
+  
+  
+  
 
-    <header class="header-section has-img">
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://picdn.youdianzhishi.com/images/20220410201040.png" data-img-desc-1="OpenELB &amp; CNCF"></div>
+  
+
+  <header class="header-section has-img">
+    
       <div class="intro-header big-img">
+        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>本地集群使用 OpenELB 实现 Load Balancer 负载均衡</h1>
+                  
+                  
+                    <span class="post-meta">
+  发表于 April 10, 2022  
+</span>
 
-                <span class="post-meta"> 发表于 April 10, 2022 </span>
+                  
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline"></span>
+        <span class="img-desc" style="display: inline;"></span>
       </div>
-
-      <div class="intro-header no-img">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-              <div class="post-heading">
-                <h1>本地集群使用 OpenELB 实现 Load Balancer 负载均衡</h1>
-
-                <span class="post-meta"> 发表于 April 10, 2022 </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <div class="container" role="main">
-      <div class="row">
-        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-          <div>
-            <h5 id="tags" style="margin-top: 30px">
-              标签:
-
-              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
-              &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/openelb/">openelb</a> &nbsp;
-            </h5>
-          </div>
-
-          <article
-            role="main"
-            class="blog-post"
-            itemprop="articleBody"
-            id="content"
-          >
-            <aside class="toc">
-              <nav id="TableOfContents">
-                <ul>
-                  <li>
-                    <ul>
-                      <li><a href="#与-metalb-对比">与 MetaLB 对比</a></li>
-                      <li><a href="#安装">安装</a></li>
-                      <li><a href="#配置">配置</a></li>
-                      <li><a href="#参考文档">参考文档</a></li>
-                    </ul>
-                  </li>
-                </ul>
-              </nav>
-            </aside>
-
-            <p>
-              为了方便测试，准备为 Ingress 控制器配置一个 LoadBalaner 类型的
-              Service，由于我这是本地私有环境，所以需要部署一个支持该服务类型的负载均衡器，在社区中目前最流行的应该是
-              <a href="https://metallb.universe.tf/">MetalLB</a>
-              这个项目，现在也属于 CNCF 沙箱项目，该项目在 2017 年底发起，经过 4
-              年的发展已经在社区被广泛采用，但是我这边在测试使用过程中一直表现不稳定，经常需要重启控制器才能生效。所以将目光转向了最近国内青云开源的另外一个负载均衡器
-              OpenELB。
-            </p>
-
-            <p>
-              OpenELB 之前叫
-              PorterLB，是为物理机（Bare-metal）、边缘（Edge）和私有化环境设计的负载均衡器插件，可作为
-              Kubernetes、K3s、KubeSphere 的 LB 插件对集群外暴露 LoadBalancer
-              类型的服务，现阶段是 CNCF 沙箱项目，核心功能包括：
-            </p>
-
-            <ul>
-              <li>基于 BGP 与 Layer 2 模式的负载均衡</li>
-              <li>基于路由器 ECMP 的负载均衡</li>
-              <li>IP 地址池管理</li>
-              <li>使用 CRD 进行 BGP 配置</li>
-            </ul>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20220410164822.png"
-                alt="openelb"
-              />
-              <figcaption>openelb</figcaption>
-            </figure>
-
-            <h2 id="与-metalb-对比">与 MetaLB 对比</h2>
-
-            <p>
-              OpenELB 作为后起之秀，采用了更加 Kubernetes-native
-              的实现方式，可以直接通过 CRD 进行配置管理，下面是关于 OpenELB 与
-              MetaLB 的简单对比。
-            </p>
-
-            <p><strong>云原生架构</strong></p>
-
-            <p>
-              在 OpenELB 中，不管是地址管理，还是 BGP 配置管理，你都可以使用 CRD
-              来配置。对于习惯了 Kubectl 的用户而言， OpenELB 十分友好，在
-              MetalLB 中，需通过 ConfigMap
-              来配置，感知它们的状态需要通过查看监控或者日志。
-            </p>
-
-            <p><strong>灵活的地址管理</strong></p>
-
-            <p>
-              OpenELB 通过 EIP 这个自定义资源对象来管理地址，它定义子资源 Status
-              来存储地址分配状态，这样就不会存在分配地址时各副本发生冲突的情况。
-            </p>
-
-            <p><strong>使用 gobgp 发布路由</strong></p>
-
-            <p>
-              不同于 MetalLB 自己实现 BGP 协议， OpenELB 采用标准的 gobgp
-              来发布路由，这样做的好处如下：
-            </p>
-
-            <ul>
-              <li>开发成本低，且有 gobgp 社区支持</li>
-              <li>可以利用 gobgp 丰富特性</li>
-              <li>
-                通过 BgpConf/BgpPeer CRD 动态配置 gobgp，用户无需重启 OpenELB
-                即可动态加载最新的配置信息
-              </li>
-              <li>
-                gobgp 作为 lib 使用时， 社区提供了基于 protobuf 的 API，OpenELB
-                在实现 BgpConf/BgpPeer CRD 时也是参照该 API，并保持兼容
-              </li>
-              <li>
-                OpenELB 也提供 status 用于查看 BGP neighbor 配置，状态信息丰富
-              </li>
-            </ul>
-
-            <p><strong>架构简单，资源占用少</strong></p>
-
-            <p>
-              OpenELB 目前只用部署 Deployment
-              即可，通过多副本实现高可用，部分副本崩溃后并不会影响已建立的正常连接。
-            </p>
-
-            <p>
-              BGP 模式下， Deployment
-              不同副本都会与路由器建立连接用于发布等价路由，所以正常情况下我们部署两个副本即可。在
-              Layer 2 模式下，不同副本之间通过 Kubernetes 提供的 Leader Election
-              机制选举 Leader，进而应答 ARP/NDP。
-            </p>
-
-            <h2 id="安装">安装</h2>
-
-            <p>
-              在 Kubernetes 集群中，您只需要安装一次
-              OpenELB。安装完成后，集群中会安装一个 openelb-manager
-              Deployment，其中包含一个 openelb-manager Pod。 openelb-manager Pod
-              为整个 Kubernetes 集群实现了 OpenELB 的功能。
-              安装完成后，可以扩展openelb-manager
-              Deployment，将多个OpenELB副本（openelb-manager
-              Pods）分配给多个集群节点，保证高可用。有关详细信息，请参阅配置多个
-              OpenELB 副本。
-            </p>
-
-            <script
-              async
-              src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-            ></script>
-
-            <ins
-              class="adsbygoogle"
-              style="display: block"
-              data-ad-client="ca-pub-5376999672787220"
-              data-ad-slot="9165834656"
-              data-ad-format="auto"
-              data-full-width-responsive="true"
-            ></ins>
-            <script>
-              (adsbygoogle = window.adsbygoogle || []).push({});
-            </script>
-
-            <p>要安装使用 OpenELB 非常简单，直接使用下面的命令即可一键安装：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell"><span style="color:#6272a4"># 注意如果不能获取k8s.gcr.io镜像，需要替换其中的镜像</span>
-☸ ➜ kubectl apply -f https://raw.githubusercontent.com/openelb/openelb/master/deploy/openelb.yaml</code></pre>
-            </div>
-            <p>
-              上面的资源清单会部署一个名为 <code>openelb-manager</code> 的
-              Deployment 资源对象，openelb-manager 的 Pod 为整个 Kubernetes
-              集群实现了 OpenELB
-              的功能，为保证高可用，可以将该控制器扩展为两个副本。第一次安装的时候还会为
-              admission webhook 配置 https 证书，安装完成后查看 Pod
-              的状态是否正常：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">☸ ➜ kubectl get pods -n openelb-system              
-NAME                                READY   STATUS      RESTARTS      AGE
-openelb-admission-create--1-cf857   <span style="color:#bd93f9">0</span>/1     Completed   <span style="color:#bd93f9">0</span>             58m
-openelb-admission-patch--1-dhgrq    <span style="color:#bd93f9">0</span>/1     Completed   <span style="color:#bd93f9">2</span>             58m
-openelb-manager-848495684-nppkr     <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">1</span> <span style="color:#ff79c6">(</span>35m ago<span style="color:#ff79c6">)</span>   48m
-openelb-manager-848495684-svn7z     <span style="color:#bd93f9">1</span>/1     Running     <span style="color:#bd93f9">1</span> <span style="color:#ff79c6">(</span>35m ago<span style="color:#ff79c6">)</span>   48m
-☸ ➜ kubectl get validatingwebhookconfiguration       
-NAME                                      WEBHOOKS   AGE
-openelb-admission                         <span style="color:#bd93f9">1</span>          62m
-☸ ➜ kubectl get mutatingwebhookconfigurations        
-NAME                                    WEBHOOKS   AGE
-openelb-admission                       <span style="color:#bd93f9">1</span>          62m</code></pre>
-            </div>
-            <p>此外还会安装几个相关的 CRD 用户 OpenELB 配置：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">☸ ➜ kubectl get crd |grep kubesphere
-bgpconfs.network.kubesphere.io           <span style="color:#bd93f9">2022</span>-04-10T08:01:18Z
-bgppeers.network.kubesphere.io           <span style="color:#bd93f9">2022</span>-04-10T08:01:18Z
-eips.network.kubesphere.io               <span style="color:#bd93f9">2022</span>-04-10T08:01:18Z</code></pre>
-            </div>
-            <h2 id="配置">配置</h2>
-
-            <p>
-              接下来我们来演示下如何使用 layer2 模式的 OpenELB，首先需要保证所有
-              Kubernetes
-              集群节点必须在同一个二层网络（在同一个路由器下），我测试的环境一共3个节点，节点信息如下所示：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">☸ ➜ kubectl get nodes -o wide      
-NAME      STATUS   ROLES                  AGE   VERSION   INTERNAL-IP     EXTERNAL-IP   OS-IMAGE                KERNEL-VERSION                CONTAINER-RUNTIME
-master1   Ready    control-plane,master   15d   v1.22.8   <span style="color:#bd93f9">192</span>.168.0.111   &lt;none&gt;        CentOS Linux <span style="color:#bd93f9">7</span> <span style="color:#ff79c6">(</span>Core<span style="color:#ff79c6">)</span>   <span style="color:#bd93f9">3</span>.10.0-1160.25.1.el7.x86_64   containerd://1.5.5
-node1     Ready    &lt;none&gt;                 15d   v1.22.8   <span style="color:#bd93f9">192</span>.168.0.110   &lt;none&gt;        CentOS Linux <span style="color:#bd93f9">7</span> <span style="color:#ff79c6">(</span>Core<span style="color:#ff79c6">)</span>   <span style="color:#bd93f9">3</span>.10.0-1160.25.1.el7.x86_64   containerd://1.5.5
-node2     Ready    &lt;none&gt;                 15d   v1.22.8   <span style="color:#bd93f9">192</span>.168.0.109   &lt;none&gt;        CentOS Linux <span style="color:#bd93f9">7</span> <span style="color:#ff79c6">(</span>Core<span style="color:#ff79c6">)</span>   <span style="color:#bd93f9">3</span>.10.0-1160.25.1.el7.x86_64   containerd://1.5.5</code></pre>
-            </div>
-            <p>
-              3个节点IP地址分别为 192.168.0.109、192.168.0.110、192.168.0.111。
-            </p>
-
-            <p>
-              首先需要为 kube-proxy 启用 <code>strictARP</code>，以便 Kubernetes
-              集群中的所有网卡停止响应其他网卡的 ARP 请求，而由 OpenELB 处理 ARP
-              请求。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">☸ ➜ kubectl edit configmap kube-proxy -n kube-system
-......
-ipvs:
-  strictARP: <span style="color:#8be9fd;font-style:italic">true</span>
-......</code></pre>
-            </div>
-            <p>然后执行下面的命令重启 kube-proxy 组件即可：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">☸ ➜ kubectl rollout restart daemonset kube-proxy -n kube-system</code></pre>
-            </div>
-            <p>
-              如果安装 OpenELB 的节点有多个网卡，则需要指定 OpenELB
-              在二层模式下使用的网卡，如果节点只有一个网卡，则可以跳过此步骤，假设安装了
-              OpenELB 的 master1 节点有两个网卡（eth0 192.168.0.2 和 ens33
-              192.168.0.111），并且 eth0 192.168.0.2 将用于 OpenELB，那么需要为
-              master1 节点添加一个 annotation 来指定网卡：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">☸ ➜ kubectl annotate nodes master1 layer2.openelb.kubesphere.io/v1alpha1<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;192.168.0.2&#34;</span></code></pre>
-            </div>
-            <p>
-              接下来就可以创建一个 Eip 对象来充当 OpenELB 的 IP
-              地址池了，创建一个如下所示的资源对象：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">apiVersion: network.kubesphere.io/v1alpha2
-kind: Eip
-metadata:
-  name: eip-pool
-spec:
-  address: <span style="color:#bd93f9">192.168</span>.<span style="color:#bd93f9">0.100</span>-<span style="color:#bd93f9">192.168</span>.<span style="color:#bd93f9">0.108</span>
-  protocol: layer2
-  disable: <span style="color:#ff79c6">false</span>
-  interface: ens33</code></pre>
-            </div>
-            <p>
-              这里我们通过 <code>address</code> 属性指定了 IP
-              地址池，可以填写一个或多个 IP 地址（要注意不同 Eip 对象中的 IP
-              段不能重叠），将被 OpenELB 使用。值格式可以是：
-            </p>
-
-            <ul>
-              <li>IP地址，例如 192.168.0.100</li>
-              <li>IP地址/子网掩码，例如 192.168.0.0/24</li>
-              <li>IP地址1-IP地址2，例如192.168.0.91-192.168.0.100</li>
-            </ul>
-
-            <p>
-              <code>protocol</code> 属性用来指定 Eip 对象用于哪种 OpenELB
-              模式，可以配置为 layer2 或 bgp，默认为 bgp 模式，我们这里想使用
-              layer2 模式，所以需要显示指定 <code>interface</code> 是用来指定
-              OpenELB 监听 ARP 或 NDP 请求的网卡，该字段仅在协议设置为 layer2
-              时有效，我这里的环境是 ens33 网卡
-              <code>disable</code> 表示是否禁用 Eip 对象
-            </p>
-
-            <p>创建完成 Eip 对象后可以通过 Status 来查看该 IP 池的具体状态：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">☸ ➜ kubectl get eip          
-NAME       CIDR                          USAGE   TOTAL
-eip-pool   <span style="color:#bd93f9">192</span>.168.0.100-192.168.0.108   <span style="color:#bd93f9">0</span>       <span style="color:#bd93f9">9</span>
-☸ ➜ kubectl get eip eip-pool -oyaml
-apiVersion: network.kubesphere.io/v1alpha2
-kind: Eip
-metadata:
-  finalizers:
-  - finalizer.ipam.kubesphere.io/v1alpha1
-  name: eip-pool
-spec:
-  address: <span style="color:#bd93f9">192</span>.168.0.100-192.168.0.108
-  interface: ens33
-  protocol: layer2
-status:
-  firstIP: <span style="color:#bd93f9">192</span>.168.0.100
-  lastIP: <span style="color:#bd93f9">192</span>.168.0.108
-  poolSize: <span style="color:#bd93f9">9</span>
-  ready: <span style="color:#8be9fd;font-style:italic">true</span>
-  v4: true</code></pre>
-            </div>
-            <p>
-              到这里 LB 的地址池就准备好了，接下来我们创建一个简单的服务，通过
-              LB 来进行暴露，如下所示：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># openelb-nginx.yaml</span>
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nginx
-spec:
-  selector:  
-    matchLabels:
-      app: nginx
-  template:  
-    metadata:
-      labels:
-        app: nginx
-    spec:
-      containers:
-      - name: nginx
-        image: nginx
-        ports:
-        - containerPort: <span style="color:#bd93f9">80</span></code></pre>
-            </div>
-            <p>这里部署一个简单的 nginx 服务：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">☸ ➜ kubectl apply -f openelb-nginx.yaml 
-☸ ➜ kubectl get pods                  
-NAME                     READY   STATUS    RESTARTS      AGE
-nginx-7848d4b86f-zmm8l   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>             42s</code></pre>
-            </div>
-            <p>
-              然后创建一个 <code>LoadBalancer</code> 类型的 Service 来暴露我们的
-              nginx 服务，如下所示：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># openelb-nginx-svc.yaml</span>
-apiVersion: v1
-kind: Service
-metadata:
-  name: nginx
-  annotations:
-    lb.kubesphere.io/v1alpha1: openelb
-    protocol.openelb.kubesphere.io/v1alpha1: layer2
-    eip.openelb.kubesphere.io/v1alpha2: eip-pool
-spec:
-  selector:
-    app: nginx
-  type: LoadBalancer
-  ports:
-    - name: http
-      port: <span style="color:#bd93f9">80</span>
-      targetPort: <span style="color:#bd93f9">80</span></code></pre>
-            </div>
-            <p>注意这里我们为 Service 添加了几个 annotations 注解：</p>
-
-            <ul>
-              <li>
-                <code>lb.kubesphere.io/v1alpha1: openelb</code> 用来指定该
-                Service 使用 OpenELB
-              </li>
-              <li>
-                <code>protocol.openelb.kubesphere.io/v1alpha1: layer2</code>
-                表示指定 OpenELB 用于 Layer2 模式
-              </li>
-              <li>
-                <code>eip.openelb.kubesphere.io/v1alpha2: eip-pool</code>
-                用来指定了 OpenELB 使用的 Eip 对象，如果未配置此注解，OpenELB
-                会自动使用与协议匹配的第一个可用 Eip
-                对象，此外也可以删除此注解并添加
-                <code>spec:loadBalancerIP</code> 字段（例如 spec:loadBalancerIP:
-                192.168.0.108）以将特定 IP 地址分配给 Service。
-              </li>
-            </ul>
-
-            <p>同样直接创建上面的 Service：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">☸ ➜ kubectl apply -f openelb-nginx-svc.yaml                
-service/nginx created
-☸ ➜ kubectl get svc nginx                   
-NAME    TYPE           CLUSTER-IP      EXTERNAL-IP     PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>        AGE
-nginx   LoadBalancer   <span style="color:#bd93f9">10</span>.100.126.91   <span style="color:#bd93f9">192</span>.168.0.101   <span style="color:#bd93f9">80</span>:31555/TCP   4s</code></pre>
-            </div>
-            <p>
-              创建完成后可以看到 Service 服务被分配了一个
-              <code>EXTERNAL-IP</code>，然后我们就可以通过该地址来访问上面的
-              nginx 服务了：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">☸ ➜ curl <span style="color:#bd93f9">192</span>.168.0.101
-&lt;!DOCTYPE html&gt;
-&lt;html&gt;
-&lt;head&gt;
-&lt;title&gt;Welcome to nginx!&lt;/title&gt;
-&lt;style&gt;
-html <span style="color:#ff79c6">{</span> color-scheme: light dark; <span style="color:#ff79c6">}</span>
-body <span style="color:#ff79c6">{</span> width: 35em; margin: <span style="color:#bd93f9">0</span> auto;
-font-family: Tahoma, Verdana, Arial, sans-serif; <span style="color:#ff79c6">}</span>
-&lt;/style&gt;
-&lt;/head&gt;
-&lt;body&gt;
-&lt;h1&gt;Welcome to nginx!&lt;/h1&gt;
-&lt;p&gt;If you see this page, the nginx web server is successfully installed and
-working. Further configuration is required.&lt;/p&gt;
-
-&lt;p&gt;For online documentation and support please refer to
-&lt;a <span style="color:#8be9fd;font-style:italic">href</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;http://nginx.org/&#34;</span>&gt;nginx.org&lt;/a&gt;.&lt;br/&gt;
-Commercial support is available at
-&lt;a <span style="color:#8be9fd;font-style:italic">href</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;http://nginx.com/&#34;</span>&gt;nginx.com&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;&lt;em&gt;Thank you <span style="color:#ff79c6">for</span> using nginx.&lt;/em&gt;&lt;/p&gt;
-&lt;/body&gt;
-&lt;/html&gt;</code></pre>
-            </div>
-            <p>
-              此外 OpenElb 还支持 BGP
-              模式以及集群多路由的场景，更新使用方法可以查看官方文档
-              <a href="https://openelb.github.io/docs/"
-                >https://openelb.github.io/docs/</a
-              >
-              了解更多相关信息。
-            </p>
-
-            <h2 id="参考文档">参考文档</h2>
-
-            <ul>
-              <li>
-                <a href="https://openelb.github.io/docs/"
-                  >https://openelb.github.io/docs/</a
-                >
-              </li>
-              <li>
-                <a
-                  href="https://kubesphere.io/zh/blogs/openelb-joins-cncf-sandbox-project/"
-                  >https://kubesphere.io/zh/blogs/openelb-joins-cncf-sandbox-project/</a
-                >
-              </li>
-              <li>
-                <a href="https://mp.weixin.qq.com/s/uFwYaPE7cVolLWxYHcgZdQ"
-                  >https://mp.weixin.qq.com/s/uFwYaPE7cVolLWxYHcgZdQ</a
-                >
-              </li>
-            </ul>
-
-            <p>
-              <a
-                href="https://youdianzhishi.com/web/course/1030"
-                title="从 Docker 到 Kubernetes 进阶课程"
-                ><img
-                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
-                  alt="Kubernetes进阶训练营"
-              /></a>
-            </p>
-
-            <h2>微信公众号</h2>
-            <p>
-              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
-              kubernetes 讨论群里面共同学习。
-            </p>
-            <img
-              src="https://picdn.youdianzhishi.com/images/qrcode.png"
-              alt="wechat-account-qrcode"
-            />
-
-            <div class="entry-shang text-center">
-              <p>「真诚赞赏，手留余香」</p>
-              <button class="zs show-zs btn btn-bred">赞赏</button>
-            </div>
-            <div class="zs-modal-bg"></div>
-            <div class="zs-modal-box">
-              <div class="zs-modal-head">
-                <button type="button" class="close">×</button>
-                <span class="author"
-                  ><img
-                    src="https://www.qikqiak.com/img/avatar.jpeg"
-                  />阳明</span
-                >
-                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-              </div>
-              <div class="zs-modal-body">
-                <div class="zs-modal-btns">
-                  <button class="btn btn-blink" data-num="2">2元</button>
-                  <button class="btn btn-blink" data-num="5">5元</button>
-                  <button class="btn btn-blink" data-num="10">10元</button>
-                  <button class="btn btn-blink" data-num="50">50元</button>
-                  <button class="btn btn-blink" data-num="100">100元</button>
-                  <button class="btn btn-blink" data-num="1">任意金额</button>
-                </div>
-                <div class="zs-modal-pay">
-                  <button class="btn btn-bred" id="pay-text">2元</button>
-                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-                  <img
-                    src="https://www.qikqiak.com/img/wechat-2.png"
-                    id="pay-image"
-                  />
-                </div>
-              </div>
-              <div class="zs-modal-footer">
-                <span class="zs-wechat"
-                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
-                /></span>
-              </div>
-            </div>
-
-            <div
-              class="social-share"
-              data-initialized="true"
-              style="margin-bottom: 20px; margin-top: 20px"
-            >
-              <center>
-                <a href="#" class="social-share-icon icon-weibo"></a>
-                <a href="#" class="social-share-icon icon-wechat"></a>
-                <a href="#" class="social-share-icon icon-twitter"></a>
-                <a href="#" class="social-share-icon icon-linkedin"></a>
-                <a href="#" class="social-share-icon icon-facebook"></a>
-                <a href="#" class="social-share-icon icon-qq"></a>
-                <a href="#" class="social-share-icon icon-qzone"></a>
-              </center>
-            </div>
-
-            <link
-              rel="stylesheet"
-              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
-            />
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
-          </article>
-
-          <h3>相关文章</h3>
-          <ul style="margin-bottom: 25px">
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/prometheus-monitor-k8s-job-trap/"
-                >Prometheus 监控 Kubernetes Job 资源误报的坑</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/custom-traefik-local-middleware/"
-                >自定义 Traefik（本地）插件</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/helm-chart-compatible-different-kube-version/"
-                >Helm Chart 兼容不同 Kubernetes 版本</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/gitlab-ci-docker-layer-cache-for-k8s-executor/"
-                >Gitlab CI 在 Kubernetes 中的 Docker 缓存</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/containerd-usage/"
-                >一文搞懂容器运行时 Containerd</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/use-kube-vip-ha-k8s-lb/"
-                >使用 kube-vip 搭建高可用 Kubernetes 集群</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/k8s-10-secruity-context-settings/"
-                >你应该了解的10个 Kubernetes 安全上下文设置[译]</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/use-kubernetes-service-apis-with-traefik/"
-                >通过 Traefik 使用 Kubernetes Service APIs 进行流量路由</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/kubernetes-service-apis-intro/"
-                >Kubernetes Service APIs 简介</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/add-dns-record-for-pod/"
-                >给 Pod 添加 DNS 记录</a
-              >
-            </li>
-          </ul>
-
-          <ul class="pager blog-pager">
-            <li class="previous">
-              <a
-                href="https://www.qikqiak.com/post/dagger/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="Docker 创始人的新产品 Dagger 好用吗？"
-                >&larr; 前一篇</a
-              >
-            </li>
-
-            <li class="next">
-              <a
-                href="https://www.qikqiak.com/post/how-to-change-k8s-node-ip/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="如何修改 Kubernetes 节点 IP 地址?"
-                >后一篇 &rarr;</a
-              >
-            </li>
-          </ul>
-
-          <script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-          ></script>
-
-          <ins
-            class="adsbygoogle"
-            style="display: block"
-            data-ad-client="ca-pub-5376999672787220"
-            data-ad-slot="3700507799"
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          ></ins>
-          <script>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-          </script>
-
-          <div id="gitalk-container"></div>
-          <link
-            rel="stylesheet"
-            href="https://unpkg.com/gitalk/dist/gitalk.css"
-          />
-          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-          <script>
-            var gitalk = new Gitalk({
-              clientID: "bdb76dbb2e9d0786e350",
-              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
-              repo: "blog",
-              owner: "cnych",
-              admin: ["cnych"],
-              labels: ["gitment"],
-              title: "本地集群使用 OpenELB 实现 Load Balancer 负载均衡",
-              createIssueManually: true,
-              id: "",
-              distractionFreeMode: true,
-            });
-            gitalk.render("gitalk-container");
-          </script>
-        </div>
-      </div>
-    </div>
-
-    <footer>
+    
+    
+    
+    <div class="intro-header no-img">
+      
       <div class="container">
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <ul class="list-inline text-center footer-links">
-              <img
-                src="https://www.qikqiak.com/img/wechatmp.png"
-                alt="k8s技术圈"
-              />
+            <div class="post-heading">
+              <h1>本地集群使用 OpenELB 实现 Load Balancer 负载均衡</h1>
+                
+                
+                  <span class="post-meta">
+  发表于 April 10, 2022  
+</span>
 
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/openelb/">openelb</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#与-metalb-对比">与 MetaLB 对比</a></li>
+    <li><a href="#安装">安装</a></li>
+    <li><a href="#配置">配置</a></li>
+    <li><a href="#参考文档">参考文档</a></li>
+  </ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>为了方便测试，准备为 Ingress 控制器配置一个 LoadBalaner 类型的 Service，由于我这是本地私有环境，所以需要部署一个支持该服务类型的负载均衡器，在社区中目前最流行的应该是 <a href="https://metallb.universe.tf/">MetalLB</a> 这个项目，现在也属于 CNCF 沙箱项目，该项目在 2017 年底发起，经过 4 年的发展已经在社区被广泛采用，但是我这边在测试使用过程中一直表现不稳定，经常需要重启控制器才能生效。所以将目光转向了最近国内青云开源的另外一个负载均衡器 OpenELB。</p>
+<p>OpenELB 之前叫 PorterLB，是为物理机（Bare-metal）、边缘（Edge）和私有化环境设计的负载均衡器插件，可作为 Kubernetes、K3s、KubeSphere 的 LB 插件对集群外暴露 LoadBalancer 类型的服务，现阶段是 CNCF 沙箱项目，核心功能包括：</p>
+<ul>
+<li>基于 BGP 与 Layer 2 模式的负载均衡</li>
+<li>基于路由器 ECMP 的负载均衡</li>
+<li>IP 地址池管理</li>
+<li>使用 CRD 进行 BGP 配置</li>
+</ul>
+<p><img src="https://picdn.youdianzhishi.com/images/20220410164822.png" alt="openelb"></p>
+<h2 id="与-metalb-对比">与 MetaLB 对比</h2>
+<p>OpenELB 作为后起之秀，采用了更加 Kubernetes-native 的实现方式，可以直接通过 CRD 进行配置管理，下面是关于 OpenELB 与 MetaLB 的简单对比。</p>
+<p><strong>云原生架构</strong></p>
+<p>在 OpenELB 中，不管是地址管理，还是 BGP 配置管理，你都可以使用 CRD 来配置。对于习惯了 Kubectl 的用户而言， OpenELB 十分友好，在 MetalLB 中，需通过 ConfigMap 来配置，感知它们的状态需要通过查看监控或者日志。</p>
+<p><strong>灵活的地址管理</strong></p>
+<p>OpenELB 通过 EIP 这个自定义资源对象来管理地址，它定义子资源 Status 来存储地址分配状态，这样就不会存在分配地址时各副本发生冲突的情况。</p>
+<p><strong>使用 gobgp 发布路由</strong></p>
+<p>不同于 MetalLB 自己实现 BGP 协议， OpenELB 采用标准的 gobgp 来发布路由，这样做的好处如下：</p>
+<ul>
+<li>开发成本低，且有 gobgp 社区支持</li>
+<li>可以利用 gobgp 丰富特性</li>
+<li>通过 BgpConf/BgpPeer CRD 动态配置 gobgp，用户无需重启 OpenELB 即可动态加载最新的配置信息</li>
+<li>gobgp 作为 lib 使用时， 社区提供了基于 protobuf 的 API，OpenELB 在实现 BgpConf/BgpPeer CRD 时也是参照该 API，并保持兼容</li>
+<li>OpenELB 也提供 status 用于查看 BGP neighbor 配置，状态信息丰富</li>
+</ul>
+<p><strong>架构简单，资源占用少</strong></p>
+<p>OpenELB 目前只用部署 Deployment 即可，通过多副本实现高可用，部分副本崩溃后并不会影响已建立的正常连接。</p>
+<p>BGP 模式下， Deployment 不同副本都会与路由器建立连接用于发布等价路由，所以正常情况下我们部署两个副本即可。在 Layer 2 模式下，不同副本之间通过 Kubernetes 提供的 Leader Election 机制选举 Leader，进而应答 ARP/NDP。</p>
+<h2 id="安装">安装</h2>
+<p>在 Kubernetes 集群中，您只需要安装一次 OpenELB。安装完成后，集群中会安装一个 openelb-manager Deployment，其中包含一个 openelb-manager Pod。 openelb-manager Pod 为整个 Kubernetes 集群实现了 OpenELB 的功能。
+安装完成后，可以扩展 openelb-manager Deployment，将多个 OpenELB 副本（openelb-manager Pods）分配给多个集群节点，保证高可用。有关详细信息，请参阅配置多个 OpenELB 副本。</p>
+<!-- raw HTML omitted -->
+<p>要安装使用 OpenELB 非常简单，直接使用下面的命令即可一键安装：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#6272a4"># 注意如果不能获取k8s.gcr.io镜像，需要替换其中的镜像</span>
+</span></span><span style="display:flex;"><span>☸ ➜ kubectl apply -f https://raw.githubusercontent.com/openelb/openelb/master/deploy/openelb.yaml
+</span></span></code></pre></div><p>上面的资源清单会部署一个名为 <code>openelb-manager</code> 的 Deployment 资源对象，openelb-manager 的 Pod 为整个 Kubernetes 集群实现了 OpenELB 的功能，为保证高可用，可以将该控制器扩展为两个副本。第一次安装的时候还会为 admission webhook 配置 https 证书，安装完成后查看 Pod 的状态是否正常：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>☸ ➜ kubectl get pods -n openelb-system
+</span></span><span style="display:flex;"><span>NAME                                READY   STATUS      RESTARTS      AGE
+</span></span><span style="display:flex;"><span>openelb-admission-create--1-cf857   0/1     Completed   <span style="color:#bd93f9">0</span>             58m
+</span></span><span style="display:flex;"><span>openelb-admission-patch--1-dhgrq    0/1     Completed   <span style="color:#bd93f9">2</span>             58m
+</span></span><span style="display:flex;"><span>openelb-manager-848495684-nppkr     1/1     Running     <span style="color:#bd93f9">1</span> <span style="color:#ff79c6">(</span>35m ago<span style="color:#ff79c6">)</span>   48m
+</span></span><span style="display:flex;"><span>openelb-manager-848495684-svn7z     1/1     Running     <span style="color:#bd93f9">1</span> <span style="color:#ff79c6">(</span>35m ago<span style="color:#ff79c6">)</span>   48m
+</span></span><span style="display:flex;"><span>☸ ➜ kubectl get validatingwebhookconfiguration
+</span></span><span style="display:flex;"><span>NAME                                      WEBHOOKS   AGE
+</span></span><span style="display:flex;"><span>openelb-admission                         <span style="color:#bd93f9">1</span>          62m
+</span></span><span style="display:flex;"><span>☸ ➜ kubectl get mutatingwebhookconfigurations
+</span></span><span style="display:flex;"><span>NAME                                    WEBHOOKS   AGE
+</span></span><span style="display:flex;"><span>openelb-admission                       <span style="color:#bd93f9">1</span>          62m
+</span></span></code></pre></div><p>此外还会安装几个相关的 CRD 用户 OpenELB 配置：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>☸ ➜ kubectl get crd |grep kubesphere
+</span></span><span style="display:flex;"><span>bgpconfs.network.kubesphere.io           2022-04-10T08:01:18Z
+</span></span><span style="display:flex;"><span>bgppeers.network.kubesphere.io           2022-04-10T08:01:18Z
+</span></span><span style="display:flex;"><span>eips.network.kubesphere.io               2022-04-10T08:01:18Z
+</span></span></code></pre></div><h2 id="配置">配置</h2>
+<p>接下来我们来演示下如何使用 layer2 模式的 OpenELB，首先需要保证所有 Kubernetes 集群节点必须在同一个二层网络（在同一个路由器下），我测试的环境一共 3 个节点，节点信息如下所示：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>☸ ➜ kubectl get nodes -o wide
+</span></span><span style="display:flex;"><span>NAME      STATUS   ROLES                  AGE   VERSION   INTERNAL-IP     EXTERNAL-IP   OS-IMAGE                KERNEL-VERSION                CONTAINER-RUNTIME
+</span></span><span style="display:flex;"><span>master1   Ready    control-plane,master   15d   v1.22.8   192.168.0.111   &lt;none&gt;        CentOS Linux <span style="color:#bd93f9">7</span> <span style="color:#ff79c6">(</span>Core<span style="color:#ff79c6">)</span>   3.10.0-1160.25.1.el7.x86_64   containerd://1.5.5
+</span></span><span style="display:flex;"><span>node1     Ready    &lt;none&gt;                 15d   v1.22.8   192.168.0.110   &lt;none&gt;        CentOS Linux <span style="color:#bd93f9">7</span> <span style="color:#ff79c6">(</span>Core<span style="color:#ff79c6">)</span>   3.10.0-1160.25.1.el7.x86_64   containerd://1.5.5
+</span></span><span style="display:flex;"><span>node2     Ready    &lt;none&gt;                 15d   v1.22.8   192.168.0.109   &lt;none&gt;        CentOS Linux <span style="color:#bd93f9">7</span> <span style="color:#ff79c6">(</span>Core<span style="color:#ff79c6">)</span>   3.10.0-1160.25.1.el7.x86_64   containerd://1.5.5
+</span></span></code></pre></div><p>3 个节点 IP 地址分别为 192.168.0.109、192.168.0.110、192.168.0.111。</p>
+<p>首先需要为 kube-proxy 启用 <code>strictARP</code>，以便 Kubernetes 集群中的所有网卡停止响应其他网卡的 ARP 请求，而由 OpenELB 处理 ARP 请求。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>☸ ➜ kubectl edit configmap kube-proxy -n kube-system
+</span></span><span style="display:flex;"><span>......
+</span></span><span style="display:flex;"><span>ipvs:
+</span></span><span style="display:flex;"><span>  strictARP: <span style="color:#8be9fd;font-style:italic">true</span>
+</span></span><span style="display:flex;"><span>......
+</span></span></code></pre></div><p>然后执行下面的命令重启 kube-proxy 组件即可：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>☸ ➜ kubectl rollout restart daemonset kube-proxy -n kube-system
+</span></span></code></pre></div><p>如果安装 OpenELB 的节点有多个网卡，则需要指定 OpenELB 在二层模式下使用的网卡，如果节点只有一个网卡，则可以跳过此步骤，假设安装了 OpenELB 的 master1 节点有两个网卡（eth0 192.168.0.2 和 ens33 192.168.0.111），并且 eth0 192.168.0.2 将用于 OpenELB，那么需要为 master1 节点添加一个 annotation 来指定网卡：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>☸ ➜ kubectl annotate nodes master1 layer2.openelb.kubesphere.io/v1alpha1<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;192.168.0.2&#34;</span>
+</span></span></code></pre></div><p>接下来就可以创建一个 Eip 对象来充当 OpenELB 的 IP 地址池了，创建一个如下所示的资源对象：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: network.kubesphere.io/v1alpha2
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Eip
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: eip-pool
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">address</span>: <span style="color:#bd93f9">192.168.0.100-192.168.0.108</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">protocol</span>: layer2
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">disable</span>: <span style="color:#ff79c6">false</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">interface</span>: ens33
+</span></span></code></pre></div><p>这里我们通过 <code>address</code> 属性指定了 IP 地址池，可以填写一个或多个 IP 地址（要注意不同 Eip 对象中的 IP 段不能重叠），将被 OpenELB 使用。值格式可以是：</p>
+<ul>
+<li>IP 地址，例如 192.168.0.100</li>
+<li>IP 地址/子网掩码，例如 192.168.0.0/24</li>
+<li>IP 地址 1-IP 地址 2，例如 192.168.0.91-192.168.0.100</li>
+</ul>
+<p><code>protocol</code> 属性用来指定 Eip 对象用于哪种 OpenELB 模式，可以配置为 layer2 或 bgp，默认为 bgp 模式，我们这里想使用 layer2 模式，所以需要显示指定
+<code>interface</code> 是用来指定 OpenELB 监听 ARP 或 NDP 请求的网卡，该字段仅在协议设置为 layer2 时有效，我这里的环境是 ens33 网卡
+<code>disable</code> 表示是否禁用 Eip 对象</p>
+<p>创建完成 Eip 对象后可以通过 Status 来查看该 IP 池的具体状态：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>☸ ➜ kubectl get eip
+</span></span><span style="display:flex;"><span>NAME       CIDR                          USAGE   TOTAL
+</span></span><span style="display:flex;"><span>eip-pool   192.168.0.100-192.168.0.108   <span style="color:#bd93f9">0</span>       <span style="color:#bd93f9">9</span>
+</span></span><span style="display:flex;"><span>☸ ➜ kubectl get eip eip-pool -oyaml
+</span></span><span style="display:flex;"><span>apiVersion: network.kubesphere.io/v1alpha2
+</span></span><span style="display:flex;"><span>kind: Eip
+</span></span><span style="display:flex;"><span>metadata:
+</span></span><span style="display:flex;"><span>  finalizers:
+</span></span><span style="display:flex;"><span>  - finalizer.ipam.kubesphere.io/v1alpha1
+</span></span><span style="display:flex;"><span>  name: eip-pool
+</span></span><span style="display:flex;"><span>spec:
+</span></span><span style="display:flex;"><span>  address: 192.168.0.100-192.168.0.108
+</span></span><span style="display:flex;"><span>  interface: ens33
+</span></span><span style="display:flex;"><span>  protocol: layer2
+</span></span><span style="display:flex;"><span>status:
+</span></span><span style="display:flex;"><span>  firstIP: 192.168.0.100
+</span></span><span style="display:flex;"><span>  lastIP: 192.168.0.108
+</span></span><span style="display:flex;"><span>  poolSize: <span style="color:#bd93f9">9</span>
+</span></span><span style="display:flex;"><span>  ready: <span style="color:#8be9fd;font-style:italic">true</span>
+</span></span><span style="display:flex;"><span>  v4: <span style="color:#8be9fd;font-style:italic">true</span>
+</span></span></code></pre></div><p>到这里 LB 的地址池就准备好了，接下来我们创建一个简单的服务，通过 LB 来进行暴露，如下所示：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#6272a4"># openelb-nginx.yaml</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: apps/v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Deployment
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: nginx
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">selector</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">matchLabels</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">app</span>: nginx
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">template</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">labels</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">app</span>: nginx
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">containers</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">name</span>: nginx
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">image</span>: nginx
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">ports</span>:
+</span></span><span style="display:flex;"><span>            - <span style="color:#ff79c6">containerPort</span>: <span style="color:#bd93f9">80</span>
+</span></span></code></pre></div><p>这里部署一个简单的 nginx 服务：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>☸ ➜ kubectl apply -f openelb-nginx.yaml
+</span></span><span style="display:flex;"><span>☸ ➜ kubectl get pods
+</span></span><span style="display:flex;"><span>NAME                     READY   STATUS    RESTARTS      AGE
+</span></span><span style="display:flex;"><span>nginx-7848d4b86f-zmm8l   1/1     Running   <span style="color:#bd93f9">0</span>             42s
+</span></span></code></pre></div><p>然后创建一个 <code>LoadBalancer</code> 类型的 Service 来暴露我们的 nginx 服务，如下所示：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#6272a4"># openelb-nginx-svc.yaml</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Service
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: nginx
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">annotations</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">lb.kubesphere.io/v1alpha1</span>: openelb
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">protocol.openelb.kubesphere.io/v1alpha1</span>: layer2
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">eip.openelb.kubesphere.io/v1alpha2</span>: eip-pool
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">selector</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">app</span>: nginx
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">type</span>: LoadBalancer
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">ports</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#ff79c6">name</span>: http
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">80</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">targetPort</span>: <span style="color:#bd93f9">80</span>
+</span></span></code></pre></div><p>注意这里我们为 Service 添加了几个 annotations 注解：</p>
+<ul>
+<li><code>lb.kubesphere.io/v1alpha1: openelb</code> 用来指定该 Service 使用 OpenELB</li>
+<li><code>protocol.openelb.kubesphere.io/v1alpha1: layer2</code> 表示指定 OpenELB 用于 Layer2 模式</li>
+<li><code>eip.openelb.kubesphere.io/v1alpha2: eip-pool</code> 用来指定了 OpenELB 使用的 Eip 对象，如果未配置此注解，OpenELB 会自动使用与协议匹配的第一个可用 Eip 对象，此外也可以删除此注解并添加 <code>spec:loadBalancerIP</code> 字段（例如 spec:loadBalancerIP: 192.168.0.108）以将特定 IP 地址分配给 Service。</li>
+</ul>
+<p>同样直接创建上面的 Service：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>☸ ➜ kubectl apply -f openelb-nginx-svc.yaml
+</span></span><span style="display:flex;"><span>service/nginx created
+</span></span><span style="display:flex;"><span>☸ ➜ kubectl get svc nginx
+</span></span><span style="display:flex;"><span>NAME    TYPE           CLUSTER-IP      EXTERNAL-IP     PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>        AGE
+</span></span><span style="display:flex;"><span>nginx   LoadBalancer   10.100.126.91   192.168.0.101   80:31555/TCP   4s
+</span></span></code></pre></div><p>创建完成后可以看到 Service 服务被分配了一个 <code>EXTERNAL-IP</code>，然后我们就可以通过该地址来访问上面的 nginx 服务了：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>☸ ➜ curl 192.168.0.101
+</span></span><span style="display:flex;"><span>&lt;!DOCTYPE html&gt;
+</span></span><span style="display:flex;"><span>&lt;html&gt;
+</span></span><span style="display:flex;"><span>&lt;head&gt;
+</span></span><span style="display:flex;"><span>&lt;title&gt;Welcome to nginx!&lt;/title&gt;
+</span></span><span style="display:flex;"><span>&lt;style&gt;
+</span></span><span style="display:flex;"><span>html <span style="color:#ff79c6">{</span> color-scheme: light dark; <span style="color:#ff79c6">}</span>
+</span></span><span style="display:flex;"><span>body <span style="color:#ff79c6">{</span> width: 35em; margin: <span style="color:#bd93f9">0</span> auto;
+</span></span><span style="display:flex;"><span>font-family: Tahoma, Verdana, Arial, sans-serif; <span style="color:#ff79c6">}</span>
+</span></span><span style="display:flex;"><span>&lt;/style&gt;
+</span></span><span style="display:flex;"><span>&lt;/head&gt;
+</span></span><span style="display:flex;"><span>&lt;body&gt;
+</span></span><span style="display:flex;"><span>&lt;h1&gt;Welcome to nginx!&lt;/h1&gt;
+</span></span><span style="display:flex;"><span>&lt;p&gt;If you see this page, the nginx web server is successfully installed and
+</span></span><span style="display:flex;"><span>working. Further configuration is required.&lt;/p&gt;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>&lt;p&gt;For online documentation and support please refer to
+</span></span><span style="display:flex;"><span>&lt;a <span style="color:#8be9fd;font-style:italic">href</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;http://nginx.org/&#34;</span>&gt;nginx.org&lt;/a&gt;.&lt;br/&gt;
+</span></span><span style="display:flex;"><span>Commercial support is available at
+</span></span><span style="display:flex;"><span>&lt;a <span style="color:#8be9fd;font-style:italic">href</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;http://nginx.com/&#34;</span>&gt;nginx.com&lt;/a&gt;.&lt;/p&gt;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>&lt;p&gt;&lt;em&gt;Thank you <span style="color:#ff79c6">for</span> using nginx.&lt;/em&gt;&lt;/p&gt;
+</span></span><span style="display:flex;"><span>&lt;/body&gt;
+</span></span><span style="display:flex;"><span>&lt;/html&gt;
+</span></span></code></pre></div><p>此外 OpenElb 还支持 BGP 模式以及集群多路由的场景，更新使用方法可以查看官方文档 <a href="https://openelb.github.io/docs/">https://openelb.github.io/docs/</a> 了解更多相关信息。</p>
+<h2 id="参考文档">参考文档</h2>
+<ul>
+<li><a href="https://openelb.github.io/docs/">https://openelb.github.io/docs/</a></li>
+<li><a href="https://kubesphere.io/zh/blogs/openelb-joins-cncf-sandbox-project/">https://kubesphere.io/zh/blogs/openelb-joins-cncf-sandbox-project/</a></li>
+<li><a href="https://mp.weixin.qq.com/s/uFwYaPE7cVolLWxYHcgZdQ">https://mp.weixin.qq.com/s/uFwYaPE7cVolLWxYHcgZdQ</a></li>
+</ul>
+<!-- raw HTML omitted -->
+
+          <h2>微信公众号</h2>
+<p>
+  扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+  kubernetes 讨论群里面共同学习。
+</p>
+<img
+  src="https://picdn.youdianzhishi.com/images/qrcode.png"
+  alt="wechat-account-qrcode"
+/>
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/prometheus-monitor-k8s-job-trap/">Prometheus 监控 Kubernetes Job 资源误报的坑</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/custom-traefik-local-middleware/">自定义 Traefik（本地）插件</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/helm-chart-compatible-different-kube-version/">Helm Chart 兼容不同 Kubernetes 版本</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/gitlab-ci-docker-layer-cache-for-k8s-executor/">Gitlab CI 在 Kubernetes 中的 Docker 缓存</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/containerd-usage/">一文搞懂容器运行时 Containerd</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-kube-vip-ha-k8s-lb/">使用 kube-vip 搭建高可用 Kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-10-secruity-context-settings/">你应该了解的10个 Kubernetes 安全上下文设置[译]</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-kubernetes-service-apis-with-traefik/">通过 Traefik 使用 Kubernetes Service APIs 进行流量路由</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-service-apis-intro/">Kubernetes Service APIs 简介</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/add-dns-record-for-pod/">给 Pod 添加 DNS 记录</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/dagger/" data-toggle="tooltip" data-placement="top" title="Docker 创始人的新产品 Dagger 好用吗？">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/how-to-change-k8s-node-ip/" data-toggle="tooltip" data-placement="top" title="如何修改 Kubernetes 节点 IP 地址?">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '本地集群使用 OpenELB 实现 Load Balancer 负载均衡',
+        createIssueManually: true,
+        id: '',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -1119,7 +692,7 @@ Commercial support is available at
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -1128,7 +701,7 @@ Commercial support is available at
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -1137,7 +710,7 @@ Commercial support is available at
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -1146,158 +719,121 @@ Commercial support is available at
                   </span>
                 </a>
               </li>
-
-              <li>
-                <a href="https://www.qikqiak.com/index.xml" title="RSS">
-                  <span class="fa-stack fa-lg">
-                    <i class="fa fa-circle fa-stack-2x"></i>
-                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
-                  </span>
-                </a>
-              </li>
-            </ul>
-            <p class="credits copyright text-muted">
-              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/">阳明的博客</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/archive/">归档</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/friend/">友链</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://beian.miit.gov.cn/" target="_blank"
-                >蜀ICP备11027319号-5</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
-                >kubernetes.io</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
-                >Kubernetes中文社区</a
-              >
-            </p>
-            <p class="text-center text-muted">
-              <script
-                async
-                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
-              ></script>
-              <span id="busuanzi_container_site_pv" style="display: none">
-                本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
               </span>
-              &nbsp;&bull;&nbsp;
-              <span id="busuanzi_container_site_uv" style="display: none">
-                访客数<span id="busuanzi_value_site_uv"></span>人次
-              </span>
-            </p>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
 
-            <p class="credits theme-by text-muted">
-              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
-              &nbsp;&bull;&nbsp; 主题
-              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
-              移植自
-              <a href="https://github.com/rootsongjc/beautifulhugo"
-                >Beautiful Hugo</a
-              >
-            </p>
-          </div>
-        </div>
+          &nbsp;&bull;&nbsp;
+          2023
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.115.4</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+          
+        </p>
       </div>
-    </footer>
+    </div>
+  </div>
+</footer>
 
-    <script
-      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
-      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
-    ></script>
 
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "UA-69668147-3");
-    </script>
-    <script>
-      (function () {
-        var bp = document.createElement("script");
-        var curProtocol = window.location.protocol.split(":")[0];
-        if (curProtocol === "https") {
-          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
-        } else {
-          bp.src = "http://push.zhanzhang.baidu.com/push.js";
-        }
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(bp, s);
-      })();
-    </script>
-    <script>
-      $(document).ready(function () {
-        var int = setInterval(fixCount, 50);
+<script src='https://www.qikqiak.com/js/bundle.min.af02a2d23b6651a566f0135a12e65fc2560faa7a969b3d1ad58d0afe0c9164ae.js' integrity='sha256-rwKi0jtmUaVm8BNaEuZfwlYPqnqWmz0a1Y0K/gyRZK4='></script>
 
-        var initPVCount = 584976;
-        var initUVCount = 153191;
-        function fixCount() {
-          if ($("#busuanzi_container_site_pv").css("display") != "none") {
-            $("#busuanzi_value_site_pv").html(
-              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
-            );
-            clearInterval(int);
-          }
-          if ($("#busuanzi_container_site_uv").css("display") != "none") {
-            $("#busuanzi_value_site_uv").html(
-              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
-            );
-            clearInterval(int);
-          }
-        }
-      });
-    </script>
-    <script>
-      (function (w, d, s, id) {
-        if (typeof w.webpushr !== "undefined") return;
-        w.webpushr =
-          w.webpushr ||
-          function () {
-            (w.webpushr.q = w.webpushr.q || []).push(arguments);
-          };
-        var js,
-          fjs = d.getElementsByTagName(s)[0];
-        js = d.createElement(s);
-        js.id = id;
-        js.src = "https://cdn.webpushr.com/app.min.js";
-        fjs.parentNode.appendChild(js);
-      })(window, document, "script", "webpushr-jssdk");
-      webpushr(
-        "init",
-        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
-      );
-    </script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
-    ></script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
-    ></script>
-    <script type="text/javascript">
-      $(".carousel").slick({
-        dots: true,
-        arrows: true,
-        autoplay: true,
-        autoplaySpeed: 4000,
-        infinite: true,
-        speed: 500,
-        fade: true,
-        cssEase: "linear",
-        centerMode: true,
-        prevArrow: '<button type="button" class="slick-prev"></button>',
-        nextArrow: '<button type="button" class="slick-next"></button>',
-      });
-    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
   </body>
 </html>
+

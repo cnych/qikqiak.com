@@ -1,1287 +1,717 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
-    />
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-    <title>
-      使用 GitLab CI 与 Argo CD 进行 GitOps
-      实践-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
-    </title>
-    <meta
-      property="og:title"
-      content="使用 GitLab CI 与 Argo CD 进行 GitOps 实践"
-    />
-    <meta
-      name="twitter:title"
-      content="使用 GitLab CI 与 Argo CD 进行 GitOps 实践"
-    />
 
-    <meta
-      name="description"
-      content="在现在的云原生世界里面 GitOps 不断的被提及，这种持续交付的模式越来越受到了大家的青睐，我们前面也有文章详细讲解了 GitOps 的相关概念，在网上也可以找到很多关于它的资源，但是关于 GitOps 相关的工作流实践的示例却并不多见，我们这里就将详细介绍一个使用示例，希望对大家实践 GitOps 有所帮助。"
-    />
-    <meta
-      property="og:description"
-      content="在现在的云原生世界里面 GitOps 不断的被提及，这种持续交付的模式越来越受到了大家的青睐，我们前面也有文章详细讲解了 GitOps 的相关概念，在网上也可以找到很多关于它的资源，但是关于 GitOps 相关的工作流实践的示例却并不多见，我们这里就将详细介绍一个使用示例，希望对大家实践 GitOps 有所帮助。"
-    />
-    <meta
-      name="twitter:description"
-      content="在现在的云原生世界里面 GitOps 不断的被提及，这种持续交付的模式越来越受到了大家的青睐，我们前面也有文章详细讲解了 GitOps 的相关概念，在网上也可以找到很多关于它的资源，但是关于 GitOps 相关的工作流实践的示例却并不多见，我们这里就将详细介绍一个使用示例，希望对大家实践 GitOps 有所帮助。"
-    />
-    <meta name="author" content="" />
-    <link
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-      rel="icon"
-      type="image/x-icon"
-    />
-    <link
-      rel="apple-touch-icon"
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      property="og:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      name="twitter:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta name="twitter:card" content="summary" />
-    <meta
-      property="og:url"
-      content="https://www.qikqiak.com/post/gitlab-ci-argo-cd-gitops/"
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="阳明的博客" />
+  <title>使用 GitLab CI 与 Argo CD 进行 GitOps 实践-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="使用 GitLab CI 与 Argo CD 进行 GitOps 实践" />
+  <meta name="twitter:title" content="使用 GitLab CI 与 Argo CD 进行 GitOps 实践" />
 
-    <meta name="generator" content="Hugo 0.55.6" />
-    <link
-      rel="canonical"
-      href="https://www.qikqiak.com/post/gitlab-ci-argo-cd-gitops/"
-    />
-    <link
-      rel="alternate"
-      href="https://www.qikqiak.com/index.xml"
-      type="application/rss+xml"
-      title="阳明的博客"
-    />
+  <meta name="description" content="在现在的云原生世界里面 GitOps 不断的被提及，这种持续交付的模式越来越受到了大家的青睐，我们前面也有文章详细讲解了 GitOps 的相关概念，在网上也可以找到很多关于它的资源，但是关于 GitOps 相关的工作流实践的示例却并不多见，我们这里就将详细介绍一个使用示例，希望对大家实践 GitOps 有所帮助。">
+  <meta property="og:description" content="在现在的云原生世界里面 GitOps 不断的被提及，这种持续交付的模式越来越受到了大家的青睐，我们前面也有文章详细讲解了 GitOps 的相关概念，在网上也可以找到很多关于它的资源，但是关于 GitOps 相关的工作流实践的示例却并不多见，我们这里就将详细介绍一个使用示例，希望对大家实践 GitOps 有所帮助。">
+  <meta name="twitter:description" content="在现在的云原生世界里面 GitOps 不断的被提及，这种持续交付的模式越来越受到了大家的青睐，我们前面也有文章详细讲解了 GitOps 的相关概念，在网上也可以找到很多关于它的资源，但是关于 GitOps 相关的工作流实践的示例却并不多见，我们这里就将详细介绍一个使用示例，希望对大家实践 GitOps 有所帮助。">
+  <meta name="author" content=""/>
+  <link href="https://picdn.youdianzhishi.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://picdn.youdianzhishi.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/gitlab-ci-argo-cd-gitops/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
 
-    <link
-      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
-      rel="stylesheet"
-    />
+  <link rel="canonical" href="https://www.qikqiak.com/post/gitlab-ci-argo-cd-gitops/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
-    <link
-      rel="stylesheet"
-      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
-      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
-    />
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
 
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
-    />
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a6b62363fe57848ad01efa2a5d1bbb1047c2ffb71b53d8aeb42bc5ed5c77ea7c.css' integrity='sha256-prYjY/5XhIrQHvoqXRu7EEfC/7cbU9iutCvF7Vx36nw='>
 
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
     <!--[if lt IE 9]>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-      <link
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-        rel="stylesheet"
-      />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <![endif]-->
-    <meta
-      name="google-site-verification"
-      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
-    />
-    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-    <meta name="keywords" content="argo, kubernetes, gitops" />
-    <script>
-      var _hmt = _hmt || [];
-      (function () {
-        var hm = document.createElement("script");
-        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(hm, s);
-      })();
-    </script>
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="argo, kubernetes, gitops">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
 
-    <script type="application/javascript">
-      var doNotTrack = false;
-      if (!doNotTrack) {
-        window.ga =
-          window.ga ||
-          function () {
-            (ga.q = ga.q || []).push(arguments);
-          };
-        ga.l = +new Date();
-        ga("create", "UA-69668147-3", "auto");
 
-        ga("send", "pageview");
-      }
-    </script>
-    <script async src="https://www.google-analytics.com/analytics.js"></script>
-  </head>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-      <div class="container">
-        <div class="navbar-header">
-          <button
-            type="button"
-            class="navbar-toggle"
-            data-toggle="collapse"
-            data-target="#main-navbar"
-          >
-            <span class="sr-only">切换导航</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a
-            class="navbar-brand"
-            href="https://www.qikqiak.com/"
-            title="阳明的博客"
-          >
-            <img
-              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
-              style="margin-top: -5px; height: 32px"
-              alt="阳明的博客"
-            />
-          </a>
-        </div>
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://picdn.youdianzhishi.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
 
-        <div class="collapse navbar-collapse" id="main-navbar">
-          <ul class="nav navbar-nav navbar-right">
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-
+          
+        
+          
             <li>
-              <a
-                title="课程"
-                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
-                >课程</a
-              >
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/archives">Archive</a>
-
-                <a href="https://www.qikqiak.com/tags">tags</a>
-
-                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-
-                <a href="https://www.qikqiak.com/tags/python">python</a>
-
-                <a href="https://www.qikqiak.com/tags/django">django</a>
-
-                <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-
-                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-
-                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-
-                <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/"
-                >关于</a
-              >
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
             </li>
-
+          
+        
+          
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
+          
+        
 
-            <li>
-              <a
-                href="#modalSearch"
-                data-toggle="modal"
-                data-target="#modalSearch"
-                style="outline: none"
-              >
-                <span
-                  id="searchGlyph"
-                  class="glyphicon glyphicon-search"
-                ></span>
-              </a>
-            </li>
-          </ul>
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
         </div>
-      </div>
-    </nav>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-    <div id="modalSearch" class="modal fade" role="dialog">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal">
-              &times;
-            </button>
-            <h4 class="modal-title">搜索</h4>
-          </div>
-          <div class="modal-body">
-            <div class="aa-input-container" id="aa-input-container">
-              <input
-                type="search"
-                id="aa-search-input"
-                class="aa-input-search"
-                placeholder="Search for titles or URIs..."
-                name="search"
-                autocomplete="off"
-              />
-              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-                <path
-                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
-                />
-              </svg>
-            </div>
-            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
 
-            <script>
-              var client = algoliasearch(
-                "1JDRAS0AZR",
-                "8804ac109158bb3bb60d74ce98fa332f"
-              );
-              var index = client.initIndex("prod_blog");
-
-              autocomplete(
-                "#aa-search-input",
-                { hint: false },
-                {
-                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
-
-                  displayKey: "name",
-
-                  templates: {
-                    suggestion: function (suggestion) {
-                      return (
-                        "<span>" +
-                        '<a href="https://www.qikqiak.com/post/' +
-                        suggestion.slug +
-                        '">' +
-                        suggestion._highlightResult.title.value +
-                        "</a></span>"
-                      );
-                    },
-                  },
-                }
-              );
-            </script>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">
-              close
-            </button>
-          </div>
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div
-      id="header-big-imgs"
-      data-num-img="1"
-      data-img-src-1="https://picdn.youdianzhishi.com/images/20200715115832.png"
-      data-img-desc-1="https://unsplash.com/photos/0YL3UFYjR_g"
-    ></div>
+    
+  
+  
+  
 
-    <header class="header-section has-img">
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://picdn.youdianzhishi.com/images/20200715115832.png" data-img-desc-1="https://unsplash.com/photos/0YL3UFYjR_g"></div>
+  
+
+  <header class="header-section has-img">
+    
       <div class="intro-header big-img">
+        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>使用 GitLab CI 与 Argo CD 进行 GitOps 实践</h1>
+                  
+                  
+                    <span class="post-meta">
+  发表于 July 15, 2020  
+</span>
 
-                <span class="post-meta"> 发表于 July 15, 2020 </span>
+                  
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline"></span>
+        <span class="img-desc" style="display: inline;"></span>
       </div>
-
-      <div class="intro-header no-img">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-              <div class="post-heading">
-                <h1>使用 GitLab CI 与 Argo CD 进行 GitOps 实践</h1>
-
-                <span class="post-meta"> 发表于 July 15, 2020 </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <div class="container" role="main">
-      <div class="row">
-        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-          <div>
-            <h5 id="tags" style="margin-top: 30px">
-              标签:
-
-              <a href="https://www.qikqiak.com/tags/argo/">argo</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/gitlab/">gitlab</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/gitops/">gitops</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/devops/">devops</a> &nbsp;
-            </h5>
-          </div>
-
-          <article
-            role="main"
-            class="blog-post"
-            itemprop="articleBody"
-            id="content"
-          >
-            <aside class="toc">
-              <nav id="TableOfContents">
-                <ul>
-                  <li>
-                    <ul>
-                      <li><a href="#介绍">介绍</a></li>
-                      <li><a href="#argo-cd-安装">Argo CD 安装</a></li>
-                      <li><a href="#gitlab-项目配置">GitLab 项目配置</a></li>
-                      <li><a href="#argo-cd-配置">Argo CD 配置</a></li>
-                      <li><a href="#gitlab-ci-流水线">GitLab CI 流水线</a></li>
-                      <li><a href="#使用">使用</a></li>
-                      <li><a href="#参考链接">参考链接</a></li>
-                    </ul>
-                  </li>
-                </ul>
-              </nav>
-            </aside>
-
-            <p>
-              在现在的云原生世界里面 GitOps
-              不断的被提及，这种持续交付的模式越来越受到了大家的青睐，我们前面也有文章详细讲解了
-              GitOps 的相关概念，在网上也可以找到很多关于它的资源，但是关于
-              GitOps
-              相关的工作流实践的示例却并不多见，我们这里就将详细介绍一个使用示例，希望对大家实践
-              GitOps 有所帮助。
-            </p>
-
-            <h2 id="介绍">介绍</h2>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20200710144852.png"
-                alt="GitOps Workflow"
-              />
-              <figcaption>GitOps Workflow</figcaption>
-            </figure>
-
-            <p>
-              上图是当前示例中的 GitOps 工作流程。GitLab 和 Argo CD
-              是两个主要的核心组件：
-            </p>
-
-            <p>
-              <strong>Argo CD</strong> 是一个声明式、GitOps 持续交付的
-              Kubernetes 工具，它的配置和使用分非常简单，并且自带一个简单一用的
-              Dashboard 页面，更重要的是 Argo CD 支持 kustomzie、helm、ksonnet
-              等多种工具。应用程序可以通过 Argo CD 提供的 CRD
-              资源对象进行配置，可以在指定的目标环境中自动部署所需的应用程序。关于
-              Argo CD 更多的信息可以查看<a
-                href="https://argoproj.github.io/argo-cd/"
-                >官方文档</a
-              >了解更多。
-            </p>
-
-            <p>
-              <strong>GitLab CI</strong> 是 GitLab
-              的持续集成和持续交付的工具，也是非常流行的 CI/CD 工具，相比
-              Jenkins 更加轻量级，更重要的是和 GitLab
-              天然集成在一起的，所以非常方便。
-            </p>
-
-            <h2 id="argo-cd-安装">Argo CD 安装</h2>
-
-            <p>
-              当前前提条件是有一个可用的 Kubernetes 集群，通过 kubectl
-              可以正常访问集群，为了访问 Argo CD 的 Dashboard 页面，我们可以通过
-              Ingress 来暴露服务，为此需要在 Kubernetes 中安装一个 Ingress
-              Controller，我这里已经提前安装了
-              <code>ingress-nginx</code>，接下来我们将 Helm3 来安装 Argo
-              CD，关于 Helm 以及 ingress-nginx
-              的使用我们前面的文章中已经多次提到，这里就不再详细介绍他们的使用了。
-            </p>
-
-            <p>首先创建一个 argocd 的命名空间：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ kubectl create ns argocd</code></pre>
-            </div>
-            <p>然后添加 argocd 的 chart 仓库地址：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ helm repo add argo https://argoproj.github.io/argo-helm</code></pre>
-            </div>
-            <p>接下来我们就可以使用 Helm 安装 Argo CD 了：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ helm install argocd -n argocd argo/argo-cd --values values.yaml</code></pre>
-            </div>
-            <p>其中 values.yaml 文件如下所示，用来定制安装的 Argo CD：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">server:
-  ingress:
-    enabled: <span style="color:#ff79c6">true</span>
-    annotations: 
-      kubernetes.io/ingress.class: <span style="color:#f1fa8c">&#34;nginx&#34;</span>
-      nginx.ingress.kubernetes.io/force-ssl-redirect: <span style="color:#f1fa8c">&#34;true&#34;</span>
-      nginx.ingress.kubernetes.io/ssl-passthrough: <span style="color:#f1fa8c">&#34;true&#34;</span>
-      nginx.ingress.kubernetes.io/backend-protocol: <span style="color:#f1fa8c">&#34;HTTPS&#34;</span>
-    hosts:
-    - argocd.k8s.local</code></pre>
-            </div>
-            <p>
-              执行上面的安装命令后，Argo CD 就会被安装在 argocd
-              命名空间之下，可以在本地
-              <code>/etc/hosts</code> 中添加一个映射，将
-              <a href="http://argocd.k8s.local">argocd.k8s.local</a> 映射到
-              ingress-nginx 所在的节点即可：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ helm ls -n argocd
-NAME    NAMESPACE       REVISION        UPDATED                                 STATUS    CHART            APP VERSION
-argocd  argocd          <span style="color:#bd93f9">2</span>               <span style="color:#bd93f9">2020</span>-07-10 <span style="color:#bd93f9">15</span>:26:38.259258 +0800 CST    deployed  argo-cd-2.5.0    <span style="color:#bd93f9">1</span>.6.1
-$ kubectl get pods -n argocd
-NAME                                             READY   STATUS    RESTARTS   AGE
-argocd-application-controller-85c4788ffc-p2m4c   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          49m
-argocd-dex-server-cc65c7546-x78bj                <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          49m
-argocd-redis-5f45875bc7-mnx8b                    <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          49m
-argocd-repo-server-7bcf647588-h8gtq              <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          49m
-argocd-server-7877ff8889-zp7tq                   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          49m</code></pre>
-            </div>
-            <p>
-              当所有 Pod 变成 Running 状态后，我们就可以通过浏览器访问 Argo CD
-              的 Dashboard 页面了：
-            </p>
-
-            <p>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20200710161259.png"
-                alt=""
-              />
-            </p>
-
-            <p>
-              默认的用户名为 admin，密码为 server Pod
-              的名称，可以通过如下所示的命令来获取：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ kubectl get pods -n argocd -l app.kubernetes.io/name<span style="color:#ff79c6">=</span>argocd-server -o name | cut -d<span style="color:#f1fa8c">&#39;/&#39;</span> -f <span style="color:#bd93f9">2</span>
-argocd-server-7877ff8889-zp7tq</code></pre>
-            </div>
-            <p>
-              用上面的用户名和密码即可登录成功，接下来我们在 GitLab
-              中来创建示例项目。
-            </p>
-
-            <p>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20200710161420.png"
-                alt=""
-              />
-            </p>
-
-            <h2 id="gitlab-项目配置">GitLab 项目配置</h2>
-
-            <p>
-              我们这里使用的示例项目是一个 Golang
-              程序，在页面上显示一个文本信息和 Pod 名称，代码地址：<a
-                href="https://github.com/cnych/gitops-webapp-demo"
-                >https://github.com/cnych/gitops-webapp-demo</a
-              >。我们可以将该项目代码上传到我们自己的 GitLab 上面去，我这里的
-              GitLab 安装在 Kubernetes 之上，通过配置域名
-              <a href="http://git.k8s.local">git.k8s.local</a>
-              进行访问，调整过后我们本地的代码仓库地址为：<a
-                href="http://git.k8s.local/course/gitops-webapp"
-                >http://git.k8s.local/course/gitops-webapp</a
-              >
-              。
-            </p>
-
-            <p>
-              接下来需要添加一些在 GitLab CI 流水线中用到的环境变量（Settings →
-              CI/CD → Variables）：
-            </p>
-
-            <ul>
-              <li>
-                CI_REGISTRY - 镜像仓库地址，值为：<a
-                  href="https://index.docker.io/v1/"
-                  >https://index.docker.io/v1/</a
-                >
-              </li>
-              <li>CI_REGISTRY_IMAGE - 镜像名称，值为：cnych/gitops-webapp</li>
-              <li>CI_REGISTRY_USER - Docker Hub 仓库用户名，值为 cnych</li>
-              <li>CI_REGISTRY_PASSWORD - Docker Hub 仓库密码</li>
-              <li>CI_PASSWORD - Git 仓库访问密码</li>
-              <li>CI_USERNAME - Git 仓库访问用户名</li>
-            </ul>
-
-            <p>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20200710184849.png"
-                alt=""
-              />
-            </p>
-
-            <h2 id="argo-cd-配置">Argo CD 配置</h2>
-
-            <p>
-              现在我们可以开始使用 GitOps 来配置我们的 Kubernetes
-              中的应用了。Argo CD 自带了一套 CRD
-              对象，可以用来进行声明式配置，这当然也是推荐的方式，把我们的基础设施作为代码来进行托管，下面是我们为开发和生产两套环境配置的资源清单：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># gitops-demo-app.yaml</span>
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: web-app-dev
-  namespace: argocd
-spec:
-  project: default
-  source: 
-    repoURL: http://git.k8s.local/course/gitops-webapp.git
-    targetRevision: HEAD
-    path: deployment/dev
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: dev
-  syncPolicy:
-    automated:
-      prune: <span style="color:#ff79c6">true</span>
----
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: web-app-prod
-  namespace: argocd
-spec:
-  project: default
-  source: 
-    repoURL: http://git.k8s.local/course/gitops-webapp.git
-    targetRevision: HEAD
-    path: deployment/prod
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: prod
-  syncPolicy:
-    automated:
-      prune: <span style="color:#ff79c6">true</span></code></pre>
-            </div>
-            <p>
-              上面定义的 Application 这个资源，就是 Argo CD 用于描述应用的 CRD
-              对象：
-            </p>
-
-            <ul>
-              <li>name：Argo CD 应用程序的名称</li>
-              <li>
-                project：应用程序将被配置的项目名称，这是在 Argo CD
-                中应用程序的一种组织方式
-              </li>
-              <li>repoURL：源代码的仓库地址</li>
-              <li>targetRevision：想要使用的 git 分支</li>
-              <li>path：Kubernetes 资源清单在仓库中的路径</li>
-              <li>destination：Kubernetes 集群中的目标</li>
-            </ul>
-
-            <p>
-              然后同样使用 kubectl 工具直接部署上面的资源对象即可，将会创建两个
-              Application 类型的对象：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">$ kubectl apply -f gitops-demo-app.yaml
-application.argoproj.io/web-app-dev created
-application.argoproj.io/web-app-prod created
-$ kubectl get application -n argocd
-NAME           AGE
-web-app-dev    25s
-web-app-prod   24s</code></pre>
-            </div>
-            <p>
-              此时我们再去 Argo CD 的 Dashboard 首页同样将会看到两个 Application
-              的信息：
-            </p>
-
-            <p>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20200710161727.png"
-                alt=""
-              />
-            </p>
-
-            <p>
-              点击其中一个就可以看到关于应用的详细信息，我们可以在 gitops-webapp
-              代码仓库的
-              <code>deployment/&lt;env&gt;</code>
-              目录里面找到资源对象。我们可以看到，在每个文件夹下面都有一个
-              <code>kustomization.yaml</code> 文件，Argo CD
-              可以识别它，不需要任何其他的设置就可以使用。
-            </p>
-
-            <p>
-              由于我们这里的代码仓库是私有的
-              GitLab，所以我们还需要配置对应的仓库地址，在页面上 Settings →
-              Repositories，点击 <code>Connect Repo using HTTPS</code> 按钮：
-            </p>
-
-            <p>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20200710162651.png"
-                alt=""
-              />
-            </p>
-
-            <p>添加我们的代码仓库认证信息：</p>
-
-            <p>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20200710162935.png"
-                alt=""
-              />
-            </p>
-
-            <p>
-              需要注意的是这里默认使用的是 HTTPS，所以我们需要勾选下方的
-              <code>Skip server verification</code>，然后点击上方的
-              <code>CONNECT</code> 按钮添加即可。然后重新同步上面的两个
-              Application，就可以看到正常的状态了。
-            </p>
-
-            <h2 id="gitlab-ci-流水线">GitLab CI 流水线</h2>
-
-            <p>
-              接下来我们需要为应用程序创建流水线，自动构建我们的应用程序，推送到镜像仓库，然后更新
-              Kubernetes 的资源清单文件。
-            </p>
-
-            <p>
-              下面的示例并不是一个多么完美的流水线，但是基本上可以展示整个
-              GitOps
-              的工作流。开发人员在自己的分支上开发代码，他们分支的每一次提交都会触发一个阶段性的构建，当他们将自己的修改和主分支合并时，完整的流水线就被触发。将构建应用程序，打包成
-              Docker 镜像，将镜推送到 Docker 仓库，并自动更新 Kubernetes
-              资源清单，此外，一般情况下将应用部署到生产环境需要手动操作。
-              <script
-                async
-                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-              ></script>
-
-              <ins
-                class="adsbygoogle"
-                style="display: block"
-                data-ad-client="ca-pub-5376999672787220"
-                data-ad-slot="9165834656"
-                data-ad-format="auto"
-                data-full-width-responsive="true"
-              ></ins>
-              <script>
-                (adsbygoogle = window.adsbygoogle || []).push({});
-              </script>
-
-              GitLab CI 中的流水线默认定义在代码仓库根目录下的
-              <code>.gitlab-ci.yml</code>
-              文件中，在改文件的最上面定义了一些构建阶段和环境变量、镜像以及一些前置脚本：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">stages:
-- build
-- publish
-- deploy-dev
-- deploy-prod</code></pre>
-            </div>
-            <p>
-              接下来是阶段的定义和所需的任务声明。我们这里的构建过程比较简单，只需要在一个
-              golang
-              镜像中执行一个构建命令即可，然后将编译好的二进制文件保存到下一个阶段处理，这一个阶段适合分支的任何变更：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">build:
-  stage: build
-  image:
-    name: golang:<span style="color:#bd93f9">1.13</span>.<span style="color:#bd93f9">1</span>
-  script:
-    - go build -o main main.go
-  artifacts:
-    paths:
-      - main
-  variables:
-    CGO_ENABLED: <span style="color:#bd93f9">0</span></code></pre>
-            </div>
-            <p>
-              然后就是构建镜像并推送到镜像仓库，这里我们使用
-              Kaniko，当然也可以使用 DinD
-              模式进行构建，只是安全性不高，这里我们可以使用 GIT 提交的 commit
-              哈希值作为镜像 tag，关于 Docker
-              镜像仓库的认证和镜像地址信息可以通过项目的参数来进行传递，不过这个阶段只在主分支发生变化时才会触发：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">publish:
-  stage: publish
-  image:
-    name: cnych/kaniko-executor:v0.<span style="color:#bd93f9">22.0</span>
-    entrypoint: [<span style="color:#f1fa8c">&#34;&#34;</span>]
-  script:
-    - echo <span style="color:#f1fa8c">&#34;{\&#34;auths\&#34;:{\&#34;$CI_REGISTRY\&#34;:{\&#34;username\&#34;:\&#34;$CI_REGISTRY_USER\&#34;,\&#34;password\&#34;:\&#34;$CI_REGISTRY_PASSWORD\&#34;}}}&#34;</span> &gt; /kaniko/.docker/config.json
-    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile ./Dockerfile --destination $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
-  dependencies:
-    - build  
-  only:
-    - master</code></pre>
-            </div>
-            <p>
-              下一个阶段就是将应用程序部署到开发环境中，在 GitOps
-              中就意味着需要更新 Kubernetes 的资源清单，这样 Argo CD
-              就可以拉取更新的版本来部署应用。这里我们使用了为项目定义的环境变量，包括用户名和
-              TOKEN，此外在提交消息里面增加
-              <code>[skip ci]</code> 这样的关键字，这样流水线就不会被触发：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">deploy-dev:
-  stage: deploy-dev
-  image: cnych/kustomize:v1.<span style="color:#bd93f9">0</span>
-  before_script:
-    - git remote set-url origin http://${CI_USERNAME}:${CI_PASSWORD}@git.k8s.local/course/gitops-webapp.git
-    - git config --global user.email <span style="color:#f1fa8c">&#34;gitlab@git.k8s.local&#34;</span>
-    - git config --global user.name <span style="color:#f1fa8c">&#34;GitLab CI/CD&#34;</span>
-  script:
-    - git checkout -B master
-    - cd deployment/dev
-    - kustomize edit set image $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
-    - cat kustomization.yaml
-    - git commit -am <span style="color:#f1fa8c">&#39;[skip ci] DEV image update&#39;</span>
-    - git push origin master
-  only:
-    - master</code></pre>
-            </div>
-            <p>
-              最后添加一个部署到 prod
-              环境的阶段，和前面非常类似，只是添加了一个手动操作的流程：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">deploy-prod:
-  stage: deploy-prod
-  image: cnych/kustomize:v1.<span style="color:#bd93f9">0</span>
-  before_script:
-    - git remote set-url origin http://${CI_USERNAME}:${CI_PASSWORD}@git.k8s.local/course/gitops-webapp.git
-    - git config --global user.email <span style="color:#f1fa8c">&#34;gitlab@git.k8s.local&#34;</span>
-    - git config --global user.name <span style="color:#f1fa8c">&#34;GitLab CI/CD&#34;</span>
-  script:
-    - git checkout -B master
-    - git pull origin master
-    - cd deployment/prod
-    - kustomize edit set image $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
-    - cat kustomization.yaml
-    - git commit -am <span style="color:#f1fa8c">&#39;[skip ci] PROD image update&#39;</span>
-    - git push origin master
-  only:
-    - master
-  when: manual</code></pre>
-            </div>
-            <p>这样我们就完成了整个流水线的定义。</p>
-
-            <h2 id="使用">使用</h2>
-
-            <p>
-              接下来我们来看看它们是如何一起工作的。我们将开发和线上两个环境的应用分别部署在了
-              dev 和 prod 命名空间之下，通过 Ingress
-              暴露服务，同样需要将两个应用的域名
-              <a href="http://webapp.prod.k8s.local/"
-                >http://webapp.dev.k8s.local/</a
-              >
-              与
-              <a href="http://webapp.prod.k8s.local/"
-                >http://webapp.prod.k8s.local/</a
-              >
-              在本地 <code>/etc/hosts</code> 中添加映射。
-            </p>
-
-            <p>
-              如果一切正常的话现在我们可以在浏览器中来查看我们部署的 web
-              应用程序了。
-            </p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20200710190515.png"
-                alt="Dev web app"
-              />
-              <figcaption>Dev web app</figcaption>
-            </figure>
-
-            <p>
-              然后我们来尝试修改下代码，编辑 main.go 文件，将变量 welcome 中的
-              <code>GITOPS</code> 修改为 <code>GITOPS-K8S</code>:
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-go" data-lang="go"><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">main</span>() {
-   welcome <span style="color:#ff79c6">:=</span> Welcome{<span style="color:#f1fa8c">&#34;GITOPS-K8S&#34;</span>, time.<span style="color:#50fa7b">Now</span>().<span style="color:#50fa7b">Format</span>(time.Stamp), os.<span style="color:#50fa7b">Getenv</span>(<span style="color:#f1fa8c">&#34;HOSTNAME&#34;</span>)
-	  <span style="color:#ff79c6">......</span>
-}</code></pre>
-            </div>
-            <p>
-              然后提交代码到 master 分支，然后进入 GitLab 项目 -&gt; CI/CD -&gt;
-              Pipelines，就可以看到一个新的流水线开始构建了。
-            </p>
-
-            <p>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20200710191018.png"
-                alt=""
-              />
-            </p>
-
-            <p>
-              等待一会儿，正常情况下会执行到 dev 的部署阶段，然后变成
-              <code>skipped</code> 的状态，此时流水线已经将代码中的 dev
-              下的资源清单文件已经更新了。
-            </p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20200710191559.png"
-                alt="GitLab CI/CD Pipeline"
-              />
-              <figcaption>GitLab CI/CD Pipeline</figcaption>
-            </figure>
-
-            <p>
-              然后 Argo CD 在自动同步模式下在一分钟内变会更新 Kubernetes
-              的资源对象，我们也可以在 Argo CD 的页面中看到进度。当 Argo CD
-              中同步完成后我们再去查看 DEV
-              环境的应用，就可以看到页面上面的信息已经变成了
-              <code>GITOPS-K8S</code> 了。
-            </p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20200710191716.png"
-                alt="Update Dev Web APP"
-              />
-              <figcaption>Update Dev Web APP</figcaption>
-            </figure>
-
-            <p>
-              最后如果需要部署到 prod 环境，我们只需要在 GitLab
-              的流水线中手动触发即可，之后，prod 中的镜像也会被更新。
-            </p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20200710192038.png"
-                alt="GitLab CI/CD Prod deployment"
-              />
-              <figcaption>GitLab CI/CD Prod deployment</figcaption>
-            </figure>
-
-            <p>下面是同步时 Argo CD 更新的页面状态变化图。</p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20200710192302.png"
-                alt="Argo CD Sync Workflow"
-              />
-              <figcaption>Argo CD Sync Workflow</figcaption>
-            </figure>
-
-            <p>
-              到这里，我们就使用 GitOps
-              成功的将我们的应用部署到了开发和生产环境之中了。
-            </p>
-
-            <h2 id="参考链接">参考链接</h2>
-
-            <ul>
-              <li>
-                <a href="https://www.weave.works/technologies/gitops/"
-                  >https://www.weave.works/technologies/gitops/</a
-                >
-              </li>
-              <li>
-                <a href="https://argoproj.github.io/argo-cd/"
-                  >https://argoproj.github.io/argo-cd/</a
-                >
-              </li>
-              <li>
-                <a href="https://docs.gitlab.com/ee/ci/yaml/"
-                  >https://docs.gitlab.com/ee/ci/yaml/</a
-                >
-              </li>
-              <li>
-                <a
-                  href="https://medium.com/@andrew.kaczynski/gitops-in-kubernetes-argo-cd-and-gitlab-ci-cd-5828c8eb34d6"
-                  >https://medium.com/@andrew.kaczynski/gitops-in-kubernetes-argo-cd-and-gitlab-ci-cd-5828c8eb34d6</a
-                >
-              </li>
-              <li>
-                <a href="https://github.com/cnych/gitops-webapp-demo"
-                  >https://github.com/cnych/gitops-webapp-demo</a
-                >
-              </li>
-            </ul>
-
-            <p>
-              <a
-                href="https://youdianzhishi.com/web/course/1030"
-                title="从 Docker 到 Kubernetes 进阶课程"
-                ><img
-                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
-                  alt="Kubernetes进阶训练营"
-              /></a>
-            </p>
-
-            <h2>微信公众号</h2>
-            <p>
-              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
-              kubernetes 讨论群里面共同学习。
-            </p>
-            <img
-              src="https://picdn.youdianzhishi.com/images/qrcode.png"
-              alt="wechat-account-qrcode"
-            />
-
-            <div class="entry-shang text-center">
-              <p>「真诚赞赏，手留余香」</p>
-              <button class="zs show-zs btn btn-bred">赞赏</button>
-            </div>
-            <div class="zs-modal-bg"></div>
-            <div class="zs-modal-box">
-              <div class="zs-modal-head">
-                <button type="button" class="close">×</button>
-                <span class="author"
-                  ><img
-                    src="https://www.qikqiak.com/img/avatar.jpeg"
-                  />阳明</span
-                >
-                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-              </div>
-              <div class="zs-modal-body">
-                <div class="zs-modal-btns">
-                  <button class="btn btn-blink" data-num="2">2元</button>
-                  <button class="btn btn-blink" data-num="5">5元</button>
-                  <button class="btn btn-blink" data-num="10">10元</button>
-                  <button class="btn btn-blink" data-num="50">50元</button>
-                  <button class="btn btn-blink" data-num="100">100元</button>
-                  <button class="btn btn-blink" data-num="1">任意金额</button>
-                </div>
-                <div class="zs-modal-pay">
-                  <button class="btn btn-bred" id="pay-text">2元</button>
-                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-                  <img
-                    src="https://www.qikqiak.com/img/wechat-2.png"
-                    id="pay-image"
-                  />
-                </div>
-              </div>
-              <div class="zs-modal-footer">
-                <span class="zs-wechat"
-                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
-                /></span>
-              </div>
-            </div>
-
-            <div
-              class="social-share"
-              data-initialized="true"
-              style="margin-bottom: 20px; margin-top: 20px"
-            >
-              <center>
-                <a href="#" class="social-share-icon icon-weibo"></a>
-                <a href="#" class="social-share-icon icon-wechat"></a>
-                <a href="#" class="social-share-icon icon-twitter"></a>
-                <a href="#" class="social-share-icon icon-linkedin"></a>
-                <a href="#" class="social-share-icon icon-facebook"></a>
-                <a href="#" class="social-share-icon icon-qq"></a>
-                <a href="#" class="social-share-icon icon-qzone"></a>
-              </center>
-            </div>
-
-            <link
-              rel="stylesheet"
-              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
-            />
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
-          </article>
-
-          <h3>相关文章</h3>
-          <ul style="margin-bottom: 25px">
-            <li>
-              <a href="https://www.qikqiak.com/post/gitops-devops-on-k8s/"
-                >GitOps - 在 Kubernetes 中进行 DevOps 的方式</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/gitlab-ci-k8s-cluster-feature/"
-                >Gitlab CI 与 Kubernetes 的结合</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/gitlab-runner-install-on-k8s/"
-                >在 Kubernetes 上安装 Gitlab CI Runner</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/"
-                >在 Kubernetes 上安装 Gitlab</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/kubernetes-jenkins1/"
-                >基于 kubernetes 的动态 jenkins slave</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/encrypt-k8s-secrets-with-sealed-secrets/"
-                >使用 Sealed Secrets 加密 Kubernetes Secrets</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/visualize-kubernetes-app/"
-                >可视化创建 Kubernetes 微服务应用</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/devops-base-on-jenkins/"
-                >基于 Jenkins 的 DevOps 流水线实践</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/install-kubesphere-on-k8s/"
-                >在现有 Kubernetes 集群上安装 KubeSphere</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/drone-with-k8s-3/"
-                >Drone 结合 Helm 部署 Kubernetes 应用</a
-              >
-            </li>
-          </ul>
-
-          <ul class="pager blog-pager">
-            <li class="previous">
-              <a
-                href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-1/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="使用 Elastic 技术栈构建 K8S 全栈监控(1/4)"
-                >&larr; 前一篇</a
-              >
-            </li>
-
-            <li class="next">
-              <a
-                href="https://www.qikqiak.com/post/grafana-loki-usage/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="Grafana Loki 简明教程"
-                >后一篇 &rarr;</a
-              >
-            </li>
-          </ul>
-
-          <script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-          ></script>
-
-          <ins
-            class="adsbygoogle"
-            style="display: block"
-            data-ad-client="ca-pub-5376999672787220"
-            data-ad-slot="3700507799"
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          ></ins>
-          <script>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-          </script>
-
-          <div id="gitalk-container"></div>
-          <link
-            rel="stylesheet"
-            href="https://unpkg.com/gitalk/dist/gitalk.css"
-          />
-          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-          <script>
-            var gitalk = new Gitalk({
-              clientID: "bdb76dbb2e9d0786e350",
-              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
-              repo: "blog",
-              owner: "cnych",
-              admin: ["cnych"],
-              labels: ["gitment"],
-              title: "使用 GitLab CI 与 Argo CD 进行 GitOps 实践",
-              createIssueManually: true,
-              id: "gitlab-ci-argo-cd-gitops",
-              distractionFreeMode: true,
-            });
-            gitalk.render("gitalk-container");
-          </script>
-        </div>
-      </div>
-    </div>
-
-    <footer>
+    
+    
+    
+    <div class="intro-header no-img">
+      
       <div class="container">
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <ul class="list-inline text-center footer-links">
-              <img
-                src="https://www.qikqiak.com/img/wechatmp.png"
-                alt="k8s技术圈"
-              />
+            <div class="post-heading">
+              <h1>使用 GitLab CI 与 Argo CD 进行 GitOps 实践</h1>
+                
+                
+                  <span class="post-meta">
+  发表于 July 15, 2020  
+</span>
 
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/argo/">argo</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/gitlab/">gitlab</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/gitops/">gitops</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/devops/">devops</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#介绍">介绍</a></li>
+    <li><a href="#argo-cd-安装">Argo CD 安装</a></li>
+    <li><a href="#gitlab-项目配置">GitLab 项目配置</a></li>
+    <li><a href="#argo-cd-配置">Argo CD 配置</a></li>
+    <li><a href="#gitlab-ci-流水线">GitLab CI 流水线</a></li>
+    <li><a href="#使用">使用</a></li>
+    <li><a href="#参考链接">参考链接</a></li>
+  </ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>在现在的云原生世界里面 GitOps 不断的被提及，这种持续交付的模式越来越受到了大家的青睐，我们前面也有文章详细讲解了 GitOps 的相关概念，在网上也可以找到很多关于它的资源，但是关于 GitOps 相关的工作流实践的示例却并不多见，我们这里就将详细介绍一个使用示例，希望对大家实践 GitOps 有所帮助。</p>
+<h2 id="介绍">介绍</h2>
+<p><img src="https://picdn.youdianzhishi.com/images/20200710144852.png" alt="GitOps Workflow"></p>
+<p>上图是当前示例中的 GitOps 工作流程。GitLab 和 Argo CD 是两个主要的核心组件：</p>
+<p><strong>Argo CD</strong> 是一个声明式、GitOps 持续交付的 Kubernetes 工具，它的配置和使用分非常简单，并且自带一个简单一用的 Dashboard 页面，更重要的是 Argo CD 支持 kustomzie、helm、ksonnet 等多种工具。应用程序可以通过 Argo CD 提供的 CRD 资源对象进行配置，可以在指定的目标环境中自动部署所需的应用程序。关于 Argo CD 更多的信息可以查看<a href="https://argoproj.github.io/argo-cd/">官方文档</a>了解更多。</p>
+<p><strong>GitLab CI</strong> 是 GitLab 的持续集成和持续交付的工具，也是非常流行的 CI/CD 工具，相比 Jenkins 更加轻量级，更重要的是和 GitLab 天然集成在一起的，所以非常方便。</p>
+<h2 id="argo-cd-安装">Argo CD 安装</h2>
+<p>当前前提条件是有一个可用的 Kubernetes 集群，通过 kubectl 可以正常访问集群，为了访问 Argo CD 的 Dashboard 页面，我们可以通过 Ingress 来暴露服务，为此需要在 Kubernetes 中安装一个 Ingress Controller，我这里已经提前安装了 <code>ingress-nginx</code>，接下来我们将 Helm3 来安装 Argo CD，关于 Helm 以及 ingress-nginx 的使用我们前面的文章中已经多次提到，这里就不再详细介绍他们的使用了。</p>
+<p>首先创建一个 argocd 的命名空间：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kubectl create ns argocd
+</span></span></code></pre></div><p>然后添加 argocd 的 chart 仓库地址：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ helm repo add argo https://argoproj.github.io/argo-helm
+</span></span></code></pre></div><p>接下来我们就可以使用 Helm 安装 Argo CD 了：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ helm install argocd -n argocd argo/argo-cd --values values.yaml
+</span></span></code></pre></div><p>其中 values.yaml 文件如下所示，用来定制安装的 Argo CD：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">server</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">ingress</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">annotations</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">kubernetes.io/ingress.class</span>: <span style="color:#f1fa8c">&#34;nginx&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">nginx.ingress.kubernetes.io/force-ssl-redirect</span>: <span style="color:#f1fa8c">&#34;true&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">nginx.ingress.kubernetes.io/ssl-passthrough</span>: <span style="color:#f1fa8c">&#34;true&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">nginx.ingress.kubernetes.io/backend-protocol</span>: <span style="color:#f1fa8c">&#34;HTTPS&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">hosts</span>:
+</span></span><span style="display:flex;"><span>      - argocd.k8s.local
+</span></span></code></pre></div><p>执行上面的安装命令后，Argo CD 就会被安装在 argocd 命名空间之下，可以在本地 <code>/etc/hosts</code> 中添加一个映射，将 <a href="http://argocd.k8s.local">argocd.k8s.local</a> 映射到 ingress-nginx 所在的节点即可：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ helm ls -n argocd
+</span></span><span style="display:flex;"><span>NAME    NAMESPACE       REVISION        UPDATED                                 STATUS    CHART            APP VERSION
+</span></span><span style="display:flex;"><span>argocd  argocd          <span style="color:#bd93f9">2</span>               2020-07-10 15:26:38.259258 +0800 CST    deployed  argo-cd-2.5.0    1.6.1
+</span></span><span style="display:flex;"><span>$ kubectl get pods -n argocd
+</span></span><span style="display:flex;"><span>NAME                                             READY   STATUS    RESTARTS   AGE
+</span></span><span style="display:flex;"><span>argocd-application-controller-85c4788ffc-p2m4c   1/1     Running   <span style="color:#bd93f9">0</span>          49m
+</span></span><span style="display:flex;"><span>argocd-dex-server-cc65c7546-x78bj                1/1     Running   <span style="color:#bd93f9">0</span>          49m
+</span></span><span style="display:flex;"><span>argocd-redis-5f45875bc7-mnx8b                    1/1     Running   <span style="color:#bd93f9">0</span>          49m
+</span></span><span style="display:flex;"><span>argocd-repo-server-7bcf647588-h8gtq              1/1     Running   <span style="color:#bd93f9">0</span>          49m
+</span></span><span style="display:flex;"><span>argocd-server-7877ff8889-zp7tq                   1/1     Running   <span style="color:#bd93f9">0</span>          49m
+</span></span></code></pre></div><p>当所有 Pod 变成 Running 状态后，我们就可以通过浏览器访问 Argo CD 的 Dashboard 页面了：</p>
+<p><img src="https://picdn.youdianzhishi.com/images/20200710161259.png" alt=""></p>
+<p>默认的用户名为 admin，密码为 server Pod 的名称，可以通过如下所示的命令来获取：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kubectl get pods -n argocd -l app.kubernetes.io/name<span style="color:#ff79c6">=</span>argocd-server -o name | cut -d<span style="color:#f1fa8c">&#39;/&#39;</span> -f <span style="color:#bd93f9">2</span>
+</span></span><span style="display:flex;"><span>argocd-server-7877ff8889-zp7tq
+</span></span></code></pre></div><p>用上面的用户名和密码即可登录成功，接下来我们在 GitLab 中来创建示例项目。</p>
+<p><img src="https://picdn.youdianzhishi.com/images/20200710161420.png" alt=""></p>
+<h2 id="gitlab-项目配置">GitLab 项目配置</h2>
+<p>我们这里使用的示例项目是一个 Golang 程序，在页面上显示一个文本信息和 Pod 名称，代码地址：<a href="https://github.com/cnych/gitops-webapp-demo">https://github.com/cnych/gitops-webapp-demo</a>。我们可以将该项目代码上传到我们自己的 GitLab 上面去，我这里的 GitLab 安装在 Kubernetes 之上，通过配置域名 <a href="http://git.k8s.local">git.k8s.local</a> 进行访问，调整过后我们本地的代码仓库地址为：<a href="http://git.k8s.local/course/gitops-webapp">http://git.k8s.local/course/gitops-webapp</a> 。</p>
+<p>接下来需要添加一些在 GitLab CI 流水线中用到的环境变量（Settings → CI/CD → Variables）：</p>
+<ul>
+<li>CI_REGISTRY - 镜像仓库地址，值为：<a href="https://index.docker.io/v1/">https://index.docker.io/v1/</a></li>
+<li>CI_REGISTRY_IMAGE - 镜像名称，值为：cnych/gitops-webapp</li>
+<li>CI_REGISTRY_USER - Docker Hub 仓库用户名，值为 cnych</li>
+<li>CI_REGISTRY_PASSWORD - Docker Hub 仓库密码</li>
+<li>CI_PASSWORD - Git 仓库访问密码</li>
+<li>CI_USERNAME - Git 仓库访问用户名</li>
+</ul>
+<p><img src="https://picdn.youdianzhishi.com/images/20200710184849.png" alt=""></p>
+<h2 id="argo-cd-配置">Argo CD 配置</h2>
+<p>现在我们可以开始使用 GitOps 来配置我们的 Kubernetes 中的应用了。Argo CD 自带了一套 CRD 对象，可以用来进行声明式配置，这当然也是推荐的方式，把我们的基础设施作为代码来进行托管，下面是我们为开发和生产两套环境配置的资源清单：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#6272a4"># gitops-demo-app.yaml</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: argoproj.io/v1alpha1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Application
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: web-app-dev
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">namespace</span>: argocd
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">project</span>: default
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">source</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">repoURL</span>: http://git.k8s.local/course/gitops-webapp.git
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">targetRevision</span>: HEAD
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">path</span>: deployment/dev
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">destination</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">server</span>: https://kubernetes.default.svc
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">namespace</span>: dev
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">syncPolicy</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">automated</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">prune</span>: <span style="color:#ff79c6">true</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: argoproj.io/v1alpha1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Application
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: web-app-prod
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">namespace</span>: argocd
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">project</span>: default
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">source</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">repoURL</span>: http://git.k8s.local/course/gitops-webapp.git
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">targetRevision</span>: HEAD
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">path</span>: deployment/prod
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">destination</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">server</span>: https://kubernetes.default.svc
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">namespace</span>: prod
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">syncPolicy</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">automated</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">prune</span>: <span style="color:#ff79c6">true</span>
+</span></span></code></pre></div><p>上面定义的 Application 这个资源，就是 Argo CD 用于描述应用的 CRD 对象：</p>
+<ul>
+<li>name：Argo CD 应用程序的名称</li>
+<li>project：应用程序将被配置的项目名称，这是在 Argo CD 中应用程序的一种组织方式</li>
+<li>repoURL：源代码的仓库地址</li>
+<li>targetRevision：想要使用的 git 分支</li>
+<li>path：Kubernetes 资源清单在仓库中的路径</li>
+<li>destination：Kubernetes 集群中的目标</li>
+</ul>
+<p>然后同样使用 kubectl 工具直接部署上面的资源对象即可，将会创建两个 Application 类型的对象：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>$ kubectl apply -f gitops-demo-app.yaml
+</span></span><span style="display:flex;"><span>application.argoproj.io/web-app-dev created
+</span></span><span style="display:flex;"><span>application.argoproj.io/web-app-prod created
+</span></span><span style="display:flex;"><span>$ kubectl get application -n argocd
+</span></span><span style="display:flex;"><span>NAME           AGE
+</span></span><span style="display:flex;"><span>web-app-dev    25s
+</span></span><span style="display:flex;"><span>web-app-prod   24s
+</span></span></code></pre></div><p>此时我们再去 Argo CD 的 Dashboard 首页同样将会看到两个 Application 的信息：</p>
+<p><img src="https://picdn.youdianzhishi.com/images/20200710161727.png" alt=""></p>
+<p>点击其中一个就可以看到关于应用的详细信息，我们可以在 gitops-webapp 代码仓库的 <code>deployment/&lt;env&gt;</code> 目录里面找到资源对象。我们可以看到，在每个文件夹下面都有一个 <code>kustomization.yaml</code> 文件，Argo CD 可以识别它，不需要任何其他的设置就可以使用。</p>
+<p>由于我们这里的代码仓库是私有的 GitLab，所以我们还需要配置对应的仓库地址，在页面上 Settings → Repositories，点击 <code>Connect Repo using HTTPS</code> 按钮：</p>
+<p><img src="https://picdn.youdianzhishi.com/images/20200710162651.png" alt=""></p>
+<p>添加我们的代码仓库认证信息：</p>
+<p><img src="https://picdn.youdianzhishi.com/images/20200710162935.png" alt=""></p>
+<p>需要注意的是这里默认使用的是 HTTPS，所以我们需要勾选下方的 <code>Skip server verification</code>，然后点击上方的 <code>CONNECT</code> 按钮添加即可。然后重新同步上面的两个 Application，就可以看到正常的状态了。</p>
+<h2 id="gitlab-ci-流水线">GitLab CI 流水线</h2>
+<p>接下来我们需要为应用程序创建流水线，自动构建我们的应用程序，推送到镜像仓库，然后更新 Kubernetes 的资源清单文件。</p>
+<p>下面的示例并不是一个多么完美的流水线，但是基本上可以展示整个 GitOps 的工作流。开发人员在自己的分支上开发代码，他们分支的每一次提交都会触发一个阶段性的构建，当他们将自己的修改和主分支合并时，完整的流水线就被触发。将构建应用程序，打包成 Docker 镜像，将镜推送到 Docker 仓库，并自动更新 Kubernetes 资源清单，此外，一般情况下将应用部署到生产环境需要手动操作。</p>
+<!-- raw HTML omitted -->
+<p>GitLab CI 中的流水线默认定义在代码仓库根目录下的 <code>.gitlab-ci.yml</code> 文件中，在改文件的最上面定义了一些构建阶段和环境变量、镜像以及一些前置脚本：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">stages</span>:
+</span></span><span style="display:flex;"><span>  - build
+</span></span><span style="display:flex;"><span>  - publish
+</span></span><span style="display:flex;"><span>  - deploy-dev
+</span></span><span style="display:flex;"><span>  - deploy-prod
+</span></span></code></pre></div><p>接下来是阶段的定义和所需的任务声明。我们这里的构建过程比较简单，只需要在一个 golang 镜像中执行一个构建命令即可，然后将编译好的二进制文件保存到下一个阶段处理，这一个阶段适合分支的任何变更：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">build</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">stage</span>: build
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">image</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">name</span>: golang:1.13.1
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">script</span>:
+</span></span><span style="display:flex;"><span>    - go build -o main main.go
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">artifacts</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">paths</span>:
+</span></span><span style="display:flex;"><span>      - main
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">variables</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">CGO_ENABLED</span>: <span style="color:#bd93f9">0</span>
+</span></span></code></pre></div><p>然后就是构建镜像并推送到镜像仓库，这里我们使用 Kaniko，当然也可以使用 DinD 模式进行构建，只是安全性不高，这里我们可以使用 GIT 提交的 commit 哈希值作为镜像 tag，关于 Docker 镜像仓库的认证和镜像地址信息可以通过项目的参数来进行传递，不过这个阶段只在主分支发生变化时才会触发：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">publish</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">stage</span>: publish
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">image</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">name</span>: cnych/kaniko-executor:v0.22.0
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">entrypoint</span>: [<span style="color:#f1fa8c">&#34;&#34;</span>]
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">script</span>:
+</span></span><span style="display:flex;"><span>    - echo &#34;{\&#34;auths\&#34;:{\&#34;$CI_REGISTRY\&#34;:{\&#34;username\&#34;:\&#34;$CI_REGISTRY_USER\&#34;,\&#34;password\&#34;:\&#34;$CI_REGISTRY_PASSWORD\&#34;}}}&#34; &gt; /kaniko/.docker/config.json
+</span></span><span style="display:flex;"><span>    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile ./Dockerfile --destination $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">dependencies</span>:
+</span></span><span style="display:flex;"><span>    - build
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">only</span>:
+</span></span><span style="display:flex;"><span>    - master
+</span></span></code></pre></div><p>下一个阶段就是将应用程序部署到开发环境中，在 GitOps 中就意味着需要更新 Kubernetes 的资源清单，这样 Argo CD 就可以拉取更新的版本来部署应用。这里我们使用了为项目定义的环境变量，包括用户名和 TOKEN，此外在提交消息里面增加 <code>[skip ci]</code> 这样的关键字，这样流水线就不会被触发：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">deploy-dev</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">stage</span>: deploy-dev
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">image</span>: cnych/kustomize:v1.0
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">before_script</span>:
+</span></span><span style="display:flex;"><span>    - git remote set-url origin http://${CI_USERNAME}:${CI_PASSWORD}@git.k8s.local/course/gitops-webapp.git
+</span></span><span style="display:flex;"><span>    - git config --global user.email &#34;gitlab@git.k8s.local&#34;
+</span></span><span style="display:flex;"><span>    - git config --global user.name &#34;GitLab CI/CD&#34;
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">script</span>:
+</span></span><span style="display:flex;"><span>    - git checkout -B master
+</span></span><span style="display:flex;"><span>    - cd deployment/dev
+</span></span><span style="display:flex;"><span>    - kustomize edit set image $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+</span></span><span style="display:flex;"><span>    - cat kustomization.yaml
+</span></span><span style="display:flex;"><span>    - git commit -am &#39;[skip ci] DEV image update&#39;
+</span></span><span style="display:flex;"><span>    - git push origin master
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">only</span>:
+</span></span><span style="display:flex;"><span>    - master
+</span></span></code></pre></div><p>最后添加一个部署到 prod 环境的阶段，和前面非常类似，只是添加了一个手动操作的流程：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">deploy-prod</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">stage</span>: deploy-prod
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">image</span>: cnych/kustomize:v1.0
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">before_script</span>:
+</span></span><span style="display:flex;"><span>    - git remote set-url origin http://${CI_USERNAME}:${CI_PASSWORD}@git.k8s.local/course/gitops-webapp.git
+</span></span><span style="display:flex;"><span>    - git config --global user.email &#34;gitlab@git.k8s.local&#34;
+</span></span><span style="display:flex;"><span>    - git config --global user.name &#34;GitLab CI/CD&#34;
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">script</span>:
+</span></span><span style="display:flex;"><span>    - git checkout -B master
+</span></span><span style="display:flex;"><span>    - git pull origin master
+</span></span><span style="display:flex;"><span>    - cd deployment/prod
+</span></span><span style="display:flex;"><span>    - kustomize edit set image $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+</span></span><span style="display:flex;"><span>    - cat kustomization.yaml
+</span></span><span style="display:flex;"><span>    - git commit -am &#39;[skip ci] PROD image update&#39;
+</span></span><span style="display:flex;"><span>    - git push origin master
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">only</span>:
+</span></span><span style="display:flex;"><span>    - master
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">when</span>: manual
+</span></span></code></pre></div><p>这样我们就完成了整个流水线的定义。</p>
+<h2 id="使用">使用</h2>
+<p>接下来我们来看看它们是如何一起工作的。我们将开发和线上两个环境的应用分别部署在了 dev 和 prod 命名空间之下，通过 Ingress 暴露服务，同样需要将两个应用的域名 <a href="http://webapp.prod.k8s.local/">http://webapp.dev.k8s.local/</a> 与 <a href="http://webapp.prod.k8s.local/">http://webapp.prod.k8s.local/</a> 在本地 <code>/etc/hosts</code> 中添加映射。</p>
+<p>如果一切正常的话现在我们可以在浏览器中来查看我们部署的 web 应用程序了。</p>
+<p><img src="https://picdn.youdianzhishi.com/images/20200710190515.png" alt="Dev web app"></p>
+<p>然后我们来尝试修改下代码，编辑 main.go 文件，将变量 welcome 中的 <code>GITOPS</code> 修改为 <code>GITOPS-K8S</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">main</span>() {
+</span></span><span style="display:flex;"><span>   welcome <span style="color:#ff79c6">:=</span> Welcome{<span style="color:#f1fa8c">&#34;GITOPS-K8S&#34;</span>, time.<span style="color:#50fa7b">Now</span>().<span style="color:#50fa7b">Format</span>(time.Stamp), os.<span style="color:#50fa7b">Getenv</span>(<span style="color:#f1fa8c">&#34;HOSTNAME&#34;</span>)
+</span></span><span style="display:flex;"><span>	  <span style="color:#ff79c6">......</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>然后提交代码到 master 分支，然后进入 GitLab 项目 -&gt; CI/CD -&gt; Pipelines，就可以看到一个新的流水线开始构建了。</p>
+<p><img src="https://picdn.youdianzhishi.com/images/20200710191018.png" alt=""></p>
+<p>等待一会儿，正常情况下会执行到 dev 的部署阶段，然后变成 <code>skipped</code> 的状态，此时流水线已经将代码中的 dev 下的资源清单文件已经更新了。</p>
+<p><img src="https://picdn.youdianzhishi.com/images/20200710191559.png" alt="GitLab CI/CD Pipeline"></p>
+<p>然后 Argo CD 在自动同步模式下在一分钟内变会更新 Kubernetes 的资源对象，我们也可以在 Argo CD 的页面中看到进度。当 Argo CD 中同步完成后我们再去查看 DEV 环境的应用，就可以看到页面上面的信息已经变成了 <code>GITOPS-K8S</code> 了。</p>
+<p><img src="https://picdn.youdianzhishi.com/images/20200710191716.png" alt="Update Dev Web APP"></p>
+<p>最后如果需要部署到 prod 环境，我们只需要在 GitLab 的流水线中手动触发即可，之后，prod 中的镜像也会被更新。</p>
+<p><img src="https://picdn.youdianzhishi.com/images/20200710192038.png" alt="GitLab CI/CD Prod deployment"></p>
+<p>下面是同步时 Argo CD 更新的页面状态变化图。</p>
+<p><img src="https://picdn.youdianzhishi.com/images/20200710192302.png" alt="Argo CD Sync Workflow"></p>
+<p>到这里，我们就使用 GitOps 成功的将我们的应用部署到了开发和生产环境之中了。</p>
+<h2 id="参考链接">参考链接</h2>
+<ul>
+<li><a href="https://www.weave.works/technologies/gitops/">https://www.weave.works/technologies/gitops/</a></li>
+<li><a href="https://argoproj.github.io/argo-cd/">https://argoproj.github.io/argo-cd/</a></li>
+<li><a href="https://docs.gitlab.com/ee/ci/yaml/">https://docs.gitlab.com/ee/ci/yaml/</a></li>
+<li><a href="https://medium.com/@andrew.kaczynski/gitops-in-kubernetes-argo-cd-and-gitlab-ci-cd-5828c8eb34d6">https://medium.com/@andrew.kaczynski/gitops-in-kubernetes-argo-cd-and-gitlab-ci-cd-5828c8eb34d6</a></li>
+<li><a href="https://github.com/cnych/gitops-webapp-demo">https://github.com/cnych/gitops-webapp-demo</a></li>
+</ul>
+<!-- raw HTML omitted -->
+
+          <h2>微信公众号</h2>
+<p>
+  扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+  kubernetes 讨论群里面共同学习。
+</p>
+<img
+  src="https://picdn.youdianzhishi.com/images/qrcode.png"
+  alt="wechat-account-qrcode"
+/>
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/gitops-devops-on-k8s/">GitOps - 在 Kubernetes 中进行 DevOps 的方式</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/gitlab-ci-k8s-cluster-feature/">Gitlab CI 与 Kubernetes 的结合</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/gitlab-runner-install-on-k8s/">在 Kubernetes 上安装 Gitlab CI Runner</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/">在 Kubernetes 上安装 Gitlab</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-jenkins1/">基于 kubernetes 的动态 jenkins slave</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/encrypt-k8s-secrets-with-sealed-secrets/">使用 Sealed Secrets 加密 Kubernetes Secrets</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/visualize-kubernetes-app/">可视化创建 Kubernetes 微服务应用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/devops-base-on-jenkins/">基于 Jenkins 的 DevOps 流水线实践</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/install-kubesphere-on-k8s/">在现有 Kubernetes 集群上安装 KubeSphere</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-3/">Drone 结合 Helm 部署 Kubernetes 应用</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-1/" data-toggle="tooltip" data-placement="top" title="使用 Elastic 技术栈构建 K8S 全栈监控(1/4)">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/grafana-loki-usage/" data-toggle="tooltip" data-placement="top" title="Grafana Loki 简明教程">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '使用 GitLab CI 与 Argo CD 进行 GitOps 实践',
+        createIssueManually: true,
+        id: 'gitlab-ci-argo-cd-gitops',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -1290,7 +720,7 @@ web-app-prod   24s</code></pre>
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -1299,7 +729,7 @@ web-app-prod   24s</code></pre>
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -1308,7 +738,7 @@ web-app-prod   24s</code></pre>
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -1317,158 +747,121 @@ web-app-prod   24s</code></pre>
                   </span>
                 </a>
               </li>
-
-              <li>
-                <a href="https://www.qikqiak.com/index.xml" title="RSS">
-                  <span class="fa-stack fa-lg">
-                    <i class="fa fa-circle fa-stack-2x"></i>
-                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
-                  </span>
-                </a>
-              </li>
-            </ul>
-            <p class="credits copyright text-muted">
-              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/">阳明的博客</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/archive/">归档</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/friend/">友链</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://beian.miit.gov.cn/" target="_blank"
-                >蜀ICP备11027319号-5</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
-                >kubernetes.io</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
-                >Kubernetes中文社区</a
-              >
-            </p>
-            <p class="text-center text-muted">
-              <script
-                async
-                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
-              ></script>
-              <span id="busuanzi_container_site_pv" style="display: none">
-                本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
               </span>
-              &nbsp;&bull;&nbsp;
-              <span id="busuanzi_container_site_uv" style="display: none">
-                访客数<span id="busuanzi_value_site_uv"></span>人次
-              </span>
-            </p>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
 
-            <p class="credits theme-by text-muted">
-              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
-              &nbsp;&bull;&nbsp; 主题
-              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
-              移植自
-              <a href="https://github.com/rootsongjc/beautifulhugo"
-                >Beautiful Hugo</a
-              >
-            </p>
-          </div>
-        </div>
+          &nbsp;&bull;&nbsp;
+          2023
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.115.4</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+          
+        </p>
       </div>
-    </footer>
+    </div>
+  </div>
+</footer>
 
-    <script
-      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
-      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
-    ></script>
 
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "UA-69668147-3");
-    </script>
-    <script>
-      (function () {
-        var bp = document.createElement("script");
-        var curProtocol = window.location.protocol.split(":")[0];
-        if (curProtocol === "https") {
-          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
-        } else {
-          bp.src = "http://push.zhanzhang.baidu.com/push.js";
-        }
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(bp, s);
-      })();
-    </script>
-    <script>
-      $(document).ready(function () {
-        var int = setInterval(fixCount, 50);
+<script src='https://www.qikqiak.com/js/bundle.min.af02a2d23b6651a566f0135a12e65fc2560faa7a969b3d1ad58d0afe0c9164ae.js' integrity='sha256-rwKi0jtmUaVm8BNaEuZfwlYPqnqWmz0a1Y0K/gyRZK4='></script>
 
-        var initPVCount = 584976;
-        var initUVCount = 153191;
-        function fixCount() {
-          if ($("#busuanzi_container_site_pv").css("display") != "none") {
-            $("#busuanzi_value_site_pv").html(
-              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
-            );
-            clearInterval(int);
-          }
-          if ($("#busuanzi_container_site_uv").css("display") != "none") {
-            $("#busuanzi_value_site_uv").html(
-              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
-            );
-            clearInterval(int);
-          }
-        }
-      });
-    </script>
-    <script>
-      (function (w, d, s, id) {
-        if (typeof w.webpushr !== "undefined") return;
-        w.webpushr =
-          w.webpushr ||
-          function () {
-            (w.webpushr.q = w.webpushr.q || []).push(arguments);
-          };
-        var js,
-          fjs = d.getElementsByTagName(s)[0];
-        js = d.createElement(s);
-        js.id = id;
-        js.src = "https://cdn.webpushr.com/app.min.js";
-        fjs.parentNode.appendChild(js);
-      })(window, document, "script", "webpushr-jssdk");
-      webpushr(
-        "init",
-        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
-      );
-    </script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
-    ></script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
-    ></script>
-    <script type="text/javascript">
-      $(".carousel").slick({
-        dots: true,
-        arrows: true,
-        autoplay: true,
-        autoplaySpeed: 4000,
-        infinite: true,
-        speed: 500,
-        fade: true,
-        cssEase: "linear",
-        centerMode: true,
-        prevArrow: '<button type="button" class="slick-prev"></button>',
-        nextArrow: '<button type="button" class="slick-next"></button>',
-      });
-    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
   </body>
 </html>
+

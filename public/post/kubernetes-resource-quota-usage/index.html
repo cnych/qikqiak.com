@@ -11,14 +11,11 @@
   <meta name="twitter:title" content="kubernetes 的资源配额控制器" />
 
   <meta name="description" content="有很多团队在使用kubernetes的时候是将一个namespace当成一个租户的，所以对namespace的权限控制，资源控制就很重要了，你总是会担心你的某个租户使用的资源就超出了应有的配额。幸运的是kubernetes本身就为我们提供了解决这一问题的工具：资源配额控制器(ResourceQuotaController)
-
 资源配额控制器确保了指定的资源对象始终不会超过配置的资源，能够有效的降低整个系统宕机的机率，增强系统的鲁棒性，对整个集群的稳定性有非常重要的作用。">
   <meta property="og:description" content="有很多团队在使用kubernetes的时候是将一个namespace当成一个租户的，所以对namespace的权限控制，资源控制就很重要了，你总是会担心你的某个租户使用的资源就超出了应有的配额。幸运的是kubernetes本身就为我们提供了解决这一问题的工具：资源配额控制器(ResourceQuotaController)
-
 资源配额控制器确保了指定的资源对象始终不会超过配置的资源，能够有效的降低整个系统宕机的机率，增强系统的鲁棒性，对整个集群的稳定性有非常重要的作用。">
   <meta name="twitter:description" content="有很多团队在使用kubernetes的时候是将一个namespace当成一个租户的，所以对namespace的权限控制，资源控制就很重要了，你总是会担心你的某个租户使用的资源就超出了应有的配额。幸运的是kubernetes本身就为我们提供了解决这一问题的工具：资源配额控制器(ResourceQuotaController)
-
-资源配额控制器确保了指定的资源对象始终不会超过配置的资源，能够有效的降低 …">
+资源配额控制器确保了指定的资源对象始终不会超过配置的资源，能够有效的降低整 …">
   <meta name="author" content=""/>
   <link href="https://picdn.youdianzhishi.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
   <link rel="apple-touch-icon" href="https://picdn.youdianzhishi.com/images/blog-favicon.png"/>
@@ -29,7 +26,6 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="阳明的博客" />
 
-  <meta name="generator" content="Hugo 0.55.6" />
   <link rel="canonical" href="https://www.qikqiak.com/post/kubernetes-resource-quota-usage/" />
   <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
@@ -38,7 +34,7 @@
   <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
   
 
-  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css' integrity='sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU='>
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a6b62363fe57848ad01efa2a5d1bbb1047c2ffb71b53d8aeb42bc5ed5c77ea7c.css' integrity='sha256-prYjY/5XhIrQHvoqXRu7EEfC/7cbU9iutCvF7Vx36nw='>
 
   <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
   
@@ -247,12 +243,8 @@ autocomplete('#aa-search-input',
                   
                   
                     <span class="post-meta">
-  
-    发表于 March 23, 2018
-  
-  
+  发表于 March 23, 2018  
 </span>
-
 
                   
               </div>
@@ -274,12 +266,8 @@ autocomplete('#aa-search-input',
                 
                 
                   <span class="post-meta">
-  
-    发表于 March 23, 2018
-  
-  
+  发表于 March 23, 2018  
 </span>
-
 
                 
             </div>
@@ -334,29 +322,19 @@ autocomplete('#aa-search-input',
           
 
           <p>有很多团队在使用<code>kubernetes</code>的时候是将一个<code>namespace</code>当成一个租户的，所以对<code>namespace</code>的权限控制，资源控制就很重要了，你总是会担心你的某个租户使用的资源就超出了应有的配额。幸运的是<code>kubernetes</code>本身就为我们提供了解决这一问题的工具：资源配额控制器(<code>ResourceQuotaController</code>)</p>
-
 <p>资源配额控制器确保了指定的资源对象始终不会超过配置的资源，能够有效的降低整个系统宕机的机率，增强系统的鲁棒性，对整个集群的稳定性有非常重要的作用。</p>
-
 <h2 id="介绍">介绍</h2>
-
 <p><code>kubernetes</code>主要有3个层级的资源配额控制：</p>
-
 <ul>
 <li>容器：可以对 CPU 和 Memory 进行限制</li>
 <li>POD：可以对一个 POD 内所有容器的的资源进行限制</li>
 <li>Namespace：为一个命名空间下的资源进行限制</li>
 </ul>
-
 <p>其中容器层次主要利用容器本身的支持，比如 Docker 对 CPU、内存等的支持；POD 方面可以限制系统内创建 POD 的资源范围，比如最大或者最小的 CPU、memory 需求；Namespace 层次就是对用户级别的资源限额了，包括 CPU、内存，还可以限定 POD、RC、Service 的数量。</p>
-
 <p>要使用资源配额的话需要确保<code>apiserver</code>的<code>--admission-control</code>参数中包含<code>ResourceQuota</code>，当 namespace 中存在一个 <code>ResourceQuota</code>对象时，该 namespace 即开始实施资源配额的管理工作了，另外需要注意的是一个 namespace 中最多只应存在一个 ResourceQuota 对象。</p>
-
 <p><code>ResourceQuotaController</code>支持的配额控制资源主要包括：计算资源配额、存储资源配额、对象数量资源配额以及配额作用域，下面我们来分别看看这些资源的具体信息：</p>
-
 <h3 id="计算资源配额">计算资源配额</h3>
-
 <p>用户可以对给定 namespace 下的<strong>计算资源</strong>总量进行限制，<code>ResourceQuotaController</code>所支持的资源类型如下：</p>
-
 <table>
 <thead>
 <tr>
@@ -364,82 +342,73 @@ autocomplete('#aa-search-input',
 <th>描述信息</th>
 </tr>
 </thead>
-
 <tbody>
 <tr>
 <td>cpu</td>
 <td>所有非终止状态的 POD 中，其 CPU 需求总量不能超过该值</td>
 </tr>
-
 <tr>
 <td>limits.cpu</td>
 <td>所有非终止状态的 POD 中，其 CPU 限额总量不能超过该值</td>
 </tr>
-
 <tr>
 <td>memory</td>
 <td>所有非终止状态的 POD 中，其内存需求总量不能超过该值</td>
 </tr>
-
 <tr>
 <td>limits.memory</td>
 <td>所有非终止状态的 POD 中，其内存限额总量不能超过该值</td>
 </tr>
-
 <tr>
 <td>requests.cpu</td>
 <td>所有非终止状态的 POD 中，其 CPU 需求总量不能超过该值</td>
 </tr>
-
 <tr>
 <td>requests.memory</td>
 <td>所有非终止状态的 POD 中，其内存需求总量不能超过该值</td>
 </tr>
 </tbody>
 </table>
-
 <p>示例如下：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">$ cat &lt;&lt;EOF &gt; compute-resources.yaml
-apiVersion: v1
-kind: ResourceQuota
-metadata:
-  name: compute-resources
-  namespace: myspace
-spec:
-  hard:
-    requests.cpu: <span style="color:#f1fa8c">&#34;1&#34;</span>
-    requests.memory: 1Gi
-    limits.cpu: <span style="color:#f1fa8c">&#34;2&#34;</span>
-    limits.memory: 2Gi
-EOF
-$ kubectl create -f compute-resources.yaml</code></pre></div>
-<p>然后我们查看下上面我们创建的 <code>ResourceQuota</code>对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl describe quota compute-resources -n myspace
-Name:            compute-resources
-Namespace:       myspace
-Resource         Used  Hard
---------         ----  ----
-limits.cpu       <span style="color:#bd93f9">0</span>     <span style="color:#bd93f9">2</span>
-limits.memory    <span style="color:#bd93f9">0</span>     2Gi
-requests.cpu     <span style="color:#bd93f9">0</span>     <span style="color:#bd93f9">1</span>
-requests.memory  <span style="color:#bd93f9">0</span>     1Gi</code></pre></div>
-<blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>$ cat &lt;&lt;EOF &gt; compute-resources.yaml
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: ResourceQuota
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: compute-resources
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">namespace</span>: myspace
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">hard</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">requests.cpu</span>: <span style="color:#f1fa8c">&#34;1&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">requests.memory</span>: 1Gi
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">limits.cpu</span>: <span style="color:#f1fa8c">&#34;2&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">limits.memory</span>: 2Gi
+</span></span><span style="display:flex;"><span>EOF
+</span></span><span style="display:flex;"><span>$ kubectl create -f compute-resources.yaml
+</span></span></code></pre></div><p>然后我们查看下上面我们创建的 <code>ResourceQuota</code>对象：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl describe quota compute-resources -n myspace
+</span></span><span style="display:flex;"><span>Name:            compute-resources
+</span></span><span style="display:flex;"><span>Namespace:       myspace
+</span></span><span style="display:flex;"><span>Resource         Used  Hard
+</span></span><span style="display:flex;"><span>--------         ----  ----
+</span></span><span style="display:flex;"><span>limits.cpu       <span style="color:#bd93f9">0</span>     <span style="color:#bd93f9">2</span>
+</span></span><span style="display:flex;"><span>limits.memory    <span style="color:#bd93f9">0</span>     2Gi
+</span></span><span style="display:flex;"><span>requests.cpu     <span style="color:#bd93f9">0</span>     <span style="color:#bd93f9">1</span>
+</span></span><span style="display:flex;"><span>requests.memory  <span style="color:#bd93f9">0</span>     1Gi
+</span></span></code></pre></div><blockquote>
 <p>另外需要注意的是：如果 namespace 下的计算资源 （如 cpu 和 memory）的配额被启用，则用户必须为这些资源设定请求值（request） 和约束值（limit），否则配额系统将拒绝Pod的创建；或者也可以为资源设置默认的资源限制，如下 yaml 文件：（同样需要在<code>--admission-control</code>参数中设置值<strong>LimitRanger</strong>）</p>
 </blockquote>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: v1
-kind: LimitRange
-metadata:
-  name: limits
-spec:
-  limits:
-  - default:
-    cpu: 200m
-    memory: 200Mi
-  type: Container</code></pre></div>
-<h3 id="存储资源配额">存储资源配额</h3>
-
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: LimitRange
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: limits
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">limits</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff79c6">default</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">cpu</span>: 200m
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">memory</span>: 200Mi
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">type</span>: Container
+</span></span></code></pre></div><h3 id="存储资源配额">存储资源配额</h3>
 <p>用户可以对给定 namespace 下的<strong>存储资源</strong>总量进行限制，此外，还可以根据相关的存储类（Storage Class）来限制存储资源的消耗。</p>
-
 <table>
 <thead>
 <tr>
@@ -447,34 +416,27 @@ spec:
 <th>描述信息</th>
 </tr>
 </thead>
-
 <tbody>
 <tr>
 <td>requests.storage</td>
 <td>所有的 PVC 中，存储资源的需求不能超过该值</td>
 </tr>
-
 <tr>
 <td>persistentvolumecliaims</td>
 <td>namespace 中所允许的 PVC 总量</td>
 </tr>
-
 <tr>
-<td><storage-class-name>.storageclass.storage.k8s.io/requests.storage</td>
+<td><!-- raw HTML omitted -->.storageclass.storage.k8s.io/requests.storage</td>
 <td>所有该 storage-class-name 相关的 PVC 中， 存储资源的需求不能超过该值</td>
 </tr>
-
 <tr>
-<td><storage-class-name>.storageclass.storage.k8s.io/persistentvolumeclaims</td>
+<td><!-- raw HTML omitted -->.storageclass.storage.k8s.io/persistentvolumeclaims</td>
 <td>namespace 中所允许的该 storage-class-name 相关的 PVC 的总量</td>
 </tr>
 </tbody>
 </table>
-
 <h3 id="对象数量配额">对象数量配额</h3>
-
 <p>给定类型的对象数量可以被限制。 支持以下类型：</p>
-
 <table>
 <thead>
 <tr>
@@ -482,88 +444,76 @@ spec:
 <th>描述信息</th>
 </tr>
 </thead>
-
 <tbody>
 <tr>
 <td>configmaps</td>
 <td>namespace 下允许存在的 configmap 的数量</td>
 </tr>
-
 <tr>
 <td>persistentvolumeclaims</td>
 <td>namespace 下允许存在的 PVC 的数量</td>
 </tr>
-
 <tr>
 <td>pods</td>
 <td>namespace 下允许存在的非终止状态的 POD 数量，如果 POD 的 status.phase 为 Failed 或 Succeeded，那么其处于终止状态</td>
 </tr>
-
 <tr>
 <td>replicationcontrollers</td>
 <td>namespace 下允许存在的 replication controllers 的数量</td>
 </tr>
-
 <tr>
 <td>resourcequotas</td>
 <td>namespace 下允许存在的 resource quotas 的数量</td>
 </tr>
-
 <tr>
 <td>services</td>
 <td>namespace 下允许存在的service的数量</td>
 </tr>
-
 <tr>
 <td>services.loadbalancers</td>
 <td>namespace 下允许存在的 load balancer 类型的 service 的数量</td>
 </tr>
-
 <tr>
 <td>services.nodeports</td>
 <td>namespace 下允许存在的 node port 类型的 service 的数量</td>
 </tr>
-
 <tr>
 <td>secrets</td>
 <td>namespace 下允许存在的 secret 的数量</td>
 </tr>
 </tbody>
 </table>
-
 <p>如下示例：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">$ cat &lt;&lt;EOF &gt; object-counts.yaml
-apiVersion: v1
-kind: ResourceQuota
-metadata:
-  name: object-counts
-  namespace: myspace
-spec:
-  hard:
-    pods: <span style="color:#f1fa8c">&#34;40&#34;</span>
-    configmaps: <span style="color:#f1fa8c">&#34;10&#34;</span>
-    replicationcontrollers: <span style="color:#f1fa8c">&#34;20&#34;</span>
-    secrets: <span style="color:#f1fa8c">&#34;10&#34;</span>
-    services: <span style="color:#f1fa8c">&#34;10&#34;</span>
-    services.nodeports: <span style="color:#f1fa8c">&#34;2&#34;</span>
-EOF
-$ kubectl create -f object-counts.yaml</code></pre></div>
-<p>同样可以查看上面创建的资源限额对象：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl describe quota object-counts -n myspace
-Name:                   object-counts
-Namespace:              myspace
-Resource                Used  Hard
---------                ----  ----
-configmaps              <span style="color:#bd93f9">0</span>     <span style="color:#bd93f9">10</span>
-pods                    <span style="color:#bd93f9">0</span>     <span style="color:#bd93f9">40</span>
-replicationcontrollers  <span style="color:#bd93f9">0</span>     <span style="color:#bd93f9">20</span>
-secrets                 <span style="color:#bd93f9">1</span>     <span style="color:#bd93f9">10</span>
-services                <span style="color:#bd93f9">0</span>     <span style="color:#bd93f9">10</span>
-services.nodeports      <span style="color:#bd93f9">0</span>     <span style="color:#bd93f9">2</span></code></pre></div>
-<h3 id="配额作用域">配额作用域</h3>
-
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>$ cat &lt;&lt;EOF &gt; object-counts.yaml
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: ResourceQuota
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: object-counts
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">namespace</span>: myspace
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">hard</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">pods</span>: <span style="color:#f1fa8c">&#34;40&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">configmaps</span>: <span style="color:#f1fa8c">&#34;10&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">replicationcontrollers</span>: <span style="color:#f1fa8c">&#34;20&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">secrets</span>: <span style="color:#f1fa8c">&#34;10&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">services</span>: <span style="color:#f1fa8c">&#34;10&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">services.nodeports</span>: <span style="color:#f1fa8c">&#34;2&#34;</span>
+</span></span><span style="display:flex;"><span>EOF
+</span></span><span style="display:flex;"><span>$ kubectl create -f object-counts.yaml
+</span></span></code></pre></div><p>同样可以查看上面创建的资源限额对象：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl describe quota object-counts -n myspace
+</span></span><span style="display:flex;"><span>Name:                   object-counts
+</span></span><span style="display:flex;"><span>Namespace:              myspace
+</span></span><span style="display:flex;"><span>Resource                Used  Hard
+</span></span><span style="display:flex;"><span>--------                ----  ----
+</span></span><span style="display:flex;"><span>configmaps              <span style="color:#bd93f9">0</span>     <span style="color:#bd93f9">10</span>
+</span></span><span style="display:flex;"><span>pods                    <span style="color:#bd93f9">0</span>     <span style="color:#bd93f9">40</span>
+</span></span><span style="display:flex;"><span>replicationcontrollers  <span style="color:#bd93f9">0</span>     <span style="color:#bd93f9">20</span>
+</span></span><span style="display:flex;"><span>secrets                 <span style="color:#bd93f9">1</span>     <span style="color:#bd93f9">10</span>
+</span></span><span style="display:flex;"><span>services                <span style="color:#bd93f9">0</span>     <span style="color:#bd93f9">10</span>
+</span></span><span style="display:flex;"><span>services.nodeports      <span style="color:#bd93f9">0</span>     <span style="color:#bd93f9">2</span>
+</span></span></code></pre></div><h3 id="配额作用域">配额作用域</h3>
 <p>每个配额都有一组相关的作用域（scope），配额只会对作用域内的资源生效。当一个作用域被添加到配额中后，它会对作用域相关的资源数量作限制。 如配额中指定了允许（作用域）集合之外的资源，会导致验证错误。</p>
-
 <table>
 <thead>
 <tr>
@@ -571,54 +521,47 @@ services.nodeports      <span style="color:#bd93f9">0</span>     <span style="co
 <th>描述</th>
 </tr>
 </thead>
-
 <tbody>
 <tr>
 <td>Terminating</td>
 <td>匹配 spec.activeDeadlineSeconds &gt;= 0 的 POD</td>
 </tr>
-
 <tr>
 <td>NotTerminating</td>
 <td>匹配 spec.activeDeadlineSeconds is nil 的 POD</td>
 </tr>
-
 <tr>
 <td>BestEffort</td>
 <td>匹配<code>尽力而为（best effort)</code>服务类型的 POD</td>
 </tr>
-
 <tr>
 <td>NotBestEffort</td>
 <td>匹配非<code>尽力而为（best effort)</code>服务类型的 POD</td>
 </tr>
 </tbody>
 </table>
-
 <p>其中<code>BestEffort</code> 作用域限制配额跟踪以下资源： PODS</p>
-
 <p><code>Terminating</code>、 <code>NotTerminating</code> 和 <code>NotBestEffort</code>限制配额跟踪以下资源：cpu、limits.cpu、limits.memory、memory、pods、requests.cpu、requests.memory。</p>
-
 <h2 id="总结">总结</h2>
-
 <p>物理资源 CPU 和内存受到 namespace 资源配额管理器的控制，几乎所有使用到的资源都能够被简单的调整，我们可以结合我们自身的业务和物理资源实际情况来进行分配配额，所以这里没有一个完全通用的配额方案，需要根据实际情况来定，因为只有你自己最清楚你的集群的整体情况了。</p>
-
 <h2 id="参考资料">参考资料</h2>
-
 <ul>
 <li><a href="https://kubernetes.io/docs/tasks/administer-cluster/quota-memory-cpu-namespace/">https://kubernetes.io/docs/tasks/administer-cluster/quota-memory-cpu-namespace/</a></li>
 <li><a href="https://kubernetes.io/docs/tasks/administer-cluster/quota-api-object/">https://kubernetes.io/docs/tasks/administer-cluster/quota-api-object/</a></li>
 </ul>
-
 <p>欢迎大家加入我们的知识星球：<code>Kubernetes</code>。
-<img src="https://www.qikqiak.com/img/xq.png" alt="知识星球" /></p>
-
-<p><a href="https://youdianzhishi.com/web/course/1030" title="从 Docker 到 Kubernetes 进阶课程"><img src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp" alt="Kubernetes进阶训练营"></a></p>
-
+<img src="https://www.qikqiak.com/img/xq.png" alt="知识星球"></p>
+<!-- raw HTML omitted -->
 
           <h2>微信公众号</h2>
-<p>扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的 kubernetes 讨论群里面共同学习。</p>
-<img src="https://picdn.youdianzhishi.com/images/qrcode.png" alt="wechat-account-qrcode">
+<p>
+  扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+  kubernetes 讨论群里面共同学习。
+</p>
+<img
+  src="https://picdn.youdianzhishi.com/images/qrcode.png"
+  alt="wechat-account-qrcode"
+/>
 
   
           
@@ -848,7 +791,7 @@ services.nodeports      <span style="color:#bd93f9">0</span>     <span style="co
         </p>
         
         <p class="credits theme-by text-muted">
-          由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a> 移植自 <a href="https://github.com/rootsongjc/beautifulhugo">Beautiful Hugo</a>
+          由 <a href="http://gohugo.io">Hugo v0.115.4</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
           
         </p>
       </div>
@@ -857,7 +800,7 @@ services.nodeports      <span style="color:#bd93f9">0</span>     <span style="co
 </footer>
 
 
-<script src='https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js' integrity='sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc='></script>
+<script src='https://www.qikqiak.com/js/bundle.min.af02a2d23b6651a566f0135a12e65fc2560faa7a969b3d1ad58d0afe0c9164ae.js' integrity='sha256-rwKi0jtmUaVm8BNaEuZfwlYPqnqWmz0a1Y0K/gyRZK4='></script>
 
 
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>

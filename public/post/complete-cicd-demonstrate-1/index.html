@@ -1,1336 +1,771 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
-    />
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-    <title>
-      基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的
-      CI/CD(一)-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
-    </title>
-    <meta
-      property="og:title"
-      content="基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(一)"
-    />
-    <meta
-      name="twitter:title"
-      content="基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(一)"
-    />
 
-    <meta
-      name="description"
-      content="上节课和大家介绍了Gitlab CI结合Kubernetes进行 CI/CD 的完整过程。这节课结合前面所学的知识点给大家介绍一个完整的示例：使用 Jenkins &#43; Gitlab &#43; Harbor &#43; Helm &#43; Kubernetes 来实现一个完整的 CI/CD 流水线作业。
+  <title>基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(一)-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(一)" />
+  <meta name="twitter:title" content="基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(一)" />
 
-其实前面的课程中我们就已经学习了 Jenkins Pipeline 与 Kubernetes 的完美结合，我们利用 Kubernetes 来动态运行 Jenkins 的 Slave 节点，可以和好的来解决传统的 Jenkins Slave 浪费大量资源的缺点。之前的示例中我们是将项目放置在 Github 仓库上的，将 Docker 镜像推送到了 Docker Hub，这节课我们来结合我们前面学习的知识点来综合运用下，使用 Jenkins、Gitlab、Harbor、Helm、Kubernetes 来实现一个完整的持续集成和持续部署的流水线作业。"
-    />
-    <meta
-      property="og:description"
-      content="上节课和大家介绍了Gitlab CI结合Kubernetes进行 CI/CD 的完整过程。这节课结合前面所学的知识点给大家介绍一个完整的示例：使用 Jenkins &#43; Gitlab &#43; Harbor &#43; Helm &#43; Kubernetes 来实现一个完整的 CI/CD 流水线作业。
+  <meta name="description" content="上节课和大家介绍了Gitlab CI结合Kubernetes进行 CI/CD 的完整过程。这节课结合前面所学的知识点给大家介绍一个完整的示例：使用 Jenkins &#43; Gitlab &#43; Harbor &#43; Helm &#43; Kubernetes 来实现一个完整的 CI/CD 流水线作业。
+其实前面的课程中我们就已经学习了 Jenkins Pipeline 与 Kubernetes 的完美结合，我们利用 Kubernetes 来动态运行 Jenkins 的 Slave 节点，可以和好的来解决传统的 Jenkins Slave 浪费大量资源的缺点。之前的示例中我们是将项目放置在 Github 仓库上的，将 Docker 镜像推送到了 Docker Hub，这节课我们来结合我们前面学习的知识点来综合运用下，使用 Jenkins、Gitlab、Harbor、Helm、Kubernetes 来实现一个完整的持续集成和持续部署的流水线作业。">
+  <meta property="og:description" content="上节课和大家介绍了Gitlab CI结合Kubernetes进行 CI/CD 的完整过程。这节课结合前面所学的知识点给大家介绍一个完整的示例：使用 Jenkins &#43; Gitlab &#43; Harbor &#43; Helm &#43; Kubernetes 来实现一个完整的 CI/CD 流水线作业。
+其实前面的课程中我们就已经学习了 Jenkins Pipeline 与 Kubernetes 的完美结合，我们利用 Kubernetes 来动态运行 Jenkins 的 Slave 节点，可以和好的来解决传统的 Jenkins Slave 浪费大量资源的缺点。之前的示例中我们是将项目放置在 Github 仓库上的，将 Docker 镜像推送到了 Docker Hub，这节课我们来结合我们前面学习的知识点来综合运用下，使用 Jenkins、Gitlab、Harbor、Helm、Kubernetes 来实现一个完整的持续集成和持续部署的流水线作业。">
+  <meta name="twitter:description" content="上节课和大家介绍了Gitlab CI结合Kubernetes进行 CI/CD 的完整过程。这节课结合前面所学的知识点给大家介绍一个完整的示例：使用 Jenkins &#43; Gitlab &#43; Harbor &#43; Helm &#43; Kubernetes 来实现一个完整的 CI/CD 流水线作业。
+其实前面的课程中我们就已经学习了 Jenkins Pipeline 与 Kubernetes 的完美结合， …">
+  <meta name="author" content=""/>
+  <link href="https://picdn.youdianzhishi.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://picdn.youdianzhishi.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/complete-cicd-demonstrate-1/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
 
-其实前面的课程中我们就已经学习了 Jenkins Pipeline 与 Kubernetes 的完美结合，我们利用 Kubernetes 来动态运行 Jenkins 的 Slave 节点，可以和好的来解决传统的 Jenkins Slave 浪费大量资源的缺点。之前的示例中我们是将项目放置在 Github 仓库上的，将 Docker 镜像推送到了 Docker Hub，这节课我们来结合我们前面学习的知识点来综合运用下，使用 Jenkins、Gitlab、Harbor、Helm、Kubernetes 来实现一个完整的持续集成和持续部署的流水线作业。"
-    />
-    <meta
-      name="twitter:description"
-      content="上节课和大家介绍了Gitlab CI结合Kubernetes进行 CI/CD 的完整过程。这节课结合前面所学的知识点给大家介绍一个完整的示例：使用 Jenkins &#43; Gitlab &#43; Harbor &#43; Helm &#43; Kubernetes 来实现一个完整的 CI/CD 流水线作业。
+  <link rel="canonical" href="https://www.qikqiak.com/post/complete-cicd-demonstrate-1/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
-其实前面的课程中我们就已经学习了 Jenkins Pipeline 与 Kubernetes 的完美结合， …"
-    />
-    <meta name="author" content="" />
-    <link
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-      rel="icon"
-      type="image/x-icon"
-    />
-    <link
-      rel="apple-touch-icon"
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      property="og:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      name="twitter:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta name="twitter:card" content="summary" />
-    <meta
-      property="og:url"
-      content="https://www.qikqiak.com/post/complete-cicd-demonstrate-1/"
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="阳明的博客" />
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
 
-    <meta name="generator" content="Hugo 0.55.6" />
-    <link
-      rel="canonical"
-      href="https://www.qikqiak.com/post/complete-cicd-demonstrate-1/"
-    />
-    <link
-      rel="alternate"
-      href="https://www.qikqiak.com/index.xml"
-      type="application/rss+xml"
-      title="阳明的博客"
-    />
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a6b62363fe57848ad01efa2a5d1bbb1047c2ffb71b53d8aeb42bc5ed5c77ea7c.css' integrity='sha256-prYjY/5XhIrQHvoqXRu7EEfC/7cbU9iutCvF7Vx36nw='>
 
-    <link
-      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
-      rel="stylesheet"
-    />
-
-    <link
-      rel="stylesheet"
-      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
-      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
-    />
-
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
-    />
-
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
     <!--[if lt IE 9]>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-      <link
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-        rel="stylesheet"
-      />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <![endif]-->
-    <meta
-      name="google-site-verification"
-      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
-    />
-    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-    <meta
-      name="keywords"
-      content="kubernetes, Jenkins, Gitlab, Harbor, Helm, Docker, Pipeline, CI/CD, 流水线, devops"
-    />
-    <script>
-      var _hmt = _hmt || [];
-      (function () {
-        var hm = document.createElement("script");
-        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(hm, s);
-      })();
-    </script>
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, Jenkins, Gitlab, Harbor, Helm, Docker, Pipeline, CI/CD, 流水线, devops">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
 
-    <script type="application/javascript">
-      var doNotTrack = false;
-      if (!doNotTrack) {
-        window.ga =
-          window.ga ||
-          function () {
-            (ga.q = ga.q || []).push(arguments);
-          };
-        ga.l = +new Date();
-        ga("create", "UA-69668147-3", "auto");
 
-        ga("send", "pageview");
-      }
-    </script>
-    <script async src="https://www.google-analytics.com/analytics.js"></script>
-  </head>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-      <div class="container">
-        <div class="navbar-header">
-          <button
-            type="button"
-            class="navbar-toggle"
-            data-toggle="collapse"
-            data-target="#main-navbar"
-          >
-            <span class="sr-only">切换导航</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a
-            class="navbar-brand"
-            href="https://www.qikqiak.com/"
-            title="阳明的博客"
-          >
-            <img
-              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
-              style="margin-top: -5px; height: 32px"
-              alt="阳明的博客"
-            />
-          </a>
-        </div>
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://picdn.youdianzhishi.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
 
-        <div class="collapse navbar-collapse" id="main-navbar">
-          <ul class="nav navbar-nav navbar-right">
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-
+          
+        
+          
             <li>
-              <a
-                title="课程"
-                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
-                >课程</a
-              >
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/archives">Archive</a>
-
-                <a href="https://www.qikqiak.com/tags">tags</a>
-
-                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-
-                <a href="https://www.qikqiak.com/tags/python">python</a>
-
-                <a href="https://www.qikqiak.com/tags/django">django</a>
-
-                <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-
-                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-
-                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-
-                <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/"
-                >关于</a
-              >
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
             </li>
-
+          
+        
+          
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
+          
+        
 
-            <li>
-              <a
-                href="#modalSearch"
-                data-toggle="modal"
-                data-target="#modalSearch"
-                style="outline: none"
-              >
-                <span
-                  id="searchGlyph"
-                  class="glyphicon glyphicon-search"
-                ></span>
-              </a>
-            </li>
-          </ul>
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
         </div>
-      </div>
-    </nav>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-    <div id="modalSearch" class="modal fade" role="dialog">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal">
-              &times;
-            </button>
-            <h4 class="modal-title">搜索</h4>
-          </div>
-          <div class="modal-body">
-            <div class="aa-input-container" id="aa-input-container">
-              <input
-                type="search"
-                id="aa-search-input"
-                class="aa-input-search"
-                placeholder="Search for titles or URIs..."
-                name="search"
-                autocomplete="off"
-              />
-              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-                <path
-                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
-                />
-              </svg>
-            </div>
-            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
 
-            <script>
-              var client = algoliasearch(
-                "1JDRAS0AZR",
-                "8804ac109158bb3bb60d74ce98fa332f"
-              );
-              var index = client.initIndex("prod_blog");
-
-              autocomplete(
-                "#aa-search-input",
-                { hint: false },
-                {
-                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
-
-                  displayKey: "name",
-
-                  templates: {
-                    suggestion: function (suggestion) {
-                      return (
-                        "<span>" +
-                        '<a href="https://www.qikqiak.com/post/' +
-                        suggestion.slug +
-                        '">' +
-                        suggestion._highlightResult.title.value +
-                        "</a></span>"
-                      );
-                    },
-                  },
-                }
-              );
-            </script>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">
-              close
-            </button>
-          </div>
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div
-      id="header-big-imgs"
-      data-num-img="1"
-      data-img-src-1="https://picdn.youdianzhishi.com/images/n1l43.jpg"
-      data-img-desc-1="devops"
-    ></div>
+    
+  
+  
+  
 
-    <header class="header-section has-img">
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://picdn.youdianzhishi.com/images/n1l43.jpg" data-img-desc-1="devops"></div>
+  
+
+  <header class="header-section has-img">
+    
       <div class="intro-header big-img">
+        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
-                <h1>
-                  基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(一)
-                </h1>
+                <h1>基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(一)</h1>
+                  
+                  
+                    <span class="post-meta">
+  发表于 April 12, 2019  
+</span>
 
-                <span class="post-meta"> 发表于 April 12, 2019 </span>
+                  
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline"></span>
+        <span class="img-desc" style="display: inline;"></span>
       </div>
-
-      <div class="intro-header no-img">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-              <div class="post-heading">
-                <h1>
-                  基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(一)
-                </h1>
-
-                <span class="post-meta"> 发表于 April 12, 2019 </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <div class="container" role="main">
-      <div class="row">
-        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-          <div>
-            <h5 id="tags" style="margin-top: 30px">
-              标签:
-
-              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
-              &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/jenkins/">Jenkins</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/gitlab/">Gitlab</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/harbor/">Harbor</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/helm/">Helm</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/docker/">Docker</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/pipeline/">Pipeline</a>
-              &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/devops/">devops</a> &nbsp;
-            </h5>
-          </div>
-
-          <article
-            role="main"
-            class="blog-post"
-            itemprop="articleBody"
-            id="content"
-          >
-            <aside class="toc">
-              <nav id="TableOfContents">
-                <ul>
-                  <li>
-                    <ul>
-                      <li><a href="#流程">流程</a></li>
-                      <li>
-                        <a href="#项目">项目</a>
-                        <ul>
-                          <li><a href="#服务端">服务端</a></li>
-                          <li><a href="#客户端">客户端</a></li>
-                        </ul>
-                      </li>
-                      <li><a href="#jenkins">Jenkins</a></li>
-                    </ul>
-                  </li>
-                </ul>
-              </nav>
-            </aside>
-
-            <p>
-              <a
-                href="https://www.qikqiak.com/post/gitlab-ci-k8s-cluster-feature/"
-                >上节课和大家介绍了<code>Gitlab CI</code
-                >结合<code>Kubernetes</code>进行 CI/CD 的完整过程</a
-              >。这节课结合前面所学的知识点给大家介绍一个完整的示例：使用
-              Jenkins + Gitlab + Harbor + Helm + Kubernetes 来实现一个完整的
-              CI/CD 流水线作业。
-            </p>
-
-            <p>
-              其实前面的课程中我们就<a
-                href="https://www.qikqiak.com/post/kubernetes-jenkins1/"
-                >已经学习了 Jenkins Pipeline 与 Kubernetes 的完美结合</a
-              >，我们利用 Kubernetes 来动态运行 Jenkins 的 Slave
-              节点，可以和好的来解决传统的 Jenkins Slave
-              浪费大量资源的缺点。之前的示例中我们是将项目放置在 Github
-              仓库上的，将 Docker 镜像推送到了 Docker
-              Hub，这节课我们来结合我们前面学习的知识点来综合运用下，使用
-              Jenkins、Gitlab、Harbor、Helm、Kubernetes
-              来实现一个完整的持续集成和持续部署的流水线作业。
-            </p>
-
-            <h2 id="流程">流程</h2>
-
-            <p>下图是我们当前示例的流程图</p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/Ntfu2v.jpg"
-                alt="ci/cd demo"
-              />
-              <figcaption>ci/cd demo</figcaption>
-            </figure>
-
-            <ul>
-              <li>1. 开发人员提交代码到 Gitlab 代码仓库</li>
-              <li>
-                2. 通过 Gitlab 配置的 Jenkins Webhook 触发 Pipeline 自动构建
-              </li>
-              <li>
-                3. Jenkins 触发构建构建任务，根据 Pipeline 脚本定义分步骤构建
-              </li>
-              <li>4. 先进行代码静态分析，单元测试</li>
-              <li>5. 然后进行 Maven 构建（Java 项目）</li>
-              <li>6. 根据构建结果构建 Docker 镜像</li>
-              <li>7. 推送 Docker 镜像到 Harbor 仓库</li>
-              <li>8. 触发更新服务阶段，使用 Helm 安装/更新 Release</li>
-              <li>9. 查看服务是否更新成功。</li>
-            </ul>
-
-            <h2 id="项目">项目</h2>
-
-            <p>
-              本次示例项目是一个完整的基于 Spring Boot、Spring
-              Security、JWT、React 和 Ant Design
-              构建的一个开源的投票应用，项目地址：<a
-                href="https://github.com/callicoder/spring-security-react-ant-design-polls-app"
-                >https://github.com/callicoder/spring-security-react-ant-design-polls-app</a
-              >。
-            </p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/o9SWfn.jpg"
-                alt="polling app1"
-              />
-              <figcaption>polling app1</figcaption>
-            </figure>
-
-            <p>我们将会在该项目的基础上添加部分代码，并实践 CI/CD 流程。</p>
-
-            <h3 id="服务端">服务端</h3>
-
-            <p>
-              首先需要更改的是服务端配置，我们需要将数据库链接的配置更改成环境变量的形式，写死了的话就没办法进行定制了，修改服务端文件<code>src/main/resources/application.properties</code>，将下面的数据库配置部分修改成如下形式：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              >
-spring.datasource.url= jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:polling_app}?useSSL=false&amp;serverTimezone=UTC&amp;useLegacyDatetimeCode=false
-spring.datasource.username= ${DB_USER:root}
-spring.datasource.password= ${DB_PASSWORD:root}</pre
-              >
-            </div>
-            <p>
-              当环境变量中有上面的数据配置的时候，就会优先使用环境变量中的值，没有的时候就会用默认的值进行数据库配置。
-              <script
-                async
-                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-              ></script>
-
-              <ins
-                class="adsbygoogle"
-                style="display: block"
-                data-ad-client="ca-pub-5376999672787220"
-                data-ad-slot="9165834656"
-                data-ad-format="auto"
-                data-full-width-responsive="true"
-              ></ins>
-              <script>
-                (adsbygoogle = window.adsbygoogle || []).push({});
-              </script>
-
-              由于我们要将项目部署到 Kubernetes
-              集群中去，所以我们需要将服务端进行容器化，所以我们在项目根目录下面添加一个<code>Dockerfile</code>文件进行镜像构建：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-docker" data-lang="docker"><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> openjdk:8-jdk-alpine</span>
-
-<span style="color:#ff79c6">MAINTAINER</span><span style="color:#f1fa8c"> cnych &lt;icnych@gmail.com&gt;</span>
-
-<span style="color:#ff79c6">ENV</span><span style="color:#f1fa8c"> LANG en_US.UTF-8</span>
-<span style="color:#ff79c6">ENV</span><span style="color:#f1fa8c"> LANGUAGE en_US:en</span>
-<span style="color:#ff79c6">ENV</span><span style="color:#f1fa8c"> LC_ALL en_US.UTF-8</span>
-<span style="color:#ff79c6">ENV</span><span style="color:#f1fa8c"> TZ=Asia/Shanghai</span>
-
-<span style="color:#ff79c6">RUN</span> mkdir /app
-
-<span style="color:#ff79c6">WORKDIR</span><span style="color:#f1fa8c"> /app</span>
-
-COPY target/polls-0.0.1-SNAPSHOT.jar /app/polls.jar
-
-<span style="color:#ff79c6">EXPOSE</span><span style="color:#f1fa8c"> 8080</span>
-
-<span style="color:#ff79c6">ENTRYPOINT</span><span style="color:#f1fa8c"> [&#34;java&#34;, &#34;-Djava.security.egd=file:/dev/./urandom&#34;, &#34;-jar&#34;,&#34;/app/polls.jar&#34;]</span></code></pre>
-            </div>
-            <p>
-              由于服务端代码是基于<code>Spring Boot</code
-              >构建的，所以我们这里使用一个<code>openjdk</code>的基础镜像，将打包过后的<code>jar</code>包放入镜像之中，然后用过<code
-                >java -jar</code
-              >命令直接启动即可，这里就会存在一个问题了，我们是在 Jenkins 的
-              Pipeline
-              中去进行镜像构建的，这个时候项目中并没有打包好的<code>jar</code>包文件，那么我们应该如何获取打包好的<code>jar</code>包文件呢？这里我们可以使用两种方法：
-            </p>
-
-            <p>
-              第一种就是如果你用于镜像打包的 Docker
-              版本大于<code>17.06</code>版本的话，那么我墙裂推荐你使用 Docker
-              的多阶段构建功能来完成镜像的打包过程，我们只需要将上面的<code>Dockerfile</code>文件稍微更改下即可，将使用<code>maven</code>进行构建的工作放到同一个文件中：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-docker" data-lang="docker"><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> maven:3.6-alpine as BUILD</span>
-
-COPY src /usr/app/src
-COPY pom.xml /usr/app
-
-<span style="color:#ff79c6">RUN</span> mvn -f /usr/app/pom.xml clean package -Dmaven.test.skip<span style="color:#ff79c6">=</span>true
-
-<span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> openjdk:8-jdk-alpine</span>
-
-<span style="color:#ff79c6">MAINTAINER</span><span style="color:#f1fa8c"> cnych &lt;icnych@gmail.com&gt;</span>
-
-<span style="color:#ff79c6">ENV</span><span style="color:#f1fa8c"> LANG en_US.UTF-8</span>
-<span style="color:#ff79c6">ENV</span><span style="color:#f1fa8c"> LANGUAGE en_US:en</span>
-<span style="color:#ff79c6">ENV</span><span style="color:#f1fa8c"> LC_ALL en_US.UTF-8</span>
-<span style="color:#ff79c6">ENV</span><span style="color:#f1fa8c"> TZ=Asia/Shanghai</span>
-
-<span style="color:#ff79c6">RUN</span> mkdir /app
-
-<span style="color:#ff79c6">WORKDIR</span><span style="color:#f1fa8c"> /app</span>
-
-COPY --from<span style="color:#ff79c6">=</span>BUILD /usr/app/target/polls-0.0.1-SNAPSHOT.jar /app/polls.jar
-
-<span style="color:#ff79c6">EXPOSE</span><span style="color:#f1fa8c"> 8080</span>
-
-<span style="color:#ff79c6">ENTRYPOINT</span><span style="color:#f1fa8c"> [&#34;java&#34;, &#34;-Djava.security.egd=file:/dev/./urandom&#34;, &#34;-jar&#34;,&#34;/app/polls.jar&#34;]</span></code></pre>
-            </div>
-            <p>
-              前面课程中我们就讲解过 Docker
-              的多阶段构建，这里我们定义了两个阶段，第一个阶段利用<code>maven:3.6-alpine</code>这个基础镜像将我们的项目进行打包，然后将该阶段打包生成的<code>jar</code>包文件复制到第二阶段进行最后的镜像打包，这样就可以很好的完成我们的
-              Docker 镜像的构建工作。
-            </p>
-
-            <script
-              async
-              src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-            ></script>
-            <ins
-              class="adsbygoogle"
-              style="display: block; text-align: center"
-              data-ad-layout="in-article"
-              data-ad-format="fluid"
-              data-ad-client="ca-pub-5376999672787220"
-              data-ad-slot="5684687044"
-            ></ins>
-            <script>
-              (adsbygoogle = window.adsbygoogle || []).push({});
-            </script>
-
-            <p>
-              第二种方式就是我们传统的方式，在 Jenkins Pipeline
-              中添加一个<code>maven</code>构建的阶段，然后在第二个 Docker
-              构建的阶段就可以直接获取到前面的<code>jar</code>包了，也可以很方便的完成镜像的构建工作，为了更加清楚的说明
-              Jenkins Pipeline 的用法，我们这里采用这种方式，所以 Dockerfile
-              文件还是使用第一个就行。
-            </p>
-
-            <p>
-              现在我们可以将服务端的代码推送到 Gitlab
-              上去，我们这里的仓库地址为：<a
-                href="http://git.qikqiak.com/course/polling-app-server.git"
-                >http://git.qikqiak.com/course/polling-app-server.git</a
-              >
-            </p>
-
-            <blockquote>
-              <p>注意，这里我们只推送的服务端代码。</p>
-            </blockquote>
-
-            <h3 id="客户端">客户端</h3>
-
-            <p>
-              客户端我们需要修改 API
-              的链接地址，修改文件<code>src/constants/index.js</code>中<code>API_BASE_URL</code>的地址，我们同样通过环境变量来进行区分，如果有环境变量<code>APISERVER_URL</code>，则优先使用这个环境变量来作为
-              API 请求的地址：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-javascript" data-lang="javascript"><span style="color:#8be9fd;font-style:italic">let</span> API_URL <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#39;http://localhost:8080/api&#39;</span>;
-<span style="color:#ff79c6">if</span> (process.env.APISERVER_URL) {
-    API_URL <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">`</span><span style="color:#f1fa8c">${</span>process.env.APISERVER_URL<span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">/api`</span>;
-}
-<span style="color:#ff79c6">export</span> <span style="color:#ff79c6">const</span> API_BASE_URL <span style="color:#ff79c6">=</span> API_URL;
-</code></pre>
-            </div>
-            <p>
-              因为我们这里的项目使用的就是前后端分离的架构，所以我们同样需要将前端代码进行单独的部署，同样我们要将项目部署到
-              Kubernetes
-              环境中，所以也需要做容器化，同样在项目根目录下面添加一个<code>Dockerfile</code>文件：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-docker" data-lang="docker"><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> nginx:1.15.10-alpine</span>
-<span style="color:#ff79c6">ADD</span><span style="color:#f1fa8c"> build /usr/share/nginx/html</span>
-
-<span style="color:#ff79c6">ADD</span><span style="color:#f1fa8c"> nginx.conf</span>
-/etc/nginx/conf.d/default.conf</code></pre>
-            </div>
-            <p>
-              由于前端页面是单纯的静态页面，所以一般我们使用一个<code>nginx</code>镜像来运行，所以我们提供一个<code>nginx.conf</code>配置文件：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              >
-server {
-    gzip on;
-
-    listen       80;
-    server_name  localhost;
-
-    root   /usr/share/nginx/html;
-    location / {
-        try_files $uri /index.html;
-        expires 1h;
-    }
-
-    error_page   500 502 503 504  /50x.html;
-    location = /50x.html {
-        root   /usr/share/nginx/html;
-    }
-
-}</pre
-              >
-            </div>
-            <p>
-              这里我们可以看到我们需要将前面页面打包到一个<code>build</code>目录，然后将改目录添加到
-              nginx 镜像中的<code>/usr/share/nginx/html</code>目录，这样当 nginx
-              镜像启动的时候就是直接使用的改文件夹下面的文件。
-            </p>
-
-            <p>
-              所以现在我们需要获取打包后的目录<code>build</code>，同样的，和上面服务端项目一样，我们可以使用两种方式来完成这个工作。
-            </p>
-
-            <p>
-              第一种方式自然是推荐的 Docker
-              的多阶段构建，我们在一个<code>node</code>镜像的环境中就可以打包我们的前端项目了，所以我们可以更改下<code>Dockerfile</code>文件，先进行
-              node 打包，然后再进行 nginx 启动：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-docker" data-lang="docker"><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> node:alpine as BUILD</span>
-
-<span style="color:#ff79c6">WORKDIR</span><span style="color:#f1fa8c"> /usr/src/app</span>
-
-<span style="color:#ff79c6">RUN</span> mkdir -p /usr/src/app
-
-<span style="color:#ff79c6">ADD</span><span style="color:#f1fa8c"> . /usr/src/app</span>
-
-<span style="color:#ff79c6">RUN</span> npm install <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>    npm run build
-
-<span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> nginx:1.15.10-alpine</span>
-<span style="color:#ff79c6">MAINTAINER</span><span style="color:#f1fa8c"> cnych &lt;icnych@gmail.com&gt;</span>
-
-COPY --from<span style="color:#ff79c6">=</span>BUILD /usr/src/app/build /usr/share/nginx/html
-
-<span style="color:#ff79c6">ADD</span><span style="color:#f1fa8c"> nginx.conf</span>
-/etc/nginx/conf.d/default.conf</code></pre>
-            </div>
-            <p>
-              第二种方式和上面一样在 Jenkins Pipeline
-              中添加一个打包构建的阶段即可，我们这里采用这种方式，所以
-              Dockerfile 文件还是使用第一个就行。
-            </p>
-
-            <p>
-              现在我们可以将客户端的代码推送到 Gitlab
-              上去，我们这里的仓库地址为：<a
-                href="http://git.qikqiak.com/course/polling-app-client.git"
-                >http://git.qikqiak.com/course/polling-app-client.git</a
-              >
-            </p>
-
-            <h2 id="jenkins">Jenkins</h2>
-
-            <p>
-              现在项目准备好了，接下来我们可以开始 Jenkins 的配置，还记得前面在
-              Pipeline 结合 Kubernetes
-              的课程中我们使用了一个<code>kubernetes</code>的 Jenkins
-              插件，但是之前使用的方式有一些不妥的地方，我们 Jenkins Pipeline
-              构建任务绑定到了一个固定的 Slave Pod 上面，这样就需要我们的 Slave
-              Pod 中必须包含一系列构建所需要的依赖，比如
-              docker、maven、node、java
-              等等，这样就难免需要我们自己定义一个很庞大的 Slave
-              镜像，我们直接直接在 Pipeline 中去自定义 Slave Pod
-              中所需要用到的容器模板，这样我们需要什么镜像只需要在 Slave Pod
-              Template 中声明即可，完全不需要去定义一个庞大的 Slave 镜像了。
-            </p>
-
-            <p>
-              首先去掉 Jenkins 中 kubernetes 插件中的 Pod Template
-              的定义，Jenkins -&gt; 系统管理 -&gt; 系统设置 -&gt; 云 -&gt;
-              Kubernetes区域，删除下方的<code>Kubernetes Pod Template</code>
-              -&gt; 保存。
-            </p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/Vsj2qw.jpg"
-                alt="jenkins kubernetes plugin"
-              />
-              <figcaption>jenkins kubernetes plugin</figcaption>
-            </figure>
-
-            <p>
-              然后新建一个名为<code>polling-app-server</code>类型为<code>流水线(Pipeline)</code>的任务：
-            </p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/RoMp9h.jpg"
-                alt="new pipeline task"
-              />
-              <figcaption>new pipeline task</figcaption>
-            </figure>
-
-            <p>
-              然后在这里需要勾选<code>触发远程构建</code>的触发器，其中令牌我们可以随便写一个字符串，然后记住下面的
-              URL，将 JENKINS_URL 替换成 Jenkins
-              的地址,我们这里的地址就是：<code
-                >http://jenkins.qikqiak.com/job/polling-app-server/build?token=server321</code
-              >
-            </p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/RUNtx9.jpg"
-                alt="trigger"
-              />
-              <figcaption>trigger</figcaption>
-            </figure>
-
-            <p>
-              然后在下面的<code>流水线</code>区域我们可以选择<code
-                >Pipeline script</code
-              >然后在下面测试流水线脚本，我们这里选择<code
-                >Pipeline script from SCM</code
-              >，意思就是从代码仓库中通过<code>Jenkinsfile</code>文件获取<code
-                >Pipeline script</code
-              >脚本定义，然后选择 SCM
-              来源为<code>Git</code>，在出现的列表中配置上仓库地址<code>http://git.qikqiak.com/course/polling-app-server.git</code>，由于我们是在一个
-              Slave Pod 中去进行构建，所以如果使用 SSH 的方式去访问 Gitlab
-              代码仓库的话就需要频繁的去更新
-              SSH-KEY，所以我们这里采用直接使用用户名和密码的形式来方式：
-            </p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/W1aphT.jpg"
-                alt="pipeline scm"
-              />
-              <figcaption>pipeline scm</figcaption>
-            </figure>
-
-            <p>
-              在<code>Credentials</code>区域点击<code>添加</code>按钮添加我们访问
-              Gitlab 的用户名和密码：
-            </p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/dsvTL6.jpg"
-                alt="gitlab auth"
-              />
-              <figcaption>gitlab auth</figcaption>
-            </figure>
-
-            <p>
-              然后需要我们配置用于构建的分支，如果所有的分支我们都想要进行构建的话，只需要将<code
-                >Branch Specifier</code
-              >区域留空即可，一般情况下不同的环境对应的分支才需要构建，比如
-              master、develop、test 等，平时开发的 feature 或者 bugfix
-              的分支没必要频繁构建，我们这里就只配置 master 和 develop
-              两个分支用户构建：
-            </p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/2LRY2a.jpg"
-                alt="gitlab branch config"
-              />
-              <figcaption>gitlab branch config</figcaption>
-            </figure>
-
-            <p>
-              然后前往 Gitlab 中配置项目<code>polling-app-server</code>
-              Webhook，settings -&gt; Integrations，填写上面得到的 trigger
-              地址：
-            </p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/ZjGmdi.jpg"
-                alt="webhook"
-              />
-              <figcaption>webhook</figcaption>
-            </figure>
-
-            <p>
-              保存后，可以直接点击<code>Test</code> -&gt;
-              <code>Push Event</code>测试是否可以正常访问 Webhook
-              地址，这里需要注意的是我们需要配置下 Jenkins
-              的安全配置，否则这里的触发器没权限访问 Jenkins，系统管理 -&gt;
-              全局安全配置：取消<code>防止跨站点请求伪造</code>，勾选上<code>匿名用户具有可读权限</code>：
-            </p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/j2Vtrt.jpg"
-                alt="security config"
-              />
-              <figcaption>security config</figcaption>
-            </figure>
-
-            <p>
-              如果测试出现了<code>Hook executed successfully: HTTP 201</code
-              >则证明 Webhook 配置成功了，否则就需要检查下 Jenkins
-              的安全配置是否正确了。
-            </p>
-
-            <p>
-              配置成功后我们只需要往 Gitlab 仓库推送代码就会触发 Pipeline
-              构建了。接下来我们直接在服务端代码仓库根目录下面添加<code>Jenkinsfile</code>文件，用于描述流水线构建流程。
-              <script
-                async
-                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-              ></script>
-
-              <ins
-                class="adsbygoogle"
-                style="display: block"
-                data-ad-client="ca-pub-5376999672787220"
-                data-ad-slot="9165834656"
-                data-ad-format="auto"
-                data-full-width-responsive="true"
-              ></ins>
-              <script>
-                (adsbygoogle = window.adsbygoogle || []).push({});
-              </script>
-
-              首先定义最简单的流程，要注意这里和前面课程的不同之处，这里我们使用<code>podTemplate</code>来定义不同阶段使用的的容器，有哪些阶段呢？
-            </p>
-
-            <p>
-              Clone 代码 -&gt; 代码静态分析 -&gt; 单元测试 -&gt; Maven 打包
-              -&gt; Docker 镜像构建/推送 -&gt; Helm 更新服务。
-            </p>
-
-            <p>
-              Clone 代码在默认的 Slave
-              容器中即可；静态分析和单元测试我们这里直接忽略，有需要这个阶段的同学自己添加上即可；Maven
-              打包肯定就需要 Maven 的容器了；Docker 镜像构建/推送是不是就需要
-              Docker 环境了呀；最后的 Helm 更新服务是不是就需要一个有 Helm
-              的容器环境了，所以我们这里就可以很简单的定义<code>podTemplate</code>了，如下定义：(添加一个<code>kubectl</code>工具用于测试)
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-groovy" data-lang="groovy"><span style="color:#8be9fd">def</span> label <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;slave-${UUID.randomUUID().toString()}&#34;</span>
-
-podTemplate<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">label:</span> label<span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">containers:</span> <span style="color:#ff79c6">[</span>
-  containerTemplate<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">name:</span> <span style="color:#f1fa8c">&#39;maven&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">image:</span> <span style="color:#f1fa8c">&#39;maven:3.6-alpine&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">command:</span> <span style="color:#f1fa8c">&#39;cat&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">ttyEnabled:</span> <span style="color:#ff79c6">true</span><span style="color:#ff79c6">),</span>
-  containerTemplate<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">name:</span> <span style="color:#f1fa8c">&#39;docker&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">image:</span> <span style="color:#f1fa8c">&#39;docker&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">command:</span> <span style="color:#f1fa8c">&#39;cat&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">ttyEnabled:</span> <span style="color:#ff79c6">true</span><span style="color:#ff79c6">),</span>
-  containerTemplate<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">name:</span> <span style="color:#f1fa8c">&#39;kubectl&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">image:</span> <span style="color:#f1fa8c">&#39;cnych/kubectl&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">command:</span> <span style="color:#f1fa8c">&#39;cat&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">ttyEnabled:</span> <span style="color:#ff79c6">true</span><span style="color:#ff79c6">),</span>
-  containerTemplate<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">name:</span> <span style="color:#f1fa8c">&#39;helm&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">image:</span> <span style="color:#f1fa8c">&#39;cnych/helm&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">command:</span> <span style="color:#f1fa8c">&#39;cat&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">ttyEnabled:</span> <span style="color:#ff79c6">true</span><span style="color:#ff79c6">)</span>
-<span style="color:#ff79c6">],</span> <span style="color:#8be9fd;font-style:italic">volumes:</span> <span style="color:#ff79c6">[</span>
-  hostPathVolume<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">mountPath:</span> <span style="color:#f1fa8c">&#39;/root/.m2&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">hostPath:</span> <span style="color:#f1fa8c">&#39;/var/run/m2&#39;</span><span style="color:#ff79c6">),</span>
-  hostPathVolume<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">mountPath:</span> <span style="color:#f1fa8c">&#39;/home/jenkins/.kube&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">hostPath:</span> <span style="color:#f1fa8c">&#39;/root/.kube&#39;</span><span style="color:#ff79c6">),</span>
-  hostPathVolume<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">mountPath:</span> <span style="color:#f1fa8c">&#39;/var/run/docker.sock&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">hostPath:</span> <span style="color:#f1fa8c">&#39;/var/run/docker.sock&#39;</span><span style="color:#ff79c6">)</span>
-<span style="color:#ff79c6">])</span> <span style="color:#ff79c6">{</span>
-  node<span style="color:#ff79c6">(</span>label<span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
-    <span style="color:#8be9fd">def</span> myRepo <span style="color:#ff79c6">=</span> checkout scm
-    <span style="color:#8be9fd">def</span> gitCommit <span style="color:#ff79c6">=</span> myRepo<span style="color:#ff79c6">.</span><span style="color:#50fa7b">GIT_COMMIT</span>
-    <span style="color:#8be9fd">def</span> gitBranch <span style="color:#ff79c6">=</span> myRepo<span style="color:#ff79c6">.</span><span style="color:#50fa7b">GIT_BRANCH</span>
-
-    <span style="color:#50fa7b">stage</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;单元测试&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
-      echo <span style="color:#f1fa8c">&#34;测试阶段&#34;</span>
-    <span style="color:#ff79c6">}</span>
-    stage<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;代码编译打包&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
-      container<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;maven&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
-        echo <span style="color:#f1fa8c">&#34;打码编译打包阶段&#34;</span>
-      <span style="color:#ff79c6">}</span>
-    <span style="color:#ff79c6">}</span>
-    stage<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;构建 Docker 镜像&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
-      container<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;docker&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
-        echo <span style="color:#f1fa8c">&#34;构建 Docker 镜像阶段&#34;</span>
-      <span style="color:#ff79c6">}</span>
-    <span style="color:#ff79c6">}</span>
-    stage<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;运行 Kubectl&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
-      container<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;kubectl&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
-        echo <span style="color:#f1fa8c">&#34;查看 K8S 集群 Pod 列表&#34;</span>
-        sh <span style="color:#f1fa8c">&#34;kubectl get pods&#34;</span>
-      <span style="color:#ff79c6">}</span>
-    <span style="color:#ff79c6">}</span>
-    stage<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;运行 Helm&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
-      container<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;helm&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
-        echo <span style="color:#f1fa8c">&#34;查看 Helm Release 列表&#34;</span>
-        sh <span style="color:#f1fa8c">&#34;helm list&#34;</span>
-      <span style="color:#ff79c6">}</span>
-    <span style="color:#ff79c6">}</span>
-  <span style="color:#ff79c6">}</span>
-<span style="color:#ff79c6">}</span></code></pre>
-            </div>
-            <p>
-              上面这段<code>groovy</code>脚本比较简单，我们需要注意的是<code>volumes</code>区域的定义，将容器中的<code>/root/.m2</code>目录挂载到宿主机上是为了给<code>Maven</code>构建添加缓存的，不然每次构建的时候都需要去重新下载依赖，这样就非常慢了；挂载<code>.kube</code>目录是为了能够让<code>kubectl</code>和<code>helm</code>两个工具可以读取到
-              Kubernetes
-              集群的连接信息，不然我们是没办法访问到集群的；最后挂载<code>/var/run/docker.sock</code>文件是为了能够让我们的<code>docker</code>这个容器获取到<code
-                >Docker Daemon</code
-              >的信息的，因为<code>docker</code>这个镜像里面只有客户端的二进制文件，我们需要使用宿主机的<code
-                >Docker Daemon</code
-              >来构建镜像，当然我们也需要在运行 Slave Pod
-              的节点上拥有访问集群的文件，然后在每个<code>Stage</code>阶段使用特定需要的容器来进行任务的描述即可，所以这几个<code>volumes</code>都是非常重要的
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-groovy" data-lang="groovy"><span style="color:#8be9fd;font-style:italic">volumes:</span> <span style="color:#ff79c6">[</span>
-  hostPathVolume<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">mountPath:</span> <span style="color:#f1fa8c">&#39;/root/.m2&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">hostPath:</span> <span style="color:#f1fa8c">&#39;/var/run/m2&#39;</span><span style="color:#ff79c6">),</span>
-  hostPathVolume<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">mountPath:</span> <span style="color:#f1fa8c">&#39;/home/jenkins/.kube&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">hostPath:</span> <span style="color:#f1fa8c">&#39;/root/.kube&#39;</span><span style="color:#ff79c6">),</span>
-  hostPathVolume<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">mountPath:</span> <span style="color:#f1fa8c">&#39;/var/run/docker.sock&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">hostPath:</span> <span style="color:#f1fa8c">&#39;/var/run/docker.sock&#39;</span><span style="color:#ff79c6">)</span>
-<span style="color:#ff79c6">]</span></code></pre>
-            </div>
-            <script
-              async
-              src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-            ></script>
-            <ins
-              class="adsbygoogle"
-              style="display: block; text-align: center"
-              data-ad-layout="in-article"
-              data-ad-format="fluid"
-              data-ad-client="ca-pub-5376999672787220"
-              data-ad-slot="5684687044"
-            ></ins>
-            <script>
-              (adsbygoogle = window.adsbygoogle || []).push({});
-            </script>
-
-            <p>
-              另外一个值得注意的就是<code>label</code>标签的定义，我们这里使用
-              UUID 生成一个随机的字符串，这样可以让 Slave Pod
-              每次的名称都不一样，而且这样就不会被固定在一个 Pod
-              上面了，以后有多个构建任务的时候就不会存在等待的情况了，这和我们之前的课程中讲到的固定在一个
-              label 标签上有所不同。
-            </p>
-
-            <p>
-              然后我们将上面的<code>Jenkinsfile</code>文件提交到 Gitlab
-              代码仓库上：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ git add Jenkinsfile
-$ git commit -m <span style="color:#f1fa8c">&#34;添加 Jenkinsfile 文件&#34;</span>
-$ git push origin master</code></pre>
-            </div>
-            <p>
-              然后切换到 Jenkins
-              页面上，正常情况就可以看到我们的流水线任务<code>polling-app-server</code>已经被触发构建了，然后回到我们的
-              Kubernetes 集群中可以看到多了一个 slave 开头的
-              Pod，里面有5个容器，就是我们上面 podTemplate
-              中定义的4个容器，加上一个默认的 jenkins slave
-              容器，同样的，构建任务完成后，这个 Pod 也会被自动销毁掉：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-ops
-NAME                                                      READY     STATUS    RESTARTS   AGE
-jenkins-7fbfcc5ddc-xsqmt                                  <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          1d
-slave-6e898009-62a2-4798-948f-9c80c3de419b-0jwml-6t6hb   <span style="color:#bd93f9">5</span>/5       Running   <span style="color:#bd93f9">0</span>          36s
-......</code></pre>
-            </div>
-            <p>正常可以看到 Jenkins 中的任务构建成功了：</p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/LVcr9o.jpg"
-                alt="build successfully"
-              />
-              <figcaption>build successfully</figcaption>
-            </figure>
-
-            <p>未完待续&hellip;&hellip;</p>
-
-            <p>
-              <a
-                href="https://youdianzhishi.com/web/course/1030"
-                title="从 Docker 到 Kubernetes 进阶课程"
-                ><img
-                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
-                  alt="Kubernetes进阶训练营"
-              /></a>
-            </p>
-
-            <h2>微信公众号</h2>
-            <p>
-              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
-              kubernetes 讨论群里面共同学习。
-            </p>
-            <img
-              src="https://picdn.youdianzhishi.com/images/qrcode.png"
-              alt="wechat-account-qrcode"
-            />
-
-            <div class="entry-shang text-center">
-              <p>「真诚赞赏，手留余香」</p>
-              <button class="zs show-zs btn btn-bred">赞赏</button>
-            </div>
-            <div class="zs-modal-bg"></div>
-            <div class="zs-modal-box">
-              <div class="zs-modal-head">
-                <button type="button" class="close">×</button>
-                <span class="author"
-                  ><img
-                    src="https://www.qikqiak.com/img/avatar.jpeg"
-                  />阳明</span
-                >
-                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-              </div>
-              <div class="zs-modal-body">
-                <div class="zs-modal-btns">
-                  <button class="btn btn-blink" data-num="2">2元</button>
-                  <button class="btn btn-blink" data-num="5">5元</button>
-                  <button class="btn btn-blink" data-num="10">10元</button>
-                  <button class="btn btn-blink" data-num="50">50元</button>
-                  <button class="btn btn-blink" data-num="100">100元</button>
-                  <button class="btn btn-blink" data-num="1">任意金额</button>
-                </div>
-                <div class="zs-modal-pay">
-                  <button class="btn btn-bred" id="pay-text">2元</button>
-                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-                  <img
-                    src="https://www.qikqiak.com/img/wechat-2.png"
-                    id="pay-image"
-                  />
-                </div>
-              </div>
-              <div class="zs-modal-footer">
-                <span class="zs-wechat"
-                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
-                /></span>
-              </div>
-            </div>
-
-            <div
-              class="social-share"
-              data-initialized="true"
-              style="margin-bottom: 20px; margin-top: 20px"
-            >
-              <center>
-                <a href="#" class="social-share-icon icon-weibo"></a>
-                <a href="#" class="social-share-icon icon-wechat"></a>
-                <a href="#" class="social-share-icon icon-twitter"></a>
-                <a href="#" class="social-share-icon icon-linkedin"></a>
-                <a href="#" class="social-share-icon icon-facebook"></a>
-                <a href="#" class="social-share-icon icon-qq"></a>
-                <a href="#" class="social-share-icon icon-qzone"></a>
-              </center>
-            </div>
-
-            <link
-              rel="stylesheet"
-              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
-            />
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
-          </article>
-
-          <h3>相关文章</h3>
-          <ul style="margin-bottom: 25px">
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/gitlab-ci-k8s-cluster-feature/"
-                >Gitlab CI 与 Kubernetes 的结合</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/gitlab-runner-install-on-k8s/"
-                >在 Kubernetes 上安装 Gitlab CI Runner</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/"
-                >在 Kubernetes 上安装 Gitlab</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/kubernetes-jenkins3/"
-                >Jenkins Blue Ocean 的使用</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/kubernetes-jenkins2/"
-                >Jenkins Pipeline 部署 Kubernetes 应用(二)</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/kubernetes-jenkins1/"
-                >基于 kubernetes 的动态 jenkins slave</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/what-is-oci-runc-containerd-cri-docker/"
-                >名称解释OCI、runc、containerd、Docker、CRI、CRI-O</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/install-docker-registry-harbor-in-kubernetes/"
-                >在kubernetes 集群上搭建docker 私有仓库Harbor</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/skaffold-simple-local-develop-k8s-app-tools/"
-                >Skaffold-简化本地开发kubernetes应用的神器</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/prometheus-book/"
-                >《深入浅出Prometheus》</a
-              >
-            </li>
-          </ul>
-
-          <ul class="pager blog-pager">
-            <li class="previous">
-              <a
-                href="https://www.qikqiak.com/post/prometheus-book/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="《深入浅出Prometheus》"
-                >&larr; 前一篇</a
-              >
-            </li>
-
-            <li class="next">
-              <a
-                href="https://www.qikqiak.com/post/how-to-protect-exposed-k8s-server/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="如何保护对外暴露的 Kubernetes 服务"
-                >后一篇 &rarr;</a
-              >
-            </li>
-          </ul>
-
-          <script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-          ></script>
-
-          <ins
-            class="adsbygoogle"
-            style="display: block"
-            data-ad-client="ca-pub-5376999672787220"
-            data-ad-slot="3700507799"
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          ></ins>
-          <script>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-          </script>
-
-          <div id="gitalk-container"></div>
-          <link
-            rel="stylesheet"
-            href="https://unpkg.com/gitalk/dist/gitalk.css"
-          />
-          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-          <script>
-            var gitalk = new Gitalk({
-              clientID: "bdb76dbb2e9d0786e350",
-              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
-              repo: "blog",
-              owner: "cnych",
-              admin: ["cnych"],
-              labels: ["gitment"],
-              title:
-                "基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI\/CD(一)",
-              createIssueManually: true,
-              id: "complete-cicd-demonstrate-1",
-              distractionFreeMode: true,
-            });
-            gitalk.render("gitalk-container");
-          </script>
-        </div>
-      </div>
-    </div>
-
-    <footer>
+    
+    
+    
+    <div class="intro-header no-img">
+      
       <div class="container">
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <ul class="list-inline text-center footer-links">
-              <img
-                src="https://www.qikqiak.com/img/wechatmp.png"
-                alt="k8s技术圈"
-              />
+            <div class="post-heading">
+              <h1>基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(一)</h1>
+                
+                
+                  <span class="post-meta">
+  发表于 April 12, 2019  
+</span>
 
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/jenkins/">Jenkins</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/gitlab/">Gitlab</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/harbor/">Harbor</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/helm/">Helm</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/docker/">Docker</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/pipeline/">Pipeline</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/devops/">devops</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#流程">流程</a></li>
+    <li><a href="#项目">项目</a>
+      <ul>
+        <li><a href="#服务端">服务端</a></li>
+        <li><a href="#客户端">客户端</a></li>
+      </ul>
+    </li>
+    <li><a href="#jenkins">Jenkins</a></li>
+  </ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p><a href="https://www.qikqiak.com/post/gitlab-ci-k8s-cluster-feature/">上节课和大家介绍了<code>Gitlab CI</code>结合<code>Kubernetes</code>进行 CI/CD 的完整过程</a>。这节课结合前面所学的知识点给大家介绍一个完整的示例：使用 Jenkins + Gitlab + Harbor + Helm + Kubernetes 来实现一个完整的 CI/CD 流水线作业。</p>
+<p>其实前面的课程中我们就<a href="https://www.qikqiak.com/post/kubernetes-jenkins1/">已经学习了 Jenkins Pipeline 与 Kubernetes 的完美结合</a>，我们利用 Kubernetes 来动态运行 Jenkins 的 Slave 节点，可以和好的来解决传统的 Jenkins Slave 浪费大量资源的缺点。之前的示例中我们是将项目放置在 Github 仓库上的，将 Docker 镜像推送到了 Docker Hub，这节课我们来结合我们前面学习的知识点来综合运用下，使用 Jenkins、Gitlab、Harbor、Helm、Kubernetes 来实现一个完整的持续集成和持续部署的流水线作业。</p>
+<h2 id="流程">流程</h2>
+<p>下图是我们当前示例的流程图</p>
+<p><img src="https://picdn.youdianzhishi.com/images/Ntfu2v.jpg" alt="ci/cd demo"></p>
+<ul>
+<li>
+<ol>
+<li>开发人员提交代码到 Gitlab 代码仓库</li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li>通过 Gitlab 配置的 Jenkins Webhook 触发 Pipeline 自动构建</li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li>Jenkins 触发构建构建任务，根据 Pipeline 脚本定义分步骤构建</li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li>先进行代码静态分析，单元测试</li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li>然后进行 Maven 构建（Java 项目）</li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li>根据构建结果构建 Docker 镜像</li>
+</ol>
+</li>
+<li>
+<ol start="7">
+<li>推送 Docker 镜像到 Harbor 仓库</li>
+</ol>
+</li>
+<li>
+<ol start="8">
+<li>触发更新服务阶段，使用 Helm 安装/更新 Release</li>
+</ol>
+</li>
+<li>
+<ol start="9">
+<li>查看服务是否更新成功。</li>
+</ol>
+</li>
+</ul>
+<h2 id="项目">项目</h2>
+<p>本次示例项目是一个完整的基于 Spring Boot、Spring Security、JWT、React 和 Ant Design 构建的一个开源的投票应用，项目地址：<a href="https://github.com/callicoder/spring-security-react-ant-design-polls-app">https://github.com/callicoder/spring-security-react-ant-design-polls-app</a>。</p>
+<p><img src="https://picdn.youdianzhishi.com/images/o9SWfn.jpg" alt="polling app1"></p>
+<p>我们将会在该项目的基础上添加部分代码，并实践 CI/CD 流程。</p>
+<h3 id="服务端">服务端</h3>
+<p>首先需要更改的是服务端配置，我们需要将数据库链接的配置更改成环境变量的形式，写死了的话就没办法进行定制了，修改服务端文件<code>src/main/resources/application.properties</code>，将下面的数据库配置部分修改成如下形式：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>spring.datasource.url= jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:polling_app}?useSSL=false&amp;serverTimezone=UTC&amp;useLegacyDatetimeCode=false
+</span></span><span style="display:flex;"><span>spring.datasource.username= ${DB_USER:root}
+</span></span><span style="display:flex;"><span>spring.datasource.password= ${DB_PASSWORD:root}
+</span></span></code></pre></div><p>当环境变量中有上面的数据配置的时候，就会优先使用环境变量中的值，没有的时候就会用默认的值进行数据库配置。</p>
+<!-- raw HTML omitted -->
+<p>由于我们要将项目部署到 Kubernetes 集群中去，所以我们需要将服务端进行容器化，所以我们在项目根目录下面添加一个<code>Dockerfile</code>文件进行镜像构建：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-docker" data-lang="docker"><span style="display:flex;"><span><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> openjdk:8-jdk-alpine</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">MAINTAINER</span><span style="color:#f1fa8c"> cnych &lt;icnych@gmail.com&gt;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">ENV</span> LANG en_US.UTF-8
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">ENV</span> LANGUAGE en_US:en
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">ENV</span> LC_ALL en_US.UTF-8
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">ENV</span> <span style="color:#8be9fd;font-style:italic">TZ</span><span style="color:#ff79c6">=</span>Asia/Shanghai
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">RUN</span> mkdir /app
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">WORKDIR</span><span style="color:#f1fa8c"> /app</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">COPY</span> target/polls-0.0.1-SNAPSHOT.jar /app/polls.jar
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">EXPOSE</span><span style="color:#f1fa8c"> 8080</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">ENTRYPOINT</span> [<span style="color:#f1fa8c">&#34;java&#34;</span>, <span style="color:#f1fa8c">&#34;-Djava.security.egd=file:/dev/./urandom&#34;</span>, <span style="color:#f1fa8c">&#34;-jar&#34;</span>,<span style="color:#f1fa8c">&#34;/app/polls.jar&#34;</span>]
+</span></span></code></pre></div><p>由于服务端代码是基于<code>Spring Boot</code>构建的，所以我们这里使用一个<code>openjdk</code>的基础镜像，将打包过后的<code>jar</code>包放入镜像之中，然后用过<code>java -jar</code>命令直接启动即可，这里就会存在一个问题了，我们是在 Jenkins 的 Pipeline 中去进行镜像构建的，这个时候项目中并没有打包好的<code>jar</code>包文件，那么我们应该如何获取打包好的<code>jar</code>包文件呢？这里我们可以使用两种方法：</p>
+<p>第一种就是如果你用于镜像打包的 Docker 版本大于<code>17.06</code>版本的话，那么我墙裂推荐你使用 Docker 的多阶段构建功能来完成镜像的打包过程，我们只需要将上面的<code>Dockerfile</code>文件稍微更改下即可，将使用<code>maven</code>进行构建的工作放到同一个文件中：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-docker" data-lang="docker"><span style="display:flex;"><span><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> maven:3.6-alpine as BUILD</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">COPY</span> src /usr/app/src
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">COPY</span> pom.xml /usr/app
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">RUN</span> mvn -f /usr/app/pom.xml clean package -Dmaven.test.skip<span style="color:#ff79c6">=</span>true
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> openjdk:8-jdk-alpine</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">MAINTAINER</span><span style="color:#f1fa8c"> cnych &lt;icnych@gmail.com&gt;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">ENV</span> LANG en_US.UTF-8
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">ENV</span> LANGUAGE en_US:en
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">ENV</span> LC_ALL en_US.UTF-8
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">ENV</span> <span style="color:#8be9fd;font-style:italic">TZ</span><span style="color:#ff79c6">=</span>Asia/Shanghai
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">RUN</span> mkdir /app
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">WORKDIR</span><span style="color:#f1fa8c"> /app</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">COPY</span> --from<span style="color:#ff79c6">=</span>BUILD /usr/app/target/polls-0.0.1-SNAPSHOT.jar /app/polls.jar
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">EXPOSE</span><span style="color:#f1fa8c"> 8080</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">ENTRYPOINT</span> [<span style="color:#f1fa8c">&#34;java&#34;</span>, <span style="color:#f1fa8c">&#34;-Djava.security.egd=file:/dev/./urandom&#34;</span>, <span style="color:#f1fa8c">&#34;-jar&#34;</span>,<span style="color:#f1fa8c">&#34;/app/polls.jar&#34;</span>]
+</span></span></code></pre></div><p>前面课程中我们就讲解过 Docker 的多阶段构建，这里我们定义了两个阶段，第一个阶段利用<code>maven:3.6-alpine</code>这个基础镜像将我们的项目进行打包，然后将该阶段打包生成的<code>jar</code>包文件复制到第二阶段进行最后的镜像打包，这样就可以很好的完成我们的 Docker 镜像的构建工作。</p>
+<!-- raw HTML omitted -->
+<p>第二种方式就是我们传统的方式，在 Jenkins Pipeline 中添加一个<code>maven</code>构建的阶段，然后在第二个 Docker 构建的阶段就可以直接获取到前面的<code>jar</code>包了，也可以很方便的完成镜像的构建工作，为了更加清楚的说明 Jenkins Pipeline 的用法，我们这里采用这种方式，所以 Dockerfile 文件还是使用第一个就行。</p>
+<p>现在我们可以将服务端的代码推送到 Gitlab 上去，我们这里的仓库地址为：<a href="http://git.qikqiak.com/course/polling-app-server.git">http://git.qikqiak.com/course/polling-app-server.git</a></p>
+<blockquote>
+<p>注意，这里我们只推送的服务端代码。</p>
+</blockquote>
+<h3 id="客户端">客户端</h3>
+<p>客户端我们需要修改 API 的链接地址，修改文件<code>src/constants/index.js</code>中<code>API_BASE_URL</code>的地址，我们同样通过环境变量来进行区分，如果有环境变量<code>APISERVER_URL</code>，则优先使用这个环境变量来作为 API 请求的地址：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-javascript" data-lang="javascript"><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">let</span> API_URL <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;http://localhost:8080/api&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">if</span> (process.env.APISERVER_URL) {
+</span></span><span style="display:flex;"><span>  API_URL <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">`</span><span style="color:#f1fa8c">${</span>process.env.APISERVER_URL<span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">/api`</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">export</span> <span style="color:#ff79c6">const</span> API_BASE_URL <span style="color:#ff79c6">=</span> API_URL;
+</span></span></code></pre></div><p>因为我们这里的项目使用的就是前后端分离的架构，所以我们同样需要将前端代码进行单独的部署，同样我们要将项目部署到 Kubernetes 环境中，所以也需要做容器化，同样在项目根目录下面添加一个<code>Dockerfile</code>文件：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-docker" data-lang="docker"><span style="display:flex;"><span><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> nginx:1.15.10-alpine</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">ADD</span> build /usr/share/nginx/html
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">ADD</span> nginx.conf
+</span></span><span style="display:flex;"><span>/etc/nginx/conf.d/default.conf
+</span></span></code></pre></div><p>由于前端页面是单纯的静态页面，所以一般我们使用一个<code>nginx</code>镜像来运行，所以我们提供一个<code>nginx.conf</code>配置文件：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>server {
+</span></span><span style="display:flex;"><span>    gzip on;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    listen       80;
+</span></span><span style="display:flex;"><span>    server_name  localhost;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    root   /usr/share/nginx/html;
+</span></span><span style="display:flex;"><span>    location / {
+</span></span><span style="display:flex;"><span>        try_files $uri /index.html;
+</span></span><span style="display:flex;"><span>        expires 1h;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    error_page   500 502 503 504  /50x.html;
+</span></span><span style="display:flex;"><span>    location = /50x.html {
+</span></span><span style="display:flex;"><span>        root   /usr/share/nginx/html;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>这里我们可以看到我们需要将前面页面打包到一个<code>build</code>目录，然后将改目录添加到 nginx 镜像中的<code>/usr/share/nginx/html</code>目录，这样当 nginx 镜像启动的时候就是直接使用的改文件夹下面的文件。</p>
+<p>所以现在我们需要获取打包后的目录<code>build</code>，同样的，和上面服务端项目一样，我们可以使用两种方式来完成这个工作。</p>
+<p>第一种方式自然是推荐的 Docker 的多阶段构建，我们在一个<code>node</code>镜像的环境中就可以打包我们的前端项目了，所以我们可以更改下<code>Dockerfile</code>文件，先进行 node 打包，然后再进行 nginx 启动：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-docker" data-lang="docker"><span style="display:flex;"><span><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> node:alpine as BUILD</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">WORKDIR</span><span style="color:#f1fa8c"> /usr/src/app</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">RUN</span> mkdir -p /usr/src/app
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">ADD</span> . /usr/src/app
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">RUN</span> npm install <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#f1fa8c">\
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c"></span>    npm run build
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> nginx:1.15.10-alpine</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">MAINTAINER</span><span style="color:#f1fa8c"> cnych &lt;icnych@gmail.com&gt;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">COPY</span> --from<span style="color:#ff79c6">=</span>BUILD /usr/src/app/build /usr/share/nginx/html
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">ADD</span> nginx.conf
+</span></span><span style="display:flex;"><span>/etc/nginx/conf.d/default.conf
+</span></span></code></pre></div><p>第二种方式和上面一样在 Jenkins Pipeline 中添加一个打包构建的阶段即可，我们这里采用这种方式，所以 Dockerfile 文件还是使用第一个就行。</p>
+<p>现在我们可以将客户端的代码推送到 Gitlab 上去，我们这里的仓库地址为：<a href="http://git.qikqiak.com/course/polling-app-client.git">http://git.qikqiak.com/course/polling-app-client.git</a></p>
+<h2 id="jenkins">Jenkins</h2>
+<p>现在项目准备好了，接下来我们可以开始 Jenkins 的配置，还记得前面在 Pipeline 结合 Kubernetes 的课程中我们使用了一个<code>kubernetes</code>的 Jenkins 插件，但是之前使用的方式有一些不妥的地方，我们 Jenkins Pipeline 构建任务绑定到了一个固定的 Slave Pod 上面，这样就需要我们的 Slave Pod 中必须包含一系列构建所需要的依赖，比如 docker、maven、node、java 等等，这样就难免需要我们自己定义一个很庞大的 Slave 镜像，我们直接直接在 Pipeline 中去自定义 Slave Pod 中所需要用到的容器模板，这样我们需要什么镜像只需要在 Slave Pod Template 中声明即可，完全不需要去定义一个庞大的 Slave 镜像了。</p>
+<p>首先去掉 Jenkins 中 kubernetes 插件中的 Pod Template 的定义，Jenkins -&gt; 系统管理 -&gt; 系统设置 -&gt; 云 -&gt; Kubernetes 区域，删除下方的<code>Kubernetes Pod Template</code> -&gt; 保存。</p>
+<p><img src="https://picdn.youdianzhishi.com/images/Vsj2qw.jpg" alt="jenkins kubernetes plugin"></p>
+<p>然后新建一个名为<code>polling-app-server</code>类型为<code>流水线(Pipeline)</code>的任务：</p>
+<p><img src="https://picdn.youdianzhishi.com/images/RoMp9h.jpg" alt="new pipeline task"></p>
+<p>然后在这里需要勾选<code>触发远程构建</code>的触发器，其中令牌我们可以随便写一个字符串，然后记住下面的 URL，将 JENKINS_URL 替换成 Jenkins 的地址,我们这里的地址就是：<code>http://jenkins.qikqiak.com/job/polling-app-server/build?token=server321</code></p>
+<p><img src="https://picdn.youdianzhishi.com/images/RUNtx9.jpg" alt="trigger"></p>
+<p>然后在下面的<code>流水线</code>区域我们可以选择<code>Pipeline script</code>然后在下面测试流水线脚本，我们这里选择<code>Pipeline script from SCM</code>，意思就是从代码仓库中通过<code>Jenkinsfile</code>文件获取<code>Pipeline script</code>脚本定义，然后选择 SCM 来源为<code>Git</code>，在出现的列表中配置上仓库地址<code>http://git.qikqiak.com/course/polling-app-server.git</code>，由于我们是在一个 Slave Pod 中去进行构建，所以如果使用 SSH 的方式去访问 Gitlab 代码仓库的话就需要频繁的去更新 SSH-KEY，所以我们这里采用直接使用用户名和密码的形式来方式：</p>
+<p><img src="https://picdn.youdianzhishi.com/images/W1aphT.jpg" alt="pipeline scm"></p>
+<p>在<code>Credentials</code>区域点击<code>添加</code>按钮添加我们访问 Gitlab 的用户名和密码：</p>
+<p><img src="https://picdn.youdianzhishi.com/images/dsvTL6.jpg" alt="gitlab auth"></p>
+<p>然后需要我们配置用于构建的分支，如果所有的分支我们都想要进行构建的话，只需要将<code>Branch Specifier</code>区域留空即可，一般情况下不同的环境对应的分支才需要构建，比如 master、develop、test 等，平时开发的 feature 或者 bugfix 的分支没必要频繁构建，我们这里就只配置 master 和 develop 两个分支用户构建：</p>
+<p><img src="https://picdn.youdianzhishi.com/images/2LRY2a.jpg" alt="gitlab branch config"></p>
+<p>然后前往 Gitlab 中配置项目<code>polling-app-server</code> Webhook，settings -&gt; Integrations，填写上面得到的 trigger 地址：</p>
+<p><img src="https://picdn.youdianzhishi.com/images/ZjGmdi.jpg" alt="webhook"></p>
+<p>保存后，可以直接点击<code>Test</code> -&gt; <code>Push Event</code>测试是否可以正常访问 Webhook 地址，这里需要注意的是我们需要配置下 Jenkins 的安全配置，否则这里的触发器没权限访问 Jenkins，系统管理 -&gt; 全局安全配置：取消<code>防止跨站点请求伪造</code>，勾选上<code>匿名用户具有可读权限</code>：</p>
+<p><img src="https://picdn.youdianzhishi.com/images/j2Vtrt.jpg" alt="security config"></p>
+<p>如果测试出现了<code>Hook executed successfully: HTTP 201</code>则证明 Webhook 配置成功了，否则就需要检查下 Jenkins 的安全配置是否正确了。</p>
+<p>配置成功后我们只需要往 Gitlab 仓库推送代码就会触发 Pipeline 构建了。接下来我们直接在服务端代码仓库根目录下面添加<code>Jenkinsfile</code>文件，用于描述流水线构建流程。</p>
+<!-- raw HTML omitted -->
+<p>首先定义最简单的流程，要注意这里和前面课程的不同之处，这里我们使用<code>podTemplate</code>来定义不同阶段使用的的容器，有哪些阶段呢？</p>
+<p>Clone 代码 -&gt; 代码静态分析 -&gt; 单元测试 -&gt; Maven 打包 -&gt; Docker 镜像构建/推送 -&gt; Helm 更新服务。</p>
+<p>Clone 代码在默认的 Slave 容器中即可；静态分析和单元测试我们这里直接忽略，有需要这个阶段的同学自己添加上即可；Maven 打包肯定就需要 Maven 的容器了；Docker 镜像构建/推送是不是就需要 Docker 环境了呀；最后的 Helm 更新服务是不是就需要一个有 Helm 的容器环境了，所以我们这里就可以很简单的定义<code>podTemplate</code>了，如下定义：(添加一个<code>kubectl</code>工具用于测试)</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-groovy" data-lang="groovy"><span style="display:flex;"><span><span style="color:#8be9fd">def</span> label <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;slave-${UUID.randomUUID().toString()}&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>podTemplate<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">label:</span> label<span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">containers:</span> <span style="color:#ff79c6">[</span>
+</span></span><span style="display:flex;"><span>  containerTemplate<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">name:</span> <span style="color:#f1fa8c">&#39;maven&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">image:</span> <span style="color:#f1fa8c">&#39;maven:3.6-alpine&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">command:</span> <span style="color:#f1fa8c">&#39;cat&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">ttyEnabled:</span> <span style="color:#ff79c6">true</span><span style="color:#ff79c6">),</span>
+</span></span><span style="display:flex;"><span>  containerTemplate<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">name:</span> <span style="color:#f1fa8c">&#39;docker&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">image:</span> <span style="color:#f1fa8c">&#39;docker&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">command:</span> <span style="color:#f1fa8c">&#39;cat&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">ttyEnabled:</span> <span style="color:#ff79c6">true</span><span style="color:#ff79c6">),</span>
+</span></span><span style="display:flex;"><span>  containerTemplate<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">name:</span> <span style="color:#f1fa8c">&#39;kubectl&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">image:</span> <span style="color:#f1fa8c">&#39;cnych/kubectl&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">command:</span> <span style="color:#f1fa8c">&#39;cat&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">ttyEnabled:</span> <span style="color:#ff79c6">true</span><span style="color:#ff79c6">),</span>
+</span></span><span style="display:flex;"><span>  containerTemplate<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">name:</span> <span style="color:#f1fa8c">&#39;helm&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">image:</span> <span style="color:#f1fa8c">&#39;cnych/helm&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">command:</span> <span style="color:#f1fa8c">&#39;cat&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">ttyEnabled:</span> <span style="color:#ff79c6">true</span><span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">],</span> <span style="color:#8be9fd;font-style:italic">volumes:</span> <span style="color:#ff79c6">[</span>
+</span></span><span style="display:flex;"><span>  hostPathVolume<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">mountPath:</span> <span style="color:#f1fa8c">&#39;/root/.m2&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">hostPath:</span> <span style="color:#f1fa8c">&#39;/var/run/m2&#39;</span><span style="color:#ff79c6">),</span>
+</span></span><span style="display:flex;"><span>  hostPathVolume<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">mountPath:</span> <span style="color:#f1fa8c">&#39;/home/jenkins/.kube&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">hostPath:</span> <span style="color:#f1fa8c">&#39;/root/.kube&#39;</span><span style="color:#ff79c6">),</span>
+</span></span><span style="display:flex;"><span>  hostPathVolume<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">mountPath:</span> <span style="color:#f1fa8c">&#39;/var/run/docker.sock&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">hostPath:</span> <span style="color:#f1fa8c">&#39;/var/run/docker.sock&#39;</span><span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">])</span> <span style="color:#ff79c6">{</span>
+</span></span><span style="display:flex;"><span>  node<span style="color:#ff79c6">(</span>label<span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#8be9fd">def</span> myRepo <span style="color:#ff79c6">=</span> checkout scm
+</span></span><span style="display:flex;"><span>    <span style="color:#8be9fd">def</span> gitCommit <span style="color:#ff79c6">=</span> myRepo<span style="color:#ff79c6">.</span><span style="color:#50fa7b">GIT_COMMIT</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#8be9fd">def</span> gitBranch <span style="color:#ff79c6">=</span> myRepo<span style="color:#ff79c6">.</span><span style="color:#50fa7b">GIT_BRANCH</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    stage<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;单元测试&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+</span></span><span style="display:flex;"><span>      echo <span style="color:#f1fa8c">&#34;测试阶段&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">}</span>
+</span></span><span style="display:flex;"><span>    stage<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;代码编译打包&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+</span></span><span style="display:flex;"><span>      container<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;maven&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+</span></span><span style="display:flex;"><span>        echo <span style="color:#f1fa8c">&#34;打码编译打包阶段&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">}</span>
+</span></span><span style="display:flex;"><span>    stage<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;构建 Docker 镜像&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+</span></span><span style="display:flex;"><span>      container<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;docker&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+</span></span><span style="display:flex;"><span>        echo <span style="color:#f1fa8c">&#34;构建 Docker 镜像阶段&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">}</span>
+</span></span><span style="display:flex;"><span>    stage<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;运行 Kubectl&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+</span></span><span style="display:flex;"><span>      container<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;kubectl&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+</span></span><span style="display:flex;"><span>        echo <span style="color:#f1fa8c">&#34;查看 K8S 集群 Pod 列表&#34;</span>
+</span></span><span style="display:flex;"><span>        sh <span style="color:#f1fa8c">&#34;kubectl get pods&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">}</span>
+</span></span><span style="display:flex;"><span>    stage<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;运行 Helm&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+</span></span><span style="display:flex;"><span>      container<span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#39;helm&#39;</span><span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+</span></span><span style="display:flex;"><span>        echo <span style="color:#f1fa8c">&#34;查看 Helm Release 列表&#34;</span>
+</span></span><span style="display:flex;"><span>        sh <span style="color:#f1fa8c">&#34;helm list&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">}</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">}</span>
+</span></span></code></pre></div><p>上面这段<code>groovy</code>脚本比较简单，我们需要注意的是<code>volumes</code>区域的定义，将容器中的<code>/root/.m2</code>目录挂载到宿主机上是为了给<code>Maven</code>构建添加缓存的，不然每次构建的时候都需要去重新下载依赖，这样就非常慢了；挂载<code>.kube</code>目录是为了能够让<code>kubectl</code>和<code>helm</code>两个工具可以读取到 Kubernetes 集群的连接信息，不然我们是没办法访问到集群的；最后挂载<code>/var/run/docker.sock</code>文件是为了能够让我们的<code>docker</code>这个容器获取到<code>Docker Daemon</code>的信息的，因为<code>docker</code>这个镜像里面只有客户端的二进制文件，我们需要使用宿主机的<code>Docker Daemon</code>来构建镜像，当然我们也需要在运行 Slave Pod 的节点上拥有访问集群的文件，然后在每个<code>Stage</code>阶段使用特定需要的容器来进行任务的描述即可，所以这几个<code>volumes</code>都是非常重要的</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-groovy" data-lang="groovy"><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">volumes:</span> <span style="color:#ff79c6">[</span>
+</span></span><span style="display:flex;"><span>  hostPathVolume<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">mountPath:</span> <span style="color:#f1fa8c">&#39;/root/.m2&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">hostPath:</span> <span style="color:#f1fa8c">&#39;/var/run/m2&#39;</span><span style="color:#ff79c6">),</span>
+</span></span><span style="display:flex;"><span>  hostPathVolume<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">mountPath:</span> <span style="color:#f1fa8c">&#39;/home/jenkins/.kube&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">hostPath:</span> <span style="color:#f1fa8c">&#39;/root/.kube&#39;</span><span style="color:#ff79c6">),</span>
+</span></span><span style="display:flex;"><span>  hostPathVolume<span style="color:#ff79c6">(</span><span style="color:#8be9fd;font-style:italic">mountPath:</span> <span style="color:#f1fa8c">&#39;/var/run/docker.sock&#39;</span><span style="color:#ff79c6">,</span> <span style="color:#8be9fd;font-style:italic">hostPath:</span> <span style="color:#f1fa8c">&#39;/var/run/docker.sock&#39;</span><span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">]</span>
+</span></span></code></pre></div><!-- raw HTML omitted -->
+<p>另外一个值得注意的就是<code>label</code>标签的定义，我们这里使用 UUID 生成一个随机的字符串，这样可以让 Slave Pod 每次的名称都不一样，而且这样就不会被固定在一个 Pod 上面了，以后有多个构建任务的时候就不会存在等待的情况了，这和我们之前的课程中讲到的固定在一个 label 标签上有所不同。</p>
+<p>然后我们将上面的<code>Jenkinsfile</code>文件提交到 Gitlab 代码仓库上：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ git add Jenkinsfile
+</span></span><span style="display:flex;"><span>$ git commit -m <span style="color:#f1fa8c">&#34;添加 Jenkinsfile 文件&#34;</span>
+</span></span><span style="display:flex;"><span>$ git push origin master
+</span></span></code></pre></div><p>然后切换到 Jenkins 页面上，正常情况就可以看到我们的流水线任务<code>polling-app-server</code>已经被触发构建了，然后回到我们的 Kubernetes 集群中可以看到多了一个 slave 开头的 Pod，里面有 5 个容器，就是我们上面 podTemplate 中定义的 4 个容器，加上一个默认的 jenkins slave 容器，同样的，构建任务完成后，这个 Pod 也会被自动销毁掉：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl get pods -n kube-ops
+</span></span><span style="display:flex;"><span>NAME                                                      READY     STATUS    RESTARTS   AGE
+</span></span><span style="display:flex;"><span>jenkins-7fbfcc5ddc-xsqmt                                  1/1       Running   <span style="color:#bd93f9">0</span>          1d
+</span></span><span style="display:flex;"><span>slave-6e898009-62a2-4798-948f-9c80c3de419b-0jwml-6t6hb   5/5       Running   <span style="color:#bd93f9">0</span>          36s
+</span></span><span style="display:flex;"><span>......
+</span></span></code></pre></div><p>正常可以看到 Jenkins 中的任务构建成功了：</p>
+<p><img src="https://picdn.youdianzhishi.com/images/LVcr9o.jpg" alt="build successfully"></p>
+<p>未完待续&hellip;&hellip;</p>
+<!-- raw HTML omitted -->
+
+          <h2>微信公众号</h2>
+<p>
+  扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+  kubernetes 讨论群里面共同学习。
+</p>
+<img
+  src="https://picdn.youdianzhishi.com/images/qrcode.png"
+  alt="wechat-account-qrcode"
+/>
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/gitlab-ci-k8s-cluster-feature/">Gitlab CI 与 Kubernetes 的结合</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/gitlab-runner-install-on-k8s/">在 Kubernetes 上安装 Gitlab CI Runner</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/">在 Kubernetes 上安装 Gitlab</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-jenkins3/">Jenkins Blue Ocean 的使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-jenkins2/">Jenkins Pipeline 部署 Kubernetes 应用(二)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/kubernetes-jenkins1/">基于 kubernetes 的动态 jenkins slave</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/what-is-oci-runc-containerd-cri-docker/">名称解释OCI、runc、containerd、Docker、CRI、CRI-O</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/install-docker-registry-harbor-in-kubernetes/">在kubernetes 集群上搭建docker 私有仓库Harbor</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/skaffold-simple-local-develop-k8s-app-tools/">Skaffold-简化本地开发kubernetes应用的神器</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/prometheus-book/">《深入浅出Prometheus》</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/prometheus-book/" data-toggle="tooltip" data-placement="top" title="《深入浅出Prometheus》">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/how-to-protect-exposed-k8s-server/" data-toggle="tooltip" data-placement="top" title="如何保护对外暴露的 Kubernetes 服务">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI\/CD(一)',
+        createIssueManually: true,
+        id: 'complete-cicd-demonstrate-1',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -1339,7 +774,7 @@ slave-6e898009-62a2-4798-948f-9c80c3de419b-0jwml-6t6hb   <span style="color:#bd9
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -1348,7 +783,7 @@ slave-6e898009-62a2-4798-948f-9c80c3de419b-0jwml-6t6hb   <span style="color:#bd9
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -1357,7 +792,7 @@ slave-6e898009-62a2-4798-948f-9c80c3de419b-0jwml-6t6hb   <span style="color:#bd9
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -1366,158 +801,121 @@ slave-6e898009-62a2-4798-948f-9c80c3de419b-0jwml-6t6hb   <span style="color:#bd9
                   </span>
                 </a>
               </li>
-
-              <li>
-                <a href="https://www.qikqiak.com/index.xml" title="RSS">
-                  <span class="fa-stack fa-lg">
-                    <i class="fa fa-circle fa-stack-2x"></i>
-                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
-                  </span>
-                </a>
-              </li>
-            </ul>
-            <p class="credits copyright text-muted">
-              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/">阳明的博客</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/archive/">归档</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/friend/">友链</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://beian.miit.gov.cn/" target="_blank"
-                >蜀ICP备11027319号-5</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
-                >kubernetes.io</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
-                >Kubernetes中文社区</a
-              >
-            </p>
-            <p class="text-center text-muted">
-              <script
-                async
-                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
-              ></script>
-              <span id="busuanzi_container_site_pv" style="display: none">
-                本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
               </span>
-              &nbsp;&bull;&nbsp;
-              <span id="busuanzi_container_site_uv" style="display: none">
-                访客数<span id="busuanzi_value_site_uv"></span>人次
-              </span>
-            </p>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
 
-            <p class="credits theme-by text-muted">
-              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
-              &nbsp;&bull;&nbsp; 主题
-              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
-              移植自
-              <a href="https://github.com/rootsongjc/beautifulhugo"
-                >Beautiful Hugo</a
-              >
-            </p>
-          </div>
-        </div>
+          &nbsp;&bull;&nbsp;
+          2023
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.115.4</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+          
+        </p>
       </div>
-    </footer>
+    </div>
+  </div>
+</footer>
 
-    <script
-      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
-      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
-    ></script>
 
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "UA-69668147-3");
-    </script>
-    <script>
-      (function () {
-        var bp = document.createElement("script");
-        var curProtocol = window.location.protocol.split(":")[0];
-        if (curProtocol === "https") {
-          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
-        } else {
-          bp.src = "http://push.zhanzhang.baidu.com/push.js";
-        }
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(bp, s);
-      })();
-    </script>
-    <script>
-      $(document).ready(function () {
-        var int = setInterval(fixCount, 50);
+<script src='https://www.qikqiak.com/js/bundle.min.af02a2d23b6651a566f0135a12e65fc2560faa7a969b3d1ad58d0afe0c9164ae.js' integrity='sha256-rwKi0jtmUaVm8BNaEuZfwlYPqnqWmz0a1Y0K/gyRZK4='></script>
 
-        var initPVCount = 584976;
-        var initUVCount = 153191;
-        function fixCount() {
-          if ($("#busuanzi_container_site_pv").css("display") != "none") {
-            $("#busuanzi_value_site_pv").html(
-              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
-            );
-            clearInterval(int);
-          }
-          if ($("#busuanzi_container_site_uv").css("display") != "none") {
-            $("#busuanzi_value_site_uv").html(
-              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
-            );
-            clearInterval(int);
-          }
-        }
-      });
-    </script>
-    <script>
-      (function (w, d, s, id) {
-        if (typeof w.webpushr !== "undefined") return;
-        w.webpushr =
-          w.webpushr ||
-          function () {
-            (w.webpushr.q = w.webpushr.q || []).push(arguments);
-          };
-        var js,
-          fjs = d.getElementsByTagName(s)[0];
-        js = d.createElement(s);
-        js.id = id;
-        js.src = "https://cdn.webpushr.com/app.min.js";
-        fjs.parentNode.appendChild(js);
-      })(window, document, "script", "webpushr-jssdk");
-      webpushr(
-        "init",
-        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
-      );
-    </script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
-    ></script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
-    ></script>
-    <script type="text/javascript">
-      $(".carousel").slick({
-        dots: true,
-        arrows: true,
-        autoplay: true,
-        autoplaySpeed: 4000,
-        infinite: true,
-        speed: 500,
-        fade: true,
-        cssEase: "linear",
-        centerMode: true,
-        prevArrow: '<button type="button" class="slick-prev"></button>',
-        nextArrow: '<button type="button" class="slick-next"></button>',
-      });
-    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
   </body>
 </html>
+

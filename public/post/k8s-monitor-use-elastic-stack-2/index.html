@@ -1,1140 +1,820 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
-    />
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-    <title>
-      使用 Elastic 技术栈构建 K8S
-      全栈监控(2/4)-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
-    </title>
-    <meta
-      property="og:title"
-      content="使用 Elastic 技术栈构建 K8S 全栈监控(2/4)"
-    />
-    <meta
-      name="twitter:title"
-      content="使用 Elastic 技术栈构建 K8S 全栈监控(2/4)"
-    />
 
-    <meta
-      name="description"
-      content="使用 Metricbeat 对 Kubernetes 集群进行监控"
-    />
-    <meta
-      property="og:description"
-      content="使用 Metricbeat 对 Kubernetes 集群进行监控"
-    />
-    <meta
-      name="twitter:description"
-      content="使用 Metricbeat 对 Kubernetes 集群进行监控"
-    />
-    <meta name="author" content="" />
-    <link
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-      rel="icon"
-      type="image/x-icon"
-    />
-    <link
-      rel="apple-touch-icon"
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      property="og:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      name="twitter:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta name="twitter:card" content="summary" />
-    <meta
-      property="og:url"
-      content="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-2/"
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="阳明的博客" />
+  <title>使用 Elastic 技术栈构建 K8S 全栈监控(2/4)-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="使用 Elastic 技术栈构建 K8S 全栈监控(2/4)" />
+  <meta name="twitter:title" content="使用 Elastic 技术栈构建 K8S 全栈监控(2/4)" />
 
-    <meta name="generator" content="Hugo 0.55.6" />
-    <link
-      rel="canonical"
-      href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-2/"
-    />
-    <link
-      rel="alternate"
-      href="https://www.qikqiak.com/index.xml"
-      type="application/rss+xml"
-      title="阳明的博客"
-    />
+  <meta name="description" content="使用 Metricbeat 对 Kubernetes 集群进行监控">
+  <meta property="og:description" content="使用 Metricbeat 对 Kubernetes 集群进行监控">
+  <meta name="twitter:description" content="使用 Metricbeat 对 Kubernetes 集群进行监控">
+  <meta name="author" content=""/>
+  <link href="https://picdn.youdianzhishi.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://picdn.youdianzhishi.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-2/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
 
-    <link
-      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
-      rel="stylesheet"
-    />
+  <link rel="canonical" href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-2/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
-    <link
-      rel="stylesheet"
-      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
-      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
-    />
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
 
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
-    />
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a6b62363fe57848ad01efa2a5d1bbb1047c2ffb71b53d8aeb42bc5ed5c77ea7c.css' integrity='sha256-prYjY/5XhIrQHvoqXRu7EEfC/7cbU9iutCvF7Vx36nw='>
 
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
     <!--[if lt IE 9]>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-      <link
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-        rel="stylesheet"
-      />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <![endif]-->
-    <meta
-      name="google-site-verification"
-      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
-    />
-    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-    <meta name="keywords" content="elastic, kubernetes" />
-    <script>
-      var _hmt = _hmt || [];
-      (function () {
-        var hm = document.createElement("script");
-        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(hm, s);
-      })();
-    </script>
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="elastic, kubernetes">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
 
-    <script type="application/javascript">
-      var doNotTrack = false;
-      if (!doNotTrack) {
-        window.ga =
-          window.ga ||
-          function () {
-            (ga.q = ga.q || []).push(arguments);
-          };
-        ga.l = +new Date();
-        ga("create", "UA-69668147-3", "auto");
 
-        ga("send", "pageview");
-      }
-    </script>
-    <script async src="https://www.google-analytics.com/analytics.js"></script>
-  </head>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-      <div class="container">
-        <div class="navbar-header">
-          <button
-            type="button"
-            class="navbar-toggle"
-            data-toggle="collapse"
-            data-target="#main-navbar"
-          >
-            <span class="sr-only">切换导航</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a
-            class="navbar-brand"
-            href="https://www.qikqiak.com/"
-            title="阳明的博客"
-          >
-            <img
-              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
-              style="margin-top: -5px; height: 32px"
-              alt="阳明的博客"
-            />
-          </a>
-        </div>
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://picdn.youdianzhishi.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
 
-        <div class="collapse navbar-collapse" id="main-navbar">
-          <ul class="nav navbar-nav navbar-right">
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-
+          
+        
+          
             <li>
-              <a
-                title="课程"
-                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
-                >课程</a
-              >
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/archives">Archive</a>
-
-                <a href="https://www.qikqiak.com/tags">tags</a>
-
-                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-
-                <a href="https://www.qikqiak.com/tags/python">python</a>
-
-                <a href="https://www.qikqiak.com/tags/django">django</a>
-
-                <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-
-                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-
-                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-
-                <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/"
-                >关于</a
-              >
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
             </li>
-
+          
+        
+          
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
+          
+        
 
-            <li>
-              <a
-                href="#modalSearch"
-                data-toggle="modal"
-                data-target="#modalSearch"
-                style="outline: none"
-              >
-                <span
-                  id="searchGlyph"
-                  class="glyphicon glyphicon-search"
-                ></span>
-              </a>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </nav>
+        
 
-    <div id="modalSearch" class="modal fade" role="dialog">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal">
-              &times;
-            </button>
-            <h4 class="modal-title">搜索</h4>
-          </div>
-          <div class="modal-body">
-            <div class="aa-input-container" id="aa-input-container">
-              <input
-                type="search"
-                id="aa-search-input"
-                class="aa-input-search"
-                placeholder="Search for titles or URIs..."
-                name="search"
-                autocomplete="off"
-              />
-              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-                <path
-                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
-                />
-              </svg>
-            </div>
-            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+        
 
-            <script>
-              var client = algoliasearch(
-                "1JDRAS0AZR",
-                "8804ac109158bb3bb60d74ce98fa332f"
-              );
-              var index = client.initIndex("prod_blog");
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
 
-              autocomplete(
-                "#aa-search-input",
-                { hint: false },
-                {
-                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
-
-                  displayKey: "name",
-
-                  templates: {
-                    suggestion: function (suggestion) {
-                      return (
-                        "<span>" +
-                        '<a href="https://www.qikqiak.com/post/' +
-                        suggestion.slug +
-                        '">' +
-                        suggestion._highlightResult.title.value +
-                        "</a></span>"
-                      );
-                    },
-                  },
-                }
-              );
-            </script>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">
-              close
-            </button>
-          </div>
-        </div>
-      </div>
+      </ul>
     </div>
 
-    <div
-      id="header-big-imgs"
-      data-num-img="1"
-      data-img-src-1="https://picdn.youdianzhishi.com/images/20200709104733.png"
-      data-img-desc-1="https://unsplash.com/photos/bK1hmAK3D78"
-    ></div>
+  </div>
+</nav>
 
-    <header class="header-section has-img">
-      <div class="intro-header big-img">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-              <div class="post-heading">
-                <h1>使用 Elastic 技术栈构建 K8S 全栈监控(2/4)</h1>
 
-                <h2 class="post-subheading">
-                  使用 Metricbeat 对 Kubernetes 集群进行监控
-                </h2>
-
-                <span class="post-meta"> 发表于 July 9, 2020 </span>
-              </div>
-            </div>
-          </div>
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
         </div>
-        <span class="img-desc" style="display: inline"></span>
-      </div>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-      <div class="intro-header no-img">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-              <div class="post-heading">
-                <h1>使用 Elastic 技术栈构建 K8S 全栈监控(2/4)</h1>
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
 
-                <h2 class="post-subheading">
-                  使用 Metricbeat 对 Kubernetes 集群进行监控
-                </h2>
-
-                <span class="post-meta"> 发表于 July 9, 2020 </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <div class="container" role="main">
-      <div class="row">
-        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-          <div>
-            <h5 id="tags" style="margin-top: 30px">
-              标签:
-
-              <a href="https://www.qikqiak.com/tags/elastic/">elastic</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
-              &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/metricbeat/">metricbeat</a>
-              &nbsp;
-            </h5>
-          </div>
-
-          <article
-            role="main"
-            class="blog-post"
-            itemprop="articleBody"
-            id="content"
-          >
-            <aside class="toc">
-              <nav id="TableOfContents">
-                <ul>
-                  <li>
-                    <ul>
-                      <li>
-                        <a href="#kube-state-metrics">kube-state-metrics</a>
-                      </li>
-                      <li><a href="#metricbeat">Metricbeat</a></li>
-                    </ul>
-                  </li>
-                </ul>
-              </nav>
-            </aside>
-
-            <p>
-              <a
-                href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-1/"
-                >前面文章我们已经安装配置了 ElasticSearch 的集群</a
-              >，本文我们将来使用 Metricbeat 对 Kubernetes
-              集群进行监控。Metricbeat
-              是一个服务器上的轻量级采集器，用于定期收集主机和服务的监控指标。这也是我们构建
-              Kubernetes 全栈监控的第一个部分。
-            </p>
-
-            <p>
-              Metribeat
-              默认采集系统的指标，但是也包含了大量的其他模块来采集有关服务的指标，比如
-              Nginx、Kafka、MySQL、Redis 等等，支持的完整模块可以在 Elastic
-              官方网站上查看到
-              <a
-                href="https://www.elastic.co/guide/en/beats/metricbeat/current/metricbeat-modules.html"
-                >https://www.elastic.co/guide/en/beats/metricbeat/current/metricbeat-modules.html</a
-              >。
-            </p>
-
-            <h2 id="kube-state-metrics">kube-state-metrics</h2>
-
-            <p>
-              首先，我们需要安装 kube-state-metrics，这个组件是一个监听
-              Kubernetes API 的服务，可以暴露每个资源对象状态的相关指标数据。
-            </p>
-
-            <p>
-              要安装 kube-state-metrics 也非常简单，在对应的 GitHub
-              仓库下就有对应的安装资源清单文件：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ git clone https://github.com/kubernetes/kube-state-metrics.git
-$ <span style="color:#8be9fd;font-style:italic">cd</span> kube-state-metrics
-<span style="color:#6272a4"># 执行安装命令</span>
-$ kubectl apply -f examples/standard/  
-clusterrolebinding.rbac.authorization.k8s.io/kube-state-metrics configured
-clusterrole.rbac.authorization.k8s.io/kube-state-metrics configured
-deployment.apps/kube-state-metrics configured
-serviceaccount/kube-state-metrics configured
-service/kube-state-metrics configured
-$ kubectl get pods -n kube-system -l app.kubernetes.io/name<span style="color:#ff79c6">=</span>kube-state-metrics
-NAME                                  READY   STATUS    RESTARTS   AGE
-kube-state-metrics-6d7449fc78-mgf4f   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          88s</code></pre>
-            </div>
-            <p>当 Pod 变成 Running 状态后证明安装成功。</p>
-
-            <h2 id="metricbeat">Metricbeat</h2>
-
-            <p>
-              由于我们需要监控所有的节点，所以我们需要使用一个 DaemonSet
-              控制器来安装 Metricbeat。
-            </p>
-
-            <p>
-              首先，使用一个 ConfigMap 来配置 Metricbeat，然后通过 Volume
-              将该对象挂载到容器中的
-              <code>/etc/metricbeat.yaml</code> 中去。配置文件中包含了
-              ElasticSearch 的地址、用户名和密码，以及 Kibana
-              配置，我们要启用的模块与抓取频率等信息。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># metricbeat.settings.configmap.yml</span>
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  namespace: elastic
-  name: metricbeat-config
-  labels:
-    app: metricbeat
-data:
-  metricbeat.yml: |<span style="color:#f1fa8c">-
-</span><span style="color:#f1fa8c">
-</span><span style="color:#f1fa8c">    # 模块配置</span>
-    metricbeat.modules:
-    - module: system
-      period: ${PERIOD}
-      metricsets: [<span style="color:#f1fa8c">&#34;cpu&#34;</span>, <span style="color:#f1fa8c">&#34;load&#34;</span>, <span style="color:#f1fa8c">&#34;memory&#34;</span>, <span style="color:#f1fa8c">&#34;network&#34;</span>, <span style="color:#f1fa8c">&#34;process&#34;</span>, <span style="color:#f1fa8c">&#34;process_summary&#34;</span>, <span style="color:#f1fa8c">&#34;core&#34;</span>, <span style="color:#f1fa8c">&#34;diskio&#34;</span>, <span style="color:#f1fa8c">&#34;socket&#34;</span>]
-      processes: [<span style="color:#f1fa8c">&#39;.*&#39;</span>]
-      process.include_top_n:
-        by_cpu: <span style="color:#bd93f9">5</span>      <span style="color:#6272a4"># 根据 CPU 计算的前5个进程</span>
-        by_memory: <span style="color:#bd93f9">5</span>   <span style="color:#6272a4"># 根据内存计算的前5个进程</span>
-
-    - module: system
-      period: ${PERIOD}
-      metricsets:  [<span style="color:#f1fa8c">&#34;filesystem&#34;</span>, <span style="color:#f1fa8c">&#34;fsstat&#34;</span>]
-      processors:
-      - drop_event.when.regexp:
-          system.filesystem.mount_point: <span style="color:#f1fa8c">&#39;^/(sys|cgroup|proc|dev|etc|host|lib)($|/)&#39;</span>
-
-    - module: docker
-      period: ${PERIOD}
-      hosts: [<span style="color:#f1fa8c">&#34;unix:///var/run/docker.sock&#34;</span>]
-      metricsets: [<span style="color:#f1fa8c">&#34;container&#34;</span>, <span style="color:#f1fa8c">&#34;cpu&#34;</span>, <span style="color:#f1fa8c">&#34;diskio&#34;</span>, <span style="color:#f1fa8c">&#34;healthcheck&#34;</span>, <span style="color:#f1fa8c">&#34;info&#34;</span>, <span style="color:#f1fa8c">&#34;memory&#34;</span>, <span style="color:#f1fa8c">&#34;network&#34;</span>]
-
-    - module: kubernetes  <span style="color:#6272a4"># 抓取 kubelet 监控指标</span>
-      period: ${PERIOD}
-      node: ${NODE_NAME}
-      hosts: [<span style="color:#f1fa8c">&#34;https://${NODE_NAME}:10250&#34;</span>]
-      metricsets: [<span style="color:#f1fa8c">&#34;node&#34;</span>, <span style="color:#f1fa8c">&#34;system&#34;</span>, <span style="color:#f1fa8c">&#34;pod&#34;</span>, <span style="color:#f1fa8c">&#34;container&#34;</span>, <span style="color:#f1fa8c">&#34;volume&#34;</span>]
-      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-      ssl.verification_mode: <span style="color:#f1fa8c">&#34;none&#34;</span>
-     
-    - module: kubernetes  <span style="color:#6272a4"># 抓取 kube-state-metrics 数据</span>
-      period: ${PERIOD}
-      node: ${NODE_NAME}
-      metricsets: [<span style="color:#f1fa8c">&#34;state_node&#34;</span>, <span style="color:#f1fa8c">&#34;state_deployment&#34;</span>, <span style="color:#f1fa8c">&#34;state_replicaset&#34;</span>, <span style="color:#f1fa8c">&#34;state_pod&#34;</span>, <span style="color:#f1fa8c">&#34;state_container&#34;</span>]
-      hosts: [<span style="color:#f1fa8c">&#34;kube-state-metrics.kube-system.svc.cluster.local:8080&#34;</span>]
-
-    <span style="color:#6272a4"># 根据 k8s deployment 配置具体的服务模块</span>
-    metricbeat.autodiscover:
-      providers:
-      - type: kubernetes
-        node: ${NODE_NAME}
-        templates:
-        - condition.equals:
-            kubernetes.labels.app: mongo
-          config:
-          - module: mongodb
-            period: ${PERIOD}
-            hosts: [<span style="color:#f1fa8c">&#34;mongo.elastic:27017&#34;</span>]
-            metricsets: [<span style="color:#f1fa8c">&#34;dbstats&#34;</span>, <span style="color:#f1fa8c">&#34;status&#34;</span>, <span style="color:#f1fa8c">&#34;collstats&#34;</span>, <span style="color:#f1fa8c">&#34;metrics&#34;</span>, <span style="color:#f1fa8c">&#34;replstatus&#34;</span>]
-
-    <span style="color:#6272a4"># ElasticSearch 连接配置</span>
-    output.elasticsearch:
-      hosts: [<span style="color:#f1fa8c">&#39;${ELASTICSEARCH_HOST:elasticsearch}:${ELASTICSEARCH_PORT:9200}&#39;</span>]
-      username: ${ELASTICSEARCH_USERNAME}
-      password: ${ELASTICSEARCH_PASSWORD}
-
-    <span style="color:#6272a4"># 连接到 Kibana</span>
-    setup.kibana:
-      host: <span style="color:#f1fa8c">&#39;${KIBANA_HOST:kibana}:${KIBANA_PORT:5601}&#39;</span>
-
-    <span style="color:#6272a4"># 导入已经存在的 Dashboard</span>
-    setup.dashboards.enabled: <span style="color:#ff79c6">true</span>
-
-    <span style="color:#6272a4"># 配置 indice 生命周期</span>
-    setup.ilm:
-      policy_file: /etc/indice-lifecycle.json
----</code></pre>
-            </div>
-            <p>
-              ElasticSearch 的 indice 生命周期表示一组规则，可以根据 indice
-              的大小或者时长应用到你的 indice 上。比如可以每天或者每次超过 1GB
-              大小的时候对 indice
-              进行轮转，我们也可以根据规则配置不同的阶段。由于监控会产生大量的数据，很有可能一天就超过几十G的数据，所以为了防止大量的数据存储，我们可以利用
-              indice 的生命周期来配置数据保留，这个在 Prometheus
-              中也有类似的操作。
-              <script
-                async
-                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-              ></script>
-
-              <ins
-                class="adsbygoogle"
-                style="display: block"
-                data-ad-client="ca-pub-5376999672787220"
-                data-ad-slot="9165834656"
-                data-ad-format="auto"
-                data-full-width-responsive="true"
-              ></ins>
-              <script>
-                (adsbygoogle = window.adsbygoogle || []).push({});
-              </script>
-
-              如下所示的文件中，我们配置成每天或每次超过5GB的时候就对 indice
-              进行轮转，并删除所有超过10天的 indice
-              文件，我们这里只保留10天监控数据完全足够了。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># metricbeat.indice-lifecycle.configmap.yml</span>
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  namespace: elastic
-  name: metricbeat-indice-lifecycle
-  labels:
-    app: metricbeat
-data:
-  indice-lifecycle.json: |<span style="color:#f1fa8c">-
-</span><span style="color:#f1fa8c">    {</span>
-      <span style="color:#f1fa8c">&#34;policy&#34;</span>: {
-        <span style="color:#f1fa8c">&#34;phases&#34;</span>: {
-          <span style="color:#f1fa8c">&#34;hot&#34;</span>: {
-            <span style="color:#f1fa8c">&#34;actions&#34;</span>: {
-              <span style="color:#f1fa8c">&#34;rollover&#34;</span>: {
-                <span style="color:#f1fa8c">&#34;max_size&#34;</span>: <span style="color:#f1fa8c">&#34;5GB&#34;</span> ,
-                <span style="color:#f1fa8c">&#34;max_age&#34;</span>: <span style="color:#f1fa8c">&#34;1d&#34;</span>
-              }
-            }
-          },
-          <span style="color:#f1fa8c">&#34;delete&#34;</span>: {
-            <span style="color:#f1fa8c">&#34;min_age&#34;</span>: <span style="color:#f1fa8c">&#34;10d&#34;</span>,
-            <span style="color:#f1fa8c">&#34;actions&#34;</span>: {
-              <span style="color:#f1fa8c">&#34;delete&#34;</span>: {}
-            }
-          }
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
         }
-      }
     }
----</code></pre>
-            </div>
-            <p>
-              接下来就可以来编写 Metricbeat 的 DaemonSet
-              资源对象清单，如下所示：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># metricbeat.daemonset.yml</span>
----
-apiVersion: apps/v1
-kind: DaemonSet
-metadata:
-  namespace: elastic
-  name: metricbeat
-  labels:
-    app: metricbeat
-spec:
-  selector:
-    matchLabels:
-      app: metricbeat
-  template:
-    metadata:
-      labels:
-        app: metricbeat
-    spec:
-      serviceAccountName: metricbeat
-      terminationGracePeriodSeconds: <span style="color:#bd93f9">30</span>
-      hostNetwork: <span style="color:#ff79c6">true</span>
-      dnsPolicy: ClusterFirstWithHostNet
-      containers:
-      - name: metricbeat
-        image: docker.elastic.co/beats/metricbeat:<span style="color:#bd93f9">7.8</span>.<span style="color:#bd93f9">0</span>
-        args: [
-          <span style="color:#f1fa8c">&#34;-c&#34;</span>, <span style="color:#f1fa8c">&#34;/etc/metricbeat.yml&#34;</span>,
-          <span style="color:#f1fa8c">&#34;-e&#34;</span>, <span style="color:#f1fa8c">&#34;-system.hostfs=/hostfs&#34;</span>
-        ]
-        env:
-        - name: ELASTICSEARCH_HOST
-          value: elasticsearch-client.elastic.svc.cluster.local
-        - name: ELASTICSEARCH_PORT
-          value: <span style="color:#f1fa8c">&#34;9200&#34;</span>
-        - name: ELASTICSEARCH_USERNAME
-          value: elastic
-        - name: ELASTICSEARCH_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: elasticsearch-pw-elastic
-              key: password
-        - name: KIBANA_HOST
-          value: kibana.elastic.svc.cluster.local
-        - name: KIBANA_PORT
-          value: <span style="color:#f1fa8c">&#34;5601&#34;</span>
-        - name: NODE_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: spec.nodeName
-        - name: PERIOD
-          value: <span style="color:#f1fa8c">&#34;10s&#34;</span>
-        securityContext:
-          runAsUser: <span style="color:#bd93f9">0</span>
-        resources:
-          limits:
-            memory: 200Mi
-          requests:
-            cpu: 100m
-            memory: 100Mi
-        volumeMounts:
-        - name: config
-          mountPath: /etc/metricbeat.yml
-          readOnly: <span style="color:#ff79c6">true</span>
-          subPath: metricbeat.yml
-        - name: indice-lifecycle
-          mountPath: /etc/indice-lifecycle.json
-          readOnly: <span style="color:#ff79c6">true</span>
-          subPath: indice-lifecycle.json
-        - name: dockersock
-          mountPath: /var/run/docker.sock
-        - name: proc
-          mountPath: /hostfs/proc
-          readOnly: <span style="color:#ff79c6">true</span>
-        - name: cgroup
-          mountPath: /hostfs/sys/fs/cgroup
-          readOnly: <span style="color:#ff79c6">true</span>
-      volumes:
-      - name: proc
-        hostPath:
-          path: /proc
-      - name: cgroup
-        hostPath:
-          path: /sys/fs/cgroup
-      - name: dockersock
-        hostPath:
-          path: /var/run/docker.sock
-      - name: config
-        configMap:
-          defaultMode: <span style="color:#bd93f9">0600</span>
-          name: metricbeat-config
-      - name: indice-lifecycle
-        configMap:
-          defaultMode: <span style="color:#bd93f9">0600</span>
-          name: metricbeat-indice-lifecycle
-      - name: data
-        hostPath:
-          path: /var/lib/metricbeat-data
-          type: DirectoryOrCreate
----</code></pre>
-            </div>
-            <p>
-              需要注意的将上面的两个 ConfigMap 挂载到容器中去，由于需要
-              Metricbeat
-              获取宿主机的相关信息，所以我们这里也挂载了一些宿主机的文件到容器中去，比如
-              <code>proc</code> 目录，<code>cgroup</code> 目录以及
-              <code>dockersock</code> 文件。
-            </p>
-
-            <p>
-              由于 Metricbeat 需要去获取 Kubernetes
-              集群的资源对象信息，所以同样需要对应的 RBAC
-              权限声明，由于是全局作用域的，所以这里我们使用 ClusterRole
-              进行声明：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># metricbeat.permissions.yml</span>
----
-apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: ClusterRoleBinding
-metadata:
-  name: metricbeat
-subjects:
-- kind: ServiceAccount
-  name: metricbeat
-  namespace: elastic
-roleRef:
-  kind: ClusterRole
-  name: metricbeat
-  apiGroup: rbac.authorization.k8s.io
----
-apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: ClusterRole
-metadata:
-  name: metricbeat
-  labels:
-    app: metricbeat
-rules:
-- apiGroups: [<span style="color:#f1fa8c">&#34;&#34;</span>]
-  resources:
-  - nodes
-  - namespaces
-  - events
-  - pods
-  verbs: [<span style="color:#f1fa8c">&#34;get&#34;</span>, <span style="color:#f1fa8c">&#34;list&#34;</span>, <span style="color:#f1fa8c">&#34;watch&#34;</span>]
-- apiGroups: [<span style="color:#f1fa8c">&#34;extensions&#34;</span>]
-  resources:
-  - replicasets
-  verbs: [<span style="color:#f1fa8c">&#34;get&#34;</span>, <span style="color:#f1fa8c">&#34;list&#34;</span>, <span style="color:#f1fa8c">&#34;watch&#34;</span>]
-- apiGroups: [<span style="color:#f1fa8c">&#34;apps&#34;</span>]
-  resources:
-  - statefulsets
-  - deployments
-	- replicasets
-  verbs: [<span style="color:#f1fa8c">&#34;get&#34;</span>, <span style="color:#f1fa8c">&#34;list&#34;</span>, <span style="color:#f1fa8c">&#34;watch&#34;</span>]
-- apiGroups:
-  - <span style="color:#f1fa8c">&#34;&#34;</span>
-  resources:
-  - nodes/stats
-  verbs:
-  - get
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  namespace: elastic
-  name: metricbeat
-  labels:
-    app: metricbeat
----</code></pre>
-            </div>
-            <p>直接创建上面的几个资源对象即可：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ kubectl apply  -f metricbeat.settings.configmap.yml <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>                 -f metricbeat.indice-lifecycle.configmap.yml <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>                 -f metricbeat.daemonset.yml <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>                 -f metricbeat.permissions.yml
-
-configmap/metricbeat-config configured
-configmap/metricbeat-indice-lifecycle configured
-daemonset.extensions/metricbeat created
-clusterrolebinding.rbac.authorization.k8s.io/metricbeat created
-clusterrole.rbac.authorization.k8s.io/metricbeat created
-serviceaccount/metricbeat created
-$ kubectl get pods -n elastic -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>metricbeat   
-NAME               READY   STATUS    RESTARTS   AGE
-metricbeat-2gstq   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          18m
-metricbeat-99rdb   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          18m
-metricbeat-9bb27   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          18m
-metricbeat-cgbrg   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          18m
-metricbeat-l2csd   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          18m
-metricbeat-lsrgv   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          18m</code></pre>
-            </div>
-            <p>
-              当 Metricbeat 的 Pod 变成 Running 状态后，正常我们就可以在 Kibana
-              中去查看对应的监控信息了。
-            </p>
-
-            <p>
-              在 Kibana 左侧页面 Observability → Metrics
-              进入指标监控页面，正常就可以看到一些监控数据了：
-            </p>
-
-            <p>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20200627160041.png"
-                alt=""
-              />
-            </p>
-
-            <p>
-              也可以根据自己的需求进行筛选，比如我们可以按照 Kubernetes
-              Namespace 进行分组作为视图查看监控信息：
-            </p>
-
-            <p>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20200627160240.png"
-                alt=""
-              />
-            </p>
-
-            <p>
-              由于我们在配置文件中设置了属性 setup.dashboards.enabled=true，所以
-              Kibana 会导入预先已经存在的一些 Dashboard。我们可以在左侧菜单进入
-              Kibana → Dashboard 页面，我们会看到一个大约有 50 个 Metricbeat 的
-              Dashboard 列表，我们可以根据需要筛选
-              Dashboard，比如我们要查看集群节点的信息，可以查看
-              <code>[Metricbeat Kubernetes] Overview ECS</code> 这个 Dashboard：
-            </p>
-
-            <p>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20200627160835.png"
-                alt=""
-              />
-            </p>
-
-            <p>
-              我们还单独启用了 mongodb 模块，我们可以使用
-              <strong>[Metricbeat MongoDB] Overview ECS</strong> 这个 Dashboard
-              来查看监控信息：
-            </p>
-
-            <p>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20200627161101.png"
-                alt=""
-              />
-            </p>
-
-            <p>
-              我们还启用了 docker 这个模块，也可以使用
-              <strong>[Metricbeat Docker] Overview ECS</strong> 这个 Dashboard
-              来查看监控信息：
-            </p>
-
-            <p>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20200627161244.png"
-                alt=""
-              />
-            </p>
-
-            <p>
-              到这里我们就完成了使用 Metricbeat 来监控 Kubernetes
-              集群信息，在下文我们再来学习如何使用 Filebeat 来收集日志以监控
-              Kubernetes 集群。
-            </p>
-
-            <p>
-              <a
-                href="https://youdianzhishi.com/web/course/1030"
-                title="从 Docker 到 Kubernetes 进阶课程"
-                ><img
-                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
-                  alt="Kubernetes进阶训练营"
-              /></a>
-            </p>
-
-            <h2>微信公众号</h2>
-            <p>
-              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
-              kubernetes 讨论群里面共同学习。
-            </p>
-            <img
-              src="https://picdn.youdianzhishi.com/images/qrcode.png"
-              alt="wechat-account-qrcode"
-            />
-
-            <div class="entry-shang text-center">
-              <p>「真诚赞赏，手留余香」</p>
-              <button class="zs show-zs btn btn-bred">赞赏</button>
-            </div>
-            <div class="zs-modal-bg"></div>
-            <div class="zs-modal-box">
-              <div class="zs-modal-head">
-                <button type="button" class="close">×</button>
-                <span class="author"
-                  ><img
-                    src="https://www.qikqiak.com/img/avatar.jpeg"
-                  />阳明</span
-                >
-                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-              </div>
-              <div class="zs-modal-body">
-                <div class="zs-modal-btns">
-                  <button class="btn btn-blink" data-num="2">2元</button>
-                  <button class="btn btn-blink" data-num="5">5元</button>
-                  <button class="btn btn-blink" data-num="10">10元</button>
-                  <button class="btn btn-blink" data-num="50">50元</button>
-                  <button class="btn btn-blink" data-num="100">100元</button>
-                  <button class="btn btn-blink" data-num="1">任意金额</button>
-                </div>
-                <div class="zs-modal-pay">
-                  <button class="btn btn-bred" id="pay-text">2元</button>
-                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-                  <img
-                    src="https://www.qikqiak.com/img/wechat-2.png"
-                    id="pay-image"
-                  />
-                </div>
-              </div>
-              <div class="zs-modal-footer">
-                <span class="zs-wechat"
-                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
-                /></span>
-              </div>
-            </div>
-
-            <div
-              class="social-share"
-              data-initialized="true"
-              style="margin-bottom: 20px; margin-top: 20px"
-            >
-              <center>
-                <a href="#" class="social-share-icon icon-weibo"></a>
-                <a href="#" class="social-share-icon icon-wechat"></a>
-                <a href="#" class="social-share-icon icon-twitter"></a>
-                <a href="#" class="social-share-icon icon-linkedin"></a>
-                <a href="#" class="social-share-icon icon-facebook"></a>
-                <a href="#" class="social-share-icon icon-qq"></a>
-                <a href="#" class="social-share-icon icon-qzone"></a>
-              </center>
-            </div>
-
-            <link
-              rel="stylesheet"
-              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
-            />
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
-          </article>
-
-          <h3>相关文章</h3>
-          <ul style="margin-bottom: 25px">
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-1/"
-                >使用 Elastic 技术栈构建 K8S 全栈监控(1/4)</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-3/"
-                >使用 Elastic 技术栈构建 K8S 全栈监控(3/4)</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-4/"
-                >使用 Elastic 技术栈构建 K8S 全栈监控(4/4)</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/monitor-external-k8s-on-prometheus/"
-                >Prometheus 监控外部 Kubernetes 集群</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/encrypt-k8s-secrets-with-sealed-secrets/"
-                >使用 Sealed Secrets 加密 Kubernetes Secrets</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/status-in-pv-pvc/"
-                >Kubernetes 中 PV 和 PVC 的状态变化</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/k8s-in-k8s/"
-                >在 Kubernetes 中运行 Kubernetes</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/deploy-k8s-on-win-use-wsl2/"
-                >在 Windows 下使用 WSL2 搭建 Kubernetes 集群</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/use-loki-monitor-alert/"
-                >使用 Loki 进行日志监控和报警</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/create-ci-pipeline-with-tekton-3/"
-                >使用 Tekton 创建 CI/CD 流水线（3/4）</a
-              >
-            </li>
-          </ul>
-
-          <ul class="pager blog-pager">
-            <li class="previous">
-              <a
-                href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-3/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="使用 Elastic 技术栈构建 K8S 全栈监控(3/4)"
-                >&larr; 前一篇</a
-              >
-            </li>
-
-            <li class="next">
-              <a
-                href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-1/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="使用 Elastic 技术栈构建 K8S 全栈监控(1/4)"
-                >后一篇 &rarr;</a
-              >
-            </li>
-          </ul>
-
-          <script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-          ></script>
-
-          <ins
-            class="adsbygoogle"
-            style="display: block"
-            data-ad-client="ca-pub-5376999672787220"
-            data-ad-slot="3700507799"
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          ></ins>
-          <script>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-          </script>
-
-          <div id="gitalk-container"></div>
-          <link
-            rel="stylesheet"
-            href="https://unpkg.com/gitalk/dist/gitalk.css"
-          />
-          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-          <script>
-            var gitalk = new Gitalk({
-              clientID: "bdb76dbb2e9d0786e350",
-              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
-              repo: "blog",
-              owner: "cnych",
-              admin: ["cnych"],
-              labels: ["gitment"],
-              title: "使用 Elastic 技术栈构建 K8S 全栈监控(2\/4)",
-              createIssueManually: true,
-              id: "k8s-monitor-use-elastic-stack-2",
-              distractionFreeMode: true,
-            });
-            gitalk.render("gitalk-container");
-          </script>
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <footer>
+    
+  
+  
+  
+
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://picdn.youdianzhishi.com/images/20200709104733.png" data-img-desc-1="https://unsplash.com/photos/bK1hmAK3D78"></div>
+  
+
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>使用 Elastic 技术栈构建 K8S 全栈监控(2/4)</h1>
+                  
+                    
+                      <h2 class="post-subheading">使用 Metricbeat 对 Kubernetes 集群进行监控</h2>
+                    
+                  
+                  
+                    <span class="post-meta">
+  发表于 July 9, 2020  
+</span>
+
+                  
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="img-desc" style="display: inline;"></span>
+      </div>
+    
+    
+    
+    <div class="intro-header no-img">
+      
       <div class="container">
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <ul class="list-inline text-center footer-links">
-              <img
-                src="https://www.qikqiak.com/img/wechatmp.png"
-                alt="k8s技术圈"
-              />
+            <div class="post-heading">
+              <h1>使用 Elastic 技术栈构建 K8S 全栈监控(2/4)</h1>
+                
+                  
+                    <h2 class="post-subheading">使用 Metricbeat 对 Kubernetes 集群进行监控</h2>
+                  
+                
+                
+                  <span class="post-meta">
+  发表于 July 9, 2020  
+</span>
 
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/elastic/">elastic</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/metricbeat/">metricbeat</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#kube-state-metrics">kube-state-metrics</a></li>
+    <li><a href="#metricbeat">Metricbeat</a></li>
+  </ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p><a href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-1/">前面文章我们已经安装配置了 ElasticSearch 的集群</a>，本文我们将来使用 Metricbeat 对 Kubernetes 集群进行监控。Metricbeat 是一个服务器上的轻量级采集器，用于定期收集主机和服务的监控指标。这也是我们构建 Kubernetes 全栈监控的第一个部分。</p>
+<p>Metribeat 默认采集系统的指标，但是也包含了大量的其他模块来采集有关服务的指标，比如 Nginx、Kafka、MySQL、Redis 等等，支持的完整模块可以在 Elastic 官方网站上查看到 <a href="https://www.elastic.co/guide/en/beats/metricbeat/current/metricbeat-modules.html">https://www.elastic.co/guide/en/beats/metricbeat/current/metricbeat-modules.html</a>。</p>
+<h2 id="kube-state-metrics">kube-state-metrics</h2>
+<p>首先，我们需要安装 kube-state-metrics，这个组件是一个监听 Kubernetes API 的服务，可以暴露每个资源对象状态的相关指标数据。</p>
+<p>要安装 kube-state-metrics 也非常简单，在对应的 GitHub 仓库下就有对应的安装资源清单文件：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ git clone https://github.com/kubernetes/kube-state-metrics.git
+</span></span><span style="display:flex;"><span>$ <span style="color:#8be9fd;font-style:italic">cd</span> kube-state-metrics
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 执行安装命令</span>
+</span></span><span style="display:flex;"><span>$ kubectl apply -f examples/standard/
+</span></span><span style="display:flex;"><span>clusterrolebinding.rbac.authorization.k8s.io/kube-state-metrics configured
+</span></span><span style="display:flex;"><span>clusterrole.rbac.authorization.k8s.io/kube-state-metrics configured
+</span></span><span style="display:flex;"><span>deployment.apps/kube-state-metrics configured
+</span></span><span style="display:flex;"><span>serviceaccount/kube-state-metrics configured
+</span></span><span style="display:flex;"><span>service/kube-state-metrics configured
+</span></span><span style="display:flex;"><span>$ kubectl get pods -n kube-system -l app.kubernetes.io/name<span style="color:#ff79c6">=</span>kube-state-metrics
+</span></span><span style="display:flex;"><span>NAME                                  READY   STATUS    RESTARTS   AGE
+</span></span><span style="display:flex;"><span>kube-state-metrics-6d7449fc78-mgf4f   1/1     Running   <span style="color:#bd93f9">0</span>          88s
+</span></span></code></pre></div><p>当 Pod 变成 Running 状态后证明安装成功。</p>
+<h2 id="metricbeat">Metricbeat</h2>
+<p>由于我们需要监控所有的节点，所以我们需要使用一个 DaemonSet 控制器来安装 Metricbeat。</p>
+<p>首先，使用一个 ConfigMap 来配置 Metricbeat，然后通过 Volume 将该对象挂载到容器中的 <code>/etc/metricbeat.yaml</code> 中去。配置文件中包含了 ElasticSearch 的地址、用户名和密码，以及 Kibana 配置，我们要启用的模块与抓取频率等信息。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#6272a4"># metricbeat.settings.configmap.yml</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: ConfigMap
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">namespace</span>: elastic
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: metricbeat-config
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">labels</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">app</span>: metricbeat
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">data</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">metricbeat.yml</span>: |-
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#6272a4"># 模块配置</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">metricbeat.modules</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#ff79c6">module</span>: system
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">period</span>: ${PERIOD}
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">metricsets</span>: [<span style="color:#f1fa8c">&#34;cpu&#34;</span>, <span style="color:#f1fa8c">&#34;load&#34;</span>, <span style="color:#f1fa8c">&#34;memory&#34;</span>, <span style="color:#f1fa8c">&#34;network&#34;</span>, <span style="color:#f1fa8c">&#34;process&#34;</span>, <span style="color:#f1fa8c">&#34;process_summary&#34;</span>, <span style="color:#f1fa8c">&#34;core&#34;</span>, <span style="color:#f1fa8c">&#34;diskio&#34;</span>, <span style="color:#f1fa8c">&#34;socket&#34;</span>]
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">processes</span>: [<span style="color:#f1fa8c">&#39;.*&#39;</span>]
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">process.include_top_n</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">by_cpu</span>: <span style="color:#bd93f9">5</span>      <span style="color:#6272a4"># 根据 CPU 计算的前5个进程</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">by_memory</span>: <span style="color:#bd93f9">5</span>   <span style="color:#6272a4"># 根据内存计算的前5个进程</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    - <span style="color:#ff79c6">module</span>: system
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">period</span>: ${PERIOD}
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">metricsets</span>:  [<span style="color:#f1fa8c">&#34;filesystem&#34;</span>, <span style="color:#f1fa8c">&#34;fsstat&#34;</span>]
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">processors</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">drop_event.when.regexp</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">system.filesystem.mount_point</span>: <span style="color:#f1fa8c">&#39;^/(sys|cgroup|proc|dev|etc|host|lib)($|/)&#39;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    - <span style="color:#ff79c6">module</span>: docker
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">period</span>: ${PERIOD}
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">hosts</span>: [<span style="color:#f1fa8c">&#34;unix:///var/run/docker.sock&#34;</span>]
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">metricsets</span>: [<span style="color:#f1fa8c">&#34;container&#34;</span>, <span style="color:#f1fa8c">&#34;cpu&#34;</span>, <span style="color:#f1fa8c">&#34;diskio&#34;</span>, <span style="color:#f1fa8c">&#34;healthcheck&#34;</span>, <span style="color:#f1fa8c">&#34;info&#34;</span>, <span style="color:#f1fa8c">&#34;memory&#34;</span>, <span style="color:#f1fa8c">&#34;network&#34;</span>]
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    - <span style="color:#ff79c6">module</span>: kubernetes  <span style="color:#6272a4"># 抓取 kubelet 监控指标</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">period</span>: ${PERIOD}
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">node</span>: ${NODE_NAME}
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">hosts</span>: [<span style="color:#f1fa8c">&#34;https://${NODE_NAME}:10250&#34;</span>]
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">metricsets</span>: [<span style="color:#f1fa8c">&#34;node&#34;</span>, <span style="color:#f1fa8c">&#34;system&#34;</span>, <span style="color:#f1fa8c">&#34;pod&#34;</span>, <span style="color:#f1fa8c">&#34;container&#34;</span>, <span style="color:#f1fa8c">&#34;volume&#34;</span>]
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">bearer_token_file</span>: /var/run/secrets/kubernetes.io/serviceaccount/token
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">ssl.verification_mode</span>: <span style="color:#f1fa8c">&#34;none&#34;</span>
+</span></span><span style="display:flex;"><span>     
+</span></span><span style="display:flex;"><span>    - <span style="color:#ff79c6">module</span>: kubernetes  <span style="color:#6272a4"># 抓取 kube-state-metrics 数据</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">period</span>: ${PERIOD}
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">node</span>: ${NODE_NAME}
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">metricsets</span>: [<span style="color:#f1fa8c">&#34;state_node&#34;</span>, <span style="color:#f1fa8c">&#34;state_deployment&#34;</span>, <span style="color:#f1fa8c">&#34;state_replicaset&#34;</span>, <span style="color:#f1fa8c">&#34;state_pod&#34;</span>, <span style="color:#f1fa8c">&#34;state_container&#34;</span>]
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">hosts</span>: [<span style="color:#f1fa8c">&#34;kube-state-metrics.kube-system.svc.cluster.local:8080&#34;</span>]
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#6272a4"># 根据 k8s deployment 配置具体的服务模块</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">metricbeat.autodiscover</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">providers</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">type</span>: kubernetes
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">node</span>: ${NODE_NAME}
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">templates</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">condition.equals</span>:
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">kubernetes.labels.app</span>: mongo
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">config</span>:
+</span></span><span style="display:flex;"><span>          - <span style="color:#ff79c6">module</span>: mongodb
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">period</span>: ${PERIOD}
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">hosts</span>: [<span style="color:#f1fa8c">&#34;mongo.elastic:27017&#34;</span>]
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">metricsets</span>: [<span style="color:#f1fa8c">&#34;dbstats&#34;</span>, <span style="color:#f1fa8c">&#34;status&#34;</span>, <span style="color:#f1fa8c">&#34;collstats&#34;</span>, <span style="color:#f1fa8c">&#34;metrics&#34;</span>, <span style="color:#f1fa8c">&#34;replstatus&#34;</span>]
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#6272a4"># ElasticSearch 连接配置</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">output.elasticsearch</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">hosts</span>: [<span style="color:#f1fa8c">&#39;${ELASTICSEARCH_HOST:elasticsearch}:${ELASTICSEARCH_PORT:9200}&#39;</span>]
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">username</span>: ${ELASTICSEARCH_USERNAME}
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">password</span>: ${ELASTICSEARCH_PASSWORD}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#6272a4"># 连接到 Kibana</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">setup.kibana</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">host</span>: <span style="color:#f1fa8c">&#39;${KIBANA_HOST:kibana}:${KIBANA_PORT:5601}&#39;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#6272a4"># 导入已经存在的 Dashboard</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">setup.dashboards.enabled</span>: <span style="color:#ff79c6">true</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#6272a4"># 配置 indice 生命周期</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">setup.ilm</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">policy_file</span>: /etc/indice-lifecycle.json
+</span></span><span style="display:flex;"><span>---
+</span></span></code></pre></div><p>ElasticSearch 的 indice 生命周期表示一组规则，可以根据 indice 的大小或者时长应用到你的 indice 上。比如可以每天或者每次超过 1GB 大小的时候对 indice 进行轮转，我们也可以根据规则配置不同的阶段。由于监控会产生大量的数据，很有可能一天就超过几十 G 的数据，所以为了防止大量的数据存储，我们可以利用 indice 的生命周期来配置数据保留，这个在 Prometheus 中也有类似的操作。</p>
+<!-- raw HTML omitted -->
+<p>如下所示的文件中，我们配置成每天或每次超过 5GB 的时候就对 indice 进行轮转，并删除所有超过 10 天的 indice 文件，我们这里只保留 10 天监控数据完全足够了。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#6272a4"># metricbeat.indice-lifecycle.configmap.yml</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: ConfigMap
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">namespace</span>: elastic
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: metricbeat-indice-lifecycle
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">labels</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">app</span>: metricbeat
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">data</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">indice-lifecycle.json</span>: |-<span style="color:#f1fa8c">
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">    {
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">      &#34;policy&#34;: {
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">        &#34;phases&#34;: {
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">          &#34;hot&#34;: {
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">            &#34;actions&#34;: {
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">              &#34;rollover&#34;: {
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">                &#34;max_size&#34;: &#34;5GB&#34; ,
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">                &#34;max_age&#34;: &#34;1d&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">              }
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">            }
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">          },
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">          &#34;delete&#34;: {
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">            &#34;min_age&#34;: &#34;10d&#34;,
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">            &#34;actions&#34;: {
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">              &#34;delete&#34;: {}
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">            }
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">          }
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">        }
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">      }
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c">    }</span>    
+</span></span><span style="display:flex;"><span>---
+</span></span></code></pre></div><p>接下来就可以来编写 Metricbeat 的 DaemonSet 资源对象清单，如下所示：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#6272a4"># metricbeat.daemonset.yml</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: apps/v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: DaemonSet
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">namespace</span>: elastic
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: metricbeat
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">labels</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">app</span>: metricbeat
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">selector</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">matchLabels</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">app</span>: metricbeat
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">template</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">labels</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">app</span>: metricbeat
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">serviceAccountName</span>: metricbeat
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">terminationGracePeriodSeconds</span>: <span style="color:#bd93f9">30</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">hostNetwork</span>: <span style="color:#ff79c6">true</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">dnsPolicy</span>: ClusterFirstWithHostNet
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">containers</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">name</span>: metricbeat
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">image</span>: docker.elastic.co/beats/metricbeat:7.8.0
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">args</span>: [<span style="color:#f1fa8c">&#34;-c&#34;</span>, <span style="color:#f1fa8c">&#34;/etc/metricbeat.yml&#34;</span>, <span style="color:#f1fa8c">&#34;-e&#34;</span>, <span style="color:#f1fa8c">&#34;-system.hostfs=/hostfs&#34;</span>]
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">env</span>:
+</span></span><span style="display:flex;"><span>            - <span style="color:#ff79c6">name</span>: ELASTICSEARCH_HOST
+</span></span><span style="display:flex;"><span>              <span style="color:#ff79c6">value</span>: elasticsearch-client.elastic.svc.cluster.local
+</span></span><span style="display:flex;"><span>            - <span style="color:#ff79c6">name</span>: ELASTICSEARCH_PORT
+</span></span><span style="display:flex;"><span>              <span style="color:#ff79c6">value</span>: <span style="color:#f1fa8c">&#34;9200&#34;</span>
+</span></span><span style="display:flex;"><span>            - <span style="color:#ff79c6">name</span>: ELASTICSEARCH_USERNAME
+</span></span><span style="display:flex;"><span>              <span style="color:#ff79c6">value</span>: elastic
+</span></span><span style="display:flex;"><span>            - <span style="color:#ff79c6">name</span>: ELASTICSEARCH_PASSWORD
+</span></span><span style="display:flex;"><span>              <span style="color:#ff79c6">valueFrom</span>:
+</span></span><span style="display:flex;"><span>                <span style="color:#ff79c6">secretKeyRef</span>:
+</span></span><span style="display:flex;"><span>                  <span style="color:#ff79c6">name</span>: elasticsearch-pw-elastic
+</span></span><span style="display:flex;"><span>                  <span style="color:#ff79c6">key</span>: password
+</span></span><span style="display:flex;"><span>            - <span style="color:#ff79c6">name</span>: KIBANA_HOST
+</span></span><span style="display:flex;"><span>              <span style="color:#ff79c6">value</span>: kibana.elastic.svc.cluster.local
+</span></span><span style="display:flex;"><span>            - <span style="color:#ff79c6">name</span>: KIBANA_PORT
+</span></span><span style="display:flex;"><span>              <span style="color:#ff79c6">value</span>: <span style="color:#f1fa8c">&#34;5601&#34;</span>
+</span></span><span style="display:flex;"><span>            - <span style="color:#ff79c6">name</span>: NODE_NAME
+</span></span><span style="display:flex;"><span>              <span style="color:#ff79c6">valueFrom</span>:
+</span></span><span style="display:flex;"><span>                <span style="color:#ff79c6">fieldRef</span>:
+</span></span><span style="display:flex;"><span>                  <span style="color:#ff79c6">fieldPath</span>: spec.nodeName
+</span></span><span style="display:flex;"><span>            - <span style="color:#ff79c6">name</span>: PERIOD
+</span></span><span style="display:flex;"><span>              <span style="color:#ff79c6">value</span>: <span style="color:#f1fa8c">&#34;10s&#34;</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">securityContext</span>:
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">runAsUser</span>: <span style="color:#bd93f9">0</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">resources</span>:
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">limits</span>:
+</span></span><span style="display:flex;"><span>              <span style="color:#ff79c6">memory</span>: 200Mi
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">requests</span>:
+</span></span><span style="display:flex;"><span>              <span style="color:#ff79c6">cpu</span>: 100m
+</span></span><span style="display:flex;"><span>              <span style="color:#ff79c6">memory</span>: 100Mi
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">volumeMounts</span>:
+</span></span><span style="display:flex;"><span>            - <span style="color:#ff79c6">name</span>: config
+</span></span><span style="display:flex;"><span>              <span style="color:#ff79c6">mountPath</span>: /etc/metricbeat.yml
+</span></span><span style="display:flex;"><span>              <span style="color:#ff79c6">readOnly</span>: <span style="color:#ff79c6">true</span>
+</span></span><span style="display:flex;"><span>              <span style="color:#ff79c6">subPath</span>: metricbeat.yml
+</span></span><span style="display:flex;"><span>            - <span style="color:#ff79c6">name</span>: indice-lifecycle
+</span></span><span style="display:flex;"><span>              <span style="color:#ff79c6">mountPath</span>: /etc/indice-lifecycle.json
+</span></span><span style="display:flex;"><span>              <span style="color:#ff79c6">readOnly</span>: <span style="color:#ff79c6">true</span>
+</span></span><span style="display:flex;"><span>              <span style="color:#ff79c6">subPath</span>: indice-lifecycle.json
+</span></span><span style="display:flex;"><span>            - <span style="color:#ff79c6">name</span>: dockersock
+</span></span><span style="display:flex;"><span>              <span style="color:#ff79c6">mountPath</span>: /var/run/docker.sock
+</span></span><span style="display:flex;"><span>            - <span style="color:#ff79c6">name</span>: proc
+</span></span><span style="display:flex;"><span>              <span style="color:#ff79c6">mountPath</span>: /hostfs/proc
+</span></span><span style="display:flex;"><span>              <span style="color:#ff79c6">readOnly</span>: <span style="color:#ff79c6">true</span>
+</span></span><span style="display:flex;"><span>            - <span style="color:#ff79c6">name</span>: cgroup
+</span></span><span style="display:flex;"><span>              <span style="color:#ff79c6">mountPath</span>: /hostfs/sys/fs/cgroup
+</span></span><span style="display:flex;"><span>              <span style="color:#ff79c6">readOnly</span>: <span style="color:#ff79c6">true</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">volumes</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">name</span>: proc
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">hostPath</span>:
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">path</span>: /proc
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">name</span>: cgroup
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">hostPath</span>:
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">path</span>: /sys/fs/cgroup
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">name</span>: dockersock
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">hostPath</span>:
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">path</span>: /var/run/docker.sock
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">name</span>: config
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">configMap</span>:
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">defaultMode</span>: <span style="color:#bd93f9">0600</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">name</span>: metricbeat-config
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">name</span>: indice-lifecycle
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">configMap</span>:
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">defaultMode</span>: <span style="color:#bd93f9">0600</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">name</span>: metricbeat-indice-lifecycle
+</span></span><span style="display:flex;"><span>        - <span style="color:#ff79c6">name</span>: data
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">hostPath</span>:
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">path</span>: /var/lib/metricbeat-data
+</span></span><span style="display:flex;"><span>            <span style="color:#ff79c6">type</span>: DirectoryOrCreate
+</span></span><span style="display:flex;"><span>---
+</span></span></code></pre></div><p>需要注意的将上面的两个 ConfigMap 挂载到容器中去，由于需要 Metricbeat 获取宿主机的相关信息，所以我们这里也挂载了一些宿主机的文件到容器中去，比如 <code>proc</code> 目录，<code>cgroup</code> 目录以及 <code>dockersock</code> 文件。</p>
+<p>由于 Metricbeat 需要去获取 Kubernetes 集群的资源对象信息，所以同样需要对应的 RBAC 权限声明，由于是全局作用域的，所以这里我们使用 ClusterRole 进行声明：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#6272a4"># metricbeat.permissions.yml</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: rbac.authorization.k8s.io/v1beta1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: ClusterRoleBinding
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: metricbeat
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">subjects</span>:
+</span></span><span style="display:flex;"><span>- <span style="color:#ff79c6">kind</span>: ServiceAccount
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: metricbeat
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">namespace</span>: elastic
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">roleRef</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">kind</span>: ClusterRole
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: metricbeat
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">apiGroup</span>: rbac.authorization.k8s.io
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: rbac.authorization.k8s.io/v1beta1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: ClusterRole
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: metricbeat
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">labels</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">app</span>: metricbeat
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">rules</span>:
+</span></span><span style="display:flex;"><span>- <span style="color:#ff79c6">apiGroups</span>: [<span style="color:#f1fa8c">&#34;&#34;</span>]
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">resources</span>:
+</span></span><span style="display:flex;"><span>  - nodes
+</span></span><span style="display:flex;"><span>  - namespaces
+</span></span><span style="display:flex;"><span>  - events
+</span></span><span style="display:flex;"><span>  - pods
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">verbs</span>: [<span style="color:#f1fa8c">&#34;get&#34;</span>, <span style="color:#f1fa8c">&#34;list&#34;</span>, <span style="color:#f1fa8c">&#34;watch&#34;</span>]
+</span></span><span style="display:flex;"><span>- <span style="color:#ff79c6">apiGroups</span>: [<span style="color:#f1fa8c">&#34;extensions&#34;</span>]
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">resources</span>:
+</span></span><span style="display:flex;"><span>  - replicasets
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">verbs</span>: [<span style="color:#f1fa8c">&#34;get&#34;</span>, <span style="color:#f1fa8c">&#34;list&#34;</span>, <span style="color:#f1fa8c">&#34;watch&#34;</span>]
+</span></span><span style="display:flex;"><span>- <span style="color:#ff79c6">apiGroups</span>: [<span style="color:#f1fa8c">&#34;apps&#34;</span>]
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">resources</span>:
+</span></span><span style="display:flex;"><span>  - statefulsets
+</span></span><span style="display:flex;"><span>  - deployments
+</span></span><span style="display:flex;"><span>	- replicasets
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">verbs</span>: [<span style="color:#f1fa8c">&#34;get&#34;</span>, <span style="color:#f1fa8c">&#34;list&#34;</span>, <span style="color:#f1fa8c">&#34;watch&#34;</span>]
+</span></span><span style="display:flex;"><span>- <span style="color:#ff79c6">apiGroups</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f1fa8c">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">resources</span>:
+</span></span><span style="display:flex;"><span>  - nodes/stats
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">verbs</span>:
+</span></span><span style="display:flex;"><span>  - get
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: v1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: ServiceAccount
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">namespace</span>: elastic
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: metricbeat
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">labels</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">app</span>: metricbeat
+</span></span><span style="display:flex;"><span>---
+</span></span></code></pre></div><p>直接创建上面的几个资源对象即可：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kubectl apply  -f metricbeat.settings.configmap.yml <span style="color:#f1fa8c">\
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c"></span>                 -f metricbeat.indice-lifecycle.configmap.yml <span style="color:#f1fa8c">\
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c"></span>                 -f metricbeat.daemonset.yml <span style="color:#f1fa8c">\
+</span></span></span><span style="display:flex;"><span><span style="color:#f1fa8c"></span>                 -f metricbeat.permissions.yml
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>configmap/metricbeat-config configured
+</span></span><span style="display:flex;"><span>configmap/metricbeat-indice-lifecycle configured
+</span></span><span style="display:flex;"><span>daemonset.extensions/metricbeat created
+</span></span><span style="display:flex;"><span>clusterrolebinding.rbac.authorization.k8s.io/metricbeat created
+</span></span><span style="display:flex;"><span>clusterrole.rbac.authorization.k8s.io/metricbeat created
+</span></span><span style="display:flex;"><span>serviceaccount/metricbeat created
+</span></span><span style="display:flex;"><span>$ kubectl get pods -n elastic -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>metricbeat
+</span></span><span style="display:flex;"><span>NAME               READY   STATUS    RESTARTS   AGE
+</span></span><span style="display:flex;"><span>metricbeat-2gstq   1/1     Running   <span style="color:#bd93f9">0</span>          18m
+</span></span><span style="display:flex;"><span>metricbeat-99rdb   1/1     Running   <span style="color:#bd93f9">0</span>          18m
+</span></span><span style="display:flex;"><span>metricbeat-9bb27   1/1     Running   <span style="color:#bd93f9">0</span>          18m
+</span></span><span style="display:flex;"><span>metricbeat-cgbrg   1/1     Running   <span style="color:#bd93f9">0</span>          18m
+</span></span><span style="display:flex;"><span>metricbeat-l2csd   1/1     Running   <span style="color:#bd93f9">0</span>          18m
+</span></span><span style="display:flex;"><span>metricbeat-lsrgv   1/1     Running   <span style="color:#bd93f9">0</span>          18m
+</span></span></code></pre></div><p>当 Metricbeat 的 Pod 变成 Running 状态后，正常我们就可以在 Kibana 中去查看对应的监控信息了。</p>
+<p>在 Kibana 左侧页面 Observability → Metrics 进入指标监控页面，正常就可以看到一些监控数据了：</p>
+<p><img src="https://picdn.youdianzhishi.com/images/20200627160041.png" alt=""></p>
+<p>也可以根据自己的需求进行筛选，比如我们可以按照 Kubernetes Namespace 进行分组作为视图查看监控信息：</p>
+<p><img src="https://picdn.youdianzhishi.com/images/20200627160240.png" alt=""></p>
+<p>由于我们在配置文件中设置了属性 setup.dashboards.enabled=true，所以 Kibana 会导入预先已经存在的一些 Dashboard。我们可以在左侧菜单进入 Kibana → Dashboard 页面，我们会看到一个大约有 50 个 Metricbeat 的 Dashboard 列表，我们可以根据需要筛选 Dashboard，比如我们要查看集群节点的信息，可以查看 <code>[Metricbeat Kubernetes] Overview ECS</code> 这个 Dashboard：</p>
+<p><img src="https://picdn.youdianzhishi.com/images/20200627160835.png" alt=""></p>
+<p>我们还单独启用了 mongodb 模块，我们可以使用 <strong>[Metricbeat MongoDB] Overview ECS</strong> 这个 Dashboard 来查看监控信息：</p>
+<p><img src="https://picdn.youdianzhishi.com/images/20200627161101.png" alt=""></p>
+<p>我们还启用了 docker 这个模块，也可以使用 <strong>[Metricbeat Docker] Overview ECS</strong> 这个 Dashboard 来查看监控信息：</p>
+<p><img src="https://picdn.youdianzhishi.com/images/20200627161244.png" alt=""></p>
+<p>到这里我们就完成了使用 Metricbeat 来监控 Kubernetes 集群信息，在下文我们再来学习如何使用 Filebeat 来收集日志以监控 Kubernetes 集群。</p>
+<!-- raw HTML omitted -->
+
+          <h2>微信公众号</h2>
+<p>
+  扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+  kubernetes 讨论群里面共同学习。
+</p>
+<img
+  src="https://picdn.youdianzhishi.com/images/qrcode.png"
+  alt="wechat-account-qrcode"
+/>
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-1/">使用 Elastic 技术栈构建 K8S 全栈监控(1/4)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-3/">使用 Elastic 技术栈构建 K8S 全栈监控(3/4)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-4/">使用 Elastic 技术栈构建 K8S 全栈监控(4/4)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/monitor-external-k8s-on-prometheus/">Prometheus 监控外部 Kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/encrypt-k8s-secrets-with-sealed-secrets/">使用 Sealed Secrets 加密 Kubernetes Secrets</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/status-in-pv-pvc/">Kubernetes 中 PV 和 PVC 的状态变化</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-in-k8s/">在 Kubernetes 中运行 Kubernetes</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/deploy-k8s-on-win-use-wsl2/">在 Windows 下使用 WSL2 搭建 Kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-loki-monitor-alert/">使用 Loki 进行日志监控和报警</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/create-ci-pipeline-with-tekton-3/">使用 Tekton 创建 CI/CD 流水线（3/4）</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-3/" data-toggle="tooltip" data-placement="top" title="使用 Elastic 技术栈构建 K8S 全栈监控(3/4)">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-1/" data-toggle="tooltip" data-placement="top" title="使用 Elastic 技术栈构建 K8S 全栈监控(1/4)">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '使用 Elastic 技术栈构建 K8S 全栈监控(2\/4)',
+        createIssueManually: true,
+        id: 'k8s-monitor-use-elastic-stack-2',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -1143,7 +823,7 @@ metricbeat-lsrgv   <span style="color:#bd93f9">1</span>/1     Running   <span st
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -1152,7 +832,7 @@ metricbeat-lsrgv   <span style="color:#bd93f9">1</span>/1     Running   <span st
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -1161,7 +841,7 @@ metricbeat-lsrgv   <span style="color:#bd93f9">1</span>/1     Running   <span st
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -1170,158 +850,121 @@ metricbeat-lsrgv   <span style="color:#bd93f9">1</span>/1     Running   <span st
                   </span>
                 </a>
               </li>
-
-              <li>
-                <a href="https://www.qikqiak.com/index.xml" title="RSS">
-                  <span class="fa-stack fa-lg">
-                    <i class="fa fa-circle fa-stack-2x"></i>
-                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
-                  </span>
-                </a>
-              </li>
-            </ul>
-            <p class="credits copyright text-muted">
-              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/">阳明的博客</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/archive/">归档</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/friend/">友链</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://beian.miit.gov.cn/" target="_blank"
-                >蜀ICP备11027319号-5</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
-                >kubernetes.io</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
-                >Kubernetes中文社区</a
-              >
-            </p>
-            <p class="text-center text-muted">
-              <script
-                async
-                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
-              ></script>
-              <span id="busuanzi_container_site_pv" style="display: none">
-                本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
               </span>
-              &nbsp;&bull;&nbsp;
-              <span id="busuanzi_container_site_uv" style="display: none">
-                访客数<span id="busuanzi_value_site_uv"></span>人次
-              </span>
-            </p>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
 
-            <p class="credits theme-by text-muted">
-              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
-              &nbsp;&bull;&nbsp; 主题
-              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
-              移植自
-              <a href="https://github.com/rootsongjc/beautifulhugo"
-                >Beautiful Hugo</a
-              >
-            </p>
-          </div>
-        </div>
+          &nbsp;&bull;&nbsp;
+          2023
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.115.4</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+          
+        </p>
       </div>
-    </footer>
+    </div>
+  </div>
+</footer>
 
-    <script
-      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
-      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
-    ></script>
 
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "UA-69668147-3");
-    </script>
-    <script>
-      (function () {
-        var bp = document.createElement("script");
-        var curProtocol = window.location.protocol.split(":")[0];
-        if (curProtocol === "https") {
-          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
-        } else {
-          bp.src = "http://push.zhanzhang.baidu.com/push.js";
-        }
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(bp, s);
-      })();
-    </script>
-    <script>
-      $(document).ready(function () {
-        var int = setInterval(fixCount, 50);
+<script src='https://www.qikqiak.com/js/bundle.min.af02a2d23b6651a566f0135a12e65fc2560faa7a969b3d1ad58d0afe0c9164ae.js' integrity='sha256-rwKi0jtmUaVm8BNaEuZfwlYPqnqWmz0a1Y0K/gyRZK4='></script>
 
-        var initPVCount = 584976;
-        var initUVCount = 153191;
-        function fixCount() {
-          if ($("#busuanzi_container_site_pv").css("display") != "none") {
-            $("#busuanzi_value_site_pv").html(
-              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
-            );
-            clearInterval(int);
-          }
-          if ($("#busuanzi_container_site_uv").css("display") != "none") {
-            $("#busuanzi_value_site_uv").html(
-              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
-            );
-            clearInterval(int);
-          }
-        }
-      });
-    </script>
-    <script>
-      (function (w, d, s, id) {
-        if (typeof w.webpushr !== "undefined") return;
-        w.webpushr =
-          w.webpushr ||
-          function () {
-            (w.webpushr.q = w.webpushr.q || []).push(arguments);
-          };
-        var js,
-          fjs = d.getElementsByTagName(s)[0];
-        js = d.createElement(s);
-        js.id = id;
-        js.src = "https://cdn.webpushr.com/app.min.js";
-        fjs.parentNode.appendChild(js);
-      })(window, document, "script", "webpushr-jssdk");
-      webpushr(
-        "init",
-        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
-      );
-    </script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
-    ></script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
-    ></script>
-    <script type="text/javascript">
-      $(".carousel").slick({
-        dots: true,
-        arrows: true,
-        autoplay: true,
-        autoplaySpeed: 4000,
-        infinite: true,
-        speed: 500,
-        fade: true,
-        cssEase: "linear",
-        centerMode: true,
-        prevArrow: '<button type="button" class="slick-prev"></button>',
-        nextArrow: '<button type="button" class="slick-next"></button>',
-      });
-    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
   </body>
 </html>
+

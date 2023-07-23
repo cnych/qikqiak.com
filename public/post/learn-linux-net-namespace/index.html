@@ -1,1250 +1,777 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
-    />
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-    <title>
-      理解 Linux
-      网络命名空间-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
-    </title>
-    <meta property="og:title" content="理解 Linux 网络命名空间" />
-    <meta name="twitter:title" content="理解 Linux 网络命名空间" />
 
-    <meta
-      name="description"
-      content="如果你使用过 Docker 和 Kubernetes，那么可能应该听说过 network namespace（网络命名空间），最近在我们的 《Kubernetes 网络训练营》课程中学习到了 Linux 下面的 ip 命令的使用，本文我将演示如何使用命令通过一对 veth 接口连接不同子网中的网络命名空间的进程。"
-    />
-    <meta
-      property="og:description"
-      content="如果你使用过 Docker 和 Kubernetes，那么可能应该听说过 network namespace（网络命名空间），最近在我们的 《Kubernetes 网络训练营》课程中学习到了 Linux 下面的 ip 命令的使用，本文我将演示如何使用命令通过一对 veth 接口连接不同子网中的网络命名空间的进程。"
-    />
-    <meta
-      name="twitter:description"
-      content="如果你使用过 Docker 和 Kubernetes，那么可能应该听说过 network namespace（网络命名空间），最近在我们的 《Kubernetes 网络训练营》课程中学习到了 Linux 下面的 ip 命令的使用，本文我将演示如何使用命令通过一对 veth 接口连接不同子网中的网络命名空间的进程。"
-    />
-    <meta name="author" content="" />
-    <link
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-      rel="icon"
-      type="image/x-icon"
-    />
-    <link
-      rel="apple-touch-icon"
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      property="og:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      name="twitter:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta name="twitter:card" content="summary" />
-    <meta
-      property="og:url"
-      content="https://www.qikqiak.com/post/learn-linux-net-namespace/"
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="阳明的博客" />
+  <title>理解 Linux 网络命名空间-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="理解 Linux 网络命名空间" />
+  <meta name="twitter:title" content="理解 Linux 网络命名空间" />
 
-    <meta name="generator" content="Hugo 0.55.6" />
-    <link
-      rel="canonical"
-      href="https://www.qikqiak.com/post/learn-linux-net-namespace/"
-    />
-    <link
-      rel="alternate"
-      href="https://www.qikqiak.com/index.xml"
-      type="application/rss+xml"
-      title="阳明的博客"
-    />
+  <meta name="description" content="如果你使用过 Docker 和 Kubernetes，那么可能应该听说过 network namespace（网络命名空间），最近在我们的 《Kubernetes 网络训练营》课程中学习到了 Linux 下面的 ip 命令的使用，本文我将演示如何使用命令通过一对 veth 接口连接不同子网中的网络命名空间的进程。">
+  <meta property="og:description" content="如果你使用过 Docker 和 Kubernetes，那么可能应该听说过 network namespace（网络命名空间），最近在我们的 《Kubernetes 网络训练营》课程中学习到了 Linux 下面的 ip 命令的使用，本文我将演示如何使用命令通过一对 veth 接口连接不同子网中的网络命名空间的进程。">
+  <meta name="twitter:description" content="如果你使用过 Docker 和 Kubernetes，那么可能应该听说过 network namespace（网络命名空间），最近在我们的 《Kubernetes 网络训练营》课程中学习到了 Linux 下面的 ip 命令的使用，本文我将演示如何使用命令通过一对 veth 接口连接不同子网中的网络命名空间的进程。">
+  <meta name="author" content=""/>
+  <link href="https://picdn.youdianzhishi.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://picdn.youdianzhishi.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/learn-linux-net-namespace/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
 
-    <link
-      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
-      rel="stylesheet"
-    />
+  <link rel="canonical" href="https://www.qikqiak.com/post/learn-linux-net-namespace/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
-    <link
-      rel="stylesheet"
-      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
-      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
-    />
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
 
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
-    />
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a6b62363fe57848ad01efa2a5d1bbb1047c2ffb71b53d8aeb42bc5ed5c77ea7c.css' integrity='sha256-prYjY/5XhIrQHvoqXRu7EEfC/7cbU9iutCvF7Vx36nw='>
 
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
     <!--[if lt IE 9]>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-      <link
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-        rel="stylesheet"
-      />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <![endif]-->
-    <meta
-      name="google-site-verification"
-      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
-    />
-    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-    <meta name="keywords" content="网络, kubernetes, 命名空间" />
-    <script>
-      var _hmt = _hmt || [];
-      (function () {
-        var hm = document.createElement("script");
-        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(hm, s);
-      })();
-    </script>
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="网络, kubernetes, 命名空间">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
 
-    <script type="application/javascript">
-      var doNotTrack = false;
-      if (!doNotTrack) {
-        window.ga =
-          window.ga ||
-          function () {
-            (ga.q = ga.q || []).push(arguments);
-          };
-        ga.l = +new Date();
-        ga("create", "UA-69668147-3", "auto");
 
-        ga("send", "pageview");
-      }
-    </script>
-    <script async src="https://www.google-analytics.com/analytics.js"></script>
-  </head>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-      <div class="container">
-        <div class="navbar-header">
-          <button
-            type="button"
-            class="navbar-toggle"
-            data-toggle="collapse"
-            data-target="#main-navbar"
-          >
-            <span class="sr-only">切换导航</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a
-            class="navbar-brand"
-            href="https://www.qikqiak.com/"
-            title="阳明的博客"
-          >
-            <img
-              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
-              style="margin-top: -5px; height: 32px"
-              alt="阳明的博客"
-            />
-          </a>
-        </div>
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://picdn.youdianzhishi.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
 
-        <div class="collapse navbar-collapse" id="main-navbar">
-          <ul class="nav navbar-nav navbar-right">
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-
+          
+        
+          
             <li>
-              <a
-                title="课程"
-                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
-                >课程</a
-              >
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/archives">Archive</a>
-
-                <a href="https://www.qikqiak.com/tags">tags</a>
-
-                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-
-                <a href="https://www.qikqiak.com/tags/python">python</a>
-
-                <a href="https://www.qikqiak.com/tags/django">django</a>
-
-                <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-
-                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-
-                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-
-                <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/"
-                >关于</a
-              >
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
             </li>
-
+          
+        
+          
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
+          
+        
 
-            <li>
-              <a
-                href="#modalSearch"
-                data-toggle="modal"
-                data-target="#modalSearch"
-                style="outline: none"
-              >
-                <span
-                  id="searchGlyph"
-                  class="glyphicon glyphicon-search"
-                ></span>
-              </a>
-            </li>
-          </ul>
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
         </div>
-      </div>
-    </nav>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-    <div id="modalSearch" class="modal fade" role="dialog">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal">
-              &times;
-            </button>
-            <h4 class="modal-title">搜索</h4>
-          </div>
-          <div class="modal-body">
-            <div class="aa-input-container" id="aa-input-container">
-              <input
-                type="search"
-                id="aa-search-input"
-                class="aa-input-search"
-                placeholder="Search for titles or URIs..."
-                name="search"
-                autocomplete="off"
-              />
-              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-                <path
-                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
-                />
-              </svg>
-            </div>
-            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
 
-            <script>
-              var client = algoliasearch(
-                "1JDRAS0AZR",
-                "8804ac109158bb3bb60d74ce98fa332f"
-              );
-              var index = client.initIndex("prod_blog");
-
-              autocomplete(
-                "#aa-search-input",
-                { hint: false },
-                {
-                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
-
-                  displayKey: "name",
-
-                  templates: {
-                    suggestion: function (suggestion) {
-                      return (
-                        "<span>" +
-                        '<a href="https://www.qikqiak.com/post/' +
-                        suggestion.slug +
-                        '">' +
-                        suggestion._highlightResult.title.value +
-                        "</a></span>"
-                      );
-                    },
-                  },
-                }
-              );
-            </script>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">
-              close
-            </button>
-          </div>
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div
-      id="header-big-imgs"
-      data-num-img="1"
-      data-img-src-1="https://picdn.youdianzhishi.com/images/20210213095208.png"
-      data-img-desc-1="https://unsplash.com/photos/lEuxYh1kftg"
-    ></div>
+    
+  
+  
+  
 
-    <header class="header-section has-img">
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://picdn.youdianzhishi.com/images/20210213095208.png" data-img-desc-1="https://unsplash.com/photos/lEuxYh1kftg"></div>
+  
+
+  <header class="header-section has-img">
+    
       <div class="intro-header big-img">
+        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>理解 Linux 网络命名空间</h1>
+                  
+                  
+                    <span class="post-meta">
+  发表于 November 26, 2020  
+</span>
 
-                <span class="post-meta"> 发表于 November 26, 2020 </span>
+                  
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline"></span>
+        <span class="img-desc" style="display: inline;"></span>
       </div>
-
-      <div class="intro-header no-img">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-              <div class="post-heading">
-                <h1>理解 Linux 网络命名空间</h1>
-
-                <span class="post-meta"> 发表于 November 26, 2020 </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <div class="container" role="main">
-      <div class="row">
-        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-          <div>
-            <h5 id="tags" style="margin-top: 30px">
-              标签:
-
-              <a href="https://www.qikqiak.com/tags/%E7%BD%91%E7%BB%9C/"
-                >网络</a
-              >
-              &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
-              &nbsp;
-            </h5>
-          </div>
-
-          <article
-            role="main"
-            class="blog-post"
-            itemprop="articleBody"
-            id="content"
-          >
-            <aside class="toc">
-              <nav id="TableOfContents">
-                <ul>
-                  <li>
-                    <ul>
-                      <li><a href="#网络命名空间">网络命名空间</a></li>
-                      <li><a href="#ip-命令">ip 命令</a></li>
-                      <li>
-                        <a href="#配置第一个网络命名空间"
-                          >配置第一个网络命名空间</a
-                        >
-                      </li>
-                      <li>
-                        <a href="#配置第二个网络命名空间"
-                          >配置第二个网络命名空间</a
-                        >
-                      </li>
-                      <li><a href="#配置子网路由">配置子网路由</a></li>
-                      <li><a href="#tcp-连接">TCP 连接</a></li>
-                      <li><a href="#总结">总结</a></li>
-                    </ul>
-                  </li>
-                </ul>
-              </nav>
-            </aside>
-
-            <p>
-              如果你使用过 Docker 和 Kubernetes，那么可能应该听说过 network
-              namespace（网络命名空间），最近在我们的
-              <a href="https://youdianzhishi.com/web/course/1021"
-                >《Kubernetes 网络训练营》</a
-              >课程中学习到了 Linux 下面的
-              <code>ip</code> 命令的使用，本文我将演示如何使用命令通过一对
-              <code>veth</code> 接口连接不同子网中的网络命名空间的进程。
-            </p>
-
-            <h2 id="网络命名空间">网络命名空间</h2>
-
-            <p>
-              我们知道容器运行时使用
-              namespace（命名空间）内核功能对系统资源进行分区，以实现某种形式的进程隔离，这样，对一个命名空间中资源的更改不会影响其他命名空间中的资源，包括进程
-              ID、主机名、用户 ID、文件名和网络接口等。
-            </p>
-
-            <p>
-              网络名称空间可以虚拟化网络堆栈，每个网络名称空间都有自己的资源，例如网络接口、IP
-              地址、路由表、隧道、防火墙等，例如，<code>iptables</code>添加到网络名称空间的规则只会影响进入和离开该名称空间的流量。
-            </p>
-
-            <h2 id="ip-命令">ip 命令</h2>
-
-            <p>
-              <code>ip</code> 命令是用来显示或操纵 Linux
-              主机的路由、网络设备、策略路由和隧道，是 Linux
-              下较新的功能强大的网络配置工具。
-            </p>
-
-            <p>该命令的用法如下所示：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">ip <span style="color:#ff79c6">[</span>OPTIONS<span style="color:#ff79c6">]</span> OBJECT COMMAND <span style="color:#ff79c6">[</span>ARGUMENTS<span style="color:#ff79c6">]</span>
-<span style="color:#6272a4"># where</span> 
-<span style="color:#6272a4">#   OPTIONS are general global options</span>
-<span style="color:#6272a4">#   OBJECT := { link | address | addrlabel | route |</span>
-<span style="color:#6272a4">#     rule | neigh | ntable | tunnel | tuntap | maddress |</span> 
-<span style="color:#6272a4">#     mroute | mrule | monitor | xfrm | netns | l2tp |</span> 
-<span style="color:#6272a4">#     tcp_metrics }</span>
-<span style="color:#6272a4">#   COMMAND is the action to perform on the object, such as,</span>
-<span style="color:#6272a4">#     show, add, del etc.</span>
-<span style="color:#6272a4">#   ARGUMENTS are arguments specific to the kind of OBJECT</span> 
-<span style="color:#6272a4">#     and COMMAND</span></code></pre>
-            </div>
-            <p>例如：</p>
-
-            <ul>
-              <li>
-                要添加一个新的网络接口，使用
-                <code
-                  >ip link add &lt;interface-name&gt; type
-                  &lt;interface-type&gt; &lt;interface-arguments&gt;...</code
-                >
-                命令
-              </li>
-              <li>
-                要分配一个新的 IP 地址范围到一个接口，使用
-                <code
-                  >ip addr add &lt;ip-address-range&gt; dev
-                  &lt;device-name&gt;</code
-                >
-                命令
-              </li>
-              <li>
-                要从路由表中删除一条路由，使用
-                <code
-                  >ip route del &lt;route-ip-range&gt; dev
-                  &lt;device-name&gt;</code
-                >
-                命令
-              </li>
-            </ul>
-
-            <p>
-              选项 <code>-n</code> 可以用来切换目标命名空间，例如，要将
-              <code>10.0.1.0/24</code> IP 地址范围分配给 ns1
-              网络命名空间内的接口 veth0，使用<code
-                >ip -n ns1 addr add 10.0.1.0/24 dev veth0</code
-              >
-              命令即可 。
-            </p>
-
-            <blockquote>
-              <p>💡 <code>-n</code> 选项是 <code>ip netns exec</code> 的缩写</p>
-            </blockquote>
-
-            <p>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20201123114944.png"
-                alt=""
-              />
-            </p>
-
-            <h2 id="配置第一个网络命名空间">配置第一个网络命名空间</h2>
-
-            <p>
-              首先我们使用 <code>ip link add</code> 命令创建一对新的 veth
-              接口：veth0 和 veth1：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash"><span style="color:#6272a4"># 创建一对名为 veth0 和 veth1 的 veth 接口。</span>
-$ ip link add veth0 <span style="color:#8be9fd;font-style:italic">type</span> veth peer name veth1
-
-<span style="color:#6272a4"># 确认 veth0 已创建</span>
-$ ip link show veth0
-<span style="color:#bd93f9">289</span>: veth0@veth1: &lt;BROADCAST,MULTICAST&gt; mtu <span style="color:#bd93f9">1500</span> qdisc noop state DOWN mode DEFAULT group default qlen <span style="color:#bd93f9">1000</span>
-    link/ether 5e:87:df:87:af:c7 brd ff:ff:ff:ff:ff:ff
-
-<span style="color:#6272a4"># 确认 veth1 已创建</span>
-$ ip link show veth1
-<span style="color:#bd93f9">288</span>: veth1@veth0: &lt;BROADCAST,MULTICAST&gt; mtu <span style="color:#bd93f9">1500</span> qdisc noop state DOWN mode DEFAULT group default qlen <span style="color:#bd93f9">1000</span>
-    link/ether be:0d:a4:8c:9f:2a brd ff:ff:ff:ff:ff:ff</code></pre>
-            </div>
-            <p>
-              veth
-              接口通常被创建为一个对，其中一端传输的数据会立即被另一端接收，这种类型的接口在容器运行时通常用于在不同网络命名空间之间传输数据包。
-            </p>
-
-            <p>
-              让我们创建第一个网络命名空间 ns1，然后我们可以将 veth0
-              接口分配给这个网络命名空间，并将 <code>10.0.1.0/24</code> 的 IP
-              地址范围分配给它。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash"><span style="color:#6272a4"># 创建 ns1 网络命名空间</span>
-$ ip netns add ns1
-
-<span style="color:#6272a4"># 分配 veth0 接口到 ns1 网络命名空间</span>
-$ ip link <span style="color:#8be9fd;font-style:italic">set</span> veth0 netns ns1
-
-<span style="color:#6272a4"># 将 10.0.1.0/24 IP 地址范围分配给 veth0 接口</span>
-$ ip -n ns1 addr add <span style="color:#bd93f9">10</span>.0.1.0/24 dev veth0
-
-<span style="color:#6272a4"># 将 veth0 接口 up 起来</span>
-$ ip -n ns1 link <span style="color:#8be9fd;font-style:italic">set</span> veth0 up
-
-<span style="color:#6272a4"># 将 lo 接口 up 起来，因为发往 10.0.1.0/24 的数据（本地的）</span>
-<span style="color:#6272a4"># （像 ping）要通过 local（本地）路由表</span>
-<span style="color:#6272a4"># 比如要 ping 自己</span>
-$ ip -n ns1 link <span style="color:#8be9fd;font-style:italic">set</span> lo up 
-
-<span style="color:#6272a4"># 确认接口已经 up 起来</span>
-$ ip -n ns1 addr show
-<span style="color:#bd93f9">1</span>: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu <span style="color:#bd93f9">65536</span> qdisc noqueue state UNKNOWN group default qlen <span style="color:#bd93f9">1000</span>
-    link/loopback <span style="color:#bd93f9">00</span>:00:00:00:00:00 brd <span style="color:#bd93f9">00</span>:00:00:00:00:00
-    inet <span style="color:#bd93f9">127</span>.0.0.1/8 scope host lo
-       valid_lft forever preferred_lft forever
-    inet6 ::1/128 scope host
-       valid_lft forever preferred_lft forever
-<span style="color:#bd93f9">289</span>: veth0@if288: &lt;NO-CARRIER,BROADCAST,MULTICAST,UP&gt; mtu <span style="color:#bd93f9">1500</span> qdisc noqueue state LOWERLAYERDOWN group default qlen <span style="color:#bd93f9">1000</span>
-    link/ether 5e:87:df:87:af:c7 brd ff:ff:ff:ff:ff:ff link-netnsid <span style="color:#bd93f9">0</span>
-    inet <span style="color:#bd93f9">10</span>.0.1.0/24 scope global veth0
-       valid_lft forever preferred_lft forever</code></pre>
-            </div>
-            <p>
-              现在如果我们从主机和 ns1 两个网络命名空间中去 ping veth0
-              接口会发生什么呢？
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash"><span style="color:#6272a4"># veth0 不在主机的根网络命名空间中</span>
-$ ip link show veth0            
-Device <span style="color:#f1fa8c">&#34;veth0&#34;</span> does not exist.
-
-<span style="color:#6272a4"># 从主机网络命名空间中 ping 不通</span>
-$ ping -c10 <span style="color:#bd93f9">10</span>.0.1.0
-PING <span style="color:#bd93f9">10</span>.0.1.0 <span style="color:#ff79c6">(</span><span style="color:#bd93f9">10</span>.0.1.0<span style="color:#ff79c6">)</span> <span style="color:#bd93f9">56</span><span style="color:#ff79c6">(</span><span style="color:#bd93f9">84</span><span style="color:#ff79c6">)</span> bytes of data.
-^C
---- <span style="color:#bd93f9">10</span>.0.1.0 ping statistics ---
-<span style="color:#bd93f9">3</span> packets transmitted, <span style="color:#bd93f9">0</span> received, <span style="color:#bd93f9">100</span>% packet loss, <span style="color:#8be9fd;font-style:italic">time</span> 1999ms</code></pre>
-            </div>
-            <p>
-              我们可以看到直接在主机的根网络命名空间中是找不到 veth0
-              这个接口的，当然也是 ping 不同
-              <code>10.0.1.0</code> 这个地址的，因为他们被绑定到 ns1
-              这个网络命名空间中，所以我们在操作的时候需要切换到这个命名空间下面。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns1 ping -c10 <span style="color:#bd93f9">10</span>.0.1.0
-PING <span style="color:#bd93f9">10</span>.0.1.0 <span style="color:#ff79c6">(</span><span style="color:#bd93f9">10</span>.0.1.0<span style="color:#ff79c6">)</span> <span style="color:#bd93f9">56</span><span style="color:#ff79c6">(</span><span style="color:#bd93f9">84</span><span style="color:#ff79c6">)</span> bytes of data.
-<span style="color:#bd93f9">64</span> bytes from <span style="color:#bd93f9">10</span>.0.1.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">1</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span>.121 ms
-<span style="color:#bd93f9">64</span> bytes from <span style="color:#bd93f9">10</span>.0.1.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">2</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span>.063 ms
-<span style="color:#bd93f9">64</span> bytes from <span style="color:#bd93f9">10</span>.0.1.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">3</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span>.066 ms
-<span style="color:#bd93f9">64</span> bytes from <span style="color:#bd93f9">10</span>.0.1.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">4</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span>.109 ms
-^C
---- <span style="color:#bd93f9">10</span>.0.1.0 ping statistics ---
-<span style="color:#bd93f9">4</span> packets transmitted, <span style="color:#bd93f9">4</span> received, <span style="color:#bd93f9">0</span>% packet loss, <span style="color:#8be9fd;font-style:italic">time</span> 3000ms
-rtt min/avg/max/mdev <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">0</span>.063/0.089/0.121/0.028 ms</code></pre>
-            </div>
-            <p>
-              这里我们使用了一条
-              <code>ip netns exec</code>
-              的命令，这个命令允许我们在指定的网络命名空间中去执行任意的命令，可以看到现在我们在
-              ns1 网络命名空中间去 ping <code>10.0.1.0</code> 就可以通了。
-              <script
-                async
-                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-              ></script>
-
-              <ins
-                class="adsbygoogle"
-                style="display: block"
-                data-ad-client="ca-pub-5376999672787220"
-                data-ad-slot="9165834656"
-                data-ad-format="auto"
-                data-full-width-responsive="true"
-              ></ins>
-              <script>
-                (adsbygoogle = window.adsbygoogle || []).push({});
-              </script>
-            </p>
-
-            <h2 id="配置第二个网络命名空间">配置第二个网络命名空间</h2>
-
-            <p>
-              下面我们用上面的方式来创建第二个网络命名空间
-              <code>ns2</code>，然后将 veth1 接口分配给这个网络命名空间，并将
-              <code>10.0.2.0/24</code> 的 IP 地址范围分配给这个接口。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash"><span style="color:#6272a4"># 创建名为 ns2 的网络命名空间</span>
-$ ip netns add ns2
-
-<span style="color:#6272a4"># 分配 veth1 接口到 ns2 网络命名空间</span>
-$ ip link <span style="color:#8be9fd;font-style:italic">set</span> veth1 netns ns2
-
-<span style="color:#6272a4"># 将 10.0.2.0/24 IP 地址范围分配给 veth1 接口</span>
-$ ip -n ns2 addr add <span style="color:#bd93f9">10</span>.0.2.0/24 dev veth1
-
-<span style="color:#6272a4"># 将 veth1 接口 up 起来</span>
-$ ip -n ns2 link <span style="color:#8be9fd;font-style:italic">set</span> veth1 up
-
-<span style="color:#6272a4"># 将 lo 口 up 起来（这样可以 ping 通自己）</span>
-$ ip -n ns2 link <span style="color:#8be9fd;font-style:italic">set</span> lo up 
-
-$ ip -n ns2 addr show
-<span style="color:#bd93f9">1</span>: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu <span style="color:#bd93f9">65536</span> qdisc noqueue state UNKNOWN group default qlen <span style="color:#bd93f9">1000</span>
-    link/loopback <span style="color:#bd93f9">00</span>:00:00:00:00:00 brd <span style="color:#bd93f9">00</span>:00:00:00:00:00
-    inet <span style="color:#bd93f9">127</span>.0.0.1/8 scope host lo
-       valid_lft forever preferred_lft forever
-    inet6 ::1/128 scope host
-       valid_lft forever preferred_lft forever
-<span style="color:#bd93f9">288</span>: veth1@if289: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu <span style="color:#bd93f9">1500</span> qdisc noqueue state UP group default qlen <span style="color:#bd93f9">1000</span>
-    link/ether be:0d:a4:8c:9f:2a brd ff:ff:ff:ff:ff:ff link-netnsid <span style="color:#bd93f9">0</span>
-    inet <span style="color:#bd93f9">10</span>.0.2.0/24 scope global veth1
-       valid_lft forever preferred_lft forever
-    inet6 fe80::bc0d:a4ff:fe8c:9f2a/64 scope link
-       valid_lft forever preferred_lft forever</code></pre>
-            </div>
-            <p>
-              为方便后面设置路由，这里我们为 veth1 接口分配一个不同的子网 IP
-              范围。和 veth0 接口类似，veth1
-              接口也不能从主机网络命名空间到达，只能在 ns2
-              本身的网络命名空间内工作。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ ip link show veth1
-Device <span style="color:#f1fa8c">&#34;veth1&#34;</span> does not exist.
-$ ping -c10 <span style="color:#bd93f9">10</span>.0.2.0
-PING <span style="color:#bd93f9">10</span>.0.2.0 <span style="color:#ff79c6">(</span><span style="color:#bd93f9">10</span>.0.2.0<span style="color:#ff79c6">)</span> <span style="color:#bd93f9">56</span><span style="color:#ff79c6">(</span><span style="color:#bd93f9">84</span><span style="color:#ff79c6">)</span> bytes of data.
-From <span style="color:#bd93f9">180</span>.149.159.13 <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">2</span> Packet filtered
-^C
---- <span style="color:#bd93f9">10</span>.0.2.0 ping statistics ---
-<span style="color:#bd93f9">2</span> packets transmitted, <span style="color:#bd93f9">0</span> received, +1 errors, <span style="color:#bd93f9">100</span>% packet loss, <span style="color:#8be9fd;font-style:italic">time</span> <span style="color:#bd93f9">999</span>
-$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns2 ping -c10 <span style="color:#bd93f9">10</span>.0.2.0
-PING <span style="color:#bd93f9">10</span>.0.2.0 <span style="color:#ff79c6">(</span><span style="color:#bd93f9">10</span>.0.2.0<span style="color:#ff79c6">)</span> <span style="color:#bd93f9">56</span><span style="color:#ff79c6">(</span><span style="color:#bd93f9">84</span><span style="color:#ff79c6">)</span> bytes of data.
-<span style="color:#bd93f9">64</span> bytes from <span style="color:#bd93f9">10</span>.0.2.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">1</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span>.100 ms
-<span style="color:#bd93f9">64</span> bytes from <span style="color:#bd93f9">10</span>.0.2.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">2</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span>.096 ms
-<span style="color:#bd93f9">64</span> bytes from <span style="color:#bd93f9">10</span>.0.2.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">3</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span>.068 ms
-^C
---- <span style="color:#bd93f9">10</span>.0.2.0 ping statistics ---
-<span style="color:#bd93f9">3</span> packets transmitted, <span style="color:#bd93f9">3</span> received, <span style="color:#bd93f9">0</span>% packet loss, <span style="color:#8be9fd;font-style:italic">time</span> 1999ms
-rtt min/avg/max/mdev <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">0</span>.068/0.088/0.100/0.014 ms</code></pre>
-            </div>
-            <h2 id="配置子网路由">配置子网路由</h2>
-
-            <p>
-              虽然在上面的两个网络空间内可以各自访问自己，但是他们互相之间是不能
-              ping 通的。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns1 ping -c10 <span style="color:#bd93f9">10</span>.0.2.0
-connect: Network is unreachable
-$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns2 ping -c10 <span style="color:#bd93f9">10</span>.0.1.0
-connect: Network is unreachable</code></pre>
-            </div>
-            <p>
-              veth0 和 veth1 这两个接口本身也都 up
-              起来了，而且在各种的网络命名空间中 ping
-              也能正常工作，所以互相直接不通那很可能和路由有关。下面我们使用 ip
-              命令来调试下，我们可以通过
-              <code>ip route get</code> 命令来确定一个数据包所走的路由。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ ip -n ns1 route get <span style="color:#bd93f9">10</span>.0.2.0
-RTNETLINK answers: Network is unreachable
-$ ip -n ns2 route get <span style="color:#bd93f9">10</span>.0.1.0
-RTNETLINK answers: Network is unreachable</code></pre>
-            </div>
-            <p>
-              我们可以看到都是网络不可达，我们来检查下两个网络命名空间中的路由表信息。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ ip -n ns1 route
-<span style="color:#bd93f9">10</span>.0.1.0/24 dev veth0 proto kernel scope link src <span style="color:#bd93f9">10</span>.0.1.0
-$ ip -n ns2 route
-<span style="color:#bd93f9">10</span>.0.2.0/24 dev veth1 proto kernel scope link src <span style="color:#bd93f9">10</span>.0.2.0</code></pre>
-            </div>
-            <p>
-              看到路由表是不是很清晰了，两个网络命名空间的路由表都只有各自 IP
-              范围的路由条目，并没有通往其他子网的路由，所以当然不能互通了，要解决也很简单，可以使用
-              <code>ip route add</code>
-              命令在路由表中插入新的路由条目是不是就可以了。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash"><span style="color:#6272a4"># 更新 veth0 路由表，添加一条通往 10.0.2.0/24 的路由</span>
-$ ip -n ns1 route add <span style="color:#bd93f9">10</span>.0.2.0/24 dev veth0
-
-<span style="color:#6272a4"># 确认发往 10.0.2.0/24 的数据包被路由到 veth0</span>
-$ ip -n ns1 route get <span style="color:#bd93f9">10</span>.0.2.0
-<span style="color:#bd93f9">10</span>.0.2.0 dev veth0 src <span style="color:#bd93f9">10</span>.0.1.0
-    cache
-
-<span style="color:#6272a4"># 同样更新 veth1 路由表，添加一条通往 10.0.1.0/24 的路由</span>
-$ ip -n ns2 route add <span style="color:#bd93f9">10</span>.0.1.0/24 dev veth1
-
-<span style="color:#6272a4"># 确认发往 10.0.1.0/24 的数据包被路由到 veth1</span>
-$ ip -n ns2 route get <span style="color:#bd93f9">10</span>.0.1.0
-<span style="color:#bd93f9">10</span>.0.1.0 dev veth1 src <span style="color:#bd93f9">10</span>.0.2.0
-    cache</code></pre>
-            </div>
-            <p>
-              上面我们在各自的网络命名空间中添加了对方的路由信息，现在我们来尝试
-              ping 下对方的 veth 接口。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns1 ping -c10 <span style="color:#bd93f9">10</span>.0.2.0
-PING <span style="color:#bd93f9">10</span>.0.2.0 <span style="color:#ff79c6">(</span><span style="color:#bd93f9">10</span>.0.2.0<span style="color:#ff79c6">)</span> <span style="color:#bd93f9">56</span><span style="color:#ff79c6">(</span><span style="color:#bd93f9">84</span><span style="color:#ff79c6">)</span> bytes of data.
-<span style="color:#bd93f9">64</span> bytes from <span style="color:#bd93f9">10</span>.0.2.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">1</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span>.140 ms
-<span style="color:#bd93f9">64</span> bytes from <span style="color:#bd93f9">10</span>.0.2.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">2</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span>.080 ms
-<span style="color:#bd93f9">64</span> bytes from <span style="color:#bd93f9">10</span>.0.2.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">3</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span>.091 ms
-^C
---- <span style="color:#bd93f9">10</span>.0.2.0 ping statistics ---
-<span style="color:#bd93f9">3</span> packets transmitted, <span style="color:#bd93f9">3</span> received, <span style="color:#bd93f9">0</span>% packet loss, <span style="color:#8be9fd;font-style:italic">time</span> 1999ms
-rtt min/avg/max/mdev <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">0</span>.080/0.103/0.140/0.028 ms
-
-$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns2 ping -c10 <span style="color:#bd93f9">10</span>.0.1.0
-PING <span style="color:#bd93f9">10</span>.0.1.0 <span style="color:#ff79c6">(</span><span style="color:#bd93f9">10</span>.0.1.0<span style="color:#ff79c6">)</span> <span style="color:#bd93f9">56</span><span style="color:#ff79c6">(</span><span style="color:#bd93f9">84</span><span style="color:#ff79c6">)</span> bytes of data.
-<span style="color:#bd93f9">64</span> bytes from <span style="color:#bd93f9">10</span>.0.1.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">1</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span>.114 ms
-<span style="color:#bd93f9">64</span> bytes from <span style="color:#bd93f9">10</span>.0.1.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">2</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span>.084 ms
-<span style="color:#bd93f9">64</span> bytes from <span style="color:#bd93f9">10</span>.0.1.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">3</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span>.086 ms
-^C
---- <span style="color:#bd93f9">10</span>.0.1.0 ping statistics ---
-<span style="color:#bd93f9">3</span> packets transmitted, <span style="color:#bd93f9">3</span> received, <span style="color:#bd93f9">0</span>% packet loss, <span style="color:#8be9fd;font-style:italic">time</span> 2000ms
-rtt min/avg/max/mdev <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">0</span>.084/0.094/0.114/0.017 ms</code></pre>
-            </div>
-            <p>可以看到已经通啦！！🎉🎉🎉</p>
-
-            <p>
-              此外我们还可以使用
-              <code>tcpdump</code> 来捕获两个网络命名空间之间传输的数据包。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns1 tcpdump -i veth0 icmp -l
-tcpdump: verbose output suppressed, use -v or -vv <span style="color:#ff79c6">for</span> full protocol decode
-listening on veth0, link-type EN10MB <span style="color:#ff79c6">(</span>Ethernet<span style="color:#ff79c6">)</span>, capture size <span style="color:#bd93f9">262144</span> bytes
-<span style="color:#bd93f9">11</span>:29:22.080392 IP <span style="color:#bd93f9">10</span>.0.2.0 &gt; <span style="color:#bd93f9">10</span>.0.1.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> request, id <span style="color:#bd93f9">7253</span>, seq <span style="color:#bd93f9">1</span>, length <span style="color:#bd93f9">64</span>
-<span style="color:#bd93f9">11</span>:29:22.080464 IP <span style="color:#bd93f9">10</span>.0.1.0 &gt; <span style="color:#bd93f9">10</span>.0.2.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> reply, id <span style="color:#bd93f9">7253</span>, seq <span style="color:#bd93f9">1</span>, length <span style="color:#bd93f9">64</span>
-<span style="color:#bd93f9">11</span>:29:23.080409 IP <span style="color:#bd93f9">10</span>.0.2.0 &gt; <span style="color:#bd93f9">10</span>.0.1.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> request, id <span style="color:#bd93f9">7253</span>, seq <span style="color:#bd93f9">2</span>, length <span style="color:#bd93f9">64</span>
-<span style="color:#bd93f9">11</span>:29:23.080472 IP <span style="color:#bd93f9">10</span>.0.1.0 &gt; <span style="color:#bd93f9">10</span>.0.2.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> reply, id <span style="color:#bd93f9">7253</span>, seq <span style="color:#bd93f9">2</span>, length <span style="color:#bd93f9">64</span>
-<span style="color:#bd93f9">11</span>:29:24.080357 IP <span style="color:#bd93f9">10</span>.0.2.0 &gt; <span style="color:#bd93f9">10</span>.0.1.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> request, id <span style="color:#bd93f9">7253</span>, seq <span style="color:#bd93f9">3</span>, length <span style="color:#bd93f9">64</span>
-<span style="color:#bd93f9">11</span>:29:24.080418 IP <span style="color:#bd93f9">10</span>.0.1.0 &gt; <span style="color:#bd93f9">10</span>.0.2.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> reply, id <span style="color:#bd93f9">7253</span>, seq <span style="color:#bd93f9">3</span>, length <span style="color:#bd93f9">64</span>
-<span style="color:#bd93f9">11</span>:29:25.080346 IP <span style="color:#bd93f9">10</span>.0.2.0 &gt; <span style="color:#bd93f9">10</span>.0.1.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> request, id <span style="color:#bd93f9">7253</span>, seq <span style="color:#bd93f9">4</span>, length <span style="color:#bd93f9">64</span>
-<span style="color:#bd93f9">11</span>:29:25.080401 IP <span style="color:#bd93f9">10</span>.0.1.0 &gt; <span style="color:#bd93f9">10</span>.0.2.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> reply, id <span style="color:#bd93f9">7253</span>, seq <span style="color:#bd93f9">4</span>, length <span style="color:#bd93f9">64</span>
-<span style="color:#bd93f9">11</span>:29:26.080417 IP <span style="color:#bd93f9">10</span>.0.2.0 &gt; <span style="color:#bd93f9">10</span>.0.1.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> request, id <span style="color:#bd93f9">7253</span>, seq <span style="color:#bd93f9">5</span>, length <span style="color:#bd93f9">64</span>
-<span style="color:#bd93f9">11</span>:29:26.080496 IP <span style="color:#bd93f9">10</span>.0.1.0 &gt; <span style="color:#bd93f9">10</span>.0.2.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> reply, id <span style="color:#bd93f9">7253</span>, seq <span style="color:#bd93f9">5</span>, length <span style="color:#bd93f9">64</span>
-<span style="color:#bd93f9">11</span>:29:27.080454 IP <span style="color:#bd93f9">10</span>.0.2.0 &gt; <span style="color:#bd93f9">10</span>.0.1.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> request, id <span style="color:#bd93f9">7253</span>, seq <span style="color:#bd93f9">6</span>, length <span style="color:#bd93f9">64</span>
-<span style="color:#bd93f9">11</span>:29:27.080507 IP <span style="color:#bd93f9">10</span>.0.1.0 &gt; <span style="color:#bd93f9">10</span>.0.2.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> reply, id <span style="color:#bd93f9">7253</span>, seq <span style="color:#bd93f9">6</span>, length <span style="color:#bd93f9">64</span>
-<span style="color:#bd93f9">11</span>:29:28.080398 IP <span style="color:#bd93f9">10</span>.0.2.0 &gt; <span style="color:#bd93f9">10</span>.0.1.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> request, id <span style="color:#bd93f9">7253</span>, seq <span style="color:#bd93f9">7</span>, length <span style="color:#bd93f9">64</span>
-<span style="color:#bd93f9">11</span>:29:28.080456 IP <span style="color:#bd93f9">10</span>.0.1.0 &gt; <span style="color:#bd93f9">10</span>.0.2.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> reply, id <span style="color:#bd93f9">7253</span>, seq <span style="color:#bd93f9">7</span>, length <span style="color:#bd93f9">64</span>
-<span style="color:#bd93f9">11</span>:29:29.080390 IP <span style="color:#bd93f9">10</span>.0.2.0 &gt; <span style="color:#bd93f9">10</span>.0.1.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> request, id <span style="color:#bd93f9">7253</span>, seq <span style="color:#bd93f9">8</span>, length <span style="color:#bd93f9">64</span>
-<span style="color:#bd93f9">11</span>:29:29.080431 IP <span style="color:#bd93f9">10</span>.0.1.0 &gt; <span style="color:#bd93f9">10</span>.0.2.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> reply, id <span style="color:#bd93f9">7253</span>, seq <span style="color:#bd93f9">8</span>, length <span style="color:#bd93f9">64</span>
-<span style="color:#bd93f9">11</span>:29:30.080524 IP <span style="color:#bd93f9">10</span>.0.2.0 &gt; <span style="color:#bd93f9">10</span>.0.1.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> request, id <span style="color:#bd93f9">7253</span>, seq <span style="color:#bd93f9">9</span>, length <span style="color:#bd93f9">64</span>
-<span style="color:#bd93f9">11</span>:29:30.080576 IP <span style="color:#bd93f9">10</span>.0.1.0 &gt; <span style="color:#bd93f9">10</span>.0.2.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> reply, id <span style="color:#bd93f9">7253</span>, seq <span style="color:#bd93f9">9</span>, length <span style="color:#bd93f9">64</span>
-<span style="color:#bd93f9">11</span>:29:31.081895 IP <span style="color:#bd93f9">10</span>.0.2.0 &gt; <span style="color:#bd93f9">10</span>.0.1.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> request, id <span style="color:#bd93f9">7253</span>, seq <span style="color:#bd93f9">10</span>, length <span style="color:#bd93f9">64</span>
-<span style="color:#bd93f9">11</span>:29:31.081942 IP <span style="color:#bd93f9">10</span>.0.1.0 &gt; <span style="color:#bd93f9">10</span>.0.2.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> reply, id <span style="color:#bd93f9">7253</span>, seq <span style="color:#bd93f9">10</span>, length <span style="color:#bd93f9">64</span>
-^C
-<span style="color:#bd93f9">20</span> packets captured
-<span style="color:#bd93f9">20</span> packets received by filter
-<span style="color:#bd93f9">0</span> packets dropped by kernel</code></pre>
-            </div>
-            <h2 id="tcp-连接">TCP 连接</h2>
-
-            <p>
-              最好我们来测试下 TCP 连接，使用 nc 命令在 ns1 命名空间的 7096
-              端口启动一个 TCP 服务器，然后从 ns2 网络命名空间发起一个 TCP
-              握手连接。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns1 nc -l <span style="color:#bd93f9">10</span>.0.1.0 <span style="color:#bd93f9">7096</span> -v
-<span style="color:#8be9fd;font-style:italic">exec</span> of <span style="color:#f1fa8c">&#34;nc&#34;</span> failed: No such file or directory</code></pre>
-            </div>
-            <p>
-              上面命令报错是因为我们还没有安装 ns 这个工具，安装完成后就正常了。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ yum install -y nc
-
-$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns1 nc -l <span style="color:#bd93f9">10</span>.0.1.0 <span style="color:#bd93f9">7096</span> -v
-Ncat: Version <span style="color:#bd93f9">7</span>.50 <span style="color:#ff79c6">(</span> https://nmap.org/ncat <span style="color:#ff79c6">)</span>
-Ncat: Listening on <span style="color:#bd93f9">10</span>.0.1.0:7096</code></pre>
-            </div>
-            <p>然后重新开一个终端进行连接：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash"><span style="color:#6272a4"># 使用 nc 从 ns2 发起 TCP 握手</span>
-$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns2 nc -4t <span style="color:#bd93f9">10</span>.0.1.0 <span style="color:#bd93f9">7096</span> -v
-Ncat: Version <span style="color:#bd93f9">7</span>.50 <span style="color:#ff79c6">(</span> https://nmap.org/ncat <span style="color:#ff79c6">)</span>
-Ncat: Connected to <span style="color:#bd93f9">10</span>.0.1.0:7096.
-
-<span style="color:#6272a4"># 这个时候正常会在前面的服务中看到连接状态</span>
-$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns1 nc -l <span style="color:#bd93f9">10</span>.0.1.0 <span style="color:#bd93f9">7096</span> -v
-Ncat: Version <span style="color:#bd93f9">7</span>.50 <span style="color:#ff79c6">(</span> https://nmap.org/ncat <span style="color:#ff79c6">)</span>
-Ncat: Listening on <span style="color:#bd93f9">10</span>.0.1.0:7096
-Ncat: Connection from <span style="color:#bd93f9">10</span>.0.2.0.
-Ncat: Connection from <span style="color:#bd93f9">10</span>.0.2.0:34090.</code></pre>
-            </div>
-            <p>一旦 TCP 连接建立，我们就可以从 ns2 向 ns1 发送测试消息了。</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns2 nc -4t <span style="color:#bd93f9">10</span>.0.1.0 <span style="color:#bd93f9">7096</span> -v
-Ncat: Version <span style="color:#bd93f9">7</span>.50 <span style="color:#ff79c6">(</span> https://nmap.org/ncat <span style="color:#ff79c6">)</span>
-Ncat: Connected to <span style="color:#bd93f9">10</span>.0.1.0:7096.
-this is a <span style="color:#8be9fd;font-style:italic">test</span> message  <span style="color:#6272a4"># 在这里输入一段信息</span></code></pre>
-            </div>
-            <p>此时我们在 ns1 这边的服务器端也会收到发送的消息。</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns1 nc -l <span style="color:#bd93f9">10</span>.0.1.0 <span style="color:#bd93f9">7096</span> -v
-Ncat: Version <span style="color:#bd93f9">7</span>.50 <span style="color:#ff79c6">(</span> https://nmap.org/ncat <span style="color:#ff79c6">)</span>
-Ncat: Listening on <span style="color:#bd93f9">10</span>.0.1.0:7096
-Ncat: Connection from <span style="color:#bd93f9">10</span>.0.2.0.
-Ncat: Connection from <span style="color:#bd93f9">10</span>.0.2.0:34090.
-this is a <span style="color:#8be9fd;font-style:italic">test</span> message</code></pre>
-            </div>
-            <p>
-              同样我们也可以使用 tcpdump
-              来抓取所有在两个网络命名空间之间传输的数据包。
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns1 tcpdump -X -i veth0 -n tcp -l
-tcpdump: verbose output suppressed, use -v or -vv <span style="color:#ff79c6">for</span> full protocol decode
-listening on veth0, link-type EN10MB <span style="color:#ff79c6">(</span>Ethernet<span style="color:#ff79c6">)</span>, capture size <span style="color:#bd93f9">262144</span> bytes
-<span style="color:#bd93f9">11</span>:42:59.912176 IP <span style="color:#bd93f9">10</span>.0.2.0.34090 &gt; <span style="color:#bd93f9">10</span>.0.1.0.7096: Flags <span style="color:#ff79c6">[</span>P.<span style="color:#ff79c6">]</span>, seq <span style="color:#bd93f9">118819706</span>:118819735, ack <span style="color:#bd93f9">1587208228</span>, win <span style="color:#bd93f9">229</span>, options <span style="color:#ff79c6">[</span>nop,nop,TS val <span style="color:#bd93f9">1970393377</span> ecr <span style="color:#bd93f9">1970365937</span><span style="color:#ff79c6">]</span>, length <span style="color:#bd93f9">29</span>
-	0x0000:  <span style="color:#bd93f9">4500</span> <span style="color:#bd93f9">0051</span> ad52 <span style="color:#bd93f9">4000</span> <span style="color:#bd93f9">4006</span> <span style="color:#bd93f9">7655</span> 0a00 <span style="color:#bd93f9">0200</span>  E..Q.R@.@.vU....
-	0x0010:  0a00 <span style="color:#bd93f9">0100</span> 852a 1bb8 <span style="color:#bd93f9">0715</span> 0b7a 5e9a e024  .....*.....z^..$
-	0x0020:  <span style="color:#bd93f9">8018</span> 00e5 <span style="color:#bd93f9">1743</span> <span style="color:#bd93f9">0000</span> <span style="color:#bd93f9">0101</span> 080a <span style="color:#bd93f9">7571</span> d121  .....C......uq.!
-	0x0030:  <span style="color:#bd93f9">7571</span> 65f1 <span style="color:#bd93f9">7468</span> <span style="color:#bd93f9">6973</span> <span style="color:#bd93f9">2069</span> <span style="color:#bd93f9">7320</span> 616e 6f74  uqe.this.is.anot
-	0x0040:  <span style="color:#bd93f9">6865</span> <span style="color:#bd93f9">7220</span> <span style="color:#bd93f9">7465</span> <span style="color:#bd93f9">7374</span> 206d <span style="color:#bd93f9">6573</span> <span style="color:#bd93f9">7361</span> <span style="color:#bd93f9">6765</span>  her.test.message
-	0x0050:  0a                                       .
-<span style="color:#bd93f9">11</span>:42:59.912207 IP <span style="color:#bd93f9">10</span>.0.1.0.7096 &gt; <span style="color:#bd93f9">10</span>.0.2.0.34090: Flags <span style="color:#ff79c6">[</span>.<span style="color:#ff79c6">]</span>, ack <span style="color:#bd93f9">29</span>, win <span style="color:#bd93f9">227</span>, options <span style="color:#ff79c6">[</span>nop,nop,TS val <span style="color:#bd93f9">1970393377</span> ecr <span style="color:#bd93f9">1970393377</span><span style="color:#ff79c6">]</span>, length <span style="color:#bd93f9">0</span>
-	0x0000:  <span style="color:#bd93f9">4500</span> <span style="color:#bd93f9">0034</span> <span style="color:#bd93f9">4612</span> <span style="color:#bd93f9">4000</span> <span style="color:#bd93f9">4006</span> ddb2 0a00 <span style="color:#bd93f9">0100</span>  E..4F.@.@.......
-	0x0010:  0a00 <span style="color:#bd93f9">0200</span> 1bb8 852a 5e9a e024 <span style="color:#bd93f9">0715</span> 0b97  .......*^..$....
-	0x0020:  <span style="color:#bd93f9">8010</span> 00e3 <span style="color:#bd93f9">1726</span> <span style="color:#bd93f9">0000</span> <span style="color:#bd93f9">0101</span> 080a <span style="color:#bd93f9">7571</span> d121  .....&amp;......uq.!
-	0x0030:  <span style="color:#bd93f9">7571</span> d121                                uq.!</code></pre>
-            </div>
-            <p>
-              当然也可以将这个抓包结果保存下来然后用其他工具比如大白鲨来进行详细的分析。
-            </p>
-
-            <h2 id="总结">总结</h2>
-
-            <p>
-              本文我们使用 ip
-              子命令可以用来创建和配置网络命名空间、接口和路由等，我们创建了一对
-              veth
-              接口，这些接口被分配到两个不同的网络命名空间中，具有不同的子网 IP
-              地址范围，在网络命名空间的路由表中配置了额外的路由，这可以实现两个子网之间的通信。
-            </p>
-
-            <p>
-              两个 veth 接口都无法从主机网络命名空间直接到达，因为它们的 IP
-              地址范围和路由表的变化也被隔离在自己的网络命名空间中了。
-            </p>
-
-            <p>
-              我们可以使用 <code>ip netns exec</code> 命令运行工具和 tcpdump
-              来调试网络命名空间之间的连接问题。
-            </p>
-
-            <p>
-              <a
-                href="https://youdianzhishi.com/web/course/1030"
-                title="从 Docker 到 Kubernetes 进阶课程"
-                ><img
-                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
-                  alt="Kubernetes进阶训练营"
-              /></a>
-            </p>
-
-            <h2>微信公众号</h2>
-            <p>
-              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
-              kubernetes 讨论群里面共同学习。
-            </p>
-            <img
-              src="https://picdn.youdianzhishi.com/images/qrcode.png"
-              alt="wechat-account-qrcode"
-            />
-
-            <div class="entry-shang text-center">
-              <p>「真诚赞赏，手留余香」</p>
-              <button class="zs show-zs btn btn-bred">赞赏</button>
-            </div>
-            <div class="zs-modal-bg"></div>
-            <div class="zs-modal-box">
-              <div class="zs-modal-head">
-                <button type="button" class="close">×</button>
-                <span class="author"
-                  ><img
-                    src="https://www.qikqiak.com/img/avatar.jpeg"
-                  />阳明</span
-                >
-                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-              </div>
-              <div class="zs-modal-body">
-                <div class="zs-modal-btns">
-                  <button class="btn btn-blink" data-num="2">2元</button>
-                  <button class="btn btn-blink" data-num="5">5元</button>
-                  <button class="btn btn-blink" data-num="10">10元</button>
-                  <button class="btn btn-blink" data-num="50">50元</button>
-                  <button class="btn btn-blink" data-num="100">100元</button>
-                  <button class="btn btn-blink" data-num="1">任意金额</button>
-                </div>
-                <div class="zs-modal-pay">
-                  <button class="btn btn-bred" id="pay-text">2元</button>
-                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-                  <img
-                    src="https://www.qikqiak.com/img/wechat-2.png"
-                    id="pay-image"
-                  />
-                </div>
-              </div>
-              <div class="zs-modal-footer">
-                <span class="zs-wechat"
-                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
-                /></span>
-              </div>
-            </div>
-
-            <div
-              class="social-share"
-              data-initialized="true"
-              style="margin-bottom: 20px; margin-top: 20px"
-            >
-              <center>
-                <a href="#" class="social-share-icon icon-weibo"></a>
-                <a href="#" class="social-share-icon icon-wechat"></a>
-                <a href="#" class="social-share-icon icon-twitter"></a>
-                <a href="#" class="social-share-icon icon-linkedin"></a>
-                <a href="#" class="social-share-icon icon-facebook"></a>
-                <a href="#" class="social-share-icon icon-qq"></a>
-                <a href="#" class="social-share-icon icon-qzone"></a>
-              </center>
-            </div>
-
-            <link
-              rel="stylesheet"
-              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
-            />
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
-          </article>
-
-          <h3>相关文章</h3>
-          <ul style="margin-bottom: 25px">
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/troubleshooting-k8s-network/"
-                >Kubernetes 网络故障常见排查方法</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/code-k8s-yaml-templating/"
-                >自己动手写一个 Kubernetes YAML 模板化工具</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/visually-explained-k8s-ingress/"
-                >图解 Kubernetes Ingress</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/visually-explained-k8s-service/"
-                >图解 Kubernetes Service</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/deploy-kafka-ha-on-k8s/"
-                >在 Kubernetes 上运行高可用的 Kafka 集群</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/accelerate-ci-cd-pipelines-with-kind/"
-                >使用 KinD 加速 CI/CD 流水线</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/use-kustomize-custom-helm-charts/"
-                >使用 Kustomize 定制 Helm Charts</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/update-k8s-10y-expire-certs/"
-                >更新一个10年有效期的 Kubernetes 证书</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/grafana-loki-usage/"
-                >Grafana Loki 简明教程</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-1/"
-                >使用 Elastic 技术栈构建 K8S 全栈监控(1/4)</a
-              >
-            </li>
-          </ul>
-
-          <ul class="pager blog-pager">
-            <li class="previous">
-              <a
-                href="https://www.qikqiak.com/post/code-k8s-yaml-templating/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="自己动手写一个 Kubernetes YAML 模板化工具"
-                >&larr; 前一篇</a
-              >
-            </li>
-
-            <li class="next">
-              <a
-                href="https://www.qikqiak.com/post/add-dns-record-for-pod/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="给 Pod 添加 DNS 记录"
-                >后一篇 &rarr;</a
-              >
-            </li>
-          </ul>
-
-          <script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-          ></script>
-
-          <ins
-            class="adsbygoogle"
-            style="display: block"
-            data-ad-client="ca-pub-5376999672787220"
-            data-ad-slot="3700507799"
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          ></ins>
-          <script>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-          </script>
-
-          <div id="gitalk-container"></div>
-          <link
-            rel="stylesheet"
-            href="https://unpkg.com/gitalk/dist/gitalk.css"
-          />
-          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-          <script>
-            var gitalk = new Gitalk({
-              clientID: "bdb76dbb2e9d0786e350",
-              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
-              repo: "blog",
-              owner: "cnych",
-              admin: ["cnych"],
-              labels: ["gitment"],
-              title: "理解 Linux 网络命名空间",
-              createIssueManually: true,
-              id: "learn-linux-net-namespace",
-              distractionFreeMode: true,
-            });
-            gitalk.render("gitalk-container");
-          </script>
-        </div>
-      </div>
-    </div>
-
-    <footer>
+    
+    
+    
+    <div class="intro-header no-img">
+      
       <div class="container">
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <ul class="list-inline text-center footer-links">
-              <img
-                src="https://www.qikqiak.com/img/wechatmp.png"
-                alt="k8s技术圈"
-              />
+            <div class="post-heading">
+              <h1>理解 Linux 网络命名空间</h1>
+                
+                
+                  <span class="post-meta">
+  发表于 November 26, 2020  
+</span>
 
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/%E7%BD%91%E7%BB%9C/">网络</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#网络命名空间">网络命名空间</a></li>
+    <li><a href="#ip-命令">ip 命令</a></li>
+    <li><a href="#配置第一个网络命名空间">配置第一个网络命名空间</a></li>
+    <li><a href="#配置第二个网络命名空间">配置第二个网络命名空间</a></li>
+    <li><a href="#配置子网路由">配置子网路由</a></li>
+    <li><a href="#tcp-连接">TCP 连接</a></li>
+    <li><a href="#总结">总结</a></li>
+  </ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>如果你使用过 Docker 和 Kubernetes，那么可能应该听说过 network namespace（网络命名空间），最近在我们的 <a href="https://youdianzhishi.com/web/course/1021">《Kubernetes 网络训练营》</a>课程中学习到了 Linux 下面的 <code>ip</code> 命令的使用，本文我将演示如何使用命令通过一对 <code>veth</code> 接口连接不同子网中的网络命名空间的进程。</p>
+<h2 id="网络命名空间">网络命名空间</h2>
+<p>我们知道容器运行时使用 namespace（命名空间）内核功能对系统资源进行分区，以实现某种形式的进程隔离，这样，对一个命名空间中资源的更改不会影响其他命名空间中的资源，包括进程 ID、主机名、用户 ID、文件名和网络接口等。</p>
+<p>网络名称空间可以虚拟化网络堆栈，每个网络名称空间都有自己的资源，例如网络接口、IP 地址、路由表、隧道、防火墙等，例如，<code>iptables</code>添加到网络名称空间的规则只会影响进入和离开该名称空间的流量。</p>
+<h2 id="ip-命令">ip 命令</h2>
+<p><code>ip</code> 命令是用来显示或操纵 Linux 主机的路由、网络设备、策略路由和隧道，是 Linux 下较新的功能强大的网络配置工具。</p>
+<p>该命令的用法如下所示：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>ip <span style="color:#ff79c6">[</span>OPTIONS<span style="color:#ff79c6">]</span> OBJECT COMMAND <span style="color:#ff79c6">[</span>ARGUMENTS<span style="color:#ff79c6">]</span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># where</span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4">#   OPTIONS are general global options</span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4">#   OBJECT := { link | address | addrlabel | route |</span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4">#     rule | neigh | ntable | tunnel | tuntap | maddress |</span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4">#     mroute | mrule | monitor | xfrm | netns | l2tp |</span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4">#     tcp_metrics }</span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4">#   COMMAND is the action to perform on the object, such as,</span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4">#     show, add, del etc.</span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4">#   ARGUMENTS are arguments specific to the kind of OBJECT</span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4">#     and COMMAND</span>
+</span></span></code></pre></div><p>例如：</p>
+<ul>
+<li>要添加一个新的网络接口，使用 <code>ip link add &lt;interface-name&gt; type &lt;interface-type&gt; &lt;interface-arguments&gt;...</code> 命令</li>
+<li>要分配一个新的 IP 地址范围到一个接口，使用 <code>ip addr add &lt;ip-address-range&gt; dev &lt;device-name&gt;</code> 命令</li>
+<li>要从路由表中删除一条路由，使用 <code>ip route del &lt;route-ip-range&gt; dev &lt;device-name&gt;</code> 命令</li>
+</ul>
+<p>选项 <code>-n</code> 可以用来切换目标命名空间，例如，要将 <code>10.0.1.0/24</code> IP 地址范围分配给 ns1 网络命名空间内的接口 veth0，使用<code>ip -n ns1 addr add 10.0.1.0/24 dev veth0</code> 命令即可 。</p>
+<blockquote>
+<p>💡 <code>-n</code> 选项是 <code>ip netns exec</code> 的缩写</p>
+</blockquote>
+<p><img src="https://picdn.youdianzhishi.com/images/20201123114944.png" alt=""></p>
+<h2 id="配置第一个网络命名空间">配置第一个网络命名空间</h2>
+<p>首先我们使用 <code>ip link add</code> 命令创建一对新的 veth 接口：veth0 和 veth1：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#6272a4"># 创建一对名为 veth0 和 veth1 的 veth 接口。</span>
+</span></span><span style="display:flex;"><span>$ ip link add veth0 <span style="color:#8be9fd;font-style:italic">type</span> veth peer name veth1
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 确认 veth0 已创建</span>
+</span></span><span style="display:flex;"><span>$ ip link show veth0
+</span></span><span style="display:flex;"><span>289: veth0@veth1: &lt;BROADCAST,MULTICAST&gt; mtu <span style="color:#bd93f9">1500</span> qdisc noop state DOWN mode DEFAULT group default qlen <span style="color:#bd93f9">1000</span>
+</span></span><span style="display:flex;"><span>    link/ether 5e:87:df:87:af:c7 brd ff:ff:ff:ff:ff:ff
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 确认 veth1 已创建</span>
+</span></span><span style="display:flex;"><span>$ ip link show veth1
+</span></span><span style="display:flex;"><span>288: veth1@veth0: &lt;BROADCAST,MULTICAST&gt; mtu <span style="color:#bd93f9">1500</span> qdisc noop state DOWN mode DEFAULT group default qlen <span style="color:#bd93f9">1000</span>
+</span></span><span style="display:flex;"><span>    link/ether be:0d:a4:8c:9f:2a brd ff:ff:ff:ff:ff:ff
+</span></span></code></pre></div><p>veth 接口通常被创建为一个对，其中一端传输的数据会立即被另一端接收，这种类型的接口在容器运行时通常用于在不同网络命名空间之间传输数据包。</p>
+<p>让我们创建第一个网络命名空间 ns1，然后我们可以将 veth0 接口分配给这个网络命名空间，并将 <code>10.0.1.0/24</code> 的 IP 地址范围分配给它。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#6272a4"># 创建 ns1 网络命名空间</span>
+</span></span><span style="display:flex;"><span>$ ip netns add ns1
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 分配 veth0 接口到 ns1 网络命名空间</span>
+</span></span><span style="display:flex;"><span>$ ip link <span style="color:#8be9fd;font-style:italic">set</span> veth0 netns ns1
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 将 10.0.1.0/24 IP 地址范围分配给 veth0 接口</span>
+</span></span><span style="display:flex;"><span>$ ip -n ns1 addr add 10.0.1.0/24 dev veth0
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 将 veth0 接口 up 起来</span>
+</span></span><span style="display:flex;"><span>$ ip -n ns1 link <span style="color:#8be9fd;font-style:italic">set</span> veth0 up
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 将 lo 接口 up 起来，因为发往 10.0.1.0/24 的数据（本地的）</span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># （像 ping）要通过 local（本地）路由表</span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 比如要 ping 自己</span>
+</span></span><span style="display:flex;"><span>$ ip -n ns1 link <span style="color:#8be9fd;font-style:italic">set</span> lo up
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 确认接口已经 up 起来</span>
+</span></span><span style="display:flex;"><span>$ ip -n ns1 addr show
+</span></span><span style="display:flex;"><span>1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu <span style="color:#bd93f9">65536</span> qdisc noqueue state UNKNOWN group default qlen <span style="color:#bd93f9">1000</span>
+</span></span><span style="display:flex;"><span>    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+</span></span><span style="display:flex;"><span>    inet 127.0.0.1/8 scope host lo
+</span></span><span style="display:flex;"><span>       valid_lft forever preferred_lft forever
+</span></span><span style="display:flex;"><span>    inet6 ::1/128 scope host
+</span></span><span style="display:flex;"><span>       valid_lft forever preferred_lft forever
+</span></span><span style="display:flex;"><span>289: veth0@if288: &lt;NO-CARRIER,BROADCAST,MULTICAST,UP&gt; mtu <span style="color:#bd93f9">1500</span> qdisc noqueue state LOWERLAYERDOWN group default qlen <span style="color:#bd93f9">1000</span>
+</span></span><span style="display:flex;"><span>    link/ether 5e:87:df:87:af:c7 brd ff:ff:ff:ff:ff:ff link-netnsid <span style="color:#bd93f9">0</span>
+</span></span><span style="display:flex;"><span>    inet 10.0.1.0/24 scope global veth0
+</span></span><span style="display:flex;"><span>       valid_lft forever preferred_lft forever
+</span></span></code></pre></div><p>现在如果我们从主机和 ns1 两个网络命名空间中去 ping veth0 接口会发生什么呢？</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#6272a4"># veth0 不在主机的根网络命名空间中</span>
+</span></span><span style="display:flex;"><span>$ ip link show veth0
+</span></span><span style="display:flex;"><span>Device <span style="color:#f1fa8c">&#34;veth0&#34;</span> does not exist.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 从主机网络命名空间中 ping 不通</span>
+</span></span><span style="display:flex;"><span>$ ping -c10 10.0.1.0
+</span></span><span style="display:flex;"><span>PING 10.0.1.0 <span style="color:#ff79c6">(</span>10.0.1.0<span style="color:#ff79c6">)</span> 56<span style="color:#ff79c6">(</span>84<span style="color:#ff79c6">)</span> bytes of data.
+</span></span><span style="display:flex;"><span>^C
+</span></span><span style="display:flex;"><span>--- 10.0.1.0 ping statistics ---
+</span></span><span style="display:flex;"><span><span style="color:#bd93f9">3</span> packets transmitted, <span style="color:#bd93f9">0</span> received, 100% packet loss, <span style="color:#8be9fd;font-style:italic">time</span> 1999ms
+</span></span></code></pre></div><p>我们可以看到直接在主机的根网络命名空间中是找不到 veth0 这个接口的，当然也是 ping 不同 <code>10.0.1.0</code> 这个地址的，因为他们被绑定到 ns1 这个网络命名空间中，所以我们在操作的时候需要切换到这个命名空间下面。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns1 ping -c10 10.0.1.0
+</span></span><span style="display:flex;"><span>PING 10.0.1.0 <span style="color:#ff79c6">(</span>10.0.1.0<span style="color:#ff79c6">)</span> 56<span style="color:#ff79c6">(</span>84<span style="color:#ff79c6">)</span> bytes of data.
+</span></span><span style="display:flex;"><span><span style="color:#bd93f9">64</span> bytes from 10.0.1.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">1</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span>0.121 ms
+</span></span><span style="display:flex;"><span><span style="color:#bd93f9">64</span> bytes from 10.0.1.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">2</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span>0.063 ms
+</span></span><span style="display:flex;"><span><span style="color:#bd93f9">64</span> bytes from 10.0.1.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">3</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span>0.066 ms
+</span></span><span style="display:flex;"><span><span style="color:#bd93f9">64</span> bytes from 10.0.1.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">4</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span>0.109 ms
+</span></span><span style="display:flex;"><span>^C
+</span></span><span style="display:flex;"><span>--- 10.0.1.0 ping statistics ---
+</span></span><span style="display:flex;"><span><span style="color:#bd93f9">4</span> packets transmitted, <span style="color:#bd93f9">4</span> received, 0% packet loss, <span style="color:#8be9fd;font-style:italic">time</span> 3000ms
+</span></span><span style="display:flex;"><span>rtt min/avg/max/mdev <span style="color:#ff79c6">=</span> 0.063/0.089/0.121/0.028 ms
+</span></span></code></pre></div><p>这里我们使用了一条 <code>ip netns exec</code> 的命令，这个命令允许我们在指定的网络命名空间中去执行任意的命令，可以看到现在我们在 ns1 网络命名空中间去 ping <code>10.0.1.0</code> 就可以通了。</p>
+<!-- raw HTML omitted -->
+<h2 id="配置第二个网络命名空间">配置第二个网络命名空间</h2>
+<p>下面我们用上面的方式来创建第二个网络命名空间 <code>ns2</code>，然后将 veth1 接口分配给这个网络命名空间，并将 <code>10.0.2.0/24</code> 的 IP 地址范围分配给这个接口。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#6272a4"># 创建名为 ns2 的网络命名空间</span>
+</span></span><span style="display:flex;"><span>$ ip netns add ns2
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 分配 veth1 接口到 ns2 网络命名空间</span>
+</span></span><span style="display:flex;"><span>$ ip link <span style="color:#8be9fd;font-style:italic">set</span> veth1 netns ns2
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 将 10.0.2.0/24 IP 地址范围分配给 veth1 接口</span>
+</span></span><span style="display:flex;"><span>$ ip -n ns2 addr add 10.0.2.0/24 dev veth1
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 将 veth1 接口 up 起来</span>
+</span></span><span style="display:flex;"><span>$ ip -n ns2 link <span style="color:#8be9fd;font-style:italic">set</span> veth1 up
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 将 lo 口 up 起来（这样可以 ping 通自己）</span>
+</span></span><span style="display:flex;"><span>$ ip -n ns2 link <span style="color:#8be9fd;font-style:italic">set</span> lo up
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ ip -n ns2 addr show
+</span></span><span style="display:flex;"><span>1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu <span style="color:#bd93f9">65536</span> qdisc noqueue state UNKNOWN group default qlen <span style="color:#bd93f9">1000</span>
+</span></span><span style="display:flex;"><span>    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+</span></span><span style="display:flex;"><span>    inet 127.0.0.1/8 scope host lo
+</span></span><span style="display:flex;"><span>       valid_lft forever preferred_lft forever
+</span></span><span style="display:flex;"><span>    inet6 ::1/128 scope host
+</span></span><span style="display:flex;"><span>       valid_lft forever preferred_lft forever
+</span></span><span style="display:flex;"><span>288: veth1@if289: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu <span style="color:#bd93f9">1500</span> qdisc noqueue state UP group default qlen <span style="color:#bd93f9">1000</span>
+</span></span><span style="display:flex;"><span>    link/ether be:0d:a4:8c:9f:2a brd ff:ff:ff:ff:ff:ff link-netnsid <span style="color:#bd93f9">0</span>
+</span></span><span style="display:flex;"><span>    inet 10.0.2.0/24 scope global veth1
+</span></span><span style="display:flex;"><span>       valid_lft forever preferred_lft forever
+</span></span><span style="display:flex;"><span>    inet6 fe80::bc0d:a4ff:fe8c:9f2a/64 scope link
+</span></span><span style="display:flex;"><span>       valid_lft forever preferred_lft forever
+</span></span></code></pre></div><p>为方便后面设置路由，这里我们为 veth1 接口分配一个不同的子网 IP 范围。和 veth0 接口类似，veth1 接口也不能从主机网络命名空间到达，只能在 ns2 本身的网络命名空间内工作。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ ip link show veth1
+</span></span><span style="display:flex;"><span>Device <span style="color:#f1fa8c">&#34;veth1&#34;</span> does not exist.
+</span></span><span style="display:flex;"><span>$ ping -c10 10.0.2.0
+</span></span><span style="display:flex;"><span>PING 10.0.2.0 <span style="color:#ff79c6">(</span>10.0.2.0<span style="color:#ff79c6">)</span> 56<span style="color:#ff79c6">(</span>84<span style="color:#ff79c6">)</span> bytes of data.
+</span></span><span style="display:flex;"><span>From 180.149.159.13 <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">2</span> Packet filtered
+</span></span><span style="display:flex;"><span>^C
+</span></span><span style="display:flex;"><span>--- 10.0.2.0 ping statistics ---
+</span></span><span style="display:flex;"><span><span style="color:#bd93f9">2</span> packets transmitted, <span style="color:#bd93f9">0</span> received, +1 errors, 100% packet loss, <span style="color:#8be9fd;font-style:italic">time</span> <span style="color:#bd93f9">999</span>
+</span></span><span style="display:flex;"><span>$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns2 ping -c10 10.0.2.0
+</span></span><span style="display:flex;"><span>PING 10.0.2.0 <span style="color:#ff79c6">(</span>10.0.2.0<span style="color:#ff79c6">)</span> 56<span style="color:#ff79c6">(</span>84<span style="color:#ff79c6">)</span> bytes of data.
+</span></span><span style="display:flex;"><span><span style="color:#bd93f9">64</span> bytes from 10.0.2.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">1</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span>0.100 ms
+</span></span><span style="display:flex;"><span><span style="color:#bd93f9">64</span> bytes from 10.0.2.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">2</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span>0.096 ms
+</span></span><span style="display:flex;"><span><span style="color:#bd93f9">64</span> bytes from 10.0.2.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">3</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span>0.068 ms
+</span></span><span style="display:flex;"><span>^C
+</span></span><span style="display:flex;"><span>--- 10.0.2.0 ping statistics ---
+</span></span><span style="display:flex;"><span><span style="color:#bd93f9">3</span> packets transmitted, <span style="color:#bd93f9">3</span> received, 0% packet loss, <span style="color:#8be9fd;font-style:italic">time</span> 1999ms
+</span></span><span style="display:flex;"><span>rtt min/avg/max/mdev <span style="color:#ff79c6">=</span> 0.068/0.088/0.100/0.014 ms
+</span></span></code></pre></div><h2 id="配置子网路由">配置子网路由</h2>
+<p>虽然在上面的两个网络空间内可以各自访问自己，但是他们互相之间是不能 ping 通的。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns1 ping -c10 10.0.2.0
+</span></span><span style="display:flex;"><span>connect: Network is unreachable
+</span></span><span style="display:flex;"><span>$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns2 ping -c10 10.0.1.0
+</span></span><span style="display:flex;"><span>connect: Network is unreachable
+</span></span></code></pre></div><p>veth0 和 veth1 这两个接口本身也都 up 起来了，而且在各种的网络命名空间中 ping 也能正常工作，所以互相直接不通那很可能和路由有关。下面我们使用 ip 命令来调试下，我们可以通过 <code>ip route get</code> 命令来确定一个数据包所走的路由。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ ip -n ns1 route get 10.0.2.0
+</span></span><span style="display:flex;"><span>RTNETLINK answers: Network is unreachable
+</span></span><span style="display:flex;"><span>$ ip -n ns2 route get 10.0.1.0
+</span></span><span style="display:flex;"><span>RTNETLINK answers: Network is unreachable
+</span></span></code></pre></div><p>我们可以看到都是网络不可达，我们来检查下两个网络命名空间中的路由表信息。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ ip -n ns1 route
+</span></span><span style="display:flex;"><span>10.0.1.0/24 dev veth0 proto kernel scope link src 10.0.1.0
+</span></span><span style="display:flex;"><span>$ ip -n ns2 route
+</span></span><span style="display:flex;"><span>10.0.2.0/24 dev veth1 proto kernel scope link src 10.0.2.0
+</span></span></code></pre></div><p>看到路由表是不是很清晰了，两个网络命名空间的路由表都只有各自 IP 范围的路由条目，并没有通往其他子网的路由，所以当然不能互通了，要解决也很简单，可以使用 <code>ip route add</code> 命令在路由表中插入新的路由条目是不是就可以了。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#6272a4"># 更新 veth0 路由表，添加一条通往 10.0.2.0/24 的路由</span>
+</span></span><span style="display:flex;"><span>$ ip -n ns1 route add 10.0.2.0/24 dev veth0
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 确认发往 10.0.2.0/24 的数据包被路由到 veth0</span>
+</span></span><span style="display:flex;"><span>$ ip -n ns1 route get 10.0.2.0
+</span></span><span style="display:flex;"><span>10.0.2.0 dev veth0 src 10.0.1.0
+</span></span><span style="display:flex;"><span>    cache
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 同样更新 veth1 路由表，添加一条通往 10.0.1.0/24 的路由</span>
+</span></span><span style="display:flex;"><span>$ ip -n ns2 route add 10.0.1.0/24 dev veth1
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 确认发往 10.0.1.0/24 的数据包被路由到 veth1</span>
+</span></span><span style="display:flex;"><span>$ ip -n ns2 route get 10.0.1.0
+</span></span><span style="display:flex;"><span>10.0.1.0 dev veth1 src 10.0.2.0
+</span></span><span style="display:flex;"><span>    cache
+</span></span></code></pre></div><p>上面我们在各自的网络命名空间中添加了对方的路由信息，现在我们来尝试 ping 下对方的 veth 接口。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns1 ping -c10 10.0.2.0
+</span></span><span style="display:flex;"><span>PING 10.0.2.0 <span style="color:#ff79c6">(</span>10.0.2.0<span style="color:#ff79c6">)</span> 56<span style="color:#ff79c6">(</span>84<span style="color:#ff79c6">)</span> bytes of data.
+</span></span><span style="display:flex;"><span><span style="color:#bd93f9">64</span> bytes from 10.0.2.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">1</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span>0.140 ms
+</span></span><span style="display:flex;"><span><span style="color:#bd93f9">64</span> bytes from 10.0.2.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">2</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span>0.080 ms
+</span></span><span style="display:flex;"><span><span style="color:#bd93f9">64</span> bytes from 10.0.2.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">3</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span>0.091 ms
+</span></span><span style="display:flex;"><span>^C
+</span></span><span style="display:flex;"><span>--- 10.0.2.0 ping statistics ---
+</span></span><span style="display:flex;"><span><span style="color:#bd93f9">3</span> packets transmitted, <span style="color:#bd93f9">3</span> received, 0% packet loss, <span style="color:#8be9fd;font-style:italic">time</span> 1999ms
+</span></span><span style="display:flex;"><span>rtt min/avg/max/mdev <span style="color:#ff79c6">=</span> 0.080/0.103/0.140/0.028 ms
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns2 ping -c10 10.0.1.0
+</span></span><span style="display:flex;"><span>PING 10.0.1.0 <span style="color:#ff79c6">(</span>10.0.1.0<span style="color:#ff79c6">)</span> 56<span style="color:#ff79c6">(</span>84<span style="color:#ff79c6">)</span> bytes of data.
+</span></span><span style="display:flex;"><span><span style="color:#bd93f9">64</span> bytes from 10.0.1.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">1</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span>0.114 ms
+</span></span><span style="display:flex;"><span><span style="color:#bd93f9">64</span> bytes from 10.0.1.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">2</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span>0.084 ms
+</span></span><span style="display:flex;"><span><span style="color:#bd93f9">64</span> bytes from 10.0.1.0: <span style="color:#8be9fd;font-style:italic">icmp_seq</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">3</span> <span style="color:#8be9fd;font-style:italic">ttl</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">64</span> <span style="color:#8be9fd;font-style:italic">time</span><span style="color:#ff79c6">=</span>0.086 ms
+</span></span><span style="display:flex;"><span>^C
+</span></span><span style="display:flex;"><span>--- 10.0.1.0 ping statistics ---
+</span></span><span style="display:flex;"><span><span style="color:#bd93f9">3</span> packets transmitted, <span style="color:#bd93f9">3</span> received, 0% packet loss, <span style="color:#8be9fd;font-style:italic">time</span> 2000ms
+</span></span><span style="display:flex;"><span>rtt min/avg/max/mdev <span style="color:#ff79c6">=</span> 0.084/0.094/0.114/0.017 ms
+</span></span></code></pre></div><p>可以看到已经通啦！！🎉🎉🎉</p>
+<p>此外我们还可以使用 <code>tcpdump</code> 来捕获两个网络命名空间之间传输的数据包。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns1 tcpdump -i veth0 icmp -l
+</span></span><span style="display:flex;"><span>tcpdump: verbose output suppressed, use -v or -vv <span style="color:#ff79c6">for</span> full protocol decode
+</span></span><span style="display:flex;"><span>listening on veth0, link-type EN10MB <span style="color:#ff79c6">(</span>Ethernet<span style="color:#ff79c6">)</span>, capture size <span style="color:#bd93f9">262144</span> bytes
+</span></span><span style="display:flex;"><span>11:29:22.080392 IP 10.0.2.0 &gt; 10.0.1.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> request, id 7253, seq 1, length <span style="color:#bd93f9">64</span>
+</span></span><span style="display:flex;"><span>11:29:22.080464 IP 10.0.1.0 &gt; 10.0.2.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> reply, id 7253, seq 1, length <span style="color:#bd93f9">64</span>
+</span></span><span style="display:flex;"><span>11:29:23.080409 IP 10.0.2.0 &gt; 10.0.1.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> request, id 7253, seq 2, length <span style="color:#bd93f9">64</span>
+</span></span><span style="display:flex;"><span>11:29:23.080472 IP 10.0.1.0 &gt; 10.0.2.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> reply, id 7253, seq 2, length <span style="color:#bd93f9">64</span>
+</span></span><span style="display:flex;"><span>11:29:24.080357 IP 10.0.2.0 &gt; 10.0.1.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> request, id 7253, seq 3, length <span style="color:#bd93f9">64</span>
+</span></span><span style="display:flex;"><span>11:29:24.080418 IP 10.0.1.0 &gt; 10.0.2.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> reply, id 7253, seq 3, length <span style="color:#bd93f9">64</span>
+</span></span><span style="display:flex;"><span>11:29:25.080346 IP 10.0.2.0 &gt; 10.0.1.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> request, id 7253, seq 4, length <span style="color:#bd93f9">64</span>
+</span></span><span style="display:flex;"><span>11:29:25.080401 IP 10.0.1.0 &gt; 10.0.2.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> reply, id 7253, seq 4, length <span style="color:#bd93f9">64</span>
+</span></span><span style="display:flex;"><span>11:29:26.080417 IP 10.0.2.0 &gt; 10.0.1.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> request, id 7253, seq 5, length <span style="color:#bd93f9">64</span>
+</span></span><span style="display:flex;"><span>11:29:26.080496 IP 10.0.1.0 &gt; 10.0.2.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> reply, id 7253, seq 5, length <span style="color:#bd93f9">64</span>
+</span></span><span style="display:flex;"><span>11:29:27.080454 IP 10.0.2.0 &gt; 10.0.1.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> request, id 7253, seq 6, length <span style="color:#bd93f9">64</span>
+</span></span><span style="display:flex;"><span>11:29:27.080507 IP 10.0.1.0 &gt; 10.0.2.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> reply, id 7253, seq 6, length <span style="color:#bd93f9">64</span>
+</span></span><span style="display:flex;"><span>11:29:28.080398 IP 10.0.2.0 &gt; 10.0.1.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> request, id 7253, seq 7, length <span style="color:#bd93f9">64</span>
+</span></span><span style="display:flex;"><span>11:29:28.080456 IP 10.0.1.0 &gt; 10.0.2.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> reply, id 7253, seq 7, length <span style="color:#bd93f9">64</span>
+</span></span><span style="display:flex;"><span>11:29:29.080390 IP 10.0.2.0 &gt; 10.0.1.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> request, id 7253, seq 8, length <span style="color:#bd93f9">64</span>
+</span></span><span style="display:flex;"><span>11:29:29.080431 IP 10.0.1.0 &gt; 10.0.2.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> reply, id 7253, seq 8, length <span style="color:#bd93f9">64</span>
+</span></span><span style="display:flex;"><span>11:29:30.080524 IP 10.0.2.0 &gt; 10.0.1.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> request, id 7253, seq 9, length <span style="color:#bd93f9">64</span>
+</span></span><span style="display:flex;"><span>11:29:30.080576 IP 10.0.1.0 &gt; 10.0.2.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> reply, id 7253, seq 9, length <span style="color:#bd93f9">64</span>
+</span></span><span style="display:flex;"><span>11:29:31.081895 IP 10.0.2.0 &gt; 10.0.1.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> request, id 7253, seq 10, length <span style="color:#bd93f9">64</span>
+</span></span><span style="display:flex;"><span>11:29:31.081942 IP 10.0.1.0 &gt; 10.0.2.0: ICMP <span style="color:#8be9fd;font-style:italic">echo</span> reply, id 7253, seq 10, length <span style="color:#bd93f9">64</span>
+</span></span><span style="display:flex;"><span>^C
+</span></span><span style="display:flex;"><span><span style="color:#bd93f9">20</span> packets captured
+</span></span><span style="display:flex;"><span><span style="color:#bd93f9">20</span> packets received by filter
+</span></span><span style="display:flex;"><span><span style="color:#bd93f9">0</span> packets dropped by kernel
+</span></span></code></pre></div><h2 id="tcp-连接">TCP 连接</h2>
+<p>最好我们来测试下 TCP 连接，使用 nc 命令在 ns1 命名空间的 7096 端口启动一个 TCP 服务器，然后从 ns2 网络命名空间发起一个 TCP 握手连接。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns1 nc -l 10.0.1.0 <span style="color:#bd93f9">7096</span> -v
+</span></span><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">exec</span> of <span style="color:#f1fa8c">&#34;nc&#34;</span> failed: No such file or directory
+</span></span></code></pre></div><p>上面命令报错是因为我们还没有安装 ns 这个工具，安装完成后就正常了。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ yum install -y nc
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns1 nc -l 10.0.1.0 <span style="color:#bd93f9">7096</span> -v
+</span></span><span style="display:flex;"><span>Ncat: Version 7.50 <span style="color:#ff79c6">(</span> https://nmap.org/ncat <span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span>Ncat: Listening on 10.0.1.0:7096
+</span></span></code></pre></div><p>然后重新开一个终端进行连接：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#6272a4"># 使用 nc 从 ns2 发起 TCP 握手</span>
+</span></span><span style="display:flex;"><span>$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns2 nc -4t 10.0.1.0 <span style="color:#bd93f9">7096</span> -v
+</span></span><span style="display:flex;"><span>Ncat: Version 7.50 <span style="color:#ff79c6">(</span> https://nmap.org/ncat <span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span>Ncat: Connected to 10.0.1.0:7096.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 这个时候正常会在前面的服务中看到连接状态</span>
+</span></span><span style="display:flex;"><span>$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns1 nc -l 10.0.1.0 <span style="color:#bd93f9">7096</span> -v
+</span></span><span style="display:flex;"><span>Ncat: Version 7.50 <span style="color:#ff79c6">(</span> https://nmap.org/ncat <span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span>Ncat: Listening on 10.0.1.0:7096
+</span></span><span style="display:flex;"><span>Ncat: Connection from 10.0.2.0.
+</span></span><span style="display:flex;"><span>Ncat: Connection from 10.0.2.0:34090.
+</span></span></code></pre></div><p>一旦 TCP 连接建立，我们就可以从 ns2 向 ns1 发送测试消息了。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns2 nc -4t 10.0.1.0 <span style="color:#bd93f9">7096</span> -v
+</span></span><span style="display:flex;"><span>Ncat: Version 7.50 <span style="color:#ff79c6">(</span> https://nmap.org/ncat <span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span>Ncat: Connected to 10.0.1.0:7096.
+</span></span><span style="display:flex;"><span>this is a <span style="color:#8be9fd;font-style:italic">test</span> message  <span style="color:#6272a4"># 在这里输入一段信息</span>
+</span></span></code></pre></div><p>此时我们在 ns1 这边的服务器端也会收到发送的消息。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns1 nc -l 10.0.1.0 <span style="color:#bd93f9">7096</span> -v
+</span></span><span style="display:flex;"><span>Ncat: Version 7.50 <span style="color:#ff79c6">(</span> https://nmap.org/ncat <span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span>Ncat: Listening on 10.0.1.0:7096
+</span></span><span style="display:flex;"><span>Ncat: Connection from 10.0.2.0.
+</span></span><span style="display:flex;"><span>Ncat: Connection from 10.0.2.0:34090.
+</span></span><span style="display:flex;"><span>this is a <span style="color:#8be9fd;font-style:italic">test</span> message
+</span></span></code></pre></div><p>同样我们也可以使用 tcpdump 来抓取所有在两个网络命名空间之间传输的数据包。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ ip netns <span style="color:#8be9fd;font-style:italic">exec</span> ns1 tcpdump -X -i veth0 -n tcp -l
+</span></span><span style="display:flex;"><span>tcpdump: verbose output suppressed, use -v or -vv <span style="color:#ff79c6">for</span> full protocol decode
+</span></span><span style="display:flex;"><span>listening on veth0, link-type EN10MB <span style="color:#ff79c6">(</span>Ethernet<span style="color:#ff79c6">)</span>, capture size <span style="color:#bd93f9">262144</span> bytes
+</span></span><span style="display:flex;"><span>11:42:59.912176 IP 10.0.2.0.34090 &gt; 10.0.1.0.7096: Flags <span style="color:#ff79c6">[</span>P.<span style="color:#ff79c6">]</span>, seq 118819706:118819735, ack 1587208228, win 229, options <span style="color:#ff79c6">[</span>nop,nop,TS val <span style="color:#bd93f9">1970393377</span> ecr 1970365937<span style="color:#ff79c6">]</span>, length <span style="color:#bd93f9">29</span>
+</span></span><span style="display:flex;"><span>	0x0000:  <span style="color:#bd93f9">4500</span> <span style="color:#bd93f9">0051</span> ad52 <span style="color:#bd93f9">4000</span> <span style="color:#bd93f9">4006</span> <span style="color:#bd93f9">7655</span> 0a00 <span style="color:#bd93f9">0200</span>  E..Q.R@.@.vU....
+</span></span><span style="display:flex;"><span>	0x0010:  0a00 <span style="color:#bd93f9">0100</span> 852a 1bb8 <span style="color:#bd93f9">0715</span> 0b7a 5e9a e024  .....*.....z^..$
+</span></span><span style="display:flex;"><span>	0x0020:  <span style="color:#bd93f9">8018</span> 00e5 <span style="color:#bd93f9">1743</span> <span style="color:#bd93f9">0000</span> <span style="color:#bd93f9">0101</span> 080a <span style="color:#bd93f9">7571</span> d121  .....C......uq.!
+</span></span><span style="display:flex;"><span>	0x0030:  <span style="color:#bd93f9">7571</span> 65f1 <span style="color:#bd93f9">7468</span> <span style="color:#bd93f9">6973</span> <span style="color:#bd93f9">2069</span> <span style="color:#bd93f9">7320</span> 616e 6f74  uqe.this.is.anot
+</span></span><span style="display:flex;"><span>	0x0040:  <span style="color:#bd93f9">6865</span> <span style="color:#bd93f9">7220</span> <span style="color:#bd93f9">7465</span> <span style="color:#bd93f9">7374</span> 206d <span style="color:#bd93f9">6573</span> <span style="color:#bd93f9">7361</span> <span style="color:#bd93f9">6765</span>  her.test.message
+</span></span><span style="display:flex;"><span>	0x0050:  0a                                       .
+</span></span><span style="display:flex;"><span>11:42:59.912207 IP 10.0.1.0.7096 &gt; 10.0.2.0.34090: Flags <span style="color:#ff79c6">[</span>.<span style="color:#ff79c6">]</span>, ack 29, win 227, options <span style="color:#ff79c6">[</span>nop,nop,TS val <span style="color:#bd93f9">1970393377</span> ecr 1970393377<span style="color:#ff79c6">]</span>, length <span style="color:#bd93f9">0</span>
+</span></span><span style="display:flex;"><span>	0x0000:  <span style="color:#bd93f9">4500</span> <span style="color:#bd93f9">0034</span> <span style="color:#bd93f9">4612</span> <span style="color:#bd93f9">4000</span> <span style="color:#bd93f9">4006</span> ddb2 0a00 <span style="color:#bd93f9">0100</span>  E..4F.@.@.......
+</span></span><span style="display:flex;"><span>	0x0010:  0a00 <span style="color:#bd93f9">0200</span> 1bb8 852a 5e9a e024 <span style="color:#bd93f9">0715</span> 0b97  .......*^..$....
+</span></span><span style="display:flex;"><span>	0x0020:  <span style="color:#bd93f9">8010</span> 00e3 <span style="color:#bd93f9">1726</span> <span style="color:#bd93f9">0000</span> <span style="color:#bd93f9">0101</span> 080a <span style="color:#bd93f9">7571</span> d121  .....&amp;......uq.!
+</span></span><span style="display:flex;"><span>	0x0030:  <span style="color:#bd93f9">7571</span> d121                                uq.!
+</span></span></code></pre></div><p>当然也可以将这个抓包结果保存下来然后用其他工具比如大白鲨来进行详细的分析。</p>
+<h2 id="总结">总结</h2>
+<p>本文我们使用 ip 子命令可以用来创建和配置网络命名空间、接口和路由等，我们创建了一对 veth 接口，这些接口被分配到两个不同的网络命名空间中，具有不同的子网 IP 地址范围，在网络命名空间的路由表中配置了额外的路由，这可以实现两个子网之间的通信。</p>
+<p>两个 veth 接口都无法从主机网络命名空间直接到达，因为它们的 IP 地址范围和路由表的变化也被隔离在自己的网络命名空间中了。</p>
+<p>我们可以使用 <code>ip netns exec</code> 命令运行工具和 tcpdump 来调试网络命名空间之间的连接问题。</p>
+<!-- raw HTML omitted -->
+
+          <h2>微信公众号</h2>
+<p>
+  扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+  kubernetes 讨论群里面共同学习。
+</p>
+<img
+  src="https://picdn.youdianzhishi.com/images/qrcode.png"
+  alt="wechat-account-qrcode"
+/>
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/troubleshooting-k8s-network/">Kubernetes 网络故障常见排查方法</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/code-k8s-yaml-templating/">自己动手写一个 Kubernetes YAML 模板化工具</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/visually-explained-k8s-ingress/">图解 Kubernetes Ingress</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/visually-explained-k8s-service/">图解 Kubernetes Service</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/deploy-kafka-ha-on-k8s/">在 Kubernetes 上运行高可用的 Kafka 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/accelerate-ci-cd-pipelines-with-kind/">使用 KinD 加速 CI/CD 流水线</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/use-kustomize-custom-helm-charts/">使用 Kustomize 定制 Helm Charts</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/update-k8s-10y-expire-certs/">更新一个10年有效期的 Kubernetes 证书</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/grafana-loki-usage/">Grafana Loki 简明教程</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-monitor-use-elastic-stack-1/">使用 Elastic 技术栈构建 K8S 全栈监控(1/4)</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/code-k8s-yaml-templating/" data-toggle="tooltip" data-placement="top" title="自己动手写一个 Kubernetes YAML 模板化工具">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/add-dns-record-for-pod/" data-toggle="tooltip" data-placement="top" title="给 Pod 添加 DNS 记录">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '理解 Linux 网络命名空间',
+        createIssueManually: true,
+        id: 'learn-linux-net-namespace',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -1253,7 +780,7 @@ listening on veth0, link-type EN10MB <span style="color:#ff79c6">(</span>Etherne
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -1262,7 +789,7 @@ listening on veth0, link-type EN10MB <span style="color:#ff79c6">(</span>Etherne
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -1271,7 +798,7 @@ listening on veth0, link-type EN10MB <span style="color:#ff79c6">(</span>Etherne
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -1280,158 +807,121 @@ listening on veth0, link-type EN10MB <span style="color:#ff79c6">(</span>Etherne
                   </span>
                 </a>
               </li>
-
-              <li>
-                <a href="https://www.qikqiak.com/index.xml" title="RSS">
-                  <span class="fa-stack fa-lg">
-                    <i class="fa fa-circle fa-stack-2x"></i>
-                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
-                  </span>
-                </a>
-              </li>
-            </ul>
-            <p class="credits copyright text-muted">
-              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/">阳明的博客</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/archive/">归档</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/friend/">友链</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://beian.miit.gov.cn/" target="_blank"
-                >蜀ICP备11027319号-5</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
-                >kubernetes.io</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
-                >Kubernetes中文社区</a
-              >
-            </p>
-            <p class="text-center text-muted">
-              <script
-                async
-                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
-              ></script>
-              <span id="busuanzi_container_site_pv" style="display: none">
-                本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
               </span>
-              &nbsp;&bull;&nbsp;
-              <span id="busuanzi_container_site_uv" style="display: none">
-                访客数<span id="busuanzi_value_site_uv"></span>人次
-              </span>
-            </p>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
 
-            <p class="credits theme-by text-muted">
-              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
-              &nbsp;&bull;&nbsp; 主题
-              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
-              移植自
-              <a href="https://github.com/rootsongjc/beautifulhugo"
-                >Beautiful Hugo</a
-              >
-            </p>
-          </div>
-        </div>
+          &nbsp;&bull;&nbsp;
+          2023
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.115.4</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+          
+        </p>
       </div>
-    </footer>
+    </div>
+  </div>
+</footer>
 
-    <script
-      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
-      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
-    ></script>
 
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "UA-69668147-3");
-    </script>
-    <script>
-      (function () {
-        var bp = document.createElement("script");
-        var curProtocol = window.location.protocol.split(":")[0];
-        if (curProtocol === "https") {
-          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
-        } else {
-          bp.src = "http://push.zhanzhang.baidu.com/push.js";
-        }
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(bp, s);
-      })();
-    </script>
-    <script>
-      $(document).ready(function () {
-        var int = setInterval(fixCount, 50);
+<script src='https://www.qikqiak.com/js/bundle.min.af02a2d23b6651a566f0135a12e65fc2560faa7a969b3d1ad58d0afe0c9164ae.js' integrity='sha256-rwKi0jtmUaVm8BNaEuZfwlYPqnqWmz0a1Y0K/gyRZK4='></script>
 
-        var initPVCount = 584976;
-        var initUVCount = 153191;
-        function fixCount() {
-          if ($("#busuanzi_container_site_pv").css("display") != "none") {
-            $("#busuanzi_value_site_pv").html(
-              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
-            );
-            clearInterval(int);
-          }
-          if ($("#busuanzi_container_site_uv").css("display") != "none") {
-            $("#busuanzi_value_site_uv").html(
-              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
-            );
-            clearInterval(int);
-          }
-        }
-      });
-    </script>
-    <script>
-      (function (w, d, s, id) {
-        if (typeof w.webpushr !== "undefined") return;
-        w.webpushr =
-          w.webpushr ||
-          function () {
-            (w.webpushr.q = w.webpushr.q || []).push(arguments);
-          };
-        var js,
-          fjs = d.getElementsByTagName(s)[0];
-        js = d.createElement(s);
-        js.id = id;
-        js.src = "https://cdn.webpushr.com/app.min.js";
-        fjs.parentNode.appendChild(js);
-      })(window, document, "script", "webpushr-jssdk");
-      webpushr(
-        "init",
-        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
-      );
-    </script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
-    ></script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
-    ></script>
-    <script type="text/javascript">
-      $(".carousel").slick({
-        dots: true,
-        arrows: true,
-        autoplay: true,
-        autoplaySpeed: 4000,
-        infinite: true,
-        speed: 500,
-        fade: true,
-        cssEase: "linear",
-        centerMode: true,
-        prevArrow: '<button type="button" class="slick-prev"></button>',
-        nextArrow: '<button type="button" class="slick-next"></button>',
-      });
-    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
   </body>
 </html>
+

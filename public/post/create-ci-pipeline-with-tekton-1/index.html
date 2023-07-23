@@ -1,1056 +1,640 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
-    />
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-    <title>
-      使用 Tekton 创建 CI/CD
-      流水线（1/4）-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
-    </title>
-    <meta property="og:title" content="使用 Tekton 创建 CI/CD 流水线（1/4）" />
-    <meta name="twitter:title" content="使用 Tekton 创建 CI/CD 流水线（1/4）" />
 
-    <meta
-      name="description"
-      content="Tekton 是一款功能非常强大而灵活的 CI/CD 开源的云原生框架。Tekton 的前身是 Knative 项目的 build-pipeline 项目，这个项目是为了给 build 模块增加 pipeline 的功能，但是随着不同的功能加入到 Knative build 模块中，build 模块越来越变得像一个通用的 CI/CD 系统，于是，索性将 build-pipeline 剥离出 Knative，就变成了现在的 Tekton，而 Tekton 也从此致力于提供全功能、标准化的云原生 CI/CD 解决方案。
+  <title>使用 Tekton 创建 CI/CD 流水线（1/4）-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="使用 Tekton 创建 CI/CD 流水线（1/4）" />
+  <meta name="twitter:title" content="使用 Tekton 创建 CI/CD 流水线（1/4）" />
 
-本文将通过一个简单的示例来创建一个构建流水线，在流水线中将运行应用程序的单元测试、构建 Docker 镜像然后推送到 Docker Hub。"
-    />
-    <meta
-      property="og:description"
-      content="Tekton 是一款功能非常强大而灵活的 CI/CD 开源的云原生框架。Tekton 的前身是 Knative 项目的 build-pipeline 项目，这个项目是为了给 build 模块增加 pipeline 的功能，但是随着不同的功能加入到 Knative build 模块中，build 模块越来越变得像一个通用的 CI/CD 系统，于是，索性将 build-pipeline 剥离出 Knative，就变成了现在的 Tekton，而 Tekton 也从此致力于提供全功能、标准化的云原生 CI/CD 解决方案。
+  <meta name="description" content="Tekton 是一款功能非常强大而灵活的 CI/CD 开源的云原生框架。Tekton 的前身是 Knative 项目的 build-pipeline 项目，这个项目是为了给 build 模块增加 pipeline 的功能，但是随着不同的功能加入到 Knative build 模块中，build 模块越来越变得像一个通用的 CI/CD 系统，于是，索性将 build-pipeline 剥离出 Knative，就变成了现在的 Tekton，而 Tekton 也从此致力于提供全功能、标准化的云原生 CI/CD 解决方案。
+本文将通过一个简单的示例来创建一个构建流水线，在流水线中将运行应用程序的单元测试、构建 Docker 镜像然后推送到 Docker Hub。">
+  <meta property="og:description" content="Tekton 是一款功能非常强大而灵活的 CI/CD 开源的云原生框架。Tekton 的前身是 Knative 项目的 build-pipeline 项目，这个项目是为了给 build 模块增加 pipeline 的功能，但是随着不同的功能加入到 Knative build 模块中，build 模块越来越变得像一个通用的 CI/CD 系统，于是，索性将 build-pipeline 剥离出 Knative，就变成了现在的 Tekton，而 Tekton 也从此致力于提供全功能、标准化的云原生 CI/CD 解决方案。
+本文将通过一个简单的示例来创建一个构建流水线，在流水线中将运行应用程序的单元测试、构建 Docker 镜像然后推送到 Docker Hub。">
+  <meta name="twitter:description" content="Tekton 是一款功能非常强大而灵活的 CI/CD 开源的云原生框架。Tekton 的前身是 Knative 项目的 build-pipeline 项目，这个项目是为了给 build 模块增加 pipeline 的功能，但是随着不同的功能加入到 Knative build 模块中，build 模块越来越变得像一个通用的 CI/CD 系统，于是，索性将 build-pipeline …">
+  <meta name="author" content=""/>
+  <link href="https://picdn.youdianzhishi.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://picdn.youdianzhishi.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/create-ci-pipeline-with-tekton-1/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
 
-本文将通过一个简单的示例来创建一个构建流水线，在流水线中将运行应用程序的单元测试、构建 Docker 镜像然后推送到 Docker Hub。"
-    />
-    <meta
-      name="twitter:description"
-      content="Tekton 是一款功能非常强大而灵活的 CI/CD 开源的云原生框架。Tekton 的前身是 Knative 项目的 build-pipeline 项目，这个项目是为了给 build 模块增加 pipeline 的功能，但是随着不同的功能加入到 Knative build 模块中，build 模块越来越变得像一个通用的 CI/CD 系统，于是，索性将 build-pipeline …"
-    />
-    <meta name="author" content="" />
-    <link
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-      rel="icon"
-      type="image/x-icon"
-    />
-    <link
-      rel="apple-touch-icon"
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      property="og:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      name="twitter:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta name="twitter:card" content="summary" />
-    <meta
-      property="og:url"
-      content="https://www.qikqiak.com/post/create-ci-pipeline-with-tekton-1/"
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="阳明的博客" />
+  <link rel="canonical" href="https://www.qikqiak.com/post/create-ci-pipeline-with-tekton-1/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
-    <meta name="generator" content="Hugo 0.55.6" />
-    <link
-      rel="canonical"
-      href="https://www.qikqiak.com/post/create-ci-pipeline-with-tekton-1/"
-    />
-    <link
-      rel="alternate"
-      href="https://www.qikqiak.com/index.xml"
-      type="application/rss+xml"
-      title="阳明的博客"
-    />
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
 
-    <link
-      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
-      rel="stylesheet"
-    />
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a6b62363fe57848ad01efa2a5d1bbb1047c2ffb71b53d8aeb42bc5ed5c77ea7c.css' integrity='sha256-prYjY/5XhIrQHvoqXRu7EEfC/7cbU9iutCvF7Vx36nw='>
 
-    <link
-      rel="stylesheet"
-      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
-      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
-    />
-
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
-    />
-
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
     <!--[if lt IE 9]>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-      <link
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-        rel="stylesheet"
-      />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <![endif]-->
-    <meta
-      name="google-site-verification"
-      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
-    />
-    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-    <meta name="keywords" content="kubernetes, tekton, github, git, 流水线" />
-    <script>
-      var _hmt = _hmt || [];
-      (function () {
-        var hm = document.createElement("script");
-        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(hm, s);
-      })();
-    </script>
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubernetes, tekton, github, git, 流水线">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
 
-    <script type="application/javascript">
-      var doNotTrack = false;
-      if (!doNotTrack) {
-        window.ga =
-          window.ga ||
-          function () {
-            (ga.q = ga.q || []).push(arguments);
-          };
-        ga.l = +new Date();
-        ga("create", "UA-69668147-3", "auto");
 
-        ga("send", "pageview");
-      }
-    </script>
-    <script async src="https://www.google-analytics.com/analytics.js"></script>
-  </head>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-      <div class="container">
-        <div class="navbar-header">
-          <button
-            type="button"
-            class="navbar-toggle"
-            data-toggle="collapse"
-            data-target="#main-navbar"
-          >
-            <span class="sr-only">切换导航</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a
-            class="navbar-brand"
-            href="https://www.qikqiak.com/"
-            title="阳明的博客"
-          >
-            <img
-              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
-              style="margin-top: -5px; height: 32px"
-              alt="阳明的博客"
-            />
-          </a>
-        </div>
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://picdn.youdianzhishi.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
 
-        <div class="collapse navbar-collapse" id="main-navbar">
-          <ul class="nav navbar-nav navbar-right">
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-
+          
+        
+          
             <li>
-              <a
-                title="课程"
-                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
-                >课程</a
-              >
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/archives">Archive</a>
-
-                <a href="https://www.qikqiak.com/tags">tags</a>
-
-                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-
-                <a href="https://www.qikqiak.com/tags/python">python</a>
-
-                <a href="https://www.qikqiak.com/tags/django">django</a>
-
-                <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-
-                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-
-                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-
-                <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/"
-                >关于</a
-              >
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
             </li>
-
+          
+        
+          
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
+          
+        
 
-            <li>
-              <a
-                href="#modalSearch"
-                data-toggle="modal"
-                data-target="#modalSearch"
-                style="outline: none"
-              >
-                <span
-                  id="searchGlyph"
-                  class="glyphicon glyphicon-search"
-                ></span>
-              </a>
-            </li>
-          </ul>
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
         </div>
-      </div>
-    </nav>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-    <div id="modalSearch" class="modal fade" role="dialog">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal">
-              &times;
-            </button>
-            <h4 class="modal-title">搜索</h4>
-          </div>
-          <div class="modal-body">
-            <div class="aa-input-container" id="aa-input-container">
-              <input
-                type="search"
-                id="aa-search-input"
-                class="aa-input-search"
-                placeholder="Search for titles or URIs..."
-                name="search"
-                autocomplete="off"
-              />
-              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-                <path
-                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
-                />
-              </svg>
-            </div>
-            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
 
-            <script>
-              var client = algoliasearch(
-                "1JDRAS0AZR",
-                "8804ac109158bb3bb60d74ce98fa332f"
-              );
-              var index = client.initIndex("prod_blog");
-
-              autocomplete(
-                "#aa-search-input",
-                { hint: false },
-                {
-                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
-
-                  displayKey: "name",
-
-                  templates: {
-                    suggestion: function (suggestion) {
-                      return (
-                        "<span>" +
-                        '<a href="https://www.qikqiak.com/post/' +
-                        suggestion.slug +
-                        '">' +
-                        suggestion._highlightResult.title.value +
-                        "</a></span>"
-                      );
-                    },
-                  },
-                }
-              );
-            </script>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">
-              close
-            </button>
-          </div>
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div
-      id="header-big-imgs"
-      data-num-img="1"
-      data-img-src-1="https://picdn.youdianzhishi.com/images/20200506160638.png"
-      data-img-desc-1="https://unsplash.com/photos/hkJsoE-_0vo"
-    ></div>
+    
+  
+  
+  
 
-    <header class="header-section has-img">
+
+
+
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://picdn.youdianzhishi.com/images/20200506160638.png" data-img-desc-1="https://unsplash.com/photos/hkJsoE-_0vo"></div>
+  
+
+  <header class="header-section has-img">
+    
       <div class="intro-header big-img">
+        
         <div class="container">
           <div class="row">
             <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
               <div class="post-heading">
                 <h1>使用 Tekton 创建 CI/CD 流水线（1/4）</h1>
+                  
+                  
+                    <span class="post-meta">
+  发表于 May 6, 2020  
+</span>
 
-                <span class="post-meta"> 发表于 May 6, 2020 </span>
+                  
               </div>
             </div>
           </div>
         </div>
-        <span class="img-desc" style="display: inline"></span>
+        <span class="img-desc" style="display: inline;"></span>
       </div>
-
-      <div class="intro-header no-img">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-              <div class="post-heading">
-                <h1>使用 Tekton 创建 CI/CD 流水线（1/4）</h1>
-
-                <span class="post-meta"> 发表于 May 6, 2020 </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <div class="container" role="main">
-      <div class="row">
-        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-          <div>
-            <h5 id="tags" style="margin-top: 30px">
-              标签:
-
-              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
-              &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/tekton/">tekton</a> &nbsp;
-            </h5>
-          </div>
-
-          <article
-            role="main"
-            class="blog-post"
-            itemprop="articleBody"
-            id="content"
-          >
-            <aside class="toc">
-              <nav id="TableOfContents">
-                <ul>
-                  <li>
-                    <ul>
-                      <li>
-                        <ul>
-                          <li><a href="#安装">安装</a></li>
-                          <li><a href="#概念">概念</a></li>
-                          <li><a href="#示例">示例</a></li>
-                          <li><a href="#总结">总结</a></li>
-                        </ul>
-                      </li>
-                    </ul>
-                  </li>
-                </ul>
-              </nav>
-            </aside>
-
-            <p>
-              <a href="https://tekton.dev/">Tekton</a>
-              是一款功能非常强大而灵活的 CI/CD 开源的云原生框架。Tekton 的前身是
-              Knative 项目的 build-pipeline 项目，这个项目是为了给 build
-              模块增加 pipeline 的功能，但是随着不同的功能加入到 Knative build
-              模块中，build 模块越来越变得像一个通用的 CI/CD 系统，于是，索性将
-              build-pipeline 剥离出 Knative，就变成了现在的 Tekton，而 Tekton
-              也从此致力于提供全功能、标准化的云原生 CI/CD 解决方案。
-            </p>
-
-            <p>
-              本文将通过一个简单的示例来创建一个构建流水线，在流水线中将运行应用程序的单元测试、<a
-                href="https://www.qikqiak.com/post/create-ci-pipeline-with-tekton-2/"
-                >构建 Docker 镜像然后推送到 Docker Hub</a
-              >。
-            </p>
-
-            <h3 id="安装">安装</h3>
-
-            <p>
-              当然前提条件是需要一个可用的 Kubernetes 集群，我们这里使用的是
-              v1.16.2 版本的集群，安装 Tekton 非常简单，可以直接通过
-              <a href="https://github.com/tektoncd/pipeline"
-                >tektoncd/pipeline</a
-              >
-              的 GitHub 仓库中的
-              <code>release.yaml</code> 文件进行安装，如下所示的命令：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl apply -f https://github.com/tektoncd/pipeline/releases/download/v0.12.0/release.yaml</code></pre>
-            </div>
-            <p>
-              由于官方使用的镜像是 gcr
-              的镜像，所以正常情况下我们是获取不到的，如果你的集群由于某些原因获取不到镜像，可以使用下面的资源清单文件，我已经将镜像替换成了
-              Docker Hub 上面的镜像：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl apply -f https://raw.githubusercontent.com/cnych/qikqiak.com/master/data/manifests/tekton/release.yaml</code></pre>
-            </div>
-            <p>
-              上面的资源清单文件安装后，会创建一个名为
-              <code>tekton-pipelines</code>
-              的命名空间，在该命名空间下面会有大量和 tekton
-              相关的资源对象，我们可以通过在该命名空间中查看 Pod 并确保它们处于
-              Running 状态来检查安装是否成功：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl get pods -n tekton-pipelines
-NAME                                           READY   STATUS    RESTARTS   AGE
-tekton-pipelines-controller-67f4dc98d8-pgxrq   <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          9m46s
-tekton-pipelines-webhook-59df55445c-jw76v      <span style="color:#bd93f9">1</span>/1     Running   <span style="color:#bd93f9">0</span>          9m45s</code></pre>
-            </div>
-            <p>
-              Tekton 安装完成后，我们还可以选择是否安装 CLI 工具，有时候可能
-              Tekton 提供的命令行工具比 kubectl
-              管理这些资源更加方便，当然这并不是强制的，我这里是 Mac
-              系统，所以可以使用常用的 <code>Homebrew</code> 工具来安装：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ brew tap tektoncd/tools
-$ brew install tektoncd/tools/tektoncd-cli</code></pre>
-            </div>
-            <p>安装完成后可以通过如下命令验证 CLI 是否安装成功：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ tkn version
-Client version: <span style="color:#bd93f9">0</span>.9.0
-Pipeline version: v0.12.0</code></pre>
-            </div>
-            <h3 id="概念">概念</h3>
-
-            <p>
-              Tekton 为 Kubernetes 提供了多种 CRD
-              资源对象，可用于定义我们的流水线，主要有以下几个资源对象：
-            </p>
-
-            <ul>
-              <li>
-                Task：表示执行命令的一系列步骤，task 里可以定义一系列的
-                steps，例如编译代码、构建镜像、推送镜像等，每个 step 实际由一个
-                Pod 执行。
-              </li>
-              <li>
-                TaskRun：task 只是定义了一个模版，taskRun
-                才真正代表了一次实际的运行，当然你也可以自己手动创建一个
-                taskRun，taskRun 创建出来之后，就会自动触发 task
-                描述的构建任务。
-              </li>
-              <li>
-                Pipeline：一组任务，表示一个或多个 task、PipelineResource
-                以及各种定义参数的集合。
-              </li>
-              <li>
-                PipelineRun：类似 task 和 taskRun 的关系，pipelineRun
-                也表示某一次实际运行的 pipeline，下发一个 pipelineRun CRD 实例到
-                Kubernetes后，同样也会触发一次 pipeline 的构建。
-              </li>
-              <li>
-                PipelineResource：表示 pipeline 输入资源，比如 github
-                上的源码，或者 pipeline 输出资源，例如一个容器镜像或者构建生成的
-                jar 包等。
-              </li>
-            </ul>
-
-            <h3 id="示例">示例</h3>
-
-            <p>
-              在这里我们使用一个简单的 Golang 应用，可以在仓库
-              <a href="https://github.com/cnych/tekton-demo"
-                >https://github.com/cnych/tekton-demo</a
-              >
-              下面获取应用程序代码，测试以及 Dockerfile 文件。
-            </p>
-
-            <p>
-              首先第一个任务就是 Clone 应用程序代码进行测试，创建一个
-              <code>task-test.yaml</code> 的资源文件，内容如下所示：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">apiVersion: tekton.dev/v1beta1
-kind: Task
-metadata:
-  name: test
-spec:
-  resources:
-    inputs:
-    - name: repo
-      type: git
-  steps:
-  - name: run-test
-    image: golang:<span style="color:#bd93f9">1.14</span>-alpine
-    workingDir: /workspace/repo
-    command: [<span style="color:#f1fa8c">&#34;go&#34;</span>]
-    args: [<span style="color:#f1fa8c">&#34;test&#34;</span>]</code></pre>
-            </div>
-            <p>
-              其中
-              <code>resources</code>
-              定义了我们的任务中定义的步骤所需的输入内容，这里我们的步骤需要
-              Clone 一个 Git 仓库作为 <code>go test</code> 命令的输入。
-            </p>
-
-            <p>
-              Tekton 内置了一种 git 资源类型，它会自动将代码仓库 Clone 到
-              <code>/workspace/$input_name</code>
-              目录中，由于我们这里输入被命名成 <code>repo</code>，所以代码会被
-              Clone 到 <code>/workspace/repo</code> 目录下面。
-            </p>
-
-            <p>
-              然后下面的
-              <code>steps</code>
-              就是来定义执行运行测试命令的步骤，这里我们直接在代码的根目录中运行
-              <code>go test</code>
-              命令即可，需要注意的是命令和参数需要分别定义。
-            </p>
-
-            <p>定义完成后直接使用 kubectl 创建该任务：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl apply -f task-test.yaml
-task.tekton.dev/test created</code></pre>
-            </div>
-            <p>
-              现在我们定义完成了一个建的 Task
-              任务，但是该任务并不会立即执行，我们必须创建一个 TaskRun
-              引用它并提供所有必需输入的数据才行。这里我们就需要将 git
-              代码库作为输入，我们必须先创建一个 PipelineResource
-              对象来定义输入信息，创建一个名为
-              <code>pipelineresource.yaml</code> 的资源清单文件，内容如下所示：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">apiVersion: tekton.dev/v1alpha1
-kind: PipelineResource
-metadata:
-  name: cnych-tekton-example
-spec:
-  type: git
-  params:
-    - name: url
-      value: https://github.com/cnych/tekton-demo
-    - name: revision
-      value: master</code></pre>
-            </div>
-            <p>直接创建上面的资源对象即可：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl apply -f pipelineresource.yaml
-pipelineresource.tekton.dev/cnych-tekton-example created</code></pre>
-            </div>
-            <p>
-              接下来我们就创建 TaskRun 对象了，创建一个名为
-              <code>taskrun.yaml</code> 的文件，内容如下所示：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">apiVersion: tekton.dev/v1beta1
-kind: TaskRun
-metadata:
-  name: testrun
-spec:
-  taskRef:
-    name: test
-  resources:
-    inputs:
-    - name: repo
-      resourceRef:
-        name: cnych-tekton-example</code></pre>
-            </div>
-            <p>
-              这里通过 <code>taskRef</code> 引用上面定义的 Task 和 git
-              仓库作为输入，<code>resourceRef</code> 也是引用上面定义的
-              <code>PipelineResource</code>
-              资源对象。现在我们创建这个资源对象过后，就会开始运行了：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl apply -f taskrun.yaml
-taskrun.tekton.dev/testrun created</code></pre>
-            </div>
-            <script
-              async
-              src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-            ></script>
-
-            <ins
-              class="adsbygoogle"
-              style="display: block"
-              data-ad-client="ca-pub-5376999672787220"
-              data-ad-slot="9165834656"
-              data-ad-format="auto"
-              data-full-width-responsive="true"
-            ></ins>
-            <script>
-              (adsbygoogle = window.adsbygoogle || []).push({});
-            </script>
-
-            <p>
-              创建后，我们可以通过查看 TaskRun 资源对象的状态来查看构建状态：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl get taskrun
-NAME      SUCCEEDED   REASON    STARTTIME   COMPLETIONTIME
-testrun   Unknown     Pending   21s    
-$ kubectl get pods   
-NAME                             READY   STATUS     RESTARTS   AGE
-testrun-pod-mw9bt                <span style="color:#bd93f9">0</span>/2     Init:1/2   <span style="color:#bd93f9">0</span>          59s
-$ kubectl describe pod testrun-pod-mw9bt
-......
-                 node.kubernetes.io/unreachable:NoExecute <span style="color:#ff79c6">for</span> 300s
-Events:
-  Type    Reason     Age        From                 Message
-  ----    ------     ----       ----                 -------
-  Normal  Scheduled  &lt;unknown&gt;  default-scheduler    Successfully assigned default/testrun-pod-mw9bt to ydzs-node5
-  Normal  Pulling    4m20s      kubelet, ydzs-node5  Pulling image <span style="color:#f1fa8c">&#34;busybox@sha256:a2490cec4484ee6c1068ba3a05f89934010c85242f736280b35343483b2264b6&#34;</span>
-  Normal  Pulled     4m13s      kubelet, ydzs-node5  Successfully pulled image <span style="color:#f1fa8c">&#34;busybox@sha256:a2490cec4484ee6c1068ba3a05f89934010c85242f736280b35343483b2264b6&#34;</span>
-  Normal  Created    4m13s      kubelet, ydzs-node5  Created container working-dir-initializer
-  Normal  Started    4m13s      kubelet, ydzs-node5  Started container working-dir-initializer
-  Normal  Pulling    4m12s      kubelet, ydzs-node5  Pulling image <span style="color:#f1fa8c">&#34;cnych/tekton-entrypoint:v0.12.0&#34;</span>
-  Normal  Pulled     2m13s      kubelet, ydzs-node5  Successfully pulled image <span style="color:#f1fa8c">&#34;cnych/tekton-entrypoint:v0.12.0&#34;</span>
-  Normal  Created    2m13s      kubelet, ydzs-node5  Created container place-tools
-  Normal  Started    2m12s      kubelet, ydzs-node5  Started container place-tools
-  Normal  Pulling    2m12s      kubelet, ydzs-node5  Pulling image <span style="color:#f1fa8c">&#34;cnych/tekton-git-init:v0.12.0&#34;</span>
-  Normal  Pulled     33s        kubelet, ydzs-node5  Successfully pulled image <span style="color:#f1fa8c">&#34;cnych/tekton-git-init:v0.12.0&#34;</span>
-  Normal  Created    32s        kubelet, ydzs-node5  Created container step-git-source-cnych-tekton-example-d6mcz
-  Normal  Started    32s        kubelet, ydzs-node5  Started container step-git-source-cnych-tekton-example-d6mcz
-  Normal  Pulling    32s        kubelet, ydzs-node5  Pulling image <span style="color:#f1fa8c">&#34;golang:1.14-alpine&#34;</span></code></pre>
-            </div>
-            <p>
-              我们可以通过
-              <code>kubectl describe</code>
-              命令来查看任务运行的过程，首先就是通过 initContainer 中的一个
-              busybox 镜像将代码 Clone
-              下来，然后使用任务中定义的镜像来执行命令。
-            </p>
-
-            <p>
-              当任务执行完成后， Pod 就会变成 <code>Completed</code> 状态了：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl get pods
-NAME                READY   STATUS      RESTARTS   AGE
-testrun-pod-mw9bt   <span style="color:#bd93f9">0</span>/2     Completed   <span style="color:#bd93f9">0</span>          4m27s
-$ kubectl get taskrun
-NAME      SUCCEEDED   REASON      STARTTIME   COMPLETIONTIME
-testrun   True        Succeeded   70s         57s</code></pre>
-            </div>
-            <p>我们可以查看容器的日志信息来了解任务的执行结果信息：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ kubectl logs testrun-pod-mw9bt --all-containers
-<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;level&#34;</span>:<span style="color:#f1fa8c">&#34;info&#34;</span>,<span style="color:#f1fa8c">&#34;ts&#34;</span>:1588751895.779908,<span style="color:#f1fa8c">&#34;caller&#34;</span>:<span style="color:#f1fa8c">&#34;git/git.go:136&#34;</span>,<span style="color:#f1fa8c">&#34;msg&#34;</span>:<span style="color:#f1fa8c">&#34;Successfully cloned https://github.com/cnych/tekton-demo @ f840e0c390be9a1a6edad76abbde64e882047f05 (grafted, HEAD, origin/master) in path /workspace/repo&#34;</span><span style="color:#ff79c6">}</span>
-<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;level&#34;</span>:<span style="color:#f1fa8c">&#34;info&#34;</span>,<span style="color:#f1fa8c">&#34;ts&#34;</span>:1588751895.8844209,<span style="color:#f1fa8c">&#34;caller&#34;</span>:<span style="color:#f1fa8c">&#34;git/git.go:177&#34;</span>,<span style="color:#f1fa8c">&#34;msg&#34;</span>:<span style="color:#f1fa8c">&#34;Successfully initialized and updated submodules in path /workspace/repo&#34;</span><span style="color:#ff79c6">}</span>
-PASS
-ok      _/workspace/repo        <span style="color:#bd93f9">0</span>.006s</code></pre>
-            </div>
-            <p>
-              我们可以看到我们的测试已经通过了，当然我们也可以使用
-              <code>Tekton CLI</code> 工具来运行这个任务。Tekton CLI
-              提供了一种更快、更方便的方式来运行任务。
-            </p>
-
-            <p>
-              我们不用手动编写 TaskRun
-              资源清单，可以运行以下命令来执行，该命令引用我们的任务（名为
-              test），生成一个 TaskRun 资源对象并显示其日志：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-shell" data-lang="shell">$ tkn task start <span style="color:#8be9fd;font-style:italic">test</span> --inputresource <span style="color:#8be9fd;font-style:italic">repo</span><span style="color:#ff79c6">=</span>cnych-tekton-example --showlog
-Taskrun started: test-run-z56lj
-Waiting <span style="color:#ff79c6">for</span> logs to be available...
-<span style="color:#ff79c6">[</span>git-source-cnych-tekton-example-8q268<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;level&#34;</span>:<span style="color:#f1fa8c">&#34;info&#34;</span>,<span style="color:#f1fa8c">&#34;ts&#34;</span>:1588752677.350016,<span style="color:#f1fa8c">&#34;caller&#34;</span>:<span style="color:#f1fa8c">&#34;git/git.go:136&#34;</span>,<span style="color:#f1fa8c">&#34;msg&#34;</span>:<span style="color:#f1fa8c">&#34;Successfully cloned https://github.com/cnych/tekton-demo @ f840e0c390be9a1a6edad76abbde64e882047f05 (grafted, HEAD, origin/master) in path /workspace/repo&#34;</span><span style="color:#ff79c6">}</span>
-<span style="color:#ff79c6">[</span>git-source-cnych-tekton-example-8q268<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;level&#34;</span>:<span style="color:#f1fa8c">&#34;info&#34;</span>,<span style="color:#f1fa8c">&#34;ts&#34;</span>:1588752677.453426,<span style="color:#f1fa8c">&#34;caller&#34;</span>:<span style="color:#f1fa8c">&#34;git/git.go:177&#34;</span>,<span style="color:#f1fa8c">&#34;msg&#34;</span>:<span style="color:#f1fa8c">&#34;Successfully initialized and updated submodules in path /workspace/repo&#34;</span><span style="color:#ff79c6">}</span>
-
-<span style="color:#ff79c6">[</span>run-test<span style="color:#ff79c6">]</span> PASS
-<span style="color:#ff79c6">[</span>run-test<span style="color:#ff79c6">]</span> ok  	_/workspace/repo	<span style="color:#bd93f9">0</span>.007s</code></pre>
-            </div>
-            <h3 id="总结">总结</h3>
-
-            <p>
-              我们已经在 Kubernetes 集群上成功安装了 Tekton，定义了一个
-              Task，并通过 YAML 清单和 Tekton CLI 创建 TaskRun
-              对其进行了测试。在下一部发我们将创建一个任务来构建一个 Docker
-              镜像，并将其推送到 Docker
-              Hub。最后，我们将创建一个流水线，按顺序运行我们的两个任务（运行应用程序测试，构建和推送）。
-            </p>
-
-            <p>参考资料：</p>
-
-            <ul>
-              <li><a href="https://tekton.dev/">tekton.dev</a></li>
-              <li>
-                <a
-                  href="https://www.arthurkoziel.com/creating-ci-pipelines-with-tekton-part-1/"
-                  >Creating CI Pipelines with Tekton</a
-                >
-              </li>
-            </ul>
-
-            <p>
-              <a
-                href="https://youdianzhishi.com/web/course/1030"
-                title="从 Docker 到 Kubernetes 进阶课程"
-                ><img
-                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
-                  alt="Kubernetes进阶训练营"
-              /></a>
-            </p>
-
-            <h2>微信公众号</h2>
-            <p>
-              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
-              kubernetes 讨论群里面共同学习。
-            </p>
-            <img
-              src="https://picdn.youdianzhishi.com/images/qrcode.png"
-              alt="wechat-account-qrcode"
-            />
-
-            <div class="entry-shang text-center">
-              <p>「真诚赞赏，手留余香」</p>
-              <button class="zs show-zs btn btn-bred">赞赏</button>
-            </div>
-            <div class="zs-modal-bg"></div>
-            <div class="zs-modal-box">
-              <div class="zs-modal-head">
-                <button type="button" class="close">×</button>
-                <span class="author"
-                  ><img
-                    src="https://www.qikqiak.com/img/avatar.jpeg"
-                  />阳明</span
-                >
-                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-              </div>
-              <div class="zs-modal-body">
-                <div class="zs-modal-btns">
-                  <button class="btn btn-blink" data-num="2">2元</button>
-                  <button class="btn btn-blink" data-num="5">5元</button>
-                  <button class="btn btn-blink" data-num="10">10元</button>
-                  <button class="btn btn-blink" data-num="50">50元</button>
-                  <button class="btn btn-blink" data-num="100">100元</button>
-                  <button class="btn btn-blink" data-num="1">任意金额</button>
-                </div>
-                <div class="zs-modal-pay">
-                  <button class="btn btn-bred" id="pay-text">2元</button>
-                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-                  <img
-                    src="https://www.qikqiak.com/img/wechat-2.png"
-                    id="pay-image"
-                  />
-                </div>
-              </div>
-              <div class="zs-modal-footer">
-                <span class="zs-wechat"
-                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
-                /></span>
-              </div>
-            </div>
-
-            <div
-              class="social-share"
-              data-initialized="true"
-              style="margin-bottom: 20px; margin-top: 20px"
-            >
-              <center>
-                <a href="#" class="social-share-icon icon-weibo"></a>
-                <a href="#" class="social-share-icon icon-wechat"></a>
-                <a href="#" class="social-share-icon icon-twitter"></a>
-                <a href="#" class="social-share-icon icon-linkedin"></a>
-                <a href="#" class="social-share-icon icon-facebook"></a>
-                <a href="#" class="social-share-icon icon-qq"></a>
-                <a href="#" class="social-share-icon icon-qzone"></a>
-              </center>
-            </div>
-
-            <link
-              rel="stylesheet"
-              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
-            />
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
-          </article>
-
-          <h3>相关文章</h3>
-          <ul style="margin-bottom: 25px">
-            <li>
-              <a href="https://www.qikqiak.com/post/devops-base-on-jenkins/"
-                >基于 Jenkins 的 DevOps 流水线实践</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/install-kubesphere-on-k8s/"
-                >在现有 Kubernetes 集群上安装 KubeSphere</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/drone-with-k8s-3/"
-                >Drone 结合 Helm 部署 Kubernetes 应用</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/drone-with-k8s-2/"
-                >使用 Drone Pipeline 构建 Docker 镜像</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/drone-with-k8s-1/"
-                >使用 Kubernetes Helm 安装 Drone</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/k8s-auth-via-oidc/"
-                >通过 GitHub OAuth 和 Dex 访问 Kubernetes 集群</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/complete-cicd-demonstrate-2/"
-                >基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的
-                CI/CD(二)</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/complete-cicd-demonstrate-1/"
-                >基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的
-                CI/CD(一)</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/github-cli-tool-usage/"
-                >GitHub CLI 命令行工具使用</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/speed-up-develop-flow-dockerfile-best-practices/"
-                >加速开发流程的 Dockerfile 最佳实践</a
-              >
-            </li>
-          </ul>
-
-          <ul class="pager blog-pager">
-            <li class="previous">
-              <a
-                href="https://www.qikqiak.com/post/speed-up-develop-flow-dockerfile-best-practices/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="加速开发流程的 Dockerfile 最佳实践"
-                >&larr; 前一篇</a
-              >
-            </li>
-
-            <li class="next">
-              <a
-                href="https://www.qikqiak.com/post/create-ci-pipeline-with-tekton-2/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="使用 Tekton 创建 CI/CD 流水线（2/4）"
-                >后一篇 &rarr;</a
-              >
-            </li>
-          </ul>
-
-          <script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-          ></script>
-
-          <ins
-            class="adsbygoogle"
-            style="display: block"
-            data-ad-client="ca-pub-5376999672787220"
-            data-ad-slot="3700507799"
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          ></ins>
-          <script>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-          </script>
-
-          <div id="gitalk-container"></div>
-          <link
-            rel="stylesheet"
-            href="https://unpkg.com/gitalk/dist/gitalk.css"
-          />
-          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-          <script>
-            var gitalk = new Gitalk({
-              clientID: "bdb76dbb2e9d0786e350",
-              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
-              repo: "blog",
-              owner: "cnych",
-              admin: ["cnych"],
-              labels: ["gitment"],
-              title: "使用 Tekton 创建 CI\/CD 流水线（1\/4）",
-              createIssueManually: true,
-              id: "create-ci-pipeline-with-tekton-1",
-              distractionFreeMode: true,
-            });
-            gitalk.render("gitalk-container");
-          </script>
-        </div>
-      </div>
-    </div>
-
-    <footer>
+    
+    
+    
+    <div class="intro-header no-img">
+      
       <div class="container">
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <ul class="list-inline text-center footer-links">
-              <img
-                src="https://www.qikqiak.com/img/wechatmp.png"
-                alt="k8s技术圈"
-              />
+            <div class="post-heading">
+              <h1>使用 Tekton 创建 CI/CD 流水线（1/4）</h1>
+                
+                
+                  <span class="post-meta">
+  发表于 May 6, 2020  
+</span>
 
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/tekton/">tekton</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#安装">安装</a></li>
+        <li><a href="#概念">概念</a></li>
+        <li><a href="#示例">示例</a></li>
+        <li><a href="#总结">总结</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p><a href="https://tekton.dev/">Tekton</a> 是一款功能非常强大而灵活的 CI/CD 开源的云原生框架。Tekton 的前身是 Knative 项目的 build-pipeline 项目，这个项目是为了给 build 模块增加 pipeline 的功能，但是随着不同的功能加入到 Knative build 模块中，build 模块越来越变得像一个通用的 CI/CD 系统，于是，索性将 build-pipeline 剥离出 Knative，就变成了现在的 Tekton，而 Tekton 也从此致力于提供全功能、标准化的云原生 CI/CD 解决方案。</p>
+<p>本文将通过一个简单的示例来创建一个构建流水线，在流水线中将运行应用程序的单元测试、<a href="https://www.qikqiak.com/post/create-ci-pipeline-with-tekton-2/">构建 Docker 镜像然后推送到 Docker Hub</a>。</p>
+<h3 id="安装">安装</h3>
+<p>当然前提条件是需要一个可用的 Kubernetes 集群，我们这里使用的是 v1.16.2 版本的集群，安装 Tekton 非常简单，可以直接通过 <a href="https://github.com/tektoncd/pipeline">tektoncd/pipeline</a> 的 GitHub 仓库中的 <code>release.yaml</code> 文件进行安装，如下所示的命令：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl apply -f https://github.com/tektoncd/pipeline/releases/download/v0.12.0/release.yaml
+</span></span></code></pre></div><p>由于官方使用的镜像是 gcr 的镜像，所以正常情况下我们是获取不到的，如果你的集群由于某些原因获取不到镜像，可以使用下面的资源清单文件，我已经将镜像替换成了 Docker Hub 上面的镜像：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl apply -f https://raw.githubusercontent.com/cnych/qikqiak.com/master/data/manifests/tekton/release.yaml
+</span></span></code></pre></div><p>上面的资源清单文件安装后，会创建一个名为 <code>tekton-pipelines</code> 的命名空间，在该命名空间下面会有大量和 tekton 相关的资源对象，我们可以通过在该命名空间中查看 Pod 并确保它们处于 Running 状态来检查安装是否成功：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl get pods -n tekton-pipelines
+</span></span><span style="display:flex;"><span>NAME                                           READY   STATUS    RESTARTS   AGE
+</span></span><span style="display:flex;"><span>tekton-pipelines-controller-67f4dc98d8-pgxrq   1/1     Running   <span style="color:#bd93f9">0</span>          9m46s
+</span></span><span style="display:flex;"><span>tekton-pipelines-webhook-59df55445c-jw76v      1/1     Running   <span style="color:#bd93f9">0</span>          9m45s
+</span></span></code></pre></div><p>Tekton 安装完成后，我们还可以选择是否安装 CLI 工具，有时候可能 Tekton 提供的命令行工具比 kubectl 管理这些资源更加方便，当然这并不是强制的，我这里是 Mac 系统，所以可以使用常用的 <code>Homebrew</code> 工具来安装：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ brew tap tektoncd/tools
+</span></span><span style="display:flex;"><span>$ brew install tektoncd/tools/tektoncd-cli
+</span></span></code></pre></div><p>安装完成后可以通过如下命令验证 CLI 是否安装成功：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ tkn version
+</span></span><span style="display:flex;"><span>Client version: 0.9.0
+</span></span><span style="display:flex;"><span>Pipeline version: v0.12.0
+</span></span></code></pre></div><h3 id="概念">概念</h3>
+<p>Tekton 为 Kubernetes 提供了多种 CRD 资源对象，可用于定义我们的流水线，主要有以下几个资源对象：</p>
+<ul>
+<li>Task：表示执行命令的一系列步骤，task 里可以定义一系列的 steps，例如编译代码、构建镜像、推送镜像等，每个 step 实际由一个 Pod 执行。</li>
+<li>TaskRun：task 只是定义了一个模版，taskRun 才真正代表了一次实际的运行，当然你也可以自己手动创建一个 taskRun，taskRun 创建出来之后，就会自动触发 task 描述的构建任务。</li>
+<li>Pipeline：一组任务，表示一个或多个 task、PipelineResource 以及各种定义参数的集合。</li>
+<li>PipelineRun：类似 task 和 taskRun 的关系，pipelineRun 也表示某一次实际运行的 pipeline，下发一个 pipelineRun CRD 实例到 Kubernetes 后，同样也会触发一次 pipeline 的构建。</li>
+<li>PipelineResource：表示 pipeline 输入资源，比如 github 上的源码，或者 pipeline 输出资源，例如一个容器镜像或者构建生成的 jar 包等。</li>
+</ul>
+<h3 id="示例">示例</h3>
+<p>在这里我们使用一个简单的 Golang 应用，可以在仓库 <a href="https://github.com/cnych/tekton-demo">https://github.com/cnych/tekton-demo</a> 下面获取应用程序代码，测试以及 Dockerfile 文件。</p>
+<p>首先第一个任务就是 Clone 应用程序代码进行测试，创建一个 <code>task-test.yaml</code> 的资源文件，内容如下所示：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: tekton.dev/v1beta1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Task
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: test
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">resources</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">inputs</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">name</span>: repo
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">type</span>: git
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">steps</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#ff79c6">name</span>: run-test
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">image</span>: golang:1.14-alpine
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">workingDir</span>: /workspace/repo
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">command</span>: [<span style="color:#f1fa8c">&#34;go&#34;</span>]
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">args</span>: [<span style="color:#f1fa8c">&#34;test&#34;</span>]
+</span></span></code></pre></div><p>其中 <code>resources</code> 定义了我们的任务中定义的步骤所需的输入内容，这里我们的步骤需要 Clone 一个 Git 仓库作为 <code>go test</code> 命令的输入。</p>
+<p>Tekton 内置了一种 git 资源类型，它会自动将代码仓库 Clone 到 <code>/workspace/$input_name</code> 目录中，由于我们这里输入被命名成 <code>repo</code>，所以代码会被 Clone 到 <code>/workspace/repo</code> 目录下面。</p>
+<p>然后下面的 <code>steps</code> 就是来定义执行运行测试命令的步骤，这里我们直接在代码的根目录中运行 <code>go test</code> 命令即可，需要注意的是命令和参数需要分别定义。</p>
+<p>定义完成后直接使用 kubectl 创建该任务：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl apply -f task-test.yaml
+</span></span><span style="display:flex;"><span>task.tekton.dev/test created
+</span></span></code></pre></div><p>现在我们定义完成了一个建的 Task 任务，但是该任务并不会立即执行，我们必须创建一个 TaskRun 引用它并提供所有必需输入的数据才行。这里我们就需要将 git 代码库作为输入，我们必须先创建一个 PipelineResource 对象来定义输入信息，创建一个名为 <code>pipelineresource.yaml</code> 的资源清单文件，内容如下所示：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: tekton.dev/v1alpha1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: PipelineResource
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: cnych-tekton-example
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">type</span>: git
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">params</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#ff79c6">name</span>: url
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">value</span>: https://github.com/cnych/tekton-demo
+</span></span><span style="display:flex;"><span>    - <span style="color:#ff79c6">name</span>: revision
+</span></span><span style="display:flex;"><span>      <span style="color:#ff79c6">value</span>: master
+</span></span></code></pre></div><p>直接创建上面的资源对象即可：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl apply -f pipelineresource.yaml
+</span></span><span style="display:flex;"><span>pipelineresource.tekton.dev/cnych-tekton-example created
+</span></span></code></pre></div><p>接下来我们就创建 TaskRun 对象了，创建一个名为 <code>taskrun.yaml</code> 的文件，内容如下所示：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: tekton.dev/v1beta1
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: TaskRun
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">name</span>: testrun
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">taskRef</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">name</span>: test
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">resources</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">inputs</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">name</span>: repo
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">resourceRef</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">name</span>: cnych-tekton-example
+</span></span></code></pre></div><p>这里通过 <code>taskRef</code> 引用上面定义的 Task 和 git 仓库作为输入，<code>resourceRef</code> 也是引用上面定义的 <code>PipelineResource</code> 资源对象。现在我们创建这个资源对象过后，就会开始运行了：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl apply -f taskrun.yaml
+</span></span><span style="display:flex;"><span>taskrun.tekton.dev/testrun created
+</span></span></code></pre></div><!-- raw HTML omitted -->
+<p>创建后，我们可以通过查看 TaskRun 资源对象的状态来查看构建状态：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl get taskrun
+</span></span><span style="display:flex;"><span>NAME      SUCCEEDED   REASON    STARTTIME   COMPLETIONTIME
+</span></span><span style="display:flex;"><span>testrun   Unknown     Pending   21s
+</span></span><span style="display:flex;"><span>$ kubectl get pods
+</span></span><span style="display:flex;"><span>NAME                             READY   STATUS     RESTARTS   AGE
+</span></span><span style="display:flex;"><span>testrun-pod-mw9bt                0/2     Init:1/2   <span style="color:#bd93f9">0</span>          59s
+</span></span><span style="display:flex;"><span>$ kubectl describe pod testrun-pod-mw9bt
+</span></span><span style="display:flex;"><span>......
+</span></span><span style="display:flex;"><span>                 node.kubernetes.io/unreachable:NoExecute <span style="color:#ff79c6">for</span> 300s
+</span></span><span style="display:flex;"><span>Events:
+</span></span><span style="display:flex;"><span>  Type    Reason     Age        From                 Message
+</span></span><span style="display:flex;"><span>  ----    ------     ----       ----                 -------
+</span></span><span style="display:flex;"><span>  Normal  Scheduled  &lt;unknown&gt;  default-scheduler    Successfully assigned default/testrun-pod-mw9bt to ydzs-node5
+</span></span><span style="display:flex;"><span>  Normal  Pulling    4m20s      kubelet, ydzs-node5  Pulling image <span style="color:#f1fa8c">&#34;busybox@sha256:a2490cec4484ee6c1068ba3a05f89934010c85242f736280b35343483b2264b6&#34;</span>
+</span></span><span style="display:flex;"><span>  Normal  Pulled     4m13s      kubelet, ydzs-node5  Successfully pulled image <span style="color:#f1fa8c">&#34;busybox@sha256:a2490cec4484ee6c1068ba3a05f89934010c85242f736280b35343483b2264b6&#34;</span>
+</span></span><span style="display:flex;"><span>  Normal  Created    4m13s      kubelet, ydzs-node5  Created container working-dir-initializer
+</span></span><span style="display:flex;"><span>  Normal  Started    4m13s      kubelet, ydzs-node5  Started container working-dir-initializer
+</span></span><span style="display:flex;"><span>  Normal  Pulling    4m12s      kubelet, ydzs-node5  Pulling image <span style="color:#f1fa8c">&#34;cnych/tekton-entrypoint:v0.12.0&#34;</span>
+</span></span><span style="display:flex;"><span>  Normal  Pulled     2m13s      kubelet, ydzs-node5  Successfully pulled image <span style="color:#f1fa8c">&#34;cnych/tekton-entrypoint:v0.12.0&#34;</span>
+</span></span><span style="display:flex;"><span>  Normal  Created    2m13s      kubelet, ydzs-node5  Created container place-tools
+</span></span><span style="display:flex;"><span>  Normal  Started    2m12s      kubelet, ydzs-node5  Started container place-tools
+</span></span><span style="display:flex;"><span>  Normal  Pulling    2m12s      kubelet, ydzs-node5  Pulling image <span style="color:#f1fa8c">&#34;cnych/tekton-git-init:v0.12.0&#34;</span>
+</span></span><span style="display:flex;"><span>  Normal  Pulled     33s        kubelet, ydzs-node5  Successfully pulled image <span style="color:#f1fa8c">&#34;cnych/tekton-git-init:v0.12.0&#34;</span>
+</span></span><span style="display:flex;"><span>  Normal  Created    32s        kubelet, ydzs-node5  Created container step-git-source-cnych-tekton-example-d6mcz
+</span></span><span style="display:flex;"><span>  Normal  Started    32s        kubelet, ydzs-node5  Started container step-git-source-cnych-tekton-example-d6mcz
+</span></span><span style="display:flex;"><span>  Normal  Pulling    32s        kubelet, ydzs-node5  Pulling image <span style="color:#f1fa8c">&#34;golang:1.14-alpine&#34;</span>
+</span></span></code></pre></div><p>我们可以通过 <code>kubectl describe</code> 命令来查看任务运行的过程，首先就是通过 initContainer 中的一个 busybox 镜像将代码 Clone 下来，然后使用任务中定义的镜像来执行命令。</p>
+<p>当任务执行完成后， Pod 就会变成 <code>Completed</code> 状态了：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl get pods
+</span></span><span style="display:flex;"><span>NAME                READY   STATUS      RESTARTS   AGE
+</span></span><span style="display:flex;"><span>testrun-pod-mw9bt   0/2     Completed   <span style="color:#bd93f9">0</span>          4m27s
+</span></span><span style="display:flex;"><span>$ kubectl get taskrun
+</span></span><span style="display:flex;"><span>NAME      SUCCEEDED   REASON      STARTTIME   COMPLETIONTIME
+</span></span><span style="display:flex;"><span>testrun   True        Succeeded   70s         57s
+</span></span></code></pre></div><p>我们可以查看容器的日志信息来了解任务的执行结果信息：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ kubectl logs testrun-pod-mw9bt --all-containers
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;level&#34;</span>:<span style="color:#f1fa8c">&#34;info&#34;</span>,<span style="color:#f1fa8c">&#34;ts&#34;</span>:1588751895.779908,<span style="color:#f1fa8c">&#34;caller&#34;</span>:<span style="color:#f1fa8c">&#34;git/git.go:136&#34;</span>,<span style="color:#f1fa8c">&#34;msg&#34;</span>:<span style="color:#f1fa8c">&#34;Successfully cloned https://github.com/cnych/tekton-demo @ f840e0c390be9a1a6edad76abbde64e882047f05 (grafted, HEAD, origin/master) in path /workspace/repo&#34;</span><span style="color:#ff79c6">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;level&#34;</span>:<span style="color:#f1fa8c">&#34;info&#34;</span>,<span style="color:#f1fa8c">&#34;ts&#34;</span>:1588751895.8844209,<span style="color:#f1fa8c">&#34;caller&#34;</span>:<span style="color:#f1fa8c">&#34;git/git.go:177&#34;</span>,<span style="color:#f1fa8c">&#34;msg&#34;</span>:<span style="color:#f1fa8c">&#34;Successfully initialized and updated submodules in path /workspace/repo&#34;</span><span style="color:#ff79c6">}</span>
+</span></span><span style="display:flex;"><span>PASS
+</span></span><span style="display:flex;"><span>ok      _/workspace/repo        0.006s
+</span></span></code></pre></div><p>我们可以看到我们的测试已经通过了，当然我们也可以使用 <code>Tekton CLI</code> 工具来运行这个任务。Tekton CLI 提供了一种更快、更方便的方式来运行任务。</p>
+<p>我们不用手动编写 TaskRun 资源清单，可以运行以下命令来执行，该命令引用我们的任务（名为 test），生成一个 TaskRun 资源对象并显示其日志：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ tkn task start <span style="color:#8be9fd;font-style:italic">test</span> --inputresource <span style="color:#8be9fd;font-style:italic">repo</span><span style="color:#ff79c6">=</span>cnych-tekton-example --showlog
+</span></span><span style="display:flex;"><span>Taskrun started: test-run-z56lj
+</span></span><span style="display:flex;"><span>Waiting <span style="color:#ff79c6">for</span> logs to be available...
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>git-source-cnych-tekton-example-8q268<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;level&#34;</span>:<span style="color:#f1fa8c">&#34;info&#34;</span>,<span style="color:#f1fa8c">&#34;ts&#34;</span>:1588752677.350016,<span style="color:#f1fa8c">&#34;caller&#34;</span>:<span style="color:#f1fa8c">&#34;git/git.go:136&#34;</span>,<span style="color:#f1fa8c">&#34;msg&#34;</span>:<span style="color:#f1fa8c">&#34;Successfully cloned https://github.com/cnych/tekton-demo @ f840e0c390be9a1a6edad76abbde64e882047f05 (grafted, HEAD, origin/master) in path /workspace/repo&#34;</span><span style="color:#ff79c6">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>git-source-cnych-tekton-example-8q268<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;level&#34;</span>:<span style="color:#f1fa8c">&#34;info&#34;</span>,<span style="color:#f1fa8c">&#34;ts&#34;</span>:1588752677.453426,<span style="color:#f1fa8c">&#34;caller&#34;</span>:<span style="color:#f1fa8c">&#34;git/git.go:177&#34;</span>,<span style="color:#f1fa8c">&#34;msg&#34;</span>:<span style="color:#f1fa8c">&#34;Successfully initialized and updated submodules in path /workspace/repo&#34;</span><span style="color:#ff79c6">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>run-test<span style="color:#ff79c6">]</span> PASS
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">[</span>run-test<span style="color:#ff79c6">]</span> ok  	_/workspace/repo	0.007s
+</span></span></code></pre></div><h3 id="总结">总结</h3>
+<p>我们已经在 Kubernetes 集群上成功安装了 Tekton，定义了一个 Task，并通过 YAML 清单和 Tekton CLI 创建 TaskRun 对其进行了测试。在下一部发我们将创建一个任务来构建一个 Docker 镜像，并将其推送到 Docker Hub。最后，我们将创建一个流水线，按顺序运行我们的两个任务（运行应用程序测试，构建和推送）。</p>
+<p>参考资料：</p>
+<ul>
+<li><a href="https://tekton.dev/">tekton.dev</a></li>
+<li><a href="https://www.arthurkoziel.com/creating-ci-pipelines-with-tekton-part-1/">Creating CI Pipelines with Tekton</a></li>
+</ul>
+<!-- raw HTML omitted -->
+
+          <h2>微信公众号</h2>
+<p>
+  扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+  kubernetes 讨论群里面共同学习。
+</p>
+<img
+  src="https://picdn.youdianzhishi.com/images/qrcode.png"
+  alt="wechat-account-qrcode"
+/>
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/devops-base-on-jenkins/">基于 Jenkins 的 DevOps 流水线实践</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/install-kubesphere-on-k8s/">在现有 Kubernetes 集群上安装 KubeSphere</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-3/">Drone 结合 Helm 部署 Kubernetes 应用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-2/">使用 Drone Pipeline 构建 Docker 镜像</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/drone-with-k8s-1/">使用 Kubernetes Helm 安装 Drone</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/k8s-auth-via-oidc/">通过 GitHub OAuth 和 Dex 访问 Kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/complete-cicd-demonstrate-2/">基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(二)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/complete-cicd-demonstrate-1/">基于 Jenkins、Gitlab、Harbor、Helm 和 Kubernetes 的 CI/CD(一)</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/github-cli-tool-usage/">GitHub CLI 命令行工具使用</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/speed-up-develop-flow-dockerfile-best-practices/">加速开发流程的 Dockerfile 最佳实践</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/speed-up-develop-flow-dockerfile-best-practices/" data-toggle="tooltip" data-placement="top" title="加速开发流程的 Dockerfile 最佳实践">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/create-ci-pipeline-with-tekton-2/" data-toggle="tooltip" data-placement="top" title="使用 Tekton 创建 CI/CD 流水线（2/4）">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '使用 Tekton 创建 CI\/CD 流水线（1\/4）',
+        createIssueManually: true,
+        id: 'create-ci-pipeline-with-tekton-1',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -1059,7 +643,7 @@ Waiting <span style="color:#ff79c6">for</span> logs to be available...
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -1068,7 +652,7 @@ Waiting <span style="color:#ff79c6">for</span> logs to be available...
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -1077,7 +661,7 @@ Waiting <span style="color:#ff79c6">for</span> logs to be available...
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -1086,158 +670,121 @@ Waiting <span style="color:#ff79c6">for</span> logs to be available...
                   </span>
                 </a>
               </li>
-
-              <li>
-                <a href="https://www.qikqiak.com/index.xml" title="RSS">
-                  <span class="fa-stack fa-lg">
-                    <i class="fa fa-circle fa-stack-2x"></i>
-                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
-                  </span>
-                </a>
-              </li>
-            </ul>
-            <p class="credits copyright text-muted">
-              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/">阳明的博客</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/archive/">归档</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/friend/">友链</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://beian.miit.gov.cn/" target="_blank"
-                >蜀ICP备11027319号-5</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
-                >kubernetes.io</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
-                >Kubernetes中文社区</a
-              >
-            </p>
-            <p class="text-center text-muted">
-              <script
-                async
-                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
-              ></script>
-              <span id="busuanzi_container_site_pv" style="display: none">
-                本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
               </span>
-              &nbsp;&bull;&nbsp;
-              <span id="busuanzi_container_site_uv" style="display: none">
-                访客数<span id="busuanzi_value_site_uv"></span>人次
-              </span>
-            </p>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
 
-            <p class="credits theme-by text-muted">
-              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
-              &nbsp;&bull;&nbsp; 主题
-              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
-              移植自
-              <a href="https://github.com/rootsongjc/beautifulhugo"
-                >Beautiful Hugo</a
-              >
-            </p>
-          </div>
-        </div>
+          &nbsp;&bull;&nbsp;
+          2023
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.115.4</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+          
+        </p>
       </div>
-    </footer>
+    </div>
+  </div>
+</footer>
 
-    <script
-      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
-      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
-    ></script>
 
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "UA-69668147-3");
-    </script>
-    <script>
-      (function () {
-        var bp = document.createElement("script");
-        var curProtocol = window.location.protocol.split(":")[0];
-        if (curProtocol === "https") {
-          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
-        } else {
-          bp.src = "http://push.zhanzhang.baidu.com/push.js";
-        }
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(bp, s);
-      })();
-    </script>
-    <script>
-      $(document).ready(function () {
-        var int = setInterval(fixCount, 50);
+<script src='https://www.qikqiak.com/js/bundle.min.af02a2d23b6651a566f0135a12e65fc2560faa7a969b3d1ad58d0afe0c9164ae.js' integrity='sha256-rwKi0jtmUaVm8BNaEuZfwlYPqnqWmz0a1Y0K/gyRZK4='></script>
 
-        var initPVCount = 584976;
-        var initUVCount = 153191;
-        function fixCount() {
-          if ($("#busuanzi_container_site_pv").css("display") != "none") {
-            $("#busuanzi_value_site_pv").html(
-              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
-            );
-            clearInterval(int);
-          }
-          if ($("#busuanzi_container_site_uv").css("display") != "none") {
-            $("#busuanzi_value_site_uv").html(
-              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
-            );
-            clearInterval(int);
-          }
-        }
-      });
-    </script>
-    <script>
-      (function (w, d, s, id) {
-        if (typeof w.webpushr !== "undefined") return;
-        w.webpushr =
-          w.webpushr ||
-          function () {
-            (w.webpushr.q = w.webpushr.q || []).push(arguments);
-          };
-        var js,
-          fjs = d.getElementsByTagName(s)[0];
-        js = d.createElement(s);
-        js.id = id;
-        js.src = "https://cdn.webpushr.com/app.min.js";
-        fjs.parentNode.appendChild(js);
-      })(window, document, "script", "webpushr-jssdk");
-      webpushr(
-        "init",
-        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
-      );
-    </script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
-    ></script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
-    ></script>
-    <script type="text/javascript">
-      $(".carousel").slick({
-        dots: true,
-        arrows: true,
-        autoplay: true,
-        autoplaySpeed: 4000,
-        infinite: true,
-        speed: 500,
-        fade: true,
-        cssEase: "linear",
-        centerMode: true,
-        prevArrow: '<button type="button" class="slick-prev"></button>',
-        nextArrow: '<button type="button" class="slick-next"></button>',
-      });
-    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
   </body>
 </html>
+

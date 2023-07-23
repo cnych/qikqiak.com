@@ -1,995 +1,656 @@
 <!DOCTYPE html>
 <html lang="zh">
   <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
-    />
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-    <title>
-      使用 KinD 加速 CI/CD
-      流水线-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生
-    </title>
-    <meta property="og:title" content="使用 KinD 加速 CI/CD 流水线" />
-    <meta name="twitter:title" content="使用 KinD 加速 CI/CD 流水线" />
 
-    <meta
-      name="description"
-      content="现在安装 Kubernetes 集群已经变得越来越简单了，出现了很多方案，各种方案都有自己适合的使用场景。虽然我们可以很快速在云环境下面启动一个 Kubernetes 集群，但是对于开发人员通常更喜欢能够快速上手的东西，Kubernetes in Docker（KinD）这个工具就可以通过创建容器来作为 Kubernetes 的节点，我们只需要在机器上安装 Docker 就可以使用，它允许我们在很短的时间内就启动一个多节点的集群，而不依赖任何其他工具或云服务商，这就使得它不仅对本地开发非常有用，而且对 CI/CD 也很有帮助。"
-    />
-    <meta
-      property="og:description"
-      content="现在安装 Kubernetes 集群已经变得越来越简单了，出现了很多方案，各种方案都有自己适合的使用场景。虽然我们可以很快速在云环境下面启动一个 Kubernetes 集群，但是对于开发人员通常更喜欢能够快速上手的东西，Kubernetes in Docker（KinD）这个工具就可以通过创建容器来作为 Kubernetes 的节点，我们只需要在机器上安装 Docker 就可以使用，它允许我们在很短的时间内就启动一个多节点的集群，而不依赖任何其他工具或云服务商，这就使得它不仅对本地开发非常有用，而且对 CI/CD 也很有帮助。"
-    />
-    <meta
-      name="twitter:description"
-      content="现在安装 Kubernetes 集群已经变得越来越简单了，出现了很多方案，各种方案都有自己适合的使用场景。虽然我们可以很快速在云环境下面启动一个 Kubernetes 集群，但是对于开发人员通常更喜欢能够快速上手的东西，Kubernetes in Docker（KinD）这个工具就可以通过创建容器来作为 Kubernetes 的节点，我们只需要在机器上安装 Docker 就可以使用，它允许我们在很 …"
-    />
-    <meta name="author" content="" />
-    <link
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-      rel="icon"
-      type="image/x-icon"
-    />
-    <link
-      rel="apple-touch-icon"
-      href="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      property="og:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta
-      name="twitter:image"
-      content="https://picdn.youdianzhishi.com/images/blog-favicon.png"
-    />
-    <meta name="twitter:card" content="summary" />
-    <meta
-      property="og:url"
-      content="https://www.qikqiak.com/post/accelerate-ci-cd-pipelines-with-kind/"
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="阳明的博客" />
+  <title>使用 KinD 加速 CI/CD 流水线-阳明的博客|Kubernetes|Istio|Prometheus|Python|Golang|云原生</title>
+  <meta property="og:title" content="使用 KinD 加速 CI/CD 流水线" />
+  <meta name="twitter:title" content="使用 KinD 加速 CI/CD 流水线" />
 
-    <meta name="generator" content="Hugo 0.55.6" />
-    <link
-      rel="canonical"
-      href="https://www.qikqiak.com/post/accelerate-ci-cd-pipelines-with-kind/"
-    />
-    <link
-      rel="alternate"
-      href="https://www.qikqiak.com/index.xml"
-      type="application/rss+xml"
-      title="阳明的博客"
-    />
+  <meta name="description" content="现在安装 Kubernetes 集群已经变得越来越简单了，出现了很多方案，各种方案都有自己适合的使用场景。虽然我们可以很快速在云环境下面启动一个 Kubernetes 集群，但是对于开发人员通常更喜欢能够快速上手的东西，Kubernetes in Docker（KinD）这个工具就可以通过创建容器来作为 Kubernetes 的节点，我们只需要在机器上安装 Docker 就可以使用，它允许我们在很短的时间内就启动一个多节点的集群，而不依赖任何其他工具或云服务商，这就使得它不仅对本地开发非常有用，而且对 CI/CD 也很有帮助。">
+  <meta property="og:description" content="现在安装 Kubernetes 集群已经变得越来越简单了，出现了很多方案，各种方案都有自己适合的使用场景。虽然我们可以很快速在云环境下面启动一个 Kubernetes 集群，但是对于开发人员通常更喜欢能够快速上手的东西，Kubernetes in Docker（KinD）这个工具就可以通过创建容器来作为 Kubernetes 的节点，我们只需要在机器上安装 Docker 就可以使用，它允许我们在很短的时间内就启动一个多节点的集群，而不依赖任何其他工具或云服务商，这就使得它不仅对本地开发非常有用，而且对 CI/CD 也很有帮助。">
+  <meta name="twitter:description" content="现在安装 Kubernetes 集群已经变得越来越简单了，出现了很多方案，各种方案都有自己适合的使用场景。虽然我们可以很快速在云环境下面启动一个 Kubernetes 集群，但是对于开发人员通常更喜欢能够快速上手的东西，Kubernetes in Docker（KinD）这个工具就可以通过创建容器来作为 Kubernetes 的节点，我们只需要在机器上安装 Docker 就可以使用，它允许我们在很 …">
+  <meta name="author" content=""/>
+  <link href="https://picdn.youdianzhishi.com/images/blog-favicon.png" rel="icon" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="https://picdn.youdianzhishi.com/images/blog-favicon.png"/>
+  <meta property="og:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:image" content="https://picdn.youdianzhishi.com/images/blog-favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta property="og:url" content="https://www.qikqiak.com/post/accelerate-ci-cd-pipelines-with-kind/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="阳明的博客" />
 
-    <link
-      href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700"
-      rel="stylesheet"
-    />
+  <link rel="canonical" href="https://www.qikqiak.com/post/accelerate-ci-cd-pipelines-with-kind/" />
+  <link rel="alternate" href="https://www.qikqiak.com/index.xml" type="application/rss+xml" title="阳明的博客">
 
-    <link
-      rel="stylesheet"
-      href="https://www.qikqiak.com/css/bundle.min.fd9e592432db56ca00a6ba36d872ce217e73efd7563d5e7f34afc581f2c782e5.css"
-      integrity="sha256-/Z5ZJDLbVsoApro22HLOIX5z79dWPV5/NK/FgfLHguU="
-    />
+  
+  
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700%7COpen+Sans:400,700" rel="stylesheet">
+  
 
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"
-    />
+  <link rel="stylesheet" href='https://www.qikqiak.com/css/bundle.min.a6b62363fe57848ad01efa2a5d1bbb1047c2ffb71b53d8aeb42bc5ed5c77ea7c.css' integrity='sha256-prYjY/5XhIrQHvoqXRu7EEfC/7cbU9iutCvF7Vx36nw='>
 
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+  
+  
+    
     <!--[if lt IE 9]>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-      <link
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-        rel="stylesheet"
-      />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <![endif]-->
-    <meta
-      name="google-site-verification"
-      content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8"
-    />
-    <meta name="baidu-site-verification" content="F5ojAyqaKU" />
-    <meta
-      name="keywords"
-      content="kubeadm, kubernetes, docker, KinD, github, CI/CD"
-    />
-    <script>
-      var _hmt = _hmt || [];
-      (function () {
-        var hm = document.createElement("script");
-        hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(hm, s);
-      })();
-    </script>
+<meta name="google-site-verification" content="oKxX4fOvB2yYmU02txZFChM93XQbESU4JaG3tNH9Hm8" />
+<meta name="baidu-site-verification" content="F5ojAyqaKU" />
+<meta name="keywords" content="kubeadm, kubernetes, docker, KinD, github, CI/CD">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d611849735f187dd788dc054908f7d7a";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
 
-    <script type="application/javascript">
-      var doNotTrack = false;
-      if (!doNotTrack) {
-        window.ga =
-          window.ga ||
-          function () {
-            (ga.q = ga.q || []).push(arguments);
-          };
-        ga.l = +new Date();
-        ga("create", "UA-69668147-3", "auto");
 
-        ga("send", "pageview");
-      }
-    </script>
-    <script async src="https://www.google-analytics.com/analytics.js"></script>
-  </head>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-69668147-3', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
 
   <body>
     <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
-      <div class="container">
-        <div class="navbar-header">
-          <button
-            type="button"
-            class="navbar-toggle"
-            data-toggle="collapse"
-            data-target="#main-navbar"
-          >
-            <span class="sr-only">切换导航</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a
-            class="navbar-brand"
-            href="https://www.qikqiak.com/"
-            title="阳明的博客"
-          >
-            <img
-              src="https://picdn.youdianzhishi.com/images/blog-logo-new.png"
-              style="margin-top: -5px; height: 32px"
-              alt="阳明的博客"
-            />
-          </a>
-        </div>
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">切换导航</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.qikqiak.com/" title="阳明的博客">
+        <img src="https://picdn.youdianzhishi.com/images/blog-logo-new.png" style="margin-top: -5px;height: 32px;" alt="阳明的博客">
+      </a>
+    </div>
 
-        <div class="collapse navbar-collapse" id="main-navbar">
-          <ul class="nav navbar-nav navbar-right">
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
             <li>
               <a title="首页" href="https://www.qikqiak.com/">首页</a>
             </li>
-
+          
+        
+          
             <li>
-              <a
-                title="课程"
-                href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu"
-                >课程</a
-              >
+              <a title="课程" href="https://youdianzhishi.com/?utm_source=blog&amp;utm_campaign=referral&amp;utm_medium=topmenu">课程</a>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">文章分类</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/archives">Archive</a>
-
-                <a href="https://www.qikqiak.com/tags">tags</a>
-
-                <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
-
-                <a href="https://www.qikqiak.com/tags/python">python</a>
-
-                <a href="https://www.qikqiak.com/tags/django">django</a>
-
-                <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
+                  <a href="https://www.qikqiak.com/archives">Archive</a>
+                
+                  <a href="https://www.qikqiak.com/tags">tags</a>
+                
+                  <a href="https://www.qikqiak.com/tags/kubernetes">kubernetes</a>
+                
+                  <a href="https://www.qikqiak.com/tags/python">python</a>
+                
+                  <a href="https://www.qikqiak.com/tags/django">django</a>
+                
+                  <a href="https://www.qikqiak.com/tags/devops">devops</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li class="navlinks-container">
               <a class="navlinks-parent" href="javascript:void(0)">书籍</a>
               <div class="navlinks-children">
-                <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
-
-                <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
-
-                <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
-
-                <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
+                  <a href="https://www.qikqiak.com/k8s-book/">k8s进阶手册</a>
+                
+                  <a href="https://www.qikqiak.com/istio-book/">一起学istio</a>
+                
+                  <a href="https://www.qikqiak.com/tdd-book/">Python微服务</a>
+                
+                  <a href="https://md.qikqiak.com/">Markdown微信</a>
+                
               </div>
             </li>
-
+          
+        
+          
             <li>
-              <a title="关于" href="https://www.qikqiak.com/page/about/"
-                >关于</a
-              >
+              <a title="关于" href="https://www.qikqiak.com/page/about/">关于</a>
             </li>
-
+          
+        
+          
             <li>
               <a title="RSS" href="https://www.qikqiak.com/index.xml">RSS</a>
             </li>
+          
+        
 
-            <li>
-              <a
-                href="#modalSearch"
-                data-toggle="modal"
-                data-target="#modalSearch"
-                style="outline: none"
-              >
-                <span
-                  id="searchGlyph"
-                  class="glyphicon glyphicon-search"
-                ></span>
-              </a>
-            </li>
-          </ul>
+        
+
+        
+
+        
+          <li>
+            <a href="#modalSearch" data-toggle="modal" data-target="#modalSearch" style="outline: none;">
+              <span id="searchGlyph" class="glyphicon glyphicon-search"></span>
+            </a>
+          </li>
+          
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+  <div id="modalSearch" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">搜索</h4>
         </div>
-      </div>
-    </nav>
+        <div class="modal-body">
+            
+<div class="aa-input-container" id="aa-input-container">
+    <input type="search" id="aa-search-input" class="aa-input-search" placeholder="Search for titles or URIs..." name="search" autocomplete="off" />
+    <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
+        <path d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z" />
+    </svg>
+</div>
+<script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
+<script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
 
-    <div id="modalSearch" class="modal fade" role="dialog">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal">
-              &times;
-            </button>
-            <h4 class="modal-title">搜索</h4>
-          </div>
-          <div class="modal-body">
-            <div class="aa-input-container" id="aa-input-container">
-              <input
-                type="search"
-                id="aa-search-input"
-                class="aa-input-search"
-                placeholder="Search for titles or URIs..."
-                name="search"
-                autocomplete="off"
-              />
-              <svg class="aa-input-icon" viewBox="654 -372 1664 1664">
-                <path
-                  d="M1806,332c0-123.3-43.8-228.8-131.5-316.5C1586.8-72.2,1481.3-116,1358-116s-228.8,43.8-316.5,131.5  C953.8,103.2,910,208.7,910,332s43.8,228.8,131.5,316.5C1129.2,736.2,1234.7,780,1358,780s228.8-43.8,316.5-131.5  C1762.2,560.8,1806,455.3,1806,332z M2318,1164c0,34.7-12.7,64.7-38,90s-55.3,38-90,38c-36,0-66-12.7-90-38l-343-342  c-119.3,82.7-252.3,124-399,124c-95.3,0-186.5-18.5-273.5-55.5s-162-87-225-150s-113-138-150-225S654,427.3,654,332  s18.5-186.5,55.5-273.5s87-162,150-225s138-113,225-150S1262.7-372,1358-372s186.5,18.5,273.5,55.5s162,87,225,150s113,138,150,225  S2062,236.7,2062,332c0,146.7-41.3,279.7-124,399l343,343C2305.7,1098.7,2318,1128.7,2318,1164z"
-                />
-              </svg>
-            </div>
-            <script src="https://www.qikqiak.com/js/algoliasearch.min.js"></script>
-            <script src="https://www.qikqiak.com/js/autocomplete.min.js"></script>
+<script>
+var client = algoliasearch("1JDRAS0AZR", "8804ac109158bb3bb60d74ce98fa332f");
+var index = client.initIndex('prod_blog');
 
-            <script>
-              var client = algoliasearch(
-                "1JDRAS0AZR",
-                "8804ac109158bb3bb60d74ce98fa332f"
-              );
-              var index = client.initIndex("prod_blog");
-
-              autocomplete(
-                "#aa-search-input",
-                { hint: false },
-                {
-                  source: autocomplete.sources.hits(index, { hitsPerPage: 5 }),
-
-                  displayKey: "name",
-
-                  templates: {
-                    suggestion: function (suggestion) {
-                      return (
-                        "<span>" +
-                        '<a href="https://www.qikqiak.com/post/' +
-                        suggestion.slug +
-                        '">' +
-                        suggestion._highlightResult.title.value +
-                        "</a></span>"
-                      );
-                    },
-                  },
-                }
-              );
-            </script>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">
-              close
-            </button>
-          </div>
+autocomplete('#aa-search-input',
+{ hint: false}, {
+    source: autocomplete.sources.hits(index, {hitsPerPage: 5}),
+    
+    displayKey: 'name',
+    
+    templates: {
+        
+        suggestion: function(suggestion) {
+            return '<span>' + '<a href="https://www.qikqiak.com/post/' + suggestion.slug + '">' +
+            suggestion._highlightResult.title.value + '</a></span>';
+        }
+    }
+});
+</script>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div
-      id="header-big-imgs"
-      data-num-img="1"
-      data-img-src-1="https://picdn.youdianzhishi.com/images/20201008113942.png"
-      data-img-desc-1="Photo by Krish Gandhi on Unsplash"
-    ></div>
-
-    <header class="header-section has-img">
-      <div class="intro-header big-img">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-              <div class="post-heading">
-                <h1>使用 KinD 加速 CI/CD 流水线</h1>
-
-                <span class="post-meta"> 发表于 October 8, 2020 </span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <span class="img-desc" style="display: inline"></span>
-      </div>
-
-      <div class="intro-header no-img">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-              <div class="post-heading">
-                <h1>使用 KinD 加速 CI/CD 流水线</h1>
-
-                <span class="post-meta"> 发表于 October 8, 2020 </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <div class="container" role="main">
-      <div class="row">
-        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-          <div>
-            <h5 id="tags" style="margin-top: 30px">
-              标签:
-
-              <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a>
-              &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/docker/">docker</a> &nbsp;
-
-              <a href="https://www.qikqiak.com/tags/kind/">KinD</a> &nbsp;
-            </h5>
-          </div>
-
-          <article
-            role="main"
-            class="blog-post"
-            itemprop="articleBody"
-            id="content"
-          >
-            <aside class="toc">
-              <nav id="TableOfContents">
-                <ul>
-                  <li>
-                    <ul>
-                      <li><a href="#kind-架构">KinD 架构</a></li>
-                      <li><a href="#安装">安装</a></li>
-                      <li><a href="#测试">测试</a></li>
-                      <li><a href="#总结">总结</a></li>
-                    </ul>
-                  </li>
-                </ul>
-              </nav>
-            </aside>
-
-            <p>
-              现在安装 Kubernetes
-              集群已经变得越来越简单了，出现了很多方案，各种方案都有自己适合的使用场景。虽然我们可以很快速在云环境下面启动一个
-              Kubernetes 集群，但是对于开发人员通常更喜欢能够快速上手的东西，<a
-                href="https://kind.sigs.k8s.io/"
-                >Kubernetes in Docker（KinD）</a
-              >这个工具就可以通过创建容器来作为 Kubernetes
-              的节点，我们只需要在机器上安装 Docker
-              就可以使用，它允许我们在很短的时间内就启动一个多节点的集群，而不依赖任何其他工具或云服务商，这就使得它不仅对本地开发非常有用，而且对
-              CI/CD 也很有帮助。
-            </p>
-
-            <h2 id="kind-架构">KinD 架构</h2>
-
-            <p>
-              KinD 使用 Docker-in-Docker 的方法来运行 Kubernetes
-              集群，它启动多个 Docker 容器来作为 Kubernetes 的节点。Docker
-              容器将 docker.sock 卷挂载到你的节点上运行的 Docker
-              上，这样就可以与底层的容器运行时进行交互了。
-            </p>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20201008102134.png"
-                alt="KinD 架构"
-              />
-              <figcaption>KinD 架构</figcaption>
-            </figure>
-
-            <p>KinD 架构</p>
-
-            <p>
-              KinD 是使用 kubeadm 工具来启动管理集群，也通过了一致性测试和 CNCF
-              的认证，当然它也会为你生成访问集群的 kubeconfig
-              文件，这样我们同样就可以使用 kubectl 来和集群进行交互了。其他
-              Kubernetes 组件，比如 Helm、Istio 也同样可以在 KinD
-              集群内正常工作。
-            </p>
-
-            <p>
-              KinD 有一个缺点是它不能使用 LoadBalancer 的
-              Service，所以我们需要使用 NodePort 来对外暴露服务。
-            </p>
-
-            <p>
-              另外 DinD 也不是一个非常安全的解决方案，所以除了本地开发机和 CI/CD
-              流水线之外，最好不要在其他环境使用 KinD 集群，特别是生产环境中。
-            </p>
-
-            <h2 id="安装">安装</h2>
-
-            <p>
-              KinD 是一个简单的命令行工具，可以直接下载放置到 PATH
-              路径上，然后就可以使用 kind 命令与 KinD
-              进行交互了，当然前提是要先安装上 Docker：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ sudo curl -sL https://kind.sigs.k8s.io/dl/v0.9.0/kind-linux-amd64 -o /usr/local/bin/kind
-$ sudo chmod +x /usr/local/bin/kind
-$ kind version
-kind v0.9.0 go1.15.2 linux/amd64</code></pre>
-            </div>
-            <p>安装完成后你可以使用下面的命令创建你的集群：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ kind create cluster --wait 10m</code></pre>
-            </div>
-            <p>
-              该命令会创建一个单节点集群，如果你想定义一个多节点集群，你可以使用类似下面的集群配置文件进行创建：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># kind-config.yaml</span>
-<span style="color:#6272a4"># 3个节点(两个node)集群配置</span>
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-nodes:
-- role: control-plane
-- role: worker
-- role: worker</code></pre>
-            </div>
-            <p>然后使用上面的配置文件创建集群：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ kind create cluster --wait 10m --config kind-config.yaml</code></pre>
-            </div>
-            <p>
-              我们也可以在
-              <code>nodes</code>
-              属性部分指定多个控制平面角色来创建多控制平面集群。由于 KinD
-              会自动创建一个 kubeconfig 文件，所以我们可以像使用其他集群一样使用
-              kubectl 命令。 要想删除 KinD
-              集群也很简单，直接使用如下所示的命令即可：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash">$ kind delete cluster</code></pre>
-            </div>
-            <h2 id="测试">测试</h2>
-
-            <p>
-              接下来我们来体验一次使用 KinD 的 CI/CD
-              流水线，这里为了方便我们将使用 GitHub Actions 作为我们的 CI/CD
-              工具，任何可以访问 GitHub 的人都可以使用。
-              <script
-                async
-                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-              ></script>
-
-              <ins
-                class="adsbygoogle"
-                style="display: block"
-                data-ad-client="ca-pub-5376999672787220"
-                data-ad-slot="9165834656"
-                data-ad-format="auto"
-                data-full-width-responsive="true"
-              ></ins>
-              <script>
-                (adsbygoogle = window.adsbygoogle || []).push({});
-              </script>
-
-              我们来构建一个简单的 NGINX 应用并显示 &ldquo;Hello
-              World&rdquo;，我们需要做如下一些工作：
-            </p>
-
-            <ul>
-              <li>创建应用的开发版本</li>
-              <li>在 KinD 集群中运行一个组件来测试</li>
-              <li>
-                如果测试成功，我们将镜像升级到 release 版本，并推送到 Docker Hub
-                上去。
-              </li>
-            </ul>
-
-            <p>首先我们需要一个 GitHub 和 Docker Hub 帐号，然后：</p>
-
-            <ul>
-              <li>
-                Fork 测试仓库：<a href="https://github.com/cnych/kind-nginx"
-                  >https://github.com/cnych/kind-nginx</a
-                >
-              </li>
-              <li>
-                进入代码仓库，创建两个 secrets：DOCKER_USER 和
-                DOCKER_PW，分别表示你的 Docker Hub 的用户名和密码。
-              </li>
-              <li>
-                跳转到 GitHub Actions
-                并重新执行任务，当然我们也可以修改仓库代码来推送触发这个任务。
-              </li>
-            </ul>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20201008105538.png"
-                alt="配置 Secrets"
-              />
-              <figcaption>配置 Secrets</figcaption>
-            </figure>
-
-            <p>
-              我们可以先查看下 GitHub Actions 的流水线配置文件
-              <code>build-pipeline.yml</code>：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-yaml" data-lang="yaml">name: Docker Image CI
-
-on: [push]
-     <span style="color:#6272a4"># 工作流程中所有 job 和 step 都可使用的环境变量</span>
-env: <span style="color:#6272a4"># 或者作为环境变量</span>
-      docker_username: ${{ secrets.DOCKER_USER }}
-      docker_password: ${{ secrets.DOCKER_PW }}
-
-jobs:
-
-  build-docker-image:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: <span style="color:#bd93f9">0</span>
-    - name: Build the Docker image
-      run: docker build -t $docker_username/nginx:dev .
-    - name: Login to Docker
-      run: echo <span style="color:#f1fa8c">&#34;$docker_password&#34;</span> | docker login -u <span style="color:#f1fa8c">&#34;$docker_username&#34;</span> --password-stdin
-    - name: Push the docker image
-      run: docker push $docker_username/nginx:dev
-
-  kubernetes-component-test:
-    runs-on: ubuntu-latest
-    needs: build-docker-image
-    steps:
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: <span style="color:#bd93f9">0</span>
-    - name: Run KIND Test
-      run: sudo sh build-test.sh $docker_username
+    
   
-  promote-and-push-docker-image:
-    runs-on: ubuntu-latest
-    needs: kubernetes-component-test
-    steps:
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: <span style="color:#bd93f9">0</span>
-    - name: Pull the Docker image
-      run: docker pull $docker_username/nginx:dev
-    - name: Tag the Docker image
-      run: docker tag $docker_username/nginx:dev $docker_username/nginx:release
-    - name: Login to Docker
-      run: echo <span style="color:#f1fa8c">&#34;$docker_password&#34;</span> | docker login -u <span style="color:#f1fa8c">&#34;$docker_username&#34;</span> --password-stdin
-    - name: Push the docker image
-      run: docker push $docker_username/nginx:release</code></pre>
-            </div>
-            <p>从上面的流水线文件中可以看到构建流水线中有3个作业：</p>
+  
+  
 
-            <ol>
-              <li>
-                <code>build-docker-image</code> 作业会构建开发版本的 Docker
-                镜像，并在构建成功后将其推送到 Docker
-                Hub，我们可以在这个任务中运行单元测试。
-              </li>
-              <li>
-                <code>kubernetes-component-test</code> 作业设置了一个 KinD
-                集群，并为应用程序运行组件进行测试。
-              </li>
-              <li>
-                <code>promote-and-push-docker-image</code>
-                作业拉取开发版本的镜像，将其重新标记为 release 版本，并将
-                release 版本推送到 Docker Hub。
-              </li>
-            </ol>
 
-            <p>我们来看看应用的 Dockerfile 文件来了解它的构建内容：</p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-docker" data-lang="docker"><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> nginx</span>
-<span style="color:#ff79c6">RUN</span> <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#39;Hello World&#39;</span> &gt; /usr/share/nginx/html/index.html</code></pre>
-            </div>
-            <p>
-              第二步是整个流水线的关键所在，运行一个
-              <a href="http://buid-test.sh">buid-test.sh</a> 的 shell
-              脚本，接下来我们来查看下该脚本的实现：
-            </p>
-            <div class="highlight">
-              <pre
-                style="
-                  color: #f8f8f2;
-                  background-color: #282a36;
-                  -moz-tab-size: 4;
-                  -o-tab-size: 4;
-                  tab-size: 4;
-                "
-              ><code class="language-bash" data-lang="bash"><span style="color:#ff79c6">#! /bin/bash
-</span><span style="color:#ff79c6"></span><span style="color:#8be9fd;font-style:italic">docker_username</span><span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">$1</span>
-<span style="color:#8be9fd;font-style:italic">set</span> -xe
 
-curl -sL https://kind.sigs.k8s.io/dl/v0.9.0/kind-linux-amd64 -o /usr/local/bin/kind
-chmod <span style="color:#bd93f9">755</span> /usr/local/bin/kind
 
-curl -sL https://storage.googleapis.com/kubernetes-release/release/v1.17.4/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl
-chmod <span style="color:#bd93f9">755</span> /usr/local/bin/kubectl
+  
+    <div id="header-big-imgs" data-num-img=1 data-img-src-1="https://picdn.youdianzhishi.com/images/20201008113942.png" data-img-desc-1="Photo by Krish Gandhi on Unsplash"></div>
+  
 
-curl -LO https://get.helm.sh/helm-v3.1.2-linux-amd64.tar.gz
-tar -xzf helm-v3.1.2-linux-amd64.tar.gz
-mv linux-amd64/helm /usr/local/bin/
-rm -rf helm-v3.1.2-linux-amd64.tar.gz
+  <header class="header-section has-img">
+    
+      <div class="intro-header big-img">
+        
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+              <div class="post-heading">
+                <h1>使用 KinD 加速 CI/CD 流水线</h1>
+                  
+                  
+                    <span class="post-meta">
+  发表于 October 8, 2020  
+</span>
 
-kind version
-kubectl version --client<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">true</span>
-helm version
-
-kind create cluster --wait 10m --config kind-config.yaml
-
-kubectl get nodes
-
-docker build -t <span style="color:#8be9fd;font-style:italic">$docker_username</span>/nginx:dev .
-kind load docker-image <span style="color:#8be9fd;font-style:italic">$docker_username</span>/nginx:dev
-
-kubectl apply -f nginx-deployment.yaml
-kubectl apply -f nginx-service.yaml
-
-<span style="color:#8be9fd;font-style:italic">NODE_IP</span><span style="color:#ff79c6">=</span><span style="color:#ff79c6">$(</span>kubectl get node -o wide|tail -1|awk <span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#39;print $6&#39;</span><span style="color:#ff79c6">}</span><span style="color:#ff79c6">)</span>
-<span style="color:#8be9fd;font-style:italic">NODE_PORT</span><span style="color:#ff79c6">=</span><span style="color:#ff79c6">$(</span>kubectl get svc nginx-service -o go-template<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;{{range.spec.ports}}{{if .nodePort}}{{.nodePort}}{{&#34;\n&#34;}}{{end}}{{end}}&#39;</span><span style="color:#ff79c6">)</span>
-sleep <span style="color:#bd93f9">60</span>
-<span style="color:#8be9fd;font-style:italic">SUCCESS</span><span style="color:#ff79c6">=</span><span style="color:#ff79c6">$(</span>curl <span style="color:#8be9fd;font-style:italic">$NODE_IP</span>:<span style="color:#8be9fd;font-style:italic">$NODE_PORT</span><span style="color:#ff79c6">)</span>
-<span style="color:#ff79c6">if</span> <span style="color:#ff79c6">[[</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">SUCCESS</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">&#34;</span> !<span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;Hello World&#34;</span> <span style="color:#ff79c6">]]</span>; 
-<span style="color:#ff79c6">then</span>
- kind -q delete cluster
- <span style="color:#8be9fd;font-style:italic">exit</span> <span style="color:#bd93f9">1</span>;
-<span style="color:#ff79c6">else</span>
- kind -q delete cluster
- <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;Component test succesful&#34;</span>
-<span style="color:#ff79c6">fi</span></code></pre>
-            </div>
-            <p>上面的 shell 脚本实现了一系列的功能：</p>
-
-            <ol>
-              <li>在 CI 服务器中下载并安装 kind、kubectl、helm 工具</li>
-              <li>使用 kind-config.yaml 文件创建了一个多节点的集群</li>
-              <li>使用 <code>docker build</code> 命令构建 dev 版本的镜像</li>
-              <li>
-                加载 KinD 集群中的 Docker 镜像，这样可以确保镜像对所有 KinD
-                节点都可用，就不需要从 Docker Hub 中去拉取镜像了
-              </li>
-              <li>
-                使用 Deployment 方式部署应用，并通过 NodePort 的 Service
-                暴露服务
-              </li>
-              <li>
-                获取节点 IP
-                和服务端口，并运行测试，检查应用程序是否返回&rdquo;Hello
-                World&rdquo;
-              </li>
-              <li>
-                如果测试成功，则删除 KinD 集群，打印 &ldquo;Component test
-                succesful&rdquo;，并返回一个成功状态码；如果测试失败，则删除
-                KinD 集群，并返回失败的状态码。
-              </li>
-            </ol>
-
-            <figure>
-              <img
-                src="https://picdn.youdianzhishi.com/images/20201008112251.png"
-                alt="GitHub Actions 流水线"
-              />
-              <figcaption>GitHub Actions 流水线</figcaption>
-            </figure>
-
-            <h2 id="总结">总结</h2>
-
-            <p>
-              当我们触发流水线管道时，GitHub Actions
-              会自动运行整个流水线。我们这里就完成了利用 Docker 和 Kubernetes
-              进行持续集成和部署的无缝方式，Docker 中的 Kubernetes
-              不仅简化了我们进行本地开发的方式，而且也是 CI/CD 的优秀工具。
-            </p>
-
-            <blockquote>
-              <p>
-                原文链接：<a
-                  href="https://medium.com/better-programming/accelerate-your-ci-cd-pipelines-with-kubernetes-in-docker-kind-109a67b39c82"
-                  >https://medium.com/better-programming/accelerate-your-ci-cd-pipelines-with-kubernetes-in-docker-kind-109a67b39c82</a
-                >
-              </p>
-            </blockquote>
-
-            <p>
-              <a
-                href="https://youdianzhishi.com/web/course/1030"
-                title="从 Docker 到 Kubernetes 进阶课程"
-                ><img
-                  src="https://sdn.youdianzhishi.com/images/2019/10/24/65f2cfb229184268a18745fe202b281b.jpg?imageView2/2/format/webp"
-                  alt="Kubernetes进阶训练营"
-              /></a>
-            </p>
-
-            <h2>微信公众号</h2>
-            <p>
-              扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
-              kubernetes 讨论群里面共同学习。
-            </p>
-            <img
-              src="https://picdn.youdianzhishi.com/images/qrcode.png"
-              alt="wechat-account-qrcode"
-            />
-
-            <div class="entry-shang text-center">
-              <p>「真诚赞赏，手留余香」</p>
-              <button class="zs show-zs btn btn-bred">赞赏</button>
-            </div>
-            <div class="zs-modal-bg"></div>
-            <div class="zs-modal-box">
-              <div class="zs-modal-head">
-                <button type="button" class="close">×</button>
-                <span class="author"
-                  ><img
-                    src="https://www.qikqiak.com/img/avatar.jpeg"
-                  />阳明</span
-                >
-                <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
-              </div>
-              <div class="zs-modal-body">
-                <div class="zs-modal-btns">
-                  <button class="btn btn-blink" data-num="2">2元</button>
-                  <button class="btn btn-blink" data-num="5">5元</button>
-                  <button class="btn btn-blink" data-num="10">10元</button>
-                  <button class="btn btn-blink" data-num="50">50元</button>
-                  <button class="btn btn-blink" data-num="100">100元</button>
-                  <button class="btn btn-blink" data-num="1">任意金额</button>
-                </div>
-                <div class="zs-modal-pay">
-                  <button class="btn btn-bred" id="pay-text">2元</button>
-                  <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
-                  <img
-                    src="https://www.qikqiak.com/img/wechat-2.png"
-                    id="pay-image"
-                  />
-                </div>
-              </div>
-              <div class="zs-modal-footer">
-                <span class="zs-wechat"
-                  ><img src="https://www.qikqiak.com/img/wechat-btn.png"
-                /></span>
+                  
               </div>
             </div>
-
-            <div
-              class="social-share"
-              data-initialized="true"
-              style="margin-bottom: 20px; margin-top: 20px"
-            >
-              <center>
-                <a href="#" class="social-share-icon icon-weibo"></a>
-                <a href="#" class="social-share-icon icon-wechat"></a>
-                <a href="#" class="social-share-icon icon-twitter"></a>
-                <a href="#" class="social-share-icon icon-linkedin"></a>
-                <a href="#" class="social-share-icon icon-facebook"></a>
-                <a href="#" class="social-share-icon icon-qq"></a>
-                <a href="#" class="social-share-icon icon-qzone"></a>
-              </center>
-            </div>
-
-            <link
-              rel="stylesheet"
-              href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css"
-            />
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
-          </article>
-
-          <h3>相关文章</h3>
-          <ul style="margin-bottom: 25px">
-            <li>
-              <a href="https://www.qikqiak.com/post/use-kubeadm-upgrade-k8s/"
-                >使用 kubeadm 更新 kubernetes 集群</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/speed-up-develop-flow-dockerfile-best-practices/"
-                >加速开发流程的 Dockerfile 最佳实践</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/get-client-realip/"
-                >获取客户端访问真实 IP</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/capabilities-on-k8s/"
-                >在 Kubernetes 中配置 Container Capabilities</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/"
-                >在 Kubernetes 上安装 Gitlab</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/harbor-quick-install/"
-                >在 Kubernetes 在快速安装 Harbor</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/harbor-code-analysis/"
-                >Harbor 源码浅析</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/dockerfile-best-practice/"
-                >Dockerfile 最佳实践</a
-              >
-            </li>
-
-            <li>
-              <a href="https://www.qikqiak.com/post/pod-init-container/"
-                >初始化容器</a
-              >
-            </li>
-
-            <li>
-              <a
-                href="https://www.qikqiak.com/post/write-kubernets-golang-service-step-by-step/"
-                >手摸手教你写 Kubernetes 的 golang 服务</a
-              >
-            </li>
-          </ul>
-
-          <ul class="pager blog-pager">
-            <li class="previous">
-              <a
-                href="https://www.qikqiak.com/post/use-vscode-remote-dev-debug/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="真香！使用 VSCode 远程开发调试"
-                >&larr; 前一篇</a
-              >
-            </li>
-
-            <li class="next">
-              <a
-                href="https://www.qikqiak.com/post/deploy-kafka-ha-on-k8s/"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="在 Kubernetes 上运行高可用的 Kafka 集群"
-                >后一篇 &rarr;</a
-              >
-            </li>
-          </ul>
-
-          <script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-          ></script>
-
-          <ins
-            class="adsbygoogle"
-            style="display: block"
-            data-ad-client="ca-pub-5376999672787220"
-            data-ad-slot="3700507799"
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          ></ins>
-          <script>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-          </script>
-
-          <div id="gitalk-container"></div>
-          <link
-            rel="stylesheet"
-            href="https://unpkg.com/gitalk/dist/gitalk.css"
-          />
-          <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-          <script>
-            var gitalk = new Gitalk({
-              clientID: "bdb76dbb2e9d0786e350",
-              clientSecret: "b454b2a08013fd0e32013be7a63fa8fcb262b6c4",
-              repo: "blog",
-              owner: "cnych",
-              admin: ["cnych"],
-              labels: ["gitment"],
-              title: "使用 KinD 加速 CI\/CD 流水线",
-              createIssueManually: true,
-              id: "accelerate-ci-cd-pipelines-with-kind",
-              distractionFreeMode: true,
-            });
-            gitalk.render("gitalk-container");
-          </script>
+          </div>
         </div>
+        <span class="img-desc" style="display: inline;"></span>
       </div>
-    </div>
-
-    <footer>
+    
+    
+    
+    <div class="intro-header no-img">
+      
       <div class="container">
         <div class="row">
           <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-            <ul class="list-inline text-center footer-links">
-              <img
-                src="https://www.qikqiak.com/img/wechatmp.png"
-                alt="k8s技术圈"
-              />
+            <div class="post-heading">
+              <h1>使用 KinD 加速 CI/CD 流水线</h1>
+                
+                
+                  <span class="post-meta">
+  发表于 October 8, 2020  
+</span>
 
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+  </header>
+
+
+    
+
+
+
+<div class="container" role="main">
+  <div class="row">
+
+    
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div>
+            
+            
+            <h5 id="tags" style="margin-top: 30px;">标签:
+              
+                  <a href="https://www.qikqiak.com/tags/kubernetes/">kubernetes</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/docker/">docker</a> &nbsp;
+              
+                  <a href="https://www.qikqiak.com/tags/kind/">KinD</a> &nbsp;
+              
+            </h5>
+            
+        </div>
+  
+        <article role="main" class="blog-post" itemprop="articleBody" id="content">
+          
+            
+<aside class="toc">
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#kind-架构">KinD 架构</a></li>
+    <li><a href="#安装">安装</a></li>
+    <li><a href="#测试">测试</a></li>
+    <li><a href="#总结">总结</a></li>
+  </ul>
+</nav>
+</aside>
+
+          
+  
+          
+          
+          
+  
+          
+          
+          
+  
+          
+          
+          
+
+          <p>现在安装 Kubernetes 集群已经变得越来越简单了，出现了很多方案，各种方案都有自己适合的使用场景。虽然我们可以很快速在云环境下面启动一个 Kubernetes 集群，但是对于开发人员通常更喜欢能够快速上手的东西，<a href="https://kind.sigs.k8s.io/">Kubernetes in Docker（KinD）</a>这个工具就可以通过创建容器来作为 Kubernetes 的节点，我们只需要在机器上安装 Docker 就可以使用，它允许我们在很短的时间内就启动一个多节点的集群，而不依赖任何其他工具或云服务商，这就使得它不仅对本地开发非常有用，而且对 CI/CD 也很有帮助。</p>
+<h2 id="kind-架构">KinD 架构</h2>
+<p>KinD 使用 Docker-in-Docker 的方法来运行 Kubernetes 集群，它启动多个 Docker 容器来作为 Kubernetes 的节点。Docker 容器将 docker.sock 卷挂载到你的节点上运行的 Docker 上，这样就可以与底层的容器运行时进行交互了。</p>
+<p><img src="https://picdn.youdianzhishi.com/images/20201008102134.png" alt="KinD 架构"></p>
+<p>KinD 架构</p>
+<p>KinD 是使用 kubeadm 工具来启动管理集群，也通过了一致性测试和 CNCF 的认证，当然它也会为你生成访问集群的 kubeconfig 文件，这样我们同样就可以使用 kubectl 来和集群进行交互了。其他 Kubernetes 组件，比如 Helm、Istio 也同样可以在 KinD 集群内正常工作。</p>
+<p>KinD 有一个缺点是它不能使用 LoadBalancer 的 Service，所以我们需要使用 NodePort 来对外暴露服务。</p>
+<p>另外 DinD 也不是一个非常安全的解决方案，所以除了本地开发机和 CI/CD 流水线之外，最好不要在其他环境使用 KinD 集群，特别是生产环境中。</p>
+<h2 id="安装">安装</h2>
+<p>KinD 是一个简单的命令行工具，可以直接下载放置到 PATH 路径上，然后就可以使用 kind 命令与 KinD 进行交互了，当然前提是要先安装上 Docker：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ sudo curl -sL https://kind.sigs.k8s.io/dl/v0.9.0/kind-linux-amd64 -o /usr/local/bin/kind
+</span></span><span style="display:flex;"><span>$ sudo chmod +x /usr/local/bin/kind
+</span></span><span style="display:flex;"><span>$ kind version
+</span></span><span style="display:flex;"><span>kind v0.9.0 go1.15.2 linux/amd64
+</span></span></code></pre></div><p>安装完成后你可以使用下面的命令创建你的集群：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kind create cluster --wait 10m
+</span></span></code></pre></div><p>该命令会创建一个单节点集群，如果你想定义一个多节点集群，你可以使用类似下面的集群配置文件进行创建：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#6272a4"># kind-config.yaml</span>
+</span></span><span style="display:flex;"><span><span style="color:#6272a4"># 3个节点(两个node)集群配置</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">kind</span>: Cluster
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">apiVersion</span>: kind.x-k8s.io/v1alpha4
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">nodes</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff79c6">role</span>: control-plane
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff79c6">role</span>: worker
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff79c6">role</span>: worker
+</span></span></code></pre></div><p>然后使用上面的配置文件创建集群：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kind create cluster --wait 10m --config kind-config.yaml
+</span></span></code></pre></div><p>我们也可以在 <code>nodes</code> 属性部分指定多个控制平面角色来创建多控制平面集群。由于 KinD 会自动创建一个 kubeconfig 文件，所以我们可以像使用其他集群一样使用 kubectl 命令。
+要想删除 KinD 集群也很简单，直接使用如下所示的命令即可：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kind delete cluster
+</span></span></code></pre></div><h2 id="测试">测试</h2>
+<p>接下来我们来体验一次使用 KinD 的 CI/CD 流水线，这里为了方便我们将使用 GitHub Actions 作为我们的 CI/CD 工具，任何可以访问 GitHub 的人都可以使用。</p>
+<!-- raw HTML omitted -->
+<p>我们来构建一个简单的 NGINX 应用并显示 &ldquo;Hello World&rdquo;，我们需要做如下一些工作：</p>
+<ul>
+<li>创建应用的开发版本</li>
+<li>在 KinD 集群中运行一个组件来测试</li>
+<li>如果测试成功，我们将镜像升级到 release 版本，并推送到 Docker Hub 上去。</li>
+</ul>
+<p>首先我们需要一个 GitHub 和 Docker Hub 帐号，然后：</p>
+<ul>
+<li>Fork 测试仓库：<a href="https://github.com/cnych/kind-nginx">https://github.com/cnych/kind-nginx</a></li>
+<li>进入代码仓库，创建两个 secrets：DOCKER_USER 和 DOCKER_PW，分别表示你的 Docker Hub 的用户名和密码。</li>
+<li>跳转到 GitHub Actions 并重新执行任务，当然我们也可以修改仓库代码来推送触发这个任务。</li>
+</ul>
+<p><img src="https://picdn.youdianzhishi.com/images/20201008105538.png" alt="配置 Secrets"></p>
+<p>我们可以先查看下 GitHub Actions 的流水线配置文件 <code>build-pipeline.yml</code>：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff79c6">name</span>: Docker Image CI
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">on</span>:
+</span></span><span style="display:flex;"><span>  [push]
+</span></span><span style="display:flex;"><span>  <span style="color:#6272a4"># 工作流程中所有 job 和 step 都可使用的环境变量</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">env</span>: <span style="color:#6272a4"># 或者作为环境变量</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">docker_username</span>: ${{ secrets.DOCKER_USER }}
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">docker_password</span>: ${{ secrets.DOCKER_PW }}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">jobs</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">build-docker-image</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">runs-on</span>: ubuntu-latest
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">steps</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">uses</span>: actions/checkout@v2
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">with</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">fetch-depth</span>: <span style="color:#bd93f9">0</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">name</span>: Build the Docker image
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">run</span>: docker build -t $docker_username/nginx:dev .
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">name</span>: Login to Docker
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">run</span>: echo &#34;$docker_password&#34; | docker login -u &#34;$docker_username&#34; --password-stdin
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">name</span>: Push the docker image
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">run</span>: docker push $docker_username/nginx:dev
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">kubernetes-component-test</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">runs-on</span>: ubuntu-latest
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">needs</span>: build-docker-image
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">steps</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">uses</span>: actions/checkout@v2
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">with</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">fetch-depth</span>: <span style="color:#bd93f9">0</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">name</span>: Run KIND Test
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">run</span>: sudo sh build-test.sh $docker_username
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff79c6">promote-and-push-docker-image</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">runs-on</span>: ubuntu-latest
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">needs</span>: kubernetes-component-test
+</span></span><span style="display:flex;"><span>    <span style="color:#ff79c6">steps</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">uses</span>: actions/checkout@v2
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">with</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#ff79c6">fetch-depth</span>: <span style="color:#bd93f9">0</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">name</span>: Pull the Docker image
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">run</span>: docker pull $docker_username/nginx:dev
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">name</span>: Tag the Docker image
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">run</span>: docker tag $docker_username/nginx:dev $docker_username/nginx:release
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">name</span>: Login to Docker
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">run</span>: echo &#34;$docker_password&#34; | docker login -u &#34;$docker_username&#34; --password-stdin
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff79c6">name</span>: Push the docker image
+</span></span><span style="display:flex;"><span>        <span style="color:#ff79c6">run</span>: docker push $docker_username/nginx:release
+</span></span></code></pre></div><p>从上面的流水线文件中可以看到构建流水线中有 3 个作业：</p>
+<ol>
+<li><code>build-docker-image</code> 作业会构建开发版本的 Docker 镜像，并在构建成功后将其推送到 Docker Hub，我们可以在这个任务中运行单元测试。</li>
+<li><code>kubernetes-component-test</code> 作业设置了一个 KinD 集群，并为应用程序运行组件进行测试。</li>
+<li><code>promote-and-push-docker-image</code> 作业拉取开发版本的镜像，将其重新标记为 release 版本，并将 release 版本推送到 Docker Hub。</li>
+</ol>
+<p>我们来看看应用的 Dockerfile 文件来了解它的构建内容：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-docker" data-lang="docker"><span style="display:flex;"><span><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> nginx</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">RUN</span> <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#39;Hello World&#39;</span> &gt; /usr/share/nginx/html/index.html
+</span></span></code></pre></div><p>第二步是整个流水线的关键所在，运行一个 <a href="http://buid-test.sh">buid-test.sh</a> 的 shell 脚本，接下来我们来查看下该脚本的实现：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#ff79c6">#! /bin/bash
+</span></span></span><span style="display:flex;"><span><span style="color:#ff79c6"></span><span style="color:#8be9fd;font-style:italic">docker_username</span><span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">$1</span>
+</span></span><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">set</span> -xe
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>curl -sL https://kind.sigs.k8s.io/dl/v0.9.0/kind-linux-amd64 -o /usr/local/bin/kind
+</span></span><span style="display:flex;"><span>chmod <span style="color:#bd93f9">755</span> /usr/local/bin/kind
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>curl -sL https://storage.googleapis.com/kubernetes-release/release/v1.17.4/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl
+</span></span><span style="display:flex;"><span>chmod <span style="color:#bd93f9">755</span> /usr/local/bin/kubectl
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>curl -LO https://get.helm.sh/helm-v3.1.2-linux-amd64.tar.gz
+</span></span><span style="display:flex;"><span>tar -xzf helm-v3.1.2-linux-amd64.tar.gz
+</span></span><span style="display:flex;"><span>mv linux-amd64/helm /usr/local/bin/
+</span></span><span style="display:flex;"><span>rm -rf helm-v3.1.2-linux-amd64.tar.gz
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>kind version
+</span></span><span style="display:flex;"><span>kubectl version --client<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">true</span>
+</span></span><span style="display:flex;"><span>helm version
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>kind create cluster --wait 10m --config kind-config.yaml
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>kubectl get nodes
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>docker build -t <span style="color:#8be9fd;font-style:italic">$docker_username</span>/nginx:dev .
+</span></span><span style="display:flex;"><span>kind load docker-image <span style="color:#8be9fd;font-style:italic">$docker_username</span>/nginx:dev
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>kubectl apply -f nginx-deployment.yaml
+</span></span><span style="display:flex;"><span>kubectl apply -f nginx-service.yaml
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">NODE_IP</span><span style="color:#ff79c6">=</span><span style="color:#ff79c6">$(</span>kubectl get node -o wide|tail -1|awk <span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#39;print $6&#39;</span><span style="color:#ff79c6">}</span><span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">NODE_PORT</span><span style="color:#ff79c6">=</span><span style="color:#ff79c6">$(</span>kubectl get svc nginx-service -o go-template<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;{{range.spec.ports}}{{if .nodePort}}{{.nodePort}}{{&#34;\n&#34;}}{{end}}{{end}}&#39;</span><span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span>sleep <span style="color:#bd93f9">60</span>
+</span></span><span style="display:flex;"><span><span style="color:#8be9fd;font-style:italic">SUCCESS</span><span style="color:#ff79c6">=</span><span style="color:#ff79c6">$(</span>curl <span style="color:#8be9fd;font-style:italic">$NODE_IP</span>:<span style="color:#8be9fd;font-style:italic">$NODE_PORT</span><span style="color:#ff79c6">)</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">if</span> <span style="color:#ff79c6">[[</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">SUCCESS</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">&#34;</span> !<span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;Hello World&#34;</span> <span style="color:#ff79c6">]]</span>;
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">then</span>
+</span></span><span style="display:flex;"><span> kind -q delete cluster
+</span></span><span style="display:flex;"><span> <span style="color:#8be9fd;font-style:italic">exit</span> 1;
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">else</span>
+</span></span><span style="display:flex;"><span> kind -q delete cluster
+</span></span><span style="display:flex;"><span> <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;Component test succesful&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff79c6">fi</span>
+</span></span></code></pre></div><p>上面的 shell 脚本实现了一系列的功能：</p>
+<ol>
+<li>在 CI 服务器中下载并安装 kind、kubectl、helm 工具</li>
+<li>使用 kind-config.yaml 文件创建了一个多节点的集群</li>
+<li>使用 <code>docker build</code> 命令构建 dev 版本的镜像</li>
+<li>加载 KinD 集群中的 Docker 镜像，这样可以确保镜像对所有 KinD 节点都可用，就不需要从 Docker Hub 中去拉取镜像了</li>
+<li>使用 Deployment 方式部署应用，并通过 NodePort 的 Service 暴露服务</li>
+<li>获取节点 IP 和服务端口，并运行测试，检查应用程序是否返回&quot;Hello World&quot;</li>
+<li>如果测试成功，则删除 KinD 集群，打印 &ldquo;Component test succesful&rdquo;，并返回一个成功状态码；如果测试失败，则删除 KinD 集群，并返回失败的状态码。</li>
+</ol>
+<p><img src="https://picdn.youdianzhishi.com/images/20201008112251.png" alt="GitHub Actions 流水线"></p>
+<h2 id="总结">总结</h2>
+<p>当我们触发流水线管道时，GitHub Actions 会自动运行整个流水线。我们这里就完成了利用 Docker 和 Kubernetes 进行持续集成和部署的无缝方式，Docker 中的 Kubernetes 不仅简化了我们进行本地开发的方式，而且也是 CI/CD 的优秀工具。</p>
+<blockquote>
+<p>原文链接：https://medium.com/better-programming/accelerate-your-ci-cd-pipelines-with-kubernetes-in-docker-kind-109a67b39c82</p>
+</blockquote>
+<!-- raw HTML omitted -->
+
+          <h2>微信公众号</h2>
+<p>
+  扫描下面的二维码关注我们的微信公众帐号，在微信公众帐号中回复◉加群◉即可加入到我们的
+  kubernetes 讨论群里面共同学习。
+</p>
+<img
+  src="https://picdn.youdianzhishi.com/images/qrcode.png"
+  alt="wechat-account-qrcode"
+/>
+
+  
+          
+            <div class="entry-shang text-center">
+    <p>「真诚赞赏，手留余香」</p>
+    <button class="zs show-zs btn btn-bred">赞赏</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+    <div class="zs-modal-head">
+        <button type="button" class="close">×</button>
+        <span class="author"><img src="https://www.qikqiak.com/img/avatar.jpeg"/>阳明</span>
+        <p class="tip"><i></i><span>请我喝杯咖啡？</span></p>
+    </div>
+    <div class="zs-modal-body">
+        <div class="zs-modal-btns">
+            <button class="btn btn-blink" data-num="2">2元</button>
+            <button class="btn btn-blink" data-num="5">5元</button>
+            <button class="btn btn-blink" data-num="10">10元</button>
+            <button class="btn btn-blink" data-num="50">50元</button>
+            <button class="btn btn-blink" data-num="100">100元</button>
+            <button class="btn btn-blink" data-num="1">任意金额</button>
+        </div>
+        <div class="zs-modal-pay">
+            <button class="btn btn-bred" id="pay-text">2元</button>
+            <p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+            <img src="https://www.qikqiak.com/img/wechat-2.png" id="pay-image"/>
+        </div>
+    </div>
+    <div class="zs-modal-footer">
+        <span class="zs-wechat"><img src="https://www.qikqiak.com/img/wechat-btn.png"/></span>
+    </div>
+</div>
+          
+          
+            <div class="social-share" data-initialized="true" style="margin-bottom: 20px;margin-top:20px;">
+    <center>
+    <a href="#" class="social-share-icon icon-weibo"></a>
+    <a href="#" class="social-share-icon icon-wechat"></a>
+    <a href="#" class="social-share-icon icon-twitter"></a>
+    <a href="#" class="social-share-icon icon-linkedin"></a>
+    <a href="#" class="social-share-icon icon-facebook"></a>
+    <a href="#" class="social-share-icon icon-qq"></a>
+    <a href="#" class="social-share-icon icon-qzone"></a>
+    </center>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+          
+        </article>
+  
+        
+          
+
+<h3>相关文章</h3>
+<ul style="margin-bottom: 25px;">
+    
+    <li><a href="https://www.qikqiak.com/post/use-kubeadm-upgrade-k8s/">使用 kubeadm 更新 kubernetes 集群</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/speed-up-develop-flow-dockerfile-best-practices/">加速开发流程的 Dockerfile 最佳实践</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/get-client-realip/">获取客户端访问真实 IP</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/capabilities-on-k8s/">在 Kubernetes 中配置 Container Capabilities</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/gitlab-install-on-k8s/">在 Kubernetes 上安装 Gitlab</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/harbor-quick-install/">在 Kubernetes 在快速安装 Harbor</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/harbor-code-analysis/">Harbor 源码浅析</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/dockerfile-best-practice/">Dockerfile 最佳实践</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/pod-init-container/">初始化容器</a></li>
+    
+    <li><a href="https://www.qikqiak.com/post/write-kubernets-golang-service-step-by-step/">手摸手教你写 Kubernetes 的 golang 服务</a></li>
+    
+</ul>
+
+        
+  
+        
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.qikqiak.com/post/use-vscode-remote-dev-debug/" data-toggle="tooltip" data-placement="top" title="真香！使用 VSCode 远程开发调试">&larr; 前一篇</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.qikqiak.com/post/deploy-kafka-ha-on-k8s/" data-toggle="tooltip" data-placement="top" title="在 Kubernetes 上运行高可用的 Kafka 集群">后一篇 &rarr;</a>
+            </li>
+          
+        </ul>
+        
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+        
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-5376999672787220"
+            data-ad-slot="3700507799"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+  
+        
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+    var gitalk = new Gitalk({
+        clientID: 'bdb76dbb2e9d0786e350',
+        clientSecret: 'b454b2a08013fd0e32013be7a63fa8fcb262b6c4',
+        repo: 'blog',
+        owner: 'cnych',
+        admin: ['cnych'],
+        labels: ['gitment'],
+        title: '使用 KinD 加速 CI\/CD 流水线',
+        createIssueManually: true,
+        id: 'accelerate-ci-cd-pipelines-with-kind',      
+        distractionFreeMode: true  
+    });
+    gitalk.render('gitalk-container');
+</script>
+
+
+        
+          
+
+        
+  
+      </div>
+    
+    
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          <img src="https://www.qikqiak.com/img/wechatmp.png" alt="k8s技术圈">
+          
               <li>
                 <a href="mailto:icnych@gmail.com" title="Email me">
                   <span class="fa-stack fa-lg">
@@ -998,7 +659,7 @@ sleep <span style="color:#bd93f9">60</span>
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://github.com/cnych" title="GitHub">
                   <span class="fa-stack fa-lg">
@@ -1007,7 +668,7 @@ sleep <span style="color:#bd93f9">60</span>
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://weibo.com/cnych" title="微博">
                   <span class="fa-stack fa-lg">
@@ -1016,7 +677,7 @@ sleep <span style="color:#bd93f9">60</span>
                   </span>
                 </a>
               </li>
-
+          
               <li>
                 <a href="https://instagram.com/cnych" title="Instagram">
                   <span class="fa-stack fa-lg">
@@ -1025,158 +686,121 @@ sleep <span style="color:#bd93f9">60</span>
                   </span>
                 </a>
               </li>
-
-              <li>
-                <a href="https://www.qikqiak.com/index.xml" title="RSS">
-                  <span class="fa-stack fa-lg">
-                    <i class="fa fa-circle fa-stack-2x"></i>
-                    <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
-                  </span>
-                </a>
-              </li>
-            </ul>
-            <p class="credits copyright text-muted">
-              &nbsp;&bull;&nbsp; 2023 &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/">阳明的博客</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/archive/">归档</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://www.qikqiak.com/page/friend/">友链</a>
-              &nbsp;&bull;&nbsp;
-              <a href="https://beian.miit.gov.cn/" target="_blank"
-                >蜀ICP备11027319号-5</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.io"
-                >kubernetes.io</a
-              >
-              <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn"
-                >Kubernetes中文社区</a
-              >
-            </p>
-            <p class="text-center text-muted">
-              <script
-                async
-                src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
-              ></script>
-              <span id="busuanzi_container_site_pv" style="display: none">
-                本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          
+          
+          <li>
+            <a href="https://www.qikqiak.com/index.xml" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
               </span>
-              &nbsp;&bull;&nbsp;
-              <span id="busuanzi_container_site_uv" style="display: none">
-                访客数<span id="busuanzi_value_site_uv"></span>人次
-              </span>
-            </p>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
 
-            <p class="credits theme-by text-muted">
-              由 <a href="http://gohugo.io">Hugo v0.55.6</a> 强力驱动
-              &nbsp;&bull;&nbsp; 主题
-              <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
-              移植自
-              <a href="https://github.com/rootsongjc/beautifulhugo"
-                >Beautiful Hugo</a
-              >
-            </p>
-          </div>
-        </div>
+          &nbsp;&bull;&nbsp;
+          2023
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/">阳明的博客</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/sitemap.xml">网站地图</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/archive/">归档</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://www.qikqiak.com/page/friend/">友链</a>
+            &nbsp;&bull;&nbsp;
+            <a href="https://beian.miit.gov.cn/" target="_blank">蜀ICP备11027319号-5</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.io">kubernetes.io</a>
+            <a class="h" href="https://www.qikqiak.com/page/kubernetes.org.cn">Kubernetes中文社区</a>
+          
+        </p>
+        <p class="text-center text-muted">
+          <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+          <span id="busuanzi_container_site_pv" style="display:none">
+            本站总访问量<span id="busuanzi_value_site_pv"></span>次
+          </span>
+          &nbsp;&bull;&nbsp;
+          <span id="busuanzi_container_site_uv" style="display:none">
+            访客数<span id="busuanzi_value_site_uv"></span>人次
+          </span>
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          由 <a href="http://gohugo.io">Hugo v0.115.4</a> 强力驱动 &nbsp;&bull;&nbsp; 主题 <a href="https://github.com/cnych/qikqiak.com">qikqiak-blog</a>
+          
+        </p>
       </div>
-    </footer>
+    </div>
+  </div>
+</footer>
 
-    <script
-      src="https://www.qikqiak.com/js/bundle.min.8242ab5c3c016acc49d8c7717b5c1a9f24511d0b9e5d1c0e44f2b907c76b5987.js"
-      integrity="sha256-gkKrXDwBasxJ2Mdxe1wanyRRHQueXRwORPK5B8drWYc="
-    ></script>
 
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "UA-69668147-3");
-    </script>
-    <script>
-      (function () {
-        var bp = document.createElement("script");
-        var curProtocol = window.location.protocol.split(":")[0];
-        if (curProtocol === "https") {
-          bp.src = "https://zz.bdstatic.com/linksubmit/push.js";
-        } else {
-          bp.src = "http://push.zhanzhang.baidu.com/push.js";
-        }
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(bp, s);
-      })();
-    </script>
-    <script>
-      $(document).ready(function () {
-        var int = setInterval(fixCount, 50);
+<script src='https://www.qikqiak.com/js/bundle.min.af02a2d23b6651a566f0135a12e65fc2560faa7a969b3d1ad58d0afe0c9164ae.js' integrity='sha256-rwKi0jtmUaVm8BNaEuZfwlYPqnqWmz0a1Y0K/gyRZK4='></script>
 
-        var initPVCount = 584976;
-        var initUVCount = 153191;
-        function fixCount() {
-          if ($("#busuanzi_container_site_pv").css("display") != "none") {
-            $("#busuanzi_value_site_pv").html(
-              parseInt($("#busuanzi_value_site_pv").html()) + initPVCount
-            );
-            clearInterval(int);
-          }
-          if ($("#busuanzi_container_site_uv").css("display") != "none") {
-            $("#busuanzi_value_site_uv").html(
-              parseInt($("#busuanzi_value_site_uv").html()) + initUVCount
-            );
-            clearInterval(int);
-          }
-        }
-      });
-    </script>
-    <script>
-      (function (w, d, s, id) {
-        if (typeof w.webpushr !== "undefined") return;
-        w.webpushr =
-          w.webpushr ||
-          function () {
-            (w.webpushr.q = w.webpushr.q || []).push(arguments);
-          };
-        var js,
-          fjs = d.getElementsByTagName(s)[0];
-        js = d.createElement(s);
-        js.id = id;
-        js.src = "https://cdn.webpushr.com/app.min.js";
-        fjs.parentNode.appendChild(js);
-      })(window, document, "script", "webpushr-jssdk");
-      webpushr(
-        "init",
-        "BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c"
-      );
-    </script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"
-    ></script>
-    <script
-      type="text/javascript"
-      src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"
-    ></script>
-    <script type="text/javascript">
-      $(".carousel").slick({
-        dots: true,
-        arrows: true,
-        autoplay: true,
-        autoplaySpeed: 4000,
-        infinite: true,
-        speed: 500,
-        fade: true,
-        cssEase: "linear",
-        centerMode: true,
-        prevArrow: '<button type="button" class="slick-prev"></button>',
-        nextArrow: '<button type="button" class="slick-next"></button>',
-      });
-    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-69668147-3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-69668147-3');
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+<script >
+$(document).ready(function() {
+  var int = setInterval(fixCount, 50);  
+  
+  var initPVCount = 584976;
+  var initUVCount = 153191;
+  function fixCount() {                   
+    if ($("#busuanzi_container_site_pv").css("display") != "none") {
+        $("#busuanzi_value_site_pv").html(parseInt($("#busuanzi_value_site_pv").html()) + initPVCount); 
+        clearInterval(int); 
+    }
+    if ($("#busuanzi_container_site_uv").css("display") != "none") {
+      $("#busuanzi_value_site_uv").html(parseInt($("#busuanzi_value_site_uv").html()) + initUVCount);
+      clearInterval(int); 
+    }  
+  }           
+});
+</script>
+ <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('init','BJICPtxnbz-7vq9kEwH5psPCuHe2CvludQug4R2tuJGPF0GQT2hwSWTAhlSt2EFD5InpuQyxCGJdigf6-KbQ53c');</script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery-migrate@1.2.1/dist/jquery-migrate.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript">
+$('.carousel').slick({
+    dots: true,
+    arrows: true,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    infinite: true,
+    speed: 500,
+    fade: true,
+    cssEase: 'linear',
+    centerMode: true,
+    prevArrow: '<button type="button" class="slick-prev"></button>',
+    nextArrow: '<button type="button" class="slick-next"></button>',
+});
+</script>
+
   </body>
 </html>
+
