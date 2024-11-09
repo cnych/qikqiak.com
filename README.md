@@ -2,6 +2,8 @@
 
 个人博客，地址：[https://www.qikqiak.com](https://www.qikqiak.com)
 
+[优点知识](https://youdianzhishi.com)、[快课星球](https://fastclass.cn)、[ReadGenius](https://readgenius.net)、[AppGenius](https://www.appgenius.xyz)
+
 > 关注 ChatGPT、容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 扫描下面的二维码(或微信搜索`k8s技术圈`)关注我们的微信公众帐号，在微信公众帐号中回复 **加群** 即可加入到我们的`kubernetes`讨论群里面共同学习。
@@ -14,10 +16,21 @@
 
 #### ChatGPT
 
+- [上线了，AI 全栈开发学习平台 - 快课星球](https://www.qikqiak.com/post/fastclass-cn/)
+- [Google 在 Chrome 中内置 AI 功能](https://www.qikqiak.com/post/chrome-built-in-ai/)
+- [深入体验全新 Cursor AI IDE 后，说杀疯了真不为过！](https://www.qikqiak.com/post/cursor-ai-ide/)
 - [保姆级教程 | 手把手叫你如何开通 ChatGPT Plus 试用 GPT-4](https://www.qikqiak.com/post/how-to-subscribe-chatgpt-plus-try-gpt-4)
 
 #### Kubernetes/Docker
 
+- [新一代云原生可观测平台 OpenObserve](https://www.qikqiak.com/post/cloud-native-observability-platform-openobserve/)
+- [讲真，Sealos 云服务真香](https://www.qikqiak.com/post/sealos-is-so-good/)
+- [在 Kubernetes 上部署 LLM 大语言模型](https://www.qikqiak.com/post/llm-on-k8s/)
+- [Kubernetes 多集群管理系统 Karmada](https://www.qikqiak.com/post/kubernetes-multi-cluster-management-karmada/)
+- [云原生数据管理平台 KubeBlocks](https://www.qikqiak.com/post/cloud-native-database-platform-kubeblocks/)
+- [新一代云原生存储系统 CubeFS](https://www.qikqiak.com/post/cloud-native-storage-cube-fs/)
+- [Kubernetes 策略引擎 Kyverno](https://www.qikqiak.com/post/kubernetes-policy-engine-kyverno/)
+- [一文搞懂 VictoriaMetrics 的使用](https://www.qikqiak.com/post/victoriametrics-usage/)
 - [DevOps 工具链管理器 DevStream 还真是神器](https://www.qikqiak.com/post/devops-tools-chain-devstream/)
 - [如何修改 Kubernetes 节点 IP 地址?](https://www.qikqiak.com/post/how-to-change-k8s-node-ip/)
 - [本地集群使用 OpenELB 实现 Load Balancer 负载均衡](https://www.qikqiak.com/post/service-use-openelb/)
@@ -28,7 +41,7 @@
 - [Gitlab CI 在 Kubernetes 中的 Docker 缓存](https://www.qikqiak.com/post/gitlab-ci-docker-layer-cache-for-k8s-executor/)
 - [一文搞懂容器运行时 Containerd](https://www.qikqiak.com/post/containerd-usage/)
 - [使用 kube-vip 搭建高可用 Kubernetes 集群](https://www.qikqiak.com/post/use-kube-vip-ha-k8s-lb/)
-- [你应该了解的10个 Kubernetes 安全上下文设置](https://www.qikqiak.com/post/k8s-10-secruity-context-settings/)
+- [你应该了解的 10 个 Kubernetes 安全上下文设置](https://www.qikqiak.com/post/k8s-10-secruity-context-settings/)
 - [如何收集管理多行日志？](https://www.qikqiak.com/post/collect-multiline-logs/)
 - [通过 Traefik 使用 Kubernetes Service APIs 进行流量路由](https://www.qikqiak.com/post/use-kubernetes-service-apis-with-traefik/)
 - [Kubernetes Service APIs 简介](https://www.qikqiak.com/post/kubernetes-service-apis-intro/)
@@ -245,6 +258,7 @@
 
 #### 其他
 
+- [谷歌 Adsense 如何添加国内银行付款方式](https://www.qikqiak.com/post/add-adsense-payment-method-in-china/)
 - [GitHub CLI 命令行工具使用](https://www.qikqiak.com/post/github-cli-tool-usage/)
 - [免费获取 JetBrains 全系产品正版 License](https://www.qikqiak.com/post/free-use-jetbrains-ide/)
 - [微博图床一键迁移到阿里云 OSS](https://www.qikqiak.com/post/sina-img-transfer-to-oss)
