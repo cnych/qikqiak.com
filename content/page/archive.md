@@ -1,5 +1,6 @@
 ---
-title: Archive
+title: 存档
+date: 2024-10-26
 comments: false
 unrelated: true
 nopager: true
@@ -8,12 +9,24 @@ noreadmore: true
 
 > 关注容器、`kubernetes`、devops、python、golang、微服务等技术。
 
-#### ChatGPT
+#### AI
 
+- [一文搞懂如何在 Cursor 新版本(0.45+)中使用规则](https://www.qikqiak.com/post/cursor-rules-guide/)
+- [GPUStack：打造企业级私有大模型服务的开源利器](https://www.qikqiak.com/post/gpustack-introduction/)
+- [上线了，AI 全栈开发学习平台 - 快课星球](https://www.qikqiak.com/post/fastclass-cn/)
+- [Google 在 Chrome 中内置 AI 功能](https://www.qikqiak.com/post/chrome-built-in-ai/)
+- [深入体验全新 Cursor AI IDE 后，说杀疯了真不为过！](https://www.qikqiak.com/post/cursor-ai-ide/)
 - [保姆级教程 | 手把手叫你如何开通 ChatGPT Plus 试用 GPT-4](https://www.qikqiak.com/post/how-to-subscribe-chatgpt-plus-try-gpt-4)
 
 #### Kubernetes/Docker
 
+- [新一代云原生可观测平台 OpenObserve](https://www.qikqiak.com/post/cloud-native-observability-platform-openobserve/)
+- [讲真，Sealos 云服务真香](https://www.qikqiak.com/post/sealos-is-so-good/)
+- [在 Kubernetes 上部署 LLM 大语言模型](https://www.qikqiak.com/post/llm-on-k8s/)
+- [Kubernetes 多集群管理系统 Karmada](https://www.qikqiak.com/post/kubernetes-multi-cluster-management-karmada/)
+- [云原生数据管理平台 KubeBlocks](https://www.qikqiak.com/post/cloud-native-database-platform-kubeblocks/)
+- [新一代云原生存储系统 CubeFS](https://www.qikqiak.com/post/cloud-native-storage-cube-fs/)
+- [Kubernetes 策略引擎 Kyverno](https://www.qikqiak.com/post/kubernetes-policy-engine-kyverno/)
 - [一文搞懂 VictoriaMetrics 的使用](https://www.qikqiak.com/post/victoriametrics-usage/)
 - [DevOps 工具链管理器 DevStream 还真是神器](https://www.qikqiak.com/post/devops-tools-chain-devstream/)
 - [如何修改 Kubernetes 节点 IP 地址?](https://www.qikqiak.com/post/how-to-change-k8s-node-ip/)
@@ -81,7 +94,7 @@ noreadmore: true
 - [Traefik2.X 版本 中 URL Rewrite 的使用](https://www.qikqiak.com/post/url-rewrite-on-traefik2.X/)
 - [自定义 Kubernetes 调度器](https://www.qikqiak.com/post/custom-kube-scheduler/)
 - [一文搞懂 Traefik2.1 的使用](https://www.qikqiak.com/post/traefik-2.1-101/)
-- [Prometheus 记录规则的使用](https://www.qikqiak.com/post/recoding-rules-on-prometheus/)
+- [Prometheus 记录规则的使用](https://www.qikqiak.com/post/recording-rules-on-prometheus/)
 - [Prometheus 黑盒监控](https://www.qikqiak.com/post/blackbox-exporter-on-prometheus/)
 - [Kubernetes Deployment 故障排查常见方法[译]](https://www.qikqiak.com/post/troubleshooting-deployments/)
 - [ingress-nginx 中 Rewrite 的使用](https://www.qikqiak.com/post/url-rewrite-on-ingress-nginx/)
@@ -243,6 +256,7 @@ noreadmore: true
 
 #### 其他
 
+- [谷歌 Adsense 如何添加国内银行付款方式](https://www.qikqiak.com/post/add-adsense-payment-method-in-china/)
 - [GitHub CLI 命令行工具使用](https://www.qikqiak.com/post/github-cli-tool-usage/)
 - [免费获取 JetBrains 全系产品正版 License](https://www.qikqiak.com/post/free-use-jetbrains-ide/)
 - [微博图床一键迁移到阿里云 OSS](https://www.qikqiak.com/post/sina-img-transfer-to-oss)

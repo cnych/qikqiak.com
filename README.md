@@ -2,20 +2,23 @@
 
 个人博客，地址：[https://www.qikqiak.com](https://www.qikqiak.com)
 
-[优点知识](https://youdianzhishi.com)、[快课星球](https://fastclass.cn)、[ReadGenius](https://readgenius.net)、[AppGenius](https://www.appgenius.xyz)
+[优点知识](https://youdianzhishi.com)、[快课星球](https://fastclass.cn)、[ReadGenius](https://readgenius.net)、[ClaudeMCP](https://www.claudemcp.com)、[ToMarkdown](https://www.tomarkdown.org)
 
-> 关注 ChatGPT、容器、`kubernetes`、devops、python、golang、微服务等技术。
+> 关注 AI、容器、`kubernetes`、devops、python、golang、微服务等技术。
 
 扫描下面的二维码(或微信搜索`k8s技术圈`)关注我们的微信公众帐号，在微信公众帐号中回复 **加群** 即可加入到我们的`kubernetes`讨论群里面共同学习。
 
-![qrcode](https://www.qikqiak.com/img/posts/qrcode_for_gh_d6dd87b6ceb4_430.jpg)
+![qrcode](https://picdn.youdianzhishi.com/images/1740123534730.png)
 
 ## 目录
 
 下面是博客中主要的一些文章目录
 
-#### ChatGPT
+#### AI/ChatGPT
 
+- [我们收集了 18 个顶级设计案例，GPT-4o 已经让设计师非常危险了](https://www.qikqiak.com/post/gpt-4o-designer-is-dangerous/)
+- [一文搞懂如何在 Cursor 新版本(0.45+)中使用规则](https://www.qikqiak.com/post/cursor-rules-guide/)
+- [GPUStack：打造企业级私有大模型服务的开源利器](https://www.qikqiak.com/post/gpustack-introduction/)
 - [上线了，AI 全栈开发学习平台 - 快课星球](https://www.qikqiak.com/post/fastclass-cn/)
 - [Google 在 Chrome 中内置 AI 功能](https://www.qikqiak.com/post/chrome-built-in-ai/)
 - [深入体验全新 Cursor AI IDE 后，说杀疯了真不为过！](https://www.qikqiak.com/post/cursor-ai-ide/)
@@ -23,6 +26,7 @@
 
 #### Kubernetes/Docker
 
+- [OpenAI 的 Kubernetes 集群故障分析](https://www.qikqiak.com/post/openai-k8s-fault-analysis/)
 - [新一代云原生可观测平台 OpenObserve](https://www.qikqiak.com/post/cloud-native-observability-platform-openobserve/)
 - [讲真，Sealos 云服务真香](https://www.qikqiak.com/post/sealos-is-so-good/)
 - [在 Kubernetes 上部署 LLM 大语言模型](https://www.qikqiak.com/post/llm-on-k8s/)
@@ -97,7 +101,7 @@
 - [Traefik2.X 版本 中 URL Rewrite 的使用](https://www.qikqiak.com/post/url-rewrite-on-traefik2.X/)
 - [自定义 Kubernetes 调度器](https://www.qikqiak.com/post/custom-kube-scheduler/)
 - [一文搞懂 Traefik2.1 的使用](https://www.qikqiak.com/post/traefik-2.1-101/)
-- [Prometheus 记录规则的使用](https://www.qikqiak.com/post/recoding-rules-on-prometheus/)
+- [Prometheus 记录规则的使用](https://www.qikqiak.com/post/recording-rules-on-prometheus/)
 - [Prometheus 黑盒监控](https://www.qikqiak.com/post/blackbox-exporter-on-prometheus/)
 - [Kubernetes Deployment 故障排查常见方法[译]](https://www.qikqiak.com/post/troubleshooting-deployments/)
 - [ingress-nginx 中 Rewrite 的使用](https://www.qikqiak.com/post/url-rewrite-on-ingress-nginx/)

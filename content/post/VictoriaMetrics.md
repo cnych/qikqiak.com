@@ -4,6 +4,7 @@ date: 2023-07-23
 tags: ["prometheus", "kubernetes", "VictoriaMetrics"]
 keywords: ["prometheus", "高可用", "kubernetes", "VictoriaMetrics", "生产环境"]
 slug: victoriametrics-usage
+toc: true
 gitcomment: true
 bigimg:
   [
