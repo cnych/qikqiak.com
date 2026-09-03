@@ -2055,7 +2055,7 @@ data:
           description: "{{$labels.instance}}: Memory usage is above 30% (current value is: {{ $value }})"
 ```
 
-这里我们添加了一条记录规则，两条报警规则，更多报警规则配置可参考 [https://awesome-prometheus-alerts.grep.to/](https://awesome-prometheus-alerts.grep.to/)。
+这里我们添加了一条记录规则，两条报警规则，更多报警规则配置可参考 [https://samber.github.io/awesome-prometheus-alerts/](https://samber.github.io/awesome-prometheus-alerts/)。
 
 然后就可以部署 vmalert 组件服务了：
 
